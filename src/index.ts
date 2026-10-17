@@ -12,3 +12,14 @@
 export * from "./llm/index.js";
 export * from "./sandbox/index.js";
 export * from "./tools/index.js";
+
+// Engine — the loop mechanics (strategy-agnostic)
+export * from "./engine/budgets.js";
+export * from "./engine/events.js";
+export * from "./engine/strategy.js";
+export { runAgent } from "./engine/loop.js";
+export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine/loop.js";
+
+// Strategies — the behaviors we ship (coding is the default agent)
+export { codingStrategy } from "./strategies/coding.js";
+export { buildRepoMap } from "./strategies/repomap.js";

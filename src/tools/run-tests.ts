@@ -12,7 +12,8 @@ import { truncate } from "./truncate.js";
 import { defineTool, formatExec, optionalNumber, optionalString, type ToolContext } from "./types.js";
 
 const DETECT =
-  `if [ -f package.json ] && grep -q '"test"' package.json; then echo "npm test"; ` +
+  `if [ -f package.json ] && grep -q '"test"' package.json; then ` +
+  `if command -v npm >/dev/null 2>&1; then echo "npm test"; else echo "bun run test"; fi; ` +
   `elif [ -f pyproject.toml ] || [ -f pytest.ini ] || [ -f setup.py ]; then echo "pytest -q"; ` +
   `elif [ -f Makefile ]; then echo "make test"; ` +
   `else echo "none"; fi`;
@@ -56,7 +57,9 @@ export const runTestsTool = defineTool(
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(`run_tests: ${command}\n${formatExec(r, timeoutSecs)}`),
-      meta: { command, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs },
+      // `ran: true` distinguishes "the suite executed and failed" from "no
+      // test command found" — strategies advance on the former only.
+      meta: { command, ran: true, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs },
     };
   },
 );

@@ -37,5 +37,12 @@ export function createSandbox(spec: SandboxSpec, opts: CreateSandboxOptions = {}
       "the heyo backend needs a token — set HEYO_TOKEN in .env (and HEYO_NAMESPACE), or pass --local",
     );
   }
+  if (spec.localPath) {
+    // Fail fast instead of initializing an empty repo in the VM (learned the
+    // hard way: a silent empty workspace cost a live agent run its whole trace).
+    throw new Error(
+      `localPath is a local-backend option — pass { local: true } (the --local flag), or give Heyo a repoUrl to clone`,
+    );
+  }
   return new HeyoSandbox(spec, opts.heyo);
 }

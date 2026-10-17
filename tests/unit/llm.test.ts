@@ -126,6 +126,34 @@ describe("OpenAICompatibleClient", () => {
     expect(body.tools as unknown[]).toHaveLength(1);
   });
 
+  it("serializes assistant tool_calls and tool results in wire format", async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      body = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl).complete({
+      messages: [
+        { role: "system", content: "s" },
+        { role: "user", content: "u" },
+        {
+          role: "assistant",
+          content: null,
+          tool_calls: [{ id: "call_1", name: "bash", arguments: '{"command":"ls"}' }],
+        },
+        { role: "tool", tool_call_id: "call_1", content: "file.txt" },
+      ],
+    });
+
+    const wire = body.messages as Array<Record<string, unknown>>;
+    expect(wire[2]).toEqual({
+      role: "assistant",
+      content: "",
+      tool_calls: [{ id: "call_1", type: "function", function: { name: "bash", arguments: '{"command":"ls"}' } }],
+    });
+    expect(wire[3]).toEqual({ role: "tool", tool_call_id: "call_1", content: "file.txt" });
+  });
+
   it("computes costUsd from configured pricing", async () => {
     const fetchImpl: typeof fetch = async () => sseResponse(TEXT_FRAMES);
     const client = make(fetchImpl, { priceInPerMTok: 2, priceOutPerMTok: 6 });

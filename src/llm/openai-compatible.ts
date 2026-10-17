@@ -18,7 +18,7 @@
  * as failed, and the run's budget accounting still sees partial usage where
  * the provider reported it.
  */
-import type { LLMClient, LLMRequest, LLMResponse, LLMToolCall, LLMUsage } from "./types.js";
+import type { LLMClient, LLMMessage, LLMRequest, LLMResponse, LLMToolCall, LLMUsage } from "./types.js";
 
 export interface OpenAICompatibleOptions {
   baseUrl: string;
@@ -87,6 +87,32 @@ function normalizeContent(content: unknown): string {
   return "";
 }
 
+/**
+ * Our LLMMessage shape carries tool calls flat ({id, name, arguments}); the
+ * wire wants the OpenAI nesting ({id, type:"function", function:{...}}), and
+ * tool results must reference tool_call_id. Convert at the boundary — the
+ * rest of the codebase never sees wire shapes.
+ */
+function toWireMessages(messages: LLMMessage[]): unknown[] {
+  return messages.map((m) => {
+    if (m.role === "assistant") {
+      const out: Record<string, unknown> = { role: "assistant", content: m.content ?? "" };
+      if (m.tool_calls && m.tool_calls.length > 0) {
+        out.tool_calls = m.tool_calls.map((tc) => ({
+          id: tc.id,
+          type: "function",
+          function: { name: tc.name, arguments: tc.arguments },
+        }));
+      }
+      return out;
+    }
+    if (m.role === "tool") {
+      return { role: "tool", tool_call_id: m.tool_call_id, content: m.content ?? "" };
+    }
+    return { role: m.role, content: m.content ?? "" };
+  });
+}
+
 export class OpenAICompatibleClient implements LLMClient {
   readonly model: string;
   private readonly fetchImpl: typeof fetch;
@@ -111,7 +137,7 @@ export class OpenAICompatibleClient implements LLMClient {
 
     const body: Record<string, unknown> = {
       model: this.opts.model,
-      messages: req.messages,
+      messages: toWireMessages(req.messages),
       stream: true,
       stream_options: { include_usage: true },
     };
