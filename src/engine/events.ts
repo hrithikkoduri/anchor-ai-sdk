@@ -8,6 +8,9 @@
  */
 import type { LLMToolCall, LLMUsage } from "../llm/types.js";
 
+/** How a finish() concluded — done, watching for events, or blocked on a human. */
+export type RunDisposition = "done" | "watch" | "blocked";
+
 export type AgentEvent =
   | { type: "run_started"; task: string; phases: string[] }
   | { type: "phase_started"; phase: string }
@@ -53,6 +56,8 @@ export type AgentEvent =
       steps: number;
       usage: LLMUsage;
       reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused" | "cancelled";
+      /** Set when the run concluded via finish(): done | watch | blocked. */
+      disposition?: RunDisposition;
     }
   | { type: "error"; message: string };
 

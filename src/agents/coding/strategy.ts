@@ -30,7 +30,11 @@ Rules:
 - NEVER call finish with success=true without a passing run_tests in the verify phase.
 - If an approach fails twice, re-read the relevant code instead of repeating commands.
 - Minimal diffs only: no refactors, no formatting changes to unrelated code.
-- If you truly cannot proceed, call finish(summary, success=false) explaining what you learned.`;
+- If you truly cannot proceed, call finish(summary, success=false) explaining what you learned.
+- When the work is done but a follow-up should be driven by external signals (CI results,
+  review comments), conclude with disposition="watch", watch={"checks":true,"comments":true},
+  and resumeAt set to the phase a future run should start at (usually "fix"). Use
+  disposition="blocked" when you need a human.`;
 
 export const codingStrategy: AgentStrategy = {
   name: "coding",

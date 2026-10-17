@@ -93,6 +93,14 @@ The prompts mention tools by name (workflow guidance for the model); the API's
 (`codingStrategy.prepareContext()`) writes a repo map (file list + manifest heads) into the system prompt before the
 first LLM call — pass `context` on the task to override it.
 
+**Concluding — and what comes next.** `finish({summary, success})` ends the run. Optional
+fields declare follow-up intent: `disposition` (`"done"` | `"watch"` | `"blocked"`), `watch`
+(product-defined, e.g. `{checks: true, comments: true}`) and `resumeAt` (which phase a
+future run on this thread should start at). The engine carries all three on `AgentResult`
+and the trace, and for a `watch` finish it keeps the thread's resume position at `resumeAt`
+— wake that thread later and the next run starts exactly there. What the watch spec *means*
+is product policy (this repo's PR babysitter, step 13).
+
 ## Architecture — units of work
 
 ```

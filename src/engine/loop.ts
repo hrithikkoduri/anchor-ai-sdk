@@ -26,7 +26,7 @@ import type { Agent } from "../agents/types.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
 import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type CompactionConfig } from "./compaction.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
-import type { AgentEvent, EventSink } from "./events.js";
+import type { AgentEvent, EventSink, RunDisposition } from "./events.js";
 import type { ThreadStore } from "./thread.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 
@@ -110,6 +110,12 @@ export interface AgentResult {
   checkpointRef?: string;
   /** The phase the run ended in — the product records it for resume decisions (interjections). */
   phase?: string;
+  /** How a finish() concluded: "done" | "watch" | "blocked". Undefined for non-finish endings. */
+  disposition?: RunDisposition;
+  /** What the agent asked to be woken for (product vocabulary; the engine only carries it). */
+  watch?: Record<string, unknown>;
+  /** Phase a future run on this thread should start at — kept as the thread's resume position. */
+  resumeAt?: string;
 }
 
 const DEFAULT_LOOP_LIMIT = 3;
@@ -206,7 +212,15 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   let phaseSteps = 0;
   let phaseNudged = false;
   let paused = false;
-  let finish: { summary: string; ok: boolean } | undefined;
+  let finish:
+    | {
+        summary: string;
+        ok: boolean;
+        disposition?: RunDisposition;
+        watch?: Record<string, unknown>;
+        resumeAt?: string;
+      }
+    | undefined;
   const recentSignatures: string[] = [];
   const evidence: ToolResultRecord[] = [];
 
@@ -232,6 +246,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   // Thread persistence: after every completed turn and on every exit path, so
   // a dead process loses at most the in-flight turn. Protocol-safe (never
   // between an assistant tool_calls and its results). Failures are swallowed.
+  // A "watch" finish may name where the NEXT run should start; when it does,
+  // the completed run leaves that as the thread's resume position instead of
+  // clearing it, so any later wake (event or sweep) resumes right there.
+  let declaredResumePhase: string | undefined;
+
   const persistThread = async (clearPhase = false): Promise<void> => {
     if (!opts.thread) return;
     const persisted = messages.filter(
@@ -245,9 +264,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         messages: persisted,
         // The resume position survives only while there is unfinished work:
         // a crash leaves the last per-turn phase in place, a pause sets the
-        // NEXT phase, and a completed run clears it so a follow-up on the
-        // same thread starts its phases fresh — with the same memory.
-        phase: clearPhase ? undefined : phases[phaseIndex]!.id,
+        // NEXT phase, and a completed run clears it — unless the agent
+        // declared a "watch" with resumeAt, which keeps a pointer to where
+        // the follow-up should start (same memory, fresh phases otherwise).
+        phase: clearPhase ? declaredResumePhase : phases[phaseIndex]!.id,
       });
     } catch {
       // swallow: storage must not kill a run
@@ -256,7 +276,14 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
 
   const finishWith = async (
     reason: FinishReason,
-    extra: { ok: boolean; summary?: string; error?: string },
+    extra: {
+      ok: boolean;
+      summary?: string;
+      error?: string;
+      disposition?: RunDisposition;
+      watch?: Record<string, unknown>;
+      resumeAt?: string;
+    },
   ): Promise<AgentResult> => {
     const usage: LLMUsage = {
       promptTokens: budgets.promptTokens,
@@ -264,7 +291,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       totalTokens: budgets.totalTokens(),
       costUsd: budgets.costsKnown ? budgets.costUsd : undefined,
     };
-    emit({ type: "run_finished", ok: extra.ok, summary: extra.summary, steps, usage, reason });
+    // Finish-shaped endings default honestly: success → "done", failure → "blocked".
+    const disposition =
+      extra.disposition ?? (reason === "finished" ? (extra.ok ? "done" : "blocked") : undefined);
+    emit({ type: "run_finished", ok: extra.ok, summary: extra.summary, steps, usage, reason, disposition });
 
     // Final save. The system prompt is regenerated each run, and stale "Begin
     // the task." markers are dropped so history reads as one conversation.
@@ -403,15 +433,46 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         }
 
         const isFinish = call.name === "finish";
-        const claimedSuccess = isFinish && result.meta?.success !== false;
+        // result.ok guards the tool level: a finish call that failed its own
+        // argument validation is a tool error and must never end the run.
+        const claimedSuccess = isFinish && result.ok && result.meta?.success !== false;
         evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
 
         // Strategy-enforced honesty: a success claim must be backed by evidence.
         let acceptedFinish = false;
         let finishSummary = "";
-        if (isFinish) {
+        let finishDisposition: RunDisposition | undefined;
+        let finishWatch: Record<string, unknown> | undefined;
+        let finishResumeAt: string | undefined;
+        if (isFinish && result.ok) {
           finishSummary = typeof result.meta?.summary === "string" ? result.meta.summary : "";
-          if (claimedSuccess && strategy.validateFinish) {
+          const rawDisposition = result.meta?.disposition;
+          finishDisposition =
+            rawDisposition === "done" || rawDisposition === "watch" || rawDisposition === "blocked"
+              ? rawDisposition
+              : undefined;
+          const rawWatch = result.meta?.watch;
+          finishWatch =
+            rawWatch !== null && typeof rawWatch === "object" && !Array.isArray(rawWatch)
+              ? (rawWatch as Record<string, unknown>)
+              : undefined;
+          finishResumeAt = typeof result.meta?.resumeAt === "string" ? result.meta.resumeAt : undefined;
+          // Effective disposition: explicit first, then "watch" when a watch
+          // spec is present, else done/blocked from the success claim.
+          finishDisposition = finishDisposition ?? (finishWatch ? "watch" : claimedSuccess ? "done" : "blocked");
+
+          if (finishResumeAt && !phases.some((p) => p.id === finishResumeAt)) {
+            // Same class of error as an unknown startPhase — reject loudly so
+            // the model can fix the value instead of poisoning the thread.
+            const known = phases.map((p) => p.id).join(", ");
+            emit({ type: "guardrail", kind: "finish_rejected", detail: `unknown resumeAt "${finishResumeAt}"` });
+            result = {
+              ok: false,
+              content:
+                `finish rejected: resumeAt "${finishResumeAt}" is not a phase of this strategy ` +
+                `(phases: ${known}). Fix the value or drop the field.`,
+            };
+          } else if (claimedSuccess && strategy.validateFinish) {
             const verdict = strategy.validateFinish(evidence);
             if (verdict.allow) {
               acceptedFinish = true;
@@ -443,7 +504,14 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         messages.push(toolResultMessage(call.id, result.content));
 
         if (isFinish && acceptedFinish) {
-          finish = { summary: finishSummary, ok: claimedSuccess };
+          finish = {
+            summary: finishSummary,
+            ok: claimedSuccess,
+            disposition: finishDisposition,
+            watch: finishWatch,
+            resumeAt: finishResumeAt,
+          };
+          if (finishDisposition === "watch" && finishResumeAt) declaredResumePhase = finishResumeAt;
           break;
         }
 
@@ -494,7 +562,13 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       });
     }
 
-    return await finishWith("finished", { ok: finish?.ok ?? false, summary: finish?.summary });
+    return await finishWith("finished", {
+      ok: finish?.ok ?? false,
+      summary: finish?.summary,
+      disposition: finish?.disposition,
+      watch: finish?.watch,
+      resumeAt: finish?.resumeAt,
+    });
   } catch (err) {
     // An abort is a decision, not a failure — report it as such.
     if (opts.signal?.aborted) {
