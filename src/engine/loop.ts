@@ -53,6 +53,8 @@ export interface EngineOptions {
    * DEFAULT_COMPACTION); pass `false` to disable entirely.
    */
   compaction?: CompactionConfig | false;
+  /** Guardrail dials. Protections are on by default; these tune or disable individual ones. */
+  guardrails?: GuardrailConfig;
   onEvent?: EventSink;
   signal?: AbortSignal;
   /**
@@ -78,8 +80,22 @@ export interface AgentResult {
   messages: LLMMessage[];
 }
 
-const NUDGE_LIMIT = 2;
-const LOOP_THRESHOLD = 3;
+const DEFAULT_LOOP_LIMIT = 3;
+const DEFAULT_NUDGE_LIMIT = 2;
+
+export interface GuardrailConfig {
+  /**
+   * Block a tool call identical to the previous `limit - 1` in a row
+   * (default 3; `false` disables detection entirely).
+   */
+  repeatedToolCallLimit?: number | false;
+  /**
+   * How many text-only turns a coding-shaped run tolerates before it is
+   * declared stalled (default 2; `false` = never stall — budgets remain the
+   * backstop). Chat-shaped strategies use `finishWhenNoToolCalls` instead.
+   */
+  emptyTurnNudgeLimit?: number | false;
+}
 
 export async function runAgent(task: RunTask, opts: EngineOptions): Promise<AgentResult> {
   const emit: EventSink = opts.onEvent ?? (() => undefined);
@@ -88,6 +104,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     opts.compaction === false
       ? null
       : { ...DEFAULT_COMPACTION, ...(typeof opts.compaction === "object" ? opts.compaction : {}) };
+  const guardrails = {
+    repeatedToolCallLimit: opts.guardrails?.repeatedToolCallLimit ?? DEFAULT_LOOP_LIMIT,
+    emptyTurnNudgeLimit: opts.guardrails?.emptyTurnNudgeLimit ?? DEFAULT_NUDGE_LIMIT,
+  };
   const strategy = opts.strategy ?? chatStrategy;
   const tools = opts.tools ?? [];
   const byName = new Map(tools.map((t) => [t.definition.name, t] as const));
@@ -251,7 +271,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           break;
         }
         nudges += 1;
-        if (nudges > NUDGE_LIMIT) {
+        if (guardrails.emptyTurnNudgeLimit !== false && nudges > guardrails.emptyTurnNudgeLimit) {
           return await finishWith("stalled", {
             ok: false,
             error: "model produced no tool calls after repeated nudges",
@@ -264,21 +284,25 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
 
       for (const call of response.toolCalls) {
         const signature = `${call.name}:${call.arguments}`;
-        recentSignatures.push(signature);
-        if (recentSignatures.length > LOOP_THRESHOLD) recentSignatures.shift();
+        const loopLimit = guardrails.repeatedToolCallLimit;
+        if (loopLimit !== false) {
+          recentSignatures.push(signature);
+          if (recentSignatures.length > loopLimit) recentSignatures.shift();
+        }
 
         let result: ToolResult;
         if (
-          recentSignatures.length === LOOP_THRESHOLD &&
+          loopLimit !== false &&
+          recentSignatures.length === loopLimit &&
           recentSignatures.every((s) => s === signature)
         ) {
-          const detail = `${call.name} called ${LOOP_THRESHOLD}× with identical arguments — blocked`;
+          const detail = `${call.name} called ${loopLimit}× with identical arguments — blocked`;
           emit({ type: "guardrail", kind: "loop_detected", detail });
           result = {
             ok: false,
             content:
               `Blocked by loop detection: you have called ${call.name} with these exact arguments ` +
-              `${LOOP_THRESHOLD} times. Repeating it will not change the outcome — change your approach ` +
+              `${loopLimit} times. Repeating it will not change the outcome — change your approach ` +
               `(different command, or read the code again) instead.`,
           };
         } else {

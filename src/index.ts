@@ -20,7 +20,7 @@ export * from "./engine/events.js";
 export * from "./engine/thread.js";
 export * from "./engine/strategy.js";
 export { runAgent } from "./engine/loop.js";
-export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine/loop.js";
+export type { RunTask, EngineOptions, AgentResult, FinishReason, GuardrailConfig } from "./engine/loop.js";
 
 // Trace — durable run records (redaction + NDJSON)
 export * from "./trace/jsonl.js";

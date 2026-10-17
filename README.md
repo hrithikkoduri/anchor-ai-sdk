@@ -172,15 +172,25 @@ validates the pairing instead of assuming it. A read-only reviewer, a research
 agent, or a triage bot are each one strategy file away from the same engine,
 budgets, guardrails, and event stream.
 
-## What the engine enforces (all strategies, no opt-in)
+## Guardrails — built in, wired, tuned (not opted into)
 
-- **Budgets**: step / token / dollar caps, checked before every turn.
-- **Loop detection**: the same tool + arguments 3× in a row is blocked with an explanation.
-- **Protocol discipline**: turns with no tool calls get nudged twice, then the run is marked stalled.
-- **Finish honesty** (strategy-provided `validateFinish`): `codingStrategy` rejects
-  `finish(success=true)` unless the most recent full-suite run passed — the model
-  cannot claim success without evidence; it can always exit honestly with `success=false`.
-- **Compaction**: long threads fold their oldest turns into the running summary
-  (protocol-safe cut) instead of crashing on context limits.
-- **Events**: `run_started`, `phase_started`, `llm_call_*`, `tool_call`, `tool_result`,
-  `guardrail`, `run_finished` — one structured stream for traces, CLIs, and dashboards.
+Opt-in protections get forgotten; the framework's job is that a runaway agent
+cannot happen by accident. All of these are on by default, with dials:
+
+| Guard | Protects against | Knob |
+|---|---|---|
+| Budgets | runaway cost | `budgets: { maxSteps, maxTokens, maxUsd }` |
+| Loop detection | an identical tool call repeated forever | `guardrails.repeatedToolCallLimit` (default 3; `false` disables) |
+| Text-only stall | a coding turn that forgets to act | `guardrails.emptyTurnNudgeLimit` (default 2; `false` = never stall — budgets stay the backstop) |
+| Compaction | context-window overflow | `compaction: { maxEstimatedTokens, keepRecentTokens } \| false` |
+| Finish gate | false success claims | `strategy.validateFinish` (codingStrategy: the last full-suite run must have passed) |
+| Command timeouts | hung processes | per-call `timeout_secs`; sandbox kill deadlines |
+| Output truncation | context flooding | `truncate()` defaults — 300 lines / 20k chars, one policy |
+| Redaction | secrets in traces/DB | always on at the persistence boundary |
+
+Chat-shaped strategies replace the stall guard with `finishWhenNoToolCalls`
+(a text-only turn IS the reply). Every intervention surfaces as a `guardrail`
+event on the stream (`loop_detected`, `budget_exceeded`, `finish_rejected`),
+alongside the rest: `run_started`, `phase_started`, `llm_call_*`, `tool_call`,
+`tool_result`, `compacted`, `run_finished` — one structured stream for traces,
+CLIs, and dashboards.

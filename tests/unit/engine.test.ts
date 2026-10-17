@@ -170,6 +170,59 @@ describe("engine", () => {
     expect(toolMessages.some((m) => m.includes("Blocked by loop detection"))).toBe(true);
   }, 60_000);
 
+  it("respects a custom repeated-tool-call limit", async () => {
+    const same = JSON.stringify({ command: "echo hi" });
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "bash", arguments: same }] },
+      { toolCalls: [{ name: "bash", arguments: same }] }, // second identical → blocked at limit 2
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "x", success: false }) }] },
+    ]);
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        guardrails: { repeatedToolCallLimit: 2 },
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.reason).toBe("finished");
+    expect(
+      events.some((e) => e.type === "guardrail" && (e as { kind: string }).kind === "loop_detected"),
+    ).toBe(true);
+  }, 60_000);
+
+  it("can disable loop detection entirely", async () => {
+    const same = JSON.stringify({ command: "echo hi" });
+    const responses: Array<{ toolCalls: Array<{ name: string; arguments: string }> }> = Array.from(
+      { length: 4 },
+      () => ({ toolCalls: [{ name: "bash", arguments: same }] }),
+    );
+    responses.push({ toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "x", success: false }) }] });
+    const llm = new ScriptedLLM(responses);
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        guardrails: { repeatedToolCallLimit: false },
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.reason).toBe("finished");
+    expect(
+      events.some((e) => e.type === "guardrail" && (e as { kind: string }).kind === "loop_detected"),
+    ).toBe(false);
+  }, 60_000);
+
   it("stops at the step budget", async () => {
     const llm = new ScriptedLLM([
       { toolCalls: [{ name: "bash", arguments: '{"command":"echo 1"}' }] },
