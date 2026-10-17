@@ -107,6 +107,29 @@ hangs on `run_tests` (reproduce ← failing run, fix ← passing full run,
 asks `advanceOn`/`validateFinish`. A research strategy picks its own spine
 with the same contract.
 
+## Cross-run memory (threads)
+
+A run forgets everything when it ends — unless you hand it a `SessionStore`.
+The engine then loads the prior conversation before the first LLM call and
+saves the updated one when the run ends (all exit paths):
+
+```ts
+import { MemoryStore, runAgent } from "@harness/agent";
+
+const store = new MemoryStore();                       // or your own SessionStore
+const session = { store, id: "chat-1" };
+
+await runAgent(task1, { ..., session });               // run 1 works, conversation saved
+await runAgent(task2, { ..., session });               // run 2 REMEMBERS run 1
+```
+
+`SessionStore` is the interface — `load(id) → { summary?, messages }`,
+`save(id, session)` (overwrite semantics); the `summary` is the running
+compacted summary and flows into the strategy's system prompt. The package
+ships the in-memory default; durable stores (Postgres, SQLite) are implemented
+by the consumer. The framework never depends on a database — chat agents,
+research threads, and the issue→PR product all consume the same seam.
+
 ## Build your own strategy
 
 Implement `AgentStrategy`: give it `phases` (with `advanceOn` predicates over

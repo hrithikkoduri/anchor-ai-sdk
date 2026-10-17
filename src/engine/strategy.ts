@@ -60,8 +60,8 @@ export interface AgentStrategy {
    * rather than merely promised.
    */
   validateFinish?(evidence: ToolResultRecord[]): { allow: boolean; reason?: string };
-  /** The constant system prompt for the whole run. */
-  systemPrompt(args: { task: string; context?: string }): string;
+  /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
+  systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */
   enterPhaseMessage(phase: StrategyPhase): string;
 }

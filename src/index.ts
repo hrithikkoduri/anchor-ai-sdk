@@ -16,6 +16,7 @@ export * from "./tools/index.js";
 // Engine — the loop mechanics (strategy-agnostic)
 export * from "./engine/budgets.js";
 export * from "./engine/events.js";
+export * from "./engine/session.js";
 export * from "./engine/strategy.js";
 export { runAgent } from "./engine/loop.js";
 export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine/loop.js";

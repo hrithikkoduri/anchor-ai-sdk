@@ -22,6 +22,7 @@ import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
 import type { AgentEvent, EventSink } from "./events.js";
+import type { SessionStore } from "./session.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 
 export interface RunTask {
@@ -41,6 +42,14 @@ export interface EngineOptions {
   budgets?: Partial<BudgetLimits>;
   onEvent?: EventSink;
   signal?: AbortSignal;
+  /**
+   * Cross-run memory (threads). When supplied, the engine loads the prior
+   * conversation before the first LLM call and saves the updated one when the
+   * run ends — this is what makes multi-turn agents (chat, issue→PR, …)
+   * possible. Prefer `MemoryStore` for tests and a durable `SessionStore`
+   * implementation in products.
+   */
+  session?: { store: SessionStore; id: string };
 }
 
 export type FinishReason = "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error";
@@ -81,8 +90,19 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   const context =
     task.context ?? (opts.strategy.prepareContext ? await opts.strategy.prepareContext(opts.sandbox, task.task) : undefined);
 
+  // Cross-run memory: prior turns load here, the updated conversation saves
+  // in finishWith (every exit path).
+  let priorMessages: LLMMessage[] = [];
+  let priorSummary: string | undefined;
+  if (opts.session) {
+    const prior = await opts.session.store.load(opts.session.id);
+    priorMessages = prior?.messages ?? [];
+    priorSummary = prior?.summary;
+  }
+
   const messages: LLMMessage[] = [
-    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context }) },
+    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context, summary: priorSummary }) },
+    ...priorMessages,
     { role: "user", content: `Begin the task. ${opts.strategy.enterPhaseMessage(phases[0]!)}` },
   ];
 
@@ -104,7 +124,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   emit({ type: "run_started", task: task.task, phases: phases.map((p) => p.id) });
   emit({ type: "phase_started", phase: phases[0]!.id });
 
-  const finishWith = (reason: FinishReason, extra: { ok: boolean; summary?: string; error?: string }): AgentResult => {
+  const finishWith = async (
+    reason: FinishReason,
+    extra: { ok: boolean; summary?: string; error?: string },
+  ): Promise<AgentResult> => {
     const usage: LLMUsage = {
       promptTokens: budgets.promptTokens,
       completionTokens: budgets.completionTokens,
@@ -112,6 +135,24 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       costUsd: budgets.costsKnown ? budgets.costUsd : undefined,
     };
     emit({ type: "run_finished", ok: extra.ok, summary: extra.summary, steps, usage, reason });
+
+    // Persist the conversation for the next run. The system prompt is
+    // regenerated each run, and stale "Begin the task." markers are dropped so
+    // history reads as one continuous conversation. Storage failures must not
+    // kill a finished run.
+    if (opts.session) {
+      const persisted = messages.filter(
+        (m) =>
+          m.role !== "system" &&
+          !(m.role === "user" && (m.content ?? "").startsWith("Begin the task.")),
+      );
+      try {
+        await opts.session.store.save(opts.session.id, { summary: priorSummary, messages: persisted });
+      } catch {
+        // swallow: a finished run is still finished
+      }
+    }
+
     return { ...extra, reason, steps, usage, messages };
   };
 
@@ -122,7 +163,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       const over: BudgetExceeded | null = budgets.exceeded(steps);
       if (over) {
         emit({ type: "guardrail", kind: "budget_exceeded", detail: over.detail });
-        return finishWith(over.kind === "steps" ? "max_steps" : "budget_exceeded", {
+        return await finishWith(over.kind === "steps" ? "max_steps" : "budget_exceeded", {
           ok: false,
           error: over.detail,
         });
@@ -155,7 +196,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       if (response.toolCalls.length === 0) {
         nudges += 1;
         if (nudges > NUDGE_LIMIT) {
-          return finishWith("stalled", {
+          return await finishWith("stalled", {
             ok: false,
             error: "model produced no tool calls after repeated nudges",
           });
@@ -258,11 +299,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       }
     }
 
-    return finishWith("finished", { ok: finish?.ok ?? false, summary: finish?.summary });
+    return await finishWith("finished", { ok: finish?.ok ?? false, summary: finish?.summary });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     emit({ type: "error", message });
-    return finishWith("error", { ok: false, error: message });
+    return await finishWith("error", { ok: false, error: message });
   }
 }
 

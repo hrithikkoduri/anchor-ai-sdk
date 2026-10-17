@@ -77,9 +77,10 @@ export const codingStrategy: AgentStrategy = {
   prepareContext(sandbox) {
     return buildRepoMap(sandbox);
   },
-  systemPrompt({ task, context }) {
+  systemPrompt({ task, context, summary }) {
     const map = context ? `\n\n# Repository map\n${context}` : "";
-    return `${SYSTEM_PROMPT}\n\n# The task\n${task}${map}`;
+    const prior = summary ? `\n\n# Summary of earlier work on this session\n${summary}` : "";
+    return `${SYSTEM_PROMPT}${prior}\n\n# The task\n${task}${map}`;
   },
   enterPhaseMessage(phase) {
     return `PHASE: ${phase.id} — ${phase.goal}.`;

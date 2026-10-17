@@ -13,6 +13,7 @@ import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools } from "../../src/tools/index.js";
 import { codingStrategy } from "../../src/strategies/coding.js";
 import { runAgent } from "../../src/engine/loop.js";
+import { MemoryStore } from "../../src/engine/session.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 
@@ -257,6 +258,74 @@ describe("engine", () => {
     expect(nudges).toHaveLength(1);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("finished");
+  }, 60_000);
+
+  it("remembers a conversation across runs through a SessionStore", async () => {
+    // The generic thread capability: run 2 sees run 1's conversation. This is
+    // what makes chat agents (or any multi-turn use) possible on the engine.
+    const store = new MemoryStore();
+    const session = { store, id: "chat-1" };
+    const simple: AgentStrategy = {
+      name: "simple",
+      phases: [{ id: "work", goal: "do work" }],
+      systemPrompt: ({ task }) => `sys: ${task}`,
+      enterPhaseMessage: (p) => `PHASE: ${p.id} — ${p.goal}`,
+    };
+
+    const run1 = new ScriptedLLM([
+      { toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo hello-from-run1" }) }] },
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "did run 1", success: false }) }] },
+    ]);
+    await runAgent(
+      { task: "first" },
+      { llm: run1, sandbox, tools: allTools, strategy: simple, session, onEvent: (e) => events.push(e) },
+    );
+
+    const run2 = new ScriptedLLM([
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "did run 2", success: false }) }] },
+    ]);
+    await runAgent(
+      { task: "second" },
+      { llm: run2, sandbox, tools: allTools, strategy: simple, session, onEvent: (e) => events.push(e) },
+    );
+
+    const firstRequest = run2.seen[0]!;
+    // Run 1's tool result is in run 2's conversation.
+    expect(firstRequest.messages.some((m) => (m.content ?? "").includes("hello-from-run1"))).toBe(true);
+    // And exactly ONE fresh begin-marker (stale ones were dropped on save).
+    const begins = firstRequest.messages.filter(
+      (m) => m.role === "user" && (m.content ?? "").startsWith("Begin the task."),
+    );
+    expect(begins).toHaveLength(1);
+    // The store actually holds the session now.
+    const stored = await store.load("chat-1");
+    expect(stored!.messages.length).toBeGreaterThan(0);
+  }, 60_000);
+
+  it("passes a pre-seeded session summary into the system prompt", async () => {
+    const store = new MemoryStore();
+    await store.save("t-sum", { summary: "earlier: fixed the parser", messages: [] });
+
+    let sawSummary: string | undefined;
+    const simple: AgentStrategy = {
+      name: "simple",
+      phases: [{ id: "work", goal: "do work" }],
+      systemPrompt: ({ summary }) => {
+        sawSummary = summary;
+        return "sys";
+      },
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "ok", success: false }) }] },
+    ]);
+
+    await runAgent(
+      { task: "x" },
+      { llm, sandbox, tools: allTools, strategy: simple, session: { store, id: "t-sum" }, onEvent: () => undefined },
+    );
+
+    expect(sawSummary).toBe("earlier: fixed the parser");
   }, 60_000);
 
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
