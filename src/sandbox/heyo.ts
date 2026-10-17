@@ -14,7 +14,6 @@
  * private — reached only through exec; no HTTP traffic).
  */
 import { Hws } from "@heyocomputer/hws";
-import type { HeyoSizeClass } from "../config.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -22,6 +21,7 @@ import {
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
+  type HeyoSizeClass,
   type Sandbox,
   type SandboxSpec,
 } from "./types.js";
