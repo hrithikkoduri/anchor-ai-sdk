@@ -19,6 +19,9 @@
 import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
+// The engine defaults to chatStrategy when none is supplied — a pragmatic
+// dependency so `runAgent({ task }, { llm })` works with zero configuration.
+import { chatStrategy } from "../strategies/chat.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
 import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type CompactionConfig } from "./compaction.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
@@ -36,10 +39,14 @@ export interface RunTask {
 }
 
 export interface EngineOptions {
+  /** The model transport — the only required piece. */
   llm: LLMClient;
-  sandbox: Sandbox;
-  tools: Tool[];
-  strategy: AgentStrategy;
+  /** Behavior. Defaults to `chatStrategy` (reply, end on the text-only turn). */
+  strategy?: AgentStrategy;
+  /** Where tools execute. Only needed when the strategy or tools require it. */
+  sandbox?: Sandbox;
+  /** Capabilities. Defaults to `[]`; `codingStrategy` validates its own set. */
+  tools?: Tool[];
   budgets?: Partial<BudgetLimits>;
   /**
    * Context-window management. Enabled by default (thresholds in
@@ -81,24 +88,27 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     opts.compaction === false
       ? null
       : { ...DEFAULT_COMPACTION, ...(typeof opts.compaction === "object" ? opts.compaction : {}) };
-  const byName = new Map(opts.tools.map((t) => [t.definition.name, t] as const));
-  const toolDefs: LLMToolDef[] = opts.tools.map((t) => ({ type: "function", function: t.definition }));
+  const strategy = opts.strategy ?? chatStrategy;
+  const tools = opts.tools ?? [];
+  const byName = new Map(tools.map((t) => [t.definition.name, t] as const));
+  const toolDefs: LLMToolDef[] = tools.map((t) => ({ type: "function", function: t.definition }));
 
-  const phases = opts.strategy.phases;
+  const phases = strategy.phases;
   if (phases.length === 0) throw new Error("strategy has no phases");
 
-  // A strategy/tool mismatch must fail here, not confuse the model mid-run.
-  const missing = (opts.strategy.requiredTools ?? []).filter((name) => !byName.has(name));
+  // A strategy/tool/sandbox mismatch must fail here, not confuse the model mid-run.
+  const missing = (strategy.requiredTools ?? []).filter((name) => !byName.has(name));
   if (missing.length > 0) {
-    throw new Error(
-      `strategy "${opts.strategy.name}" requires tools that were not supplied: ${missing.join(", ")}`,
-    );
+    throw new Error(`strategy "${strategy.name}" requires tools that were not supplied: ${missing.join(", ")}`);
+  }
+  if (strategy.requiresSandbox && !opts.sandbox) {
+    throw new Error(`strategy "${strategy.name}" requires a sandbox — pass EngineOptions.sandbox`);
   }
 
   // Orientation (repo map etc.): explicit task context wins; otherwise the
-  // strategy may prepare it against the sandbox.
+  // strategy may prepare it against the sandbox (undefined for sandbox-free).
   const context =
-    task.context ?? (opts.strategy.prepareContext ? await opts.strategy.prepareContext(opts.sandbox, task.task) : undefined);
+    task.context ?? (strategy.prepareContext ? await strategy.prepareContext(opts.sandbox, task.task) : undefined);
 
   // Cross-run memory: prior turns load here, the updated conversation saves
   // in finishWith (every exit path).
@@ -111,9 +121,9 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   }
 
   const messages: LLMMessage[] = [
-    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context, summary: runningSummary }) },
+    { role: "system", content: strategy.systemPrompt({ task: task.task, context, summary: runningSummary }) },
     ...priorMessages,
-    { role: "user", content: `Begin the task. ${opts.strategy.enterPhaseMessage(phases[0]!)}` },
+    { role: "user", content: `Begin the task. ${strategy.enterPhaseMessage(phases[0]!)}` },
   ];
 
   const toolCtx: ToolContext = {
@@ -192,9 +202,9 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         if (outcome) {
           budgets.record(outcome.usage); // compaction costs money; budgets see it
           runningSummary = outcome.summary;
-          const system = opts.strategy.systemPrompt({ task: task.task, context, summary: runningSummary });
+          const system = strategy.systemPrompt({ task: task.task, context, summary: runningSummary });
           const anchor = userMessage(
-            `${opts.strategy.enterPhaseMessage(phases[phaseIndex]!)} (Conversation compacted — continue from the summary in the system prompt.)`,
+            `${strategy.enterPhaseMessage(phases[phaseIndex]!)} (Conversation compacted — continue from the summary in the system prompt.)`,
           );
           messages.splice(0, messages.length, { role: "system", content: system }, anchor, ...outcome.keptMessages);
           emit({
@@ -234,6 +244,12 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       messages.push(assistantMessage(response));
 
       if (response.toolCalls.length === 0) {
+        // Chat-shaped strategies end a run on a text-only turn — that IS the
+        // reply. Coding-shaped strategies nudge instead: they expect work.
+        if (strategy.finishWhenNoToolCalls) {
+          finish = { summary: response.text.trim(), ok: true };
+          break;
+        }
         nudges += 1;
         if (nudges > NUDGE_LIMIT) {
           return await finishWith("stalled", {
@@ -278,8 +294,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         let finishSummary = "";
         if (isFinish) {
           finishSummary = typeof result.meta?.summary === "string" ? result.meta.summary : "";
-          if (claimedSuccess && opts.strategy.validateFinish) {
-            const verdict = opts.strategy.validateFinish(evidence);
+          if (claimedSuccess && strategy.validateFinish) {
+            const verdict = strategy.validateFinish(evidence);
             if (verdict.allow) {
               acceptedFinish = true;
             } else {
@@ -320,7 +336,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           phaseNudged = false;
           const entered = phases[phaseIndex]!;
           emit({ type: "phase_started", phase: entered.id });
-          messages.push(userMessage(opts.strategy.enterPhaseMessage(entered)));
+          messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
       }
 

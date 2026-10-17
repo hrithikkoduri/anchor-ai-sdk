@@ -7,7 +7,7 @@
  */
 import { shq } from "../sandbox/types.js";
 import { truncate } from "./truncate.js";
-import { defineTool, optionalNumber, requireString } from "./types.js";
+import { defineTool, optionalNumber, requireSandbox, requireString } from "./types.js";
 
 export const readFileTool = defineTool(
   {
@@ -41,7 +41,7 @@ export const readFileTool = defineTool(
       `}' ` +
       shq(path);
 
-    const r = await ctx.sandbox.exec(cmd, { timeoutSecs: 120 });
+    const r = await requireSandbox(ctx).exec(cmd, { timeoutSecs: 120 });
     if (r.exitCode !== 0) {
       return {
         ok: false,

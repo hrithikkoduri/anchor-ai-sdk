@@ -26,5 +26,6 @@ export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine
 export * from "./trace/jsonl.js";
 export * from "./trace/redact.js";
 
-// Strategies — the behaviors we ship (coding is the default agent)
+// Strategies — the behaviors we ship (coding is the default coding agent; chat is the zero-config default)
 export { codingStrategy } from "./strategies/coding.js";
+export { chatStrategy } from "./strategies/chat.js";

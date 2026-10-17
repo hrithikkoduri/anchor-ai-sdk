@@ -39,6 +39,30 @@ console.log(result.ok, result.summary, result.usage);
 await sandbox.destroy();
 ```
 
+## Nothing is mandatory except the model
+
+Everything else has a sensible default — no sandbox, no tools, no strategy
+boilerplate:
+
+```ts
+import { runAgent } from "@harness/agent";
+
+const reply = await runAgent({ task: "Tell me a joke" }, { llm });
+// the default chat strategy replies and ends the run on the text-only turn
+```
+
+| Option | Default | Notes |
+|---|---|---|
+| `strategy` | `chatStrategy` | reply-and-end on a text-only turn; `codingStrategy` declares `requiresSandbox` + `requiredTools`, validated at startup |
+| `tools` | `[]` | supply `allTools` (or any subset — individual tools are exported) for coding |
+| `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
+| `compaction` | on (safe thresholds) | `false` disables |
+| `budgets`, `onEvent`, `thread` | safe defaults / optional | see below |
+
+For a single model call with no loop at all, skip the engine entirely —
+`llm.complete(...)` is the bare transport (the `generateText` analogue); the
+engine adds the loop, tools, guardrails, and events on top.
+
 ## The coding strategy
 
 `reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:

@@ -20,11 +20,26 @@ export interface ToolDefinition {
 }
 
 export interface ToolContext {
-  sandbox: Sandbox;
+  /**
+   * Where commands execute. Optional: sandbox-free agents (chat, plain tool
+   * loops) omit it; tools that need it call `requireSandbox(ctx)` and fail
+   * with a clear message instead of crashing the run.
+   */
+  sandbox?: Sandbox;
   /** Default test command (from the task/repo config); run_tests falls back to it. */
   testCommand?: string;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
+}
+
+/** Guard for tools that cannot work without an execution environment. */
+export function requireSandbox(ctx: ToolContext): Sandbox {
+  if (!ctx.sandbox) {
+    throw new Error(
+      "this tool needs a sandbox — pass EngineOptions.sandbox (or use a sandbox-free strategy)",
+    );
+  }
+  return ctx.sandbox;
 }
 
 export interface ToolResult {

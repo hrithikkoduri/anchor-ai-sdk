@@ -13,6 +13,14 @@ import type { Tool, ToolDefinition } from "./types.js";
 
 export const allTools: Tool[] = [bashTool, readFileTool, editFileTool, searchTool, runTestsTool, finishTool];
 
+// Individual tools — supply any subset to runAgent (the registry is the full set).
+export { bashTool } from "./bash.js";
+export { readFileTool } from "./read-file.js";
+export { editFileTool } from "./edit-file.js";
+export { searchTool } from "./search.js";
+export { runTestsTool } from "./run-tests.js";
+export { finishTool } from "./finish.js";
+
 export function toolDefinitions(): ToolDefinition[] {
   return allTools.map((t) => t.definition);
 }

@@ -14,7 +14,7 @@
  * which is portable across GNU and BSD userlands (macOS dev + Linux guests).
  */
 import { shq } from "../sandbox/types.js";
-import { defineTool, requireString } from "./types.js";
+import { defineTool, requireSandbox, requireString } from "./types.js";
 
 const MAX_EDIT_BYTES = 200_000;
 
@@ -43,7 +43,8 @@ export const editFileTool = defineTool(
     if (newString === null) throw new Error(`"new_string" must be a string (may be empty)`);
 
     // 1. Size guard + read the current content exactly.
-    const size = await ctx.sandbox.exec(`wc -c < ${shq(path)}`, { timeoutSecs: 60 });
+    const sandbox = requireSandbox(ctx);
+    const size = await sandbox.exec(`wc -c < ${shq(path)}`, { timeoutSecs: 60 });
     if (size.exitCode !== 0) {
       return { ok: false, content: `cannot read ${path}: ${(size.stderr || size.output).trim()}`, meta: { path } };
     }
@@ -58,7 +59,7 @@ export const editFileTool = defineTool(
         meta: { path },
       };
     }
-    const read = await ctx.sandbox.exec(`cat ${shq(path)}`, { timeoutSecs: 60 });
+    const read = await sandbox.exec(`cat ${shq(path)}`, { timeoutSecs: 60 });
     if (read.exitCode !== 0) {
       return { ok: false, content: `cannot read ${path}: ${(read.stderr || read.output).trim()}`, meta: { path } };
     }
@@ -86,7 +87,7 @@ export const editFileTool = defineTool(
     // 3. Replace and write back byte-exactly (printf is a shell builtin; shq
     //    escapes arbitrary text into one argument).
     const updated = content.slice(0, first) + newString + content.slice(first + oldString.length);
-    const write = await ctx.sandbox.exec(`printf %s ${shq(updated)} | tee ${shq(path)} > /dev/null`, {
+    const write = await sandbox.exec(`printf %s ${shq(updated)} | tee ${shq(path)} > /dev/null`, {
       timeoutSecs: 120,
     });
     if (write.exitCode !== 0) {
@@ -95,7 +96,7 @@ export const editFileTool = defineTool(
 
     // 4. Byte-verify the result — catches any encoding/mangling surprises.
     const expectBytes = Buffer.byteLength(updated, "utf8");
-    const after = await ctx.sandbox.exec(`wc -c < ${shq(path)}`, { timeoutSecs: 60 });
+    const after = await sandbox.exec(`wc -c < ${shq(path)}`, { timeoutSecs: 60 });
     const afterBytes = Number.parseInt(after.stdout.trim(), 10);
     if (afterBytes !== expectBytes) {
       return {

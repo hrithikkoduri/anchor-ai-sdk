@@ -10,7 +10,7 @@
  */
 import { shq } from "../sandbox/types.js";
 import { truncate } from "./truncate.js";
-import { defineTool, optionalBoolean, optionalNumber, optionalString, requireString } from "./types.js";
+import { defineTool, optionalBoolean, optionalNumber, optionalString, requireSandbox, requireString } from "./types.js";
 
 const RC_MARKER = "__harness_rc=";
 
@@ -57,7 +57,7 @@ export const searchTool = defineTool(
       `fi`,
     ].join("\n");
 
-    const r = await ctx.sandbox.exec(cmd, { timeoutSecs: 120 });
+    const r = await requireSandbox(ctx).exec(cmd, { timeoutSecs: 120 });
 
     // Split off the rc marker to learn the real exit code behind the pipe.
     const lines = r.output.split("\n");

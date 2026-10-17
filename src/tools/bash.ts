@@ -4,7 +4,7 @@
  * self-contained per the tool-call contract.
  */
 import { truncate } from "./truncate.js";
-import { defineTool, formatExec, optionalNumber, requireString } from "./types.js";
+import { defineTool, formatExec, optionalNumber, requireSandbox, requireString } from "./types.js";
 
 export const bashTool = defineTool(
   {
@@ -29,7 +29,8 @@ export const bashTool = defineTool(
   async (input, ctx) => {
     const command = requireString(input, "command");
     const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 120)));
-    const r = await ctx.sandbox.exec(command, { timeoutSecs });
+    const sandbox = requireSandbox(ctx);
+    const r = await sandbox.exec(command, { timeoutSecs });
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(formatExec(r, timeoutSecs)),

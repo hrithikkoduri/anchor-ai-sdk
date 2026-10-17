@@ -9,7 +9,7 @@
  * spec) → repo auto-detection (package.json/pytest/Makefile).
  */
 import { truncate } from "./truncate.js";
-import { defineTool, formatExec, optionalNumber, optionalString, type ToolContext } from "./types.js";
+import { defineTool, formatExec, optionalNumber, optionalString, requireSandbox, type ToolContext } from "./types.js";
 
 const DETECT =
   `if [ -f package.json ] && grep -q '"test"' package.json; then ` +
@@ -35,7 +35,7 @@ async function resolveCommand(
   const explicit = optionalString(input, "command");
   if (explicit) return { command: explicit, defaultCommand: false };
   if (ctx.testCommand) return { command: ctx.testCommand, defaultCommand: true };
-  const probe = await ctx.sandbox.exec(DETECT, { timeoutSecs: 60 });
+  const probe = await requireSandbox(ctx).exec(DETECT, { timeoutSecs: 60 });
   const detected = probe.stdout.trim();
   return detected === "" || detected === "none" ? null : { command: detected, defaultCommand: true };
 }
@@ -67,7 +67,7 @@ export const runTestsTool = defineTool(
     }
     const { command, defaultCommand } = resolved;
     const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 600)));
-    const r = await ctx.sandbox.exec(command, { timeoutSecs });
+    const r = await requireSandbox(ctx).exec(command, { timeoutSecs });
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(`run_tests: ${command}\n${formatExec(r, timeoutSecs)}`),

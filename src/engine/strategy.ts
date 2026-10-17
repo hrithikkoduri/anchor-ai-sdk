@@ -46,12 +46,21 @@ export interface AgentStrategy {
    * of confusing the model mid-run.
    */
   requiredTools?: string[];
+  /** Whether a sandbox must be supplied. The engine validates this at startup; codingStrategy needs one, chatStrategy does not. */
+  requiresSandbox?: boolean;
+  /**
+   * End the run when a turn produces text and no tool calls — the chat
+   * semantic: the reply IS the completion. Default false; coding strategies
+   * nudge instead, because they expect work rather than an answer.
+   */
+  finishWhenNoToolCalls?: boolean;
   /**
    * Optional orientation work before the first LLM call (e.g. a repo map).
    * The returned text goes into the system prompt; an explicit `RunTask.context`
-   * takes precedence when both exist.
+   * takes precedence when both exist. `sandbox` is undefined for strategies
+   * that don't require one.
    */
-  prepareContext?(sandbox: Sandbox, task: string): Promise<string | undefined>;
+  prepareContext?(sandbox: Sandbox | undefined, task: string): Promise<string | undefined>;
   /**
    * Engine-enforced finish gate. Called when the model claims success; return
    * `{ allow: false, reason }` and the engine rejects the claim (the model

@@ -35,6 +35,7 @@ Rules:
 export const codingStrategy: AgentStrategy = {
   name: "coding",
   requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests", "finish"],
+  requiresSandbox: true,
   phases: [
     {
       id: "reproduce",
@@ -75,6 +76,7 @@ export const codingStrategy: AgentStrategy = {
     return { allow: true };
   },
   prepareContext(sandbox) {
+    if (!sandbox) throw new Error("codingStrategy requires a sandbox");
     return buildRepoMap(sandbox);
   },
   systemPrompt({ task, context, summary }) {
