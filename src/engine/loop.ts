@@ -68,8 +68,21 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   const phases = opts.strategy.phases;
   if (phases.length === 0) throw new Error("strategy has no phases");
 
+  // A strategy/tool mismatch must fail here, not confuse the model mid-run.
+  const missing = (opts.strategy.requiredTools ?? []).filter((name) => !byName.has(name));
+  if (missing.length > 0) {
+    throw new Error(
+      `strategy "${opts.strategy.name}" requires tools that were not supplied: ${missing.join(", ")}`,
+    );
+  }
+
+  // Orientation (repo map etc.): explicit task context wins; otherwise the
+  // strategy may prepare it against the sandbox.
+  const context =
+    task.context ?? (opts.strategy.prepareContext ? await opts.strategy.prepareContext(opts.sandbox, task.task) : undefined);
+
   const messages: LLMMessage[] = [
-    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context: task.context }) },
+    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context }) },
     { role: "user", content: `Begin the task. ${opts.strategy.enterPhaseMessage(phases[0]!)}` },
   ];
 

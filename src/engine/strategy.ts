@@ -6,6 +6,7 @@
  * phase. `codingStrategy` (reproduce → fix → verify) is the first
  * implementation; a research or triage agent would be another.
  */
+import type { Sandbox } from "../sandbox/types.js";
 import type { ToolResult } from "../tools/types.js";
 
 export interface StrategyPhase {
@@ -24,6 +25,19 @@ export interface StrategyPhase {
 export interface AgentStrategy {
   name: string;
   phases: StrategyPhase[];
+  /**
+   * Tool names this strategy's logic and prompts depend on. The engine
+   * validates them against the supplied tool set at startup and refuses to
+   * run when one is missing — a strategy/tool mismatch fails loudly instead
+   * of confusing the model mid-run.
+   */
+  requiredTools?: string[];
+  /**
+   * Optional orientation work before the first LLM call (e.g. a repo map).
+   * The returned text goes into the system prompt; an explicit `RunTask.context`
+   * takes precedence when both exist.
+   */
+  prepareContext?(sandbox: Sandbox, task: string): Promise<string | undefined>;
   /** The constant system prompt for the whole run. */
   systemPrompt(args: { task: string; context?: string }): string;
   /** The message injected whenever a new phase begins. */

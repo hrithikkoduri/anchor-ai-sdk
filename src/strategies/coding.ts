@@ -10,6 +10,7 @@
  * A model that says "I fixed it" without a passing test stays in `fix`.
  */
 import type { AgentStrategy } from "../engine/strategy.js";
+import { buildRepoMap } from "./repomap.js";
 
 const SYSTEM_PROMPT = `You are an autonomous coding agent fixing a bug in a git repository.
 
@@ -33,6 +34,7 @@ Rules:
 
 export const codingStrategy: AgentStrategy = {
   name: "coding",
+  requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests", "finish"],
   phases: [
     {
       id: "reproduce",
@@ -51,6 +53,9 @@ export const codingStrategy: AgentStrategy = {
       goal: "run the full test suite, review the diff, then finish",
     },
   ],
+  prepareContext(sandbox) {
+    return buildRepoMap(sandbox);
+  },
   systemPrompt({ task, context }) {
     const map = context ? `\n\n# Repository map\n${context}` : "";
     return `${SYSTEM_PROMPT}\n\n# The task\n${task}${map}`;

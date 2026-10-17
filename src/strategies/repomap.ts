@@ -1,10 +1,10 @@
 /**
  * Repo map — a compact orientation document written before the run starts.
  *
- * Two cheap probes instead of an index: the tracked file list (capped) and
- * the heads of the ecosystem's manifest files. Truncated like any tool output
- * so it can't flood the context. Strategists can extend it later (symbol
- * outlines, test file list) without changing the engine.
+ * Coding-strategy utility (not framework API): two cheap probes instead of an
+ * index — the file list (tracked + untracked, so the local backend's copies
+ * show up too) and the heads of the ecosystem's manifest files. Truncated
+ * like any tool output so it can't flood the context.
  */
 import type { Sandbox } from "../sandbox/types.js";
 import { truncate } from "../tools/truncate.js";
@@ -13,9 +13,12 @@ export async function buildRepoMap(sandbox: Sandbox, opts: { maxFiles?: number }
   const maxFiles = opts.maxFiles ?? 120;
   const parts: string[] = [];
 
-  const files = await sandbox.exec(`git ls-files | head -n ${maxFiles}`, { timeoutSecs: 60 });
+  const listCmd = `git ls-files --cached --others --exclude-standard | head -n ${maxFiles}`;
+  const files = await sandbox.exec(listCmd, { timeoutSecs: 60 });
   if (files.exitCode === 0 && files.stdout.trim() !== "") {
-    const count = await sandbox.exec("git ls-files | wc -l", { timeoutSecs: 60 });
+    const count = await sandbox.exec("git ls-files --cached --others --exclude-standard | wc -l", {
+      timeoutSecs: 60,
+    });
     const total = Number.parseInt(count.stdout.trim(), 10);
     const suffix = Number.isFinite(total) && total > maxFiles ? ` (of ${total})` : "";
     parts.push(`# Files${suffix}\n${files.stdout.trimEnd()}`);

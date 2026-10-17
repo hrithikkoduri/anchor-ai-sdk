@@ -128,6 +128,8 @@ describe("engine", () => {
     expect(userMessages.some((m) => m.includes("PHASE: fix"))).toBe(true);
     expect(userMessages.some((m) => m.includes("PHASE: verify"))).toBe(true);
     expect(llm.seen[0]!.tools).toHaveLength(6);
+    // The strategy's prepareContext wrote the repo map into the system prompt.
+    expect(String(llm.seen[0]!.messages[0]!.content)).toContain("test.js");
 
     // The fix really landed in the workspace.
     const fixed = await readFile(path.join(sandbox.workspace, "src", "sum.js"), "utf8");
@@ -182,6 +184,22 @@ describe("engine", () => {
     expect(phases).toEqual(["reproduce"]);
     expect(result.reason).toBe("finished");
   }, 60_000);
+
+  it("refuses to start when the strategy's required tools are missing", async () => {
+    const llm = new ScriptedLLM([]);
+    await expect(
+      runAgent(
+        { task: "x" },
+        {
+          llm,
+          sandbox,
+          tools: allTools.filter((t) => t.definition.name !== "run_tests"),
+          strategy: codingStrategy,
+          onEvent: () => undefined,
+        },
+      ),
+    ).rejects.toThrow(/run_tests/);
+  });
 
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
     const llm = new ScriptedLLM([

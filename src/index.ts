@@ -22,4 +22,3 @@ export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine
 
 // Strategies — the behaviors we ship (coding is the default agent)
 export { codingStrategy } from "./strategies/coding.js";
-export { buildRepoMap } from "./strategies/repomap.js";
