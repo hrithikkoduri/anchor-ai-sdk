@@ -21,7 +21,8 @@ import type { Sandbox } from "../sandbox/types.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 // The engine defaults to chatStrategy when none is supplied — a pragmatic
 // dependency so `runAgent({ task }, { llm })` works with zero configuration.
-import { chatStrategy } from "../strategies/chat.js";
+import { chatStrategy } from "../agents/chat/strategy.js";
+import type { Agent } from "../agents/types.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
 import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type CompactionConfig } from "./compaction.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
@@ -41,11 +42,16 @@ export interface RunTask {
 export interface EngineOptions {
   /** The model transport — the only required piece. */
   llm: LLMClient;
-  /** Behavior. Defaults to `chatStrategy` (reply, end on the text-only turn). */
+  /**
+   * A built-in agent bundle (`codingAgent`, `chatAgent`) — strategy + tools
+   * in one import. Explicit `strategy` / `tools` below override it per-field.
+   */
+  agent?: Agent;
+  /** Behavior. Defaults to the agent preset's strategy, then `chatStrategy` (reply, end on the text-only turn). */
   strategy?: AgentStrategy;
   /** Where tools execute. Only needed when the strategy or tools require it. */
   sandbox?: Sandbox;
-  /** Capabilities. Defaults to `[]`; `codingStrategy` validates its own set. */
+  /** Capabilities. Defaults to the agent preset's tools, then `[]`; `codingStrategy` validates its own set. */
   tools?: Tool[];
   budgets?: Partial<BudgetLimits>;
   /**
@@ -134,8 +140,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     repeatedToolCallLimit: opts.guardrails?.repeatedToolCallLimit ?? DEFAULT_LOOP_LIMIT,
     emptyTurnNudgeLimit: opts.guardrails?.emptyTurnNudgeLimit ?? DEFAULT_NUDGE_LIMIT,
   };
-  const strategy = opts.strategy ?? chatStrategy;
-  const tools = opts.tools ?? [];
+  const strategy = opts.strategy ?? opts.agent?.strategy ?? chatStrategy;
+  const tools = opts.tools ?? opts.agent?.tools ?? [];
   const byName = new Map(tools.map((t) => [t.definition.name, t] as const));
   const toolDefs: LLMToolDef[] = tools.map((t) => ({ type: "function", function: t.definition }));
 

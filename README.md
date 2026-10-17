@@ -2,14 +2,13 @@
 
 Loop-first, sandbox-first agent framework.
 
-The **engine** runs the agent loop (LLM ↔ tools, budgets, loop detection, events) and knows nothing about any particular domain. An **AgentStrategy** supplies behavior as data: phases, prompts, required tools, and the rules that advance phases. A **Sandbox** is where work happens (Heyo microVMs or a local process); an **LLMClient** is how the model is reached. We ship a default coding agent — `codingStrategy` — built on exactly the same public API anyone else would use.
+The **engine** runs the agent loop (LLM ↔ tools, budgets, loop detection, events) and knows nothing about any particular domain. An **AgentStrategy** supplies behavior as data: phases, prompts, required tools, and the rules that advance phases. A **Sandbox** is where work happens (Heyo microVMs or a local process); an **LLMClient** is how the model is reached. We ship built-in agents as bundles — `codingAgent` (strategy + tools in one import), `chatAgent` — built on exactly the same public API anyone else would use.
 
 ## Quick start — the built-in coding agent
 
 ```ts
 import {
-  allTools,
-  codingStrategy,
+  codingAgent,
   createLLMClient,
   createSandbox,
   runAgent,
@@ -28,8 +27,7 @@ const result = await runAgent(
   {
     llm: createLLMClient({ baseUrl, apiKey, model }),
     sandbox,
-    tools: allTools,             // see the required-tools table below
-    strategy: codingStrategy,
+    agent: codingAgent,          // strategy + tools in one — see the required-tools table below
     budgets: { maxSteps: 40, maxUsd: 5 },
     onEvent: (e) => console.log(e.type), // llm_call, tool_call, phase_started, …
   },
@@ -53,8 +51,9 @@ const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 
 | Option | Default | Notes |
 |---|---|---|
-| `strategy` | `chatStrategy` | reply-and-end on a text-only turn; `codingStrategy` declares `requiresSandbox` + `requiredTools`, validated at startup |
-| `tools` | `[]` | supply `allTools` (or any subset — individual tools are exported) for coding |
+| `agent` | none | a built-in bundle — `codingAgent`, `chatAgent` — sets `strategy` + `tools` at once; explicit options below win per-field |
+| `strategy` | preset's, then `chatStrategy` | reply-and-end on a text-only turn; the coding strategy declares `requiresSandbox` + `requiredTools`, validated at startup |
+| `tools` | preset's, then `[]` | `codingAgent` brings its own; supply `allTools` or any subset to extend it or build custom agents |
 | `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
 | `compaction` | on (safe thresholds) | `false` disables |
 | `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
@@ -90,15 +89,15 @@ them against what you supply and refuses to start on a mismatch:
 | `bash`, `read_file`, `search` | exploration and orientation |
 
 The prompts mention tools by name (workflow guidance for the model); the API's
-`tools` array is what actually makes them callable. `codingStrategy.prepareContext()`
-writes a repo map (file list + manifest heads) into the system prompt before the
+`tools` array is what actually makes them callable. The coding agent's strategy
+(`codingStrategy.prepareContext()`) writes a repo map (file list + manifest heads) into the system prompt before the
 first LLM call — pass `context` on the task to override it.
 
 ## Architecture — units of work
 
 ```
 consumer (apps/harness, or anyone)
-   │   runAgent(task, { llm, sandbox, tools, strategy, budgets, onEvent })
+   │   runAgent(task, { llm, sandbox, agent, budgets, onEvent })
    ▼
 ┌── ENGINE (engine/loop.ts) ────────────────────────────────────────────┐
 │  THE LOOP:  budget check → llm.stream() → dispatch tool calls         │

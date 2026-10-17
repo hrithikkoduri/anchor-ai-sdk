@@ -9,7 +9,7 @@
  * This is what `runAgent({ task }, { llm })` runs when no strategy is given,
  * making the package usable as a plain chat loop with zero plumbing.
  */
-import type { AgentStrategy } from "../engine/strategy.js";
+import type { AgentStrategy } from "../../engine/strategy.js";
 
 const SYSTEM_PROMPT = `You are a helpful assistant. Answer the user's message directly. If tools are available and helpful, use them, then give your final answer as text.`;
 

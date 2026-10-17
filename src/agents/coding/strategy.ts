@@ -9,7 +9,7 @@
  * The phase transitions are not the model's claims — they are tool results.
  * A model that says "I fixed it" without a passing test stays in `fix`.
  */
-import type { AgentStrategy } from "../engine/strategy.js";
+import type { AgentStrategy } from "../../engine/strategy.js";
 import { buildRepoMap } from "./repomap.js";
 
 const SYSTEM_PROMPT = `You are an autonomous coding agent fixing a bug in a git repository.

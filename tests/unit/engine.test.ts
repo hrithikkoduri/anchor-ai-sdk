@@ -11,7 +11,7 @@ import path from "node:path";
 import type { LLMClient, LLMRequest, LLMResponse } from "../../src/llm/types.js";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools } from "../../src/tools/index.js";
-import { codingStrategy } from "../../src/strategies/coding.js";
+import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { MemoryThreadStore, type StoredThread } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
@@ -89,8 +89,7 @@ describe("engine", () => {
       {
         llm,
         sandbox,
-        tools: allTools,
-        strategy: codingStrategy,
+        agent: codingAgent,
         budgets,
         onEvent: (e) => events.push(e),
       },

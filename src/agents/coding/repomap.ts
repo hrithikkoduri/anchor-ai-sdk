@@ -6,8 +6,8 @@
  * show up too) and the heads of the ecosystem's manifest files. Truncated
  * like any tool output so it can't flood the context.
  */
-import type { Sandbox } from "../sandbox/types.js";
-import { truncate } from "../tools/truncate.js";
+import type { Sandbox } from "../../sandbox/types.js";
+import { truncate } from "../../tools/truncate.js";
 
 export async function buildRepoMap(sandbox: Sandbox, opts: { maxFiles?: number } = {}): Promise<string> {
   const maxFiles = opts.maxFiles ?? 120;

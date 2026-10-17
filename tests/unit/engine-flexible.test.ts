@@ -9,7 +9,7 @@ import type { LLMClient, LLMResponse } from "../../src/llm/types.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { allTools } from "../../src/tools/index.js";
 import { bashTool } from "../../src/tools/bash.js";
-import { codingStrategy } from "../../src/strategies/coding.js";
+import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 
 type Scripted = { text?: string; tools?: Array<{ name: string; arguments: string }> };
 
@@ -74,5 +74,17 @@ describe("zero-config runs", () => {
     await expect(
       runAgent({ task: "x" }, { llm: scriptedLLM([]), tools: allTools, strategy: codingStrategy }),
     ).rejects.toThrow(/requires a sandbox/);
+  });
+
+  it("an Agent preset bundles strategy + tools; explicit options override per-field", async () => {
+    // The preset supplies both — startup reaches the sandbox check (tools satisfied).
+    await expect(runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent })).rejects.toThrow(
+      /requires a sandbox/,
+    );
+
+    // Explicit tools win over the preset's toolbox — the requiredTools check fails fast.
+    await expect(
+      runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent, tools: [bashTool] }),
+    ).rejects.toThrow(/requires tools that were not supplied: read_file, edit_file, search, run_tests, finish/);
   });
 });
