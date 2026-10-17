@@ -562,6 +562,36 @@ describe("engine", () => {
     expect(firstRequest.messages.some((m) => m.role === "assistant")).toBe(true);
   }, 60_000);
 
+  it("ends with reason 'cancelled' when the signal aborts", async () => {
+    const controller = new AbortController();
+    const llm: LLMClient = {
+      model: "scripted",
+      async complete() {
+        throw new Error("unused");
+      },
+      async stream() {
+        controller.abort(); // the "stop now" switch flips mid-call
+        throw Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+      },
+    };
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        signal: controller.signal,
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.reason).toBe("cancelled");
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("cancelled");
+  }, 60_000);
+
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
     const llm = new ScriptedLLM([
       { toolCalls: [{ name: "nope", arguments: "{}" }] },

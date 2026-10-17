@@ -57,6 +57,7 @@ const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 | `tools` | `[]` | supply `allTools` (or any subset — individual tools are exported) for coding |
 | `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
 | `compaction` | on (safe thresholds) | `false` disables |
+| `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
 | `budgets`, `onEvent`, `thread` | safe defaults / optional | see below |
 
 For a single model call with no loop at all, skip the engine entirely —

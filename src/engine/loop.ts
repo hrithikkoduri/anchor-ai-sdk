@@ -76,7 +76,14 @@ export interface EngineOptions {
   thread?: { store: ThreadStore; id: string };
 }
 
-export type FinishReason = "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused";
+export type FinishReason =
+  | "finished"
+  | "max_steps"
+  | "budget_exceeded"
+  | "stalled"
+  | "error"
+  | "paused"
+  | "cancelled";
 
 export interface AgentResult {
   ok: boolean;
@@ -256,6 +263,12 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           ok: false,
           error: over.detail,
         });
+      }
+
+      // Cancellation is checked at every turn boundary (and again if an
+      // in-flight LLM call rejects below).
+      if (opts.signal?.aborted) {
+        return await finishWith("cancelled", { ok: false, error: "cancelled by signal" });
       }
 
       // Context-window management: fold the oldest span into the running
@@ -453,6 +466,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
 
     return await finishWith("finished", { ok: finish?.ok ?? false, summary: finish?.summary });
   } catch (err) {
+    // An abort is a decision, not a failure — report it as such.
+    if (opts.signal?.aborted) {
+      return await finishWith("cancelled", { ok: false, error: "cancelled by signal" });
+    }
     const message = err instanceof Error ? err.message : String(err);
     emit({ type: "error", message });
     return await finishWith("error", { ok: false, error: message });

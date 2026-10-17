@@ -52,7 +52,7 @@ export type AgentEvent =
       summary?: string;
       steps: number;
       usage: LLMUsage;
-      reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused";
+      reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused" | "cancelled";
     }
   | { type: "error"; message: string };
 
