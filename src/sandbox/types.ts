@@ -12,8 +12,8 @@
  *
  *   2. TIME-BOUNDED. Every command has a real kill deadline. The adapter
  *      enforces it (guest-side `timeout` on Heyo — its own API timeout does
- *      NOT stop the guest process; SIGKILL on the process backend). A hung
- *      test suite must never wedge a run.
+ *      NOT stop the guest process; process-group SIGTERM→SIGKILL on the
+ *      local backend). A hung test suite must never wedge a run.
  *
  *   3. SECRETS AS ENV ONLY. Credentials enter the sandbox as environment
  *      variables (or /etc files on Heyo), never under the workspace, so no
@@ -56,7 +56,7 @@ export interface SandboxSpec {
   ref?: string;
   /**
    * Use an existing local directory as the repo instead of cloning
-   * (process backend only — copies it, so edits never touch the original).
+   * (local backend only — copies it, so edits never touch the original).
    */
   localPath?: string;
   /**
@@ -69,7 +69,7 @@ export interface SandboxSpec {
 
 export interface Sandbox {
   readonly id: string;
-  readonly backend: "heyo" | "process";
+  readonly backend: "heyo" | "local";
   /** Absolute path of the repo inside the sandbox (e.g. /workspace/repo). */
   readonly workspace: string;
 

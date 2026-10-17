@@ -1,0 +1,214 @@
+/**
+ * LocalSandbox — the `Sandbox` interface implemented as plain processes on
+ * this machine, in a scratch directory under `.harness/sandboxes/`.
+ *
+ * NOT a sandbox: commands run with your user's full permissions on your Mac.
+ * It exists so the agent loop, tools, and tests can be developed in
+ * milliseconds without creating real VMs. Real runs — and anything untrusted —
+ * use `HeyoSandbox`. It is injected explicitly (`--local` flag, tests) and can
+ * never be selected by production configuration.
+ *
+ * It is deliberately as strict as a microVM, so code written against it
+ * behaves identically on Heyo:
+ *   - every exec is a fresh process; no `cd`/`export` survives between calls
+ *   - the default cwd is the workspace, but nothing persists implicitly
+ *   - timeouts kill the whole process tree (SIGTERM, then SIGKILL after grace)
+ *   - checkpoints are plain git commits
+ */
+import { spawn } from "node:child_process";
+import { cp, mkdir, rm, stat } from "node:fs/promises";
+import path from "node:path";
+import {
+  clampTimeout,
+  newSandboxId,
+  type Checkpoint,
+  type ExecOptions,
+  type ExecResult,
+  type Sandbox,
+  type SandboxSpec,
+} from "./types.js";
+
+export interface LocalSandboxOptions {
+  /** Where sandbox directories live. Default: `<cwd>/.harness/sandboxes`. */
+  rootDir?: string;
+  /** Silence the "no isolation" warning (used by tests). */
+  quiet?: boolean;
+}
+
+const KILL_GRACE_MS = 5_000;
+
+export class LocalSandbox implements Sandbox {
+  readonly backend = "local" as const;
+  readonly id: string;
+  /** The sandbox's scratch directory on the host. */
+  readonly root: string;
+  /** The repo directory — the local equivalent of /workspace/repo. */
+  readonly workspace: string;
+
+  private started = false;
+  private destroyed = false;
+
+  constructor(
+    private readonly spec: SandboxSpec,
+    private readonly opts: LocalSandboxOptions = {},
+  ) {
+    this.id = newSandboxId();
+    this.root = path.join(opts.rootDir ?? path.join(process.cwd(), ".harness", "sandboxes"), this.id);
+    this.workspace = path.join(this.root, "repo");
+  }
+
+  async start(): Promise<void> {
+    if (this.started) return;
+    if (!this.opts.quiet) {
+      process.stderr.write(`\u26a0 running locally — no isolation (${this.id})\n`);
+    }
+    await mkdir(this.root, { recursive: true });
+
+    if (this.spec.localPath) {
+      await cp(this.spec.localPath, this.workspace, { recursive: true });
+    } else if (this.spec.repoUrl) {
+      await this.git(["clone", "-q", this.spec.repoUrl, this.workspace]);
+      if (this.spec.ref) {
+        await this.git(["-C", this.workspace, "checkout", "-q", this.spec.ref]);
+      }
+    } else {
+      await mkdir(this.workspace, { recursive: true });
+    }
+
+    // Checkpoints need a git repo; make one if the source wasn't one.
+    if (!(await exists(path.join(this.workspace, ".git")))) {
+      await this.git(["init", "-q", "-b", "main", this.workspace]);
+    }
+    await this.git(["-C", this.workspace, "config", "user.name", "harness"]);
+    await this.git(["-C", this.workspace, "config", "user.email", "harness@localhost"]);
+
+    this.started = true;
+  }
+
+  async exec(command: string, opts: ExecOptions = {}): Promise<ExecResult> {
+    this.assertUsable();
+    const timeoutSecs = clampTimeout(opts.timeoutSecs);
+    const cwd = opts.cwd ?? this.workspace;
+    const env = { ...this.spec.env, ...opts.env };
+    return this.run("bash", ["-c", command], cwd, env, timeoutSecs);
+  }
+
+  async checkpoint(message: string): Promise<Checkpoint> {
+    this.assertUsable();
+    await this.git(["-C", this.workspace, "add", "-A"]);
+    // --allow-empty: a checkpoint that changes nothing is still a valid point
+    // to resume or fork from.
+    await this.git(["-C", this.workspace, "commit", "-q", "--allow-empty", "-m", message]);
+    const sha = (await this.git(["-C", this.workspace, "rev-parse", "HEAD"])).trim();
+    return { sha, message, at: Date.now() };
+  }
+
+  async destroy(): Promise<void> {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    if (this.spec.keep) {
+      process.stderr.write(`keeping sandbox for debugging: ${this.root}\n`);
+      return;
+    }
+    await rm(this.root, { recursive: true, force: true });
+  }
+
+  // --- internals -----------------------------------------------------------
+
+  private assertUsable(): void {
+    if (!this.started) throw new Error(`sandbox ${this.id} not started — call start() first`);
+    if (this.destroyed) throw new Error(`sandbox ${this.id} was destroyed`);
+  }
+
+  /** Internal git helper — throws on failure, unlike exec (which reports). */
+  private async git(args: string[]): Promise<string> {
+    const r = await this.run("git", args, this.root, {}, 120);
+    if (r.exitCode !== 0) {
+      throw new Error(`git ${args.join(" ")} failed (${r.exitCode}): ${r.output.trim()}`);
+    }
+    return r.stdout;
+  }
+
+  private run(
+    cmd: string,
+    args: string[],
+    cwd: string,
+    env: Record<string, string>,
+    timeoutSecs: number,
+  ): Promise<ExecResult> {
+    return new Promise((resolve) => {
+      const startedAt = Date.now();
+      const child = spawn(cmd, args, {
+        cwd,
+        env: { ...process.env, ...env },
+        // Own process group, so the kill below reaches children too
+        // (`npm test` spawns node, which spawns test workers, ...).
+        detached: process.platform !== "win32",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      let stdout = "";
+      let stderr = "";
+      let output = "";
+      let timedOut = false;
+
+      const killGroup = (signal: NodeJS.Signals) => {
+        const pid = child.pid;
+        if (pid === undefined) return;
+        try {
+          process.kill(-pid, signal); // negative pid = whole process group
+        } catch {
+          // Group already gone — nothing to kill.
+        }
+      };
+
+      const timer = setTimeout(() => {
+        timedOut = true;
+        killGroup("SIGTERM");
+        forceTimer = setTimeout(() => killGroup("SIGKILL"), KILL_GRACE_MS);
+      }, timeoutSecs * 1000);
+      let forceTimer: ReturnType<typeof setTimeout> | undefined;
+
+      child.stdout.on("data", (chunk: Buffer) => {
+        stdout += chunk.toString();
+        output += chunk.toString();
+      });
+      child.stderr.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString();
+        output += chunk.toString();
+      });
+
+      child.on("error", (err) => {
+        clearTimeout(timer);
+        if (forceTimer) clearTimeout(forceTimer);
+        resolve({
+          exitCode: -1,
+          stdout,
+          stderr,
+          output: `${output}${err.message}\n`,
+          timedOut,
+          durationMs: Date.now() - startedAt,
+        });
+      });
+
+      child.on("close", (code, signal) => {
+        clearTimeout(timer);
+        if (forceTimer) clearTimeout(forceTimer);
+        // Report timeout kills with the conventional shell codes:
+        // 124 = timed out (SIGTERM), 137 = killed hard (128 + SIGKILL).
+        let exitCode = code ?? -1;
+        if (timedOut && code === null) exitCode = signal === "SIGKILL" ? 137 : 124;
+        resolve({ exitCode, stdout, stderr, output, timedOut, durationMs: Date.now() - startedAt });
+      });
+    });
+  }
+}
+
+async function exists(p: string): Promise<boolean> {
+  try {
+    await stat(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
