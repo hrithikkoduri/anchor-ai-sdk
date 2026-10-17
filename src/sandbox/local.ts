@@ -21,6 +21,7 @@ import path from "node:path";
 import {
   clampTimeout,
   newSandboxId,
+  shq,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -101,6 +102,24 @@ export class LocalSandbox implements Sandbox {
     await this.git(["-C", this.workspace, "commit", "-q", "--allow-empty", "-m", message]);
     const sha = (await this.git(["-C", this.workspace, "rev-parse", "HEAD"])).trim();
     return { sha, message, at: Date.now() };
+  }
+
+  async fork(ref?: string): Promise<Sandbox> {
+    this.assertUsable();
+    // Copy the current workspace (files + .git) into a fresh sandbox, then
+    // FORCE-checkout the requested commit: the fork is exactly that checkpoint,
+    // and uncommitted working-tree changes are not carried over (a plain
+    // checkout preserves local modifications when ref == HEAD — learned by a
+    // failing test).
+    const child = new LocalSandbox({ localPath: this.workspace, keep: this.spec.keep }, this.opts);
+    await child.start();
+    const target = ref ?? "HEAD";
+    const checkout = await child.exec(`git checkout -q -f ${shq(target)}`, { timeoutSecs: 60 });
+    if (checkout.exitCode !== 0) {
+      await child.destroy();
+      throw new Error(`fork: checkout ${target} failed: ${checkout.output.trim()}`);
+    }
+    return child;
   }
 
   async destroy(): Promise<void> {

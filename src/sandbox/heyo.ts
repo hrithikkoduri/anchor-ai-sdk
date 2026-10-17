@@ -120,6 +120,17 @@ export class HeyoSandbox implements Sandbox {
     return { sha: rev.stdout.trim(), message, at: Date.now() };
   }
 
+  async fork(ref?: string): Promise<Sandbox> {
+    // Heyo's native path is different from a copy: the sandbox is retained
+    // (idle_action: retain), so a resume WAKES the same VM and finds the
+    // checkpoint commit already there — no data movement at all. Forking to a
+    // *different* VM needs the checkpoint to leave the machine (git bundle or
+    // a push to a remote); that lands with best-of-N-on-Heyo (step 14).
+    throw new Error(
+      "fork() is not implemented for the heyo backend yet — resume uses the retained sandbox (wake) instead",
+    );
+  }
+
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;

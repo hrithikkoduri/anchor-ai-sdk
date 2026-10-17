@@ -82,6 +82,13 @@ export interface Sandbox {
   exec(command: string, opts?: ExecOptions): Promise<ExecResult>;
   /** Commit the workspace state so the run can resume / fork from here. */
   checkpoint(message: string): Promise<Checkpoint>;
+  /**
+   * Create a NEW sandbox whose workspace is a copy of this one at `ref`
+   * (default: current HEAD). Uncommitted working-tree changes are NOT carried
+   * over — a fork is a clean checkpoint state. The base primitive for
+   * best-of-N races and for rebuild-from-checkpoint resumes.
+   */
+  fork(ref?: string): Promise<Sandbox>;
   /** Tear down (unless spec.keep). Must be safe to call twice. */
   destroy(): Promise<void>;
 }

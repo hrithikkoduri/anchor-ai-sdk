@@ -24,6 +24,11 @@ export interface StoredThread {
   summary?: string;
   /** Verbatim recent conversation (no system message; the engine adds a fresh one each run). */
   messages: LLMMessage[];
+  /**
+   * The phase the thread is currently in. Resume (pause or crash recovery)
+   * starts the next run here instead of at the first phase.
+   */
+  phase?: string;
 }
 
 export interface ThreadStore {

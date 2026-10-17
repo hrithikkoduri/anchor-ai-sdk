@@ -13,7 +13,7 @@ import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools } from "../../src/tools/index.js";
 import { codingStrategy } from "../../src/strategies/coding.js";
 import { runAgent } from "../../src/engine/loop.js";
-import { MemoryThreadStore } from "../../src/engine/thread.js";
+import { MemoryThreadStore, type StoredThread } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 
@@ -441,6 +441,93 @@ describe("engine", () => {
     // …and the store persisted the summary for the next run.
     const stored = await store.load("long-1");
     expect(stored!.summary).toBe("COMPACTED: earlier work summarized");
+  }, 60_000);
+
+  it("pauses after a phase boundary and resumes in the next phase", async () => {
+    const store = new MemoryThreadStore();
+    const thread = { store, id: "pause-1" };
+
+    // Run 1: reproduce fails → the engine checkpoints and pauses before fix.
+    const run1 = new ScriptedLLM([{ toolCalls: [{ name: "run_tests", arguments: "{}" }] }]);
+    const r1 = await runAgent(
+      { task: "t" },
+      {
+        llm: run1,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        thread,
+        pauseAfterPhase: "reproduce",
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(r1.reason).toBe("paused");
+    expect(r1.checkpointRef).toMatch(/^[0-9a-f]{40}$/);
+    expect(events.some((e) => e.type === "checkpoint")).toBe(true);
+    const saved = await store.load("pause-1");
+    expect(saved!.phase).toBe("fix");
+
+    // Run 2: resumes in fix, repairs, verifies, finishes.
+    const run2 = new ScriptedLLM([
+      {
+        toolCalls: [
+          {
+            name: "edit_file",
+            arguments: JSON.stringify({
+              path: "src/sum.js",
+              old_string: "numbers.filter((n) => n >= 0).reduce((a, b) => a + b, 0)",
+              new_string: "numbers.reduce((a, b) => a + b, 0)",
+            }),
+          },
+        ],
+      },
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] },
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "fixed", success: true }) }] },
+    ]);
+    const r2 = await runAgent(
+      { task: "t" },
+      { llm: run2, sandbox, tools: allTools, strategy: codingStrategy, thread, onEvent: (e) => events.push(e) },
+    );
+
+    expect(r2.ok).toBe(true);
+    // The resumed run started in fix and carried run 1's conversation.
+    const firstRequest = run2.seen[0]!;
+    expect(
+      firstRequest.messages.some((m) => m.role === "user" && (m.content ?? "").includes("PHASE: fix")),
+    ).toBe(true);
+    expect(firstRequest.messages.some((m) => m.role === "tool")).toBe(true);
+  }, 60_000);
+
+  it("persists the thread after every completed turn", async () => {
+    class CountingStore extends MemoryThreadStore {
+      saves = 0;
+      override async save(id: string, stored: StoredThread): Promise<void> {
+        this.saves += 1;
+        await super.save(id, stored);
+      }
+    }
+    const store = new CountingStore();
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo 1" }) }] },
+      { toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo 2" }) }] },
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "x", success: false }) }] },
+    ]);
+
+    await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        thread: { store, id: "saves-1" },
+        onEvent: () => undefined,
+      },
+    );
+
+    // Two tool turns + the final save — a crash loses at most one turn.
+    expect(store.saves).toBeGreaterThanOrEqual(3);
   }, 60_000);
 
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {

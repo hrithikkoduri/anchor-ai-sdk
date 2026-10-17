@@ -55,6 +55,15 @@ export interface EngineOptions {
   compaction?: CompactionConfig | false;
   /** Guardrail dials. Protections are on by default; these tune or disable individual ones. */
   guardrails?: GuardrailConfig;
+  /**
+   * Stop gracefully when this phase completes (before the next one begins).
+   * The run returns reason "paused" with `checkpointRef` and the thread saved
+   * at the next phase — resume by calling runAgent again with the same
+   * thread + sandbox. The primitive behind best-of-N races and staged runs.
+   */
+  pauseAfterPhase?: string;
+  /** Auto-checkpoint (git commit) at every phase boundary. Default true when a sandbox exists. */
+  checkpoints?: boolean;
   onEvent?: EventSink;
   signal?: AbortSignal;
   /**
@@ -67,7 +76,7 @@ export interface EngineOptions {
   thread?: { store: ThreadStore; id: string };
 }
 
-export type FinishReason = "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error";
+export type FinishReason = "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused";
 
 export interface AgentResult {
   ok: boolean;
@@ -78,6 +87,8 @@ export interface AgentResult {
   usage: LLMUsage;
   /** The full conversation — the raw material for traces. */
   messages: LLMMessage[];
+  /** The last checkpoint (git commit) taken during the run — the resume/fork point. */
+  checkpointRef?: string;
 }
 
 const DEFAULT_LOOP_LIMIT = 3;
@@ -134,16 +145,25 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   // in finishWith (every exit path).
   let priorMessages: LLMMessage[] = [];
   let runningSummary: string | undefined;
+  let resumePhase: string | undefined;
   if (opts.thread) {
     const prior = await opts.thread.store.load(opts.thread.id);
     priorMessages = prior?.messages ?? [];
     runningSummary = prior?.summary;
+    resumePhase = prior?.phase;
+  }
+
+  // Resume starts where the thread left off (a pause boundary or a crash point).
+  let phaseIndex = 0;
+  if (resumePhase) {
+    const i = phases.findIndex((p) => p.id === resumePhase);
+    if (i >= 0) phaseIndex = i;
   }
 
   const messages: LLMMessage[] = [
     { role: "system", content: strategy.systemPrompt({ task: task.task, context, summary: runningSummary }) },
     ...priorMessages,
-    { role: "user", content: `Begin the task. ${strategy.enterPhaseMessage(phases[0]!)}` },
+    { role: "user", content: `Begin the task. ${strategy.enterPhaseMessage(phases[phaseIndex]!)}` },
   ];
 
   const toolCtx: ToolContext = {
@@ -152,17 +172,54 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     onFinish: () => undefined, // the engine reads finish through the tool result
   };
 
-  let phaseIndex = 0;
   let steps = 0;
   let nudges = 0;
   let phaseSteps = 0;
   let phaseNudged = false;
+  let paused = false;
   let finish: { summary: string; ok: boolean } | undefined;
   const recentSignatures: string[] = [];
   const evidence: ToolResultRecord[] = [];
 
   emit({ type: "run_started", task: task.task, phases: phases.map((p) => p.id) });
-  emit({ type: "phase_started", phase: phases[0]!.id });
+  emit({ type: "phase_started", phase: phases[phaseIndex]!.id });
+
+  // Checkpointing: a git commit at every phase boundary — the resume/fork
+  // points ("checkpoint after each meaningful step"). Best-effort: a failed
+  // checkpoint must not kill the run; resume just degrades to the previous one.
+  let lastCheckpointRef: string | undefined;
+  const checkpointing = opts.checkpoints ?? true;
+  const checkpointAt = async (label: string): Promise<void> => {
+    if (!checkpointing || !opts.sandbox) return;
+    try {
+      const cp = await opts.sandbox.checkpoint(label);
+      lastCheckpointRef = cp.sha;
+      emit({ type: "checkpoint", ref: cp.sha, label });
+    } catch {
+      // swallowed — see above
+    }
+  };
+
+  // Thread persistence: after every completed turn and on every exit path, so
+  // a dead process loses at most the in-flight turn. Protocol-safe (never
+  // between an assistant tool_calls and its results). Failures are swallowed.
+  const persistThread = async (): Promise<void> => {
+    if (!opts.thread) return;
+    const persisted = messages.filter(
+      (m) =>
+        m.role !== "system" &&
+        !(m.role === "user" && (m.content ?? "").startsWith("Begin the task.")),
+    );
+    try {
+      await opts.thread.store.save(opts.thread.id, {
+        summary: runningSummary,
+        messages: persisted,
+        phase: phases[phaseIndex]!.id,
+      });
+    } catch {
+      // swallow: storage must not kill a run
+    }
+  };
 
   const finishWith = async (
     reason: FinishReason,
@@ -176,24 +233,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     };
     emit({ type: "run_finished", ok: extra.ok, summary: extra.summary, steps, usage, reason });
 
-    // Persist the conversation for the next run. The system prompt is
-    // regenerated each run, and stale "Begin the task." markers are dropped so
-    // history reads as one continuous conversation. Storage failures must not
-    // kill a finished run.
-    if (opts.thread) {
-      const persisted = messages.filter(
-        (m) =>
-          m.role !== "system" &&
-          !(m.role === "user" && (m.content ?? "").startsWith("Begin the task.")),
-      );
-      try {
-        await opts.thread.store.save(opts.thread.id, { summary: runningSummary, messages: persisted });
-      } catch {
-        // swallow: a finished run is still finished
-      }
-    }
+    // Final save. The system prompt is regenerated each run, and stale "Begin
+    // the task." markers are dropped so history reads as one conversation.
+    await persistThread();
 
-    return { ...extra, reason, steps, usage, messages };
+    return { ...extra, reason, steps, usage, messages, checkpointRef: lastCheckpointRef };
   };
 
   try {
@@ -278,6 +322,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           });
         }
         messages.push(userMessage("Continue: call a tool, or call finish(summary, success) if the task is complete."));
+        await persistThread();
         continue;
       }
       nudges = 0;
@@ -355,14 +400,28 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         }
 
         if (phases[phaseIndex]!.advanceOn?.(result, call.name)) {
+          const finishedPhase = phases[phaseIndex]!;
+          // The boundary is the meaningful step — checkpoint before crossing it.
+          await checkpointAt(`after ${finishedPhase.id}`);
           phaseIndex = Math.min(phaseIndex + 1, phases.length - 1);
           phaseSteps = 0;
           phaseNudged = false;
+          if (opts.pauseAfterPhase === finishedPhase.id) {
+            // Pause AT the boundary: the next run resumes in the new phase
+            // (persisted via the thread) and injects its entry message there.
+            paused = true;
+            break;
+          }
           const entered = phases[phaseIndex]!;
           emit({ type: "phase_started", phase: entered.id });
           messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
       }
+
+      if (paused) break;
+
+      // Crash-safety: persist after every completed turn.
+      await persistThread();
 
       // Soft per-phase budget: nudge once when a phase overstays its welcome,
       // so "this cannot be reproduced" ends with a falsified finish instead of
@@ -378,6 +437,13 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           ),
         );
       }
+    }
+
+    if (paused) {
+      return await finishWith("paused", {
+        ok: false,
+        summary: `paused after a phase boundary — next phase: ${phases[phaseIndex]!.id}`,
+      });
     }
 
     return await finishWith("finished", { ok: finish?.ok ?? false, summary: finish?.summary });

@@ -38,6 +38,7 @@ export type AgentEvent =
       meta?: Record<string, unknown>;
     }
   | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected"; detail: string }
+  | { type: "checkpoint"; ref: string; label: string }
   | {
       type: "compacted";
       removedMessages: number;
@@ -51,7 +52,7 @@ export type AgentEvent =
       summary?: string;
       steps: number;
       usage: LLMUsage;
-      reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error";
+      reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused";
     }
   | { type: "error"; message: string };
 

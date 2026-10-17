@@ -170,6 +170,32 @@ describe("LocalSandbox", () => {
     }
   });
 
+  it("forks a sandbox at a checkpoint — independent copies of that state", async () => {
+    const sb = make();
+    await sb.start();
+    try {
+      await sb.exec("echo v1 > f.txt");
+      const cp = await sb.checkpoint("v1");
+
+      await sb.exec("echo v2 > f.txt"); // the original moves on
+
+      const forked = await sb.fork(cp.sha);
+      try {
+        const forkedRead = await forked.exec("cat f.txt");
+        expect(forkedRead.stdout.trim()).toBe("v1");
+
+        // The fork is independent: edits there don't touch the original.
+        await forked.exec("echo forked > f.txt");
+        const originalRead = await sb.exec("cat f.txt");
+        expect(originalRead.stdout.trim()).toBe("v2");
+      } finally {
+        await forked.destroy();
+      }
+    } finally {
+      await sb.destroy();
+    }
+  });
+
   it("copies a localPath repo without mutating the original", async () => {
     const fixture = path.join(rootDir, "fixture");
     await mkdir(fixture, { recursive: true });
