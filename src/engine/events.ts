@@ -6,7 +6,7 @@
  * it as the journal, the dashboard/chat SSE (steps 17–18) relay it. The engine
  * itself never formats anything — it only emits.
  */
-import type { LLMUsage } from "../llm/types.js";
+import type { LLMToolCall, LLMUsage } from "../llm/types.js";
 
 export type AgentEvent =
   | { type: "run_started"; task: string; phases: string[] }
@@ -17,8 +17,11 @@ export type AgentEvent =
       type: "llm_call_finished";
       phase: string;
       step: number;
+      /** The full assistant turn — with toolCalls, this reconstructs the conversation (journal). */
+      text: string;
+      toolCalls: LLMToolCall[];
       textChars: number;
-      toolCalls: number;
+      toolCallsCount: number;
       usage: LLMUsage;
       latencyMs: number;
     }
@@ -29,6 +32,8 @@ export type AgentEvent =
       step: number;
       name: string;
       ok: boolean;
+      /** The actual result text (already truncated by the tool) — journal material. */
+      content: string;
       contentChars: number;
       meta?: Record<string, unknown>;
     }

@@ -21,5 +21,9 @@ export * from "./engine/strategy.js";
 export { runAgent } from "./engine/loop.js";
 export type { RunTask, EngineOptions, AgentResult, FinishReason } from "./engine/loop.js";
 
+// Trace — durable run records (redaction + NDJSON)
+export * from "./trace/jsonl.js";
+export * from "./trace/redact.js";
+
 // Strategies — the behaviors we ship (coding is the default agent)
 export { codingStrategy } from "./strategies/coding.js";

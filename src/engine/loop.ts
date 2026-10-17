@@ -185,8 +185,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         type: "llm_call_finished",
         phase: phase.id,
         step: steps,
+        text: response.text,
+        toolCalls: response.toolCalls,
         textChars: response.text.length,
-        toolCalls: response.toolCalls.length,
+        toolCallsCount: response.toolCalls.length,
         usage: response.usage,
         latencyMs: response.latencyMs,
       });
@@ -263,6 +265,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           step: steps,
           name: call.name,
           ok: result.ok,
+          content: result.content,
           contentChars: result.content.length,
           meta: result.meta,
         });
