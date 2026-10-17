@@ -203,7 +203,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   // Thread persistence: after every completed turn and on every exit path, so
   // a dead process loses at most the in-flight turn. Protocol-safe (never
   // between an assistant tool_calls and its results). Failures are swallowed.
-  const persistThread = async (): Promise<void> => {
+  const persistThread = async (clearPhase = false): Promise<void> => {
     if (!opts.thread) return;
     const persisted = messages.filter(
       (m) =>
@@ -214,7 +214,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       await opts.thread.store.save(opts.thread.id, {
         summary: runningSummary,
         messages: persisted,
-        phase: phases[phaseIndex]!.id,
+        // The resume position survives only while there is unfinished work:
+        // a crash leaves the last per-turn phase in place, a pause sets the
+        // NEXT phase, and a completed run clears it so a follow-up on the
+        // same thread starts its phases fresh — with the same memory.
+        phase: clearPhase ? undefined : phases[phaseIndex]!.id,
       });
     } catch {
       // swallow: storage must not kill a run
@@ -235,7 +239,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
 
     // Final save. The system prompt is regenerated each run, and stale "Begin
     // the task." markers are dropped so history reads as one conversation.
-    await persistThread();
+    // Cleared resume position unless the run paused (unfinished work).
+    await persistThread(reason !== "paused");
 
     return { ...extra, reason, steps, usage, messages, checkpointRef: lastCheckpointRef };
   };

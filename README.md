@@ -147,12 +147,15 @@ await runAgent(task1, { ..., thread });                // run 1 works, conversat
 await runAgent(task2, { ..., thread });                // run 2 REMEMBERS run 1
 ```
 
-`ThreadStore` is the interface — `load(id) → { summary?, messages }`,
+`ThreadStore` is the interface — `load(id) → { summary?, messages, phase? }`,
 `save(id, thread)` (overwrite semantics); the `summary` is the running
-compacted summary and flows into the strategy's system prompt. The package
-ships the in-memory default; durable stores (Postgres, SQLite) are implemented
-by the consumer. The framework never depends on a database — chat agents,
-research threads, and the issue→PR product all consume the same seam.
+compacted summary and flows into the strategy's system prompt. The `phase` is
+the **resume position** — written while work is in progress or paused, cleared
+when a run completes, so a follow-up on the same thread starts its phases
+fresh over the same memory. The package ships the in-memory default; durable
+stores (Postgres, SQLite) are implemented by the consumer. The framework never
+depends on a database — chat agents, research threads, and the issue→PR
+product all consume the same seam.
 (LangGraph's "checkpointer" is the same concept under a different name.)
 
 **Compaction keeps long threads inside the context window.** When the

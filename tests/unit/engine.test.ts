@@ -530,6 +530,38 @@ describe("engine", () => {
     expect(store.saves).toBeGreaterThanOrEqual(3);
   }, 60_000);
 
+  it("clears the resume position after a completed run (follow-up starts fresh)", async () => {
+    const store = new MemoryThreadStore();
+    const thread = { store, id: "followup-1" };
+
+    const run1 = new ScriptedLLM([
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "answered", success: false }) }] },
+    ]);
+    await runAgent(
+      { task: "first request" },
+      { llm: run1, sandbox, tools: allTools, strategy: codingStrategy, thread, onEvent: () => undefined },
+    );
+
+    const saved = await store.load("followup-1");
+    expect(saved!.phase).toBeUndefined(); // finished work → no resume position
+    expect(saved!.messages.length).toBeGreaterThan(0); // …but the memory stays
+
+    const run2 = new ScriptedLLM([
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "second", success: false }) }] },
+    ]);
+    await runAgent(
+      { task: "second request" },
+      { llm: run2, sandbox, tools: allTools, strategy: codingStrategy, thread, onEvent: () => undefined },
+    );
+
+    // Fresh phases over the same conversation: starts at reproduce, sees run 1.
+    const firstRequest = run2.seen[0]!;
+    expect(
+      firstRequest.messages.some((m) => m.role === "user" && (m.content ?? "").includes("PHASE: reproduce")),
+    ).toBe(true);
+    expect(firstRequest.messages.some((m) => m.role === "assistant")).toBe(true);
+  }, 60_000);
+
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
     const llm = new ScriptedLLM([
       { toolCalls: [{ name: "nope", arguments: "{}" }] },
