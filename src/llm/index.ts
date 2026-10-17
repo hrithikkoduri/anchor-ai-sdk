@@ -5,12 +5,12 @@
  * plain options; the app owns configuration. apps/harness calls this with
  * `cfg.llm` straight from its config module.
  */
-import { OpenAICompatibleClient } from "./openai.js";
+import { OpenAICompatibleClient } from "./openai-compatible.js";
 import type { LLMClient } from "./types.js";
 
 export * from "./types.js";
-export { OpenAICompatibleClient, LLMApiError } from "./openai.js";
-export type { OpenAICompatibleOptions } from "./openai.js";
+export { OpenAICompatibleClient, LLMApiError } from "./openai-compatible.js";
+export type { OpenAICompatibleOptions } from "./openai-compatible.js";
 
 export interface LLMOptions {
   baseUrl: string;

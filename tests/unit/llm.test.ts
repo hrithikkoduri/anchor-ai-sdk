@@ -4,7 +4,7 @@
  * frames and verify aggregation, fragment assembly, and the retry policy.
  */
 import { describe, expect, it } from "vitest";
-import { LLMApiError, OpenAICompatibleClient } from "../../src/llm/openai.js";
+import { LLMApiError, OpenAICompatibleClient } from "../../src/llm/openai-compatible.js";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
