@@ -39,20 +39,41 @@ export const codingStrategy: AgentStrategy = {
     {
       id: "reproduce",
       goal: "produce a failing test (or a failing existing test run) that demonstrates the bug",
-      // Evidence = the suite RAN and failed. "No test command found" must not
-      // count (learned live: it advanced the phase on an empty repo).
+      // Soft deadline: reproduction can be genuinely impossible.
+      maxSteps: 12,
+      // Evidence = a test run that executed and failed. Any source counts
+      // here: the agent may write a NEW test and run it explicitly. "No test
+      // command found" does not count (learned live: it advanced the phase on
+      // an empty repo).
       advanceOn: (result, tool) => tool === "run_tests" && result.meta?.ran === true && !result.ok,
     },
     {
       id: "fix",
       goal: "make the failing test pass with a minimal change",
-      advanceOn: (result, tool) => tool === "run_tests" && result.meta?.ran === true && result.ok,
+      maxSteps: 20,
+      // Evidence = the repo's canonical suite passes. A targeted subset run
+      // passing must not advance the phase (it can lie about the whole).
+      advanceOn: (result, tool) =>
+        tool === "run_tests" && result.meta?.ran === true && result.meta?.defaultCommand === true && result.ok,
     },
     {
       id: "verify",
       goal: "run the full test suite, review the diff, then finish",
+      maxSteps: 8,
     },
   ],
+  validateFinish(evidence) {
+    const lastFull = [...evidence]
+      .reverse()
+      .find((r) => r.tool === "run_tests" && r.meta?.ran === true && r.meta?.defaultCommand === true);
+    if (!lastFull) {
+      return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
+    }
+    if (!lastFull.ok) {
+      return { allow: false, reason: "the most recent full test-suite run failed" };
+    }
+    return { allow: true };
+  },
   prepareContext(sandbox) {
     return buildRepoMap(sandbox);
   },

@@ -22,7 +22,7 @@ import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
 import type { AgentEvent, EventSink } from "./events.js";
-import type { AgentStrategy } from "./strategy.js";
+import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 
 export interface RunTask {
   /** The task statement (issue text). */
@@ -95,8 +95,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   let phaseIndex = 0;
   let steps = 0;
   let nudges = 0;
+  let phaseSteps = 0;
+  let phaseNudged = false;
   let finish: { summary: string; ok: boolean } | undefined;
   const recentSignatures: string[] = [];
+  const evidence: ToolResultRecord[] = [];
 
   emit({ type: "run_started", task: task.task, phases: phases.map((p) => p.id) });
   emit({ type: "phase_started", phase: phases[0]!.id });
@@ -126,6 +129,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       }
 
       steps += 1;
+      phaseSteps += 1;
       const phase = phases[phaseIndex]!;
       emit({ type: "llm_call_started", phase: phase.id, step: steps });
 
@@ -184,6 +188,34 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           result = await dispatch(call.name, call.arguments, byName, toolCtx, emit, phase.id, steps);
         }
 
+        const isFinish = call.name === "finish";
+        const claimedSuccess = isFinish && result.meta?.success !== false;
+        evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
+
+        // Strategy-enforced honesty: a success claim must be backed by evidence.
+        let acceptedFinish = false;
+        let finishSummary = "";
+        if (isFinish) {
+          finishSummary = typeof result.meta?.summary === "string" ? result.meta.summary : "";
+          if (claimedSuccess && opts.strategy.validateFinish) {
+            const verdict = opts.strategy.validateFinish(evidence);
+            if (verdict.allow) {
+              acceptedFinish = true;
+            } else {
+              const reason = verdict.reason ?? "the required evidence is missing";
+              emit({ type: "guardrail", kind: "finish_rejected", detail: reason });
+              result = {
+                ok: false,
+                content:
+                  `finish(success=true) rejected: ${reason}. Keep working — ` +
+                  `or, if you are genuinely blocked, call finish(summary, success=false).`,
+              };
+            }
+          } else {
+            acceptedFinish = true; // success=false finishes are always accepted
+          }
+        }
+
         emit({
           type: "tool_result",
           phase: phase.id,
@@ -195,20 +227,34 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         });
         messages.push(toolResultMessage(call.id, result.content));
 
-        if (call.name === "finish") {
-          finish = {
-            summary: typeof result.meta?.summary === "string" ? result.meta.summary : "",
-            ok: result.meta?.success !== false,
-          };
+        if (isFinish && acceptedFinish) {
+          finish = { summary: finishSummary, ok: claimedSuccess };
           break;
         }
 
         if (phases[phaseIndex]!.advanceOn?.(result, call.name)) {
           phaseIndex = Math.min(phaseIndex + 1, phases.length - 1);
+          phaseSteps = 0;
+          phaseNudged = false;
           const entered = phases[phaseIndex]!;
           emit({ type: "phase_started", phase: entered.id });
           messages.push(userMessage(opts.strategy.enterPhaseMessage(entered)));
         }
+      }
+
+      // Soft per-phase budget: nudge once when a phase overstays its welcome,
+      // so "this cannot be reproduced" ends with a falsified finish instead of
+      // a burned-out global budget.
+      const currentPhase = phases[phaseIndex]!;
+      if (currentPhase.maxSteps && phaseSteps > currentPhase.maxSteps && !phaseNudged) {
+        phaseNudged = true;
+        messages.push(
+          userMessage(
+            `You have spent ${phaseSteps} turns in the "${currentPhase.id}" phase (soft limit ` +
+              `${currentPhase.maxSteps}). If you cannot ${currentPhase.goal}, call ` +
+              `finish(summary, success=false) explaining what you learned.`,
+          ),
+        );
       }
     }
 

@@ -18,13 +18,26 @@ const DETECT =
   `elif [ -f Makefile ]; then echo "make test"; ` +
   `else echo "none"; fi`;
 
-async function resolveCommand(input: Record<string, unknown>, ctx: ToolContext): Promise<string | null> {
+interface ResolvedCommand {
+  command: string;
+  /**
+   * true when the command came from the task spec or repo detection — i.e.
+   * the repo's canonical full suite. An explicit per-call `command` is a
+   * targeted run and must not count as full-suite evidence.
+   */
+  defaultCommand: boolean;
+}
+
+async function resolveCommand(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ResolvedCommand | null> {
   const explicit = optionalString(input, "command");
-  if (explicit) return explicit;
-  if (ctx.testCommand) return ctx.testCommand;
+  if (explicit) return { command: explicit, defaultCommand: false };
+  if (ctx.testCommand) return { command: ctx.testCommand, defaultCommand: true };
   const probe = await ctx.sandbox.exec(DETECT, { timeoutSecs: 60 });
   const detected = probe.stdout.trim();
-  return detected === "" || detected === "none" ? null : detected;
+  return detected === "" || detected === "none" ? null : { command: detected, defaultCommand: true };
 }
 
 export const runTestsTool = defineTool(
@@ -43,8 +56,8 @@ export const runTestsTool = defineTool(
     },
   },
   async (input, ctx) => {
-    const command = await resolveCommand(input, ctx);
-    if (!command) {
+    const resolved = await resolveCommand(input, ctx);
+    if (!resolved) {
       return {
         ok: false,
         content:
@@ -52,14 +65,23 @@ export const runTestsTool = defineTool(
         meta: {},
       };
     }
+    const { command, defaultCommand } = resolved;
     const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 600)));
     const r = await ctx.sandbox.exec(command, { timeoutSecs });
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(`run_tests: ${command}\n${formatExec(r, timeoutSecs)}`),
       // `ran: true` distinguishes "the suite executed and failed" from "no
-      // test command found" — strategies advance on the former only.
-      meta: { command, ran: true, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs },
+      // test command found"; `defaultCommand` distinguishes the repo's full
+      // suite from a targeted run — strategies gate evidence on both.
+      meta: {
+        command,
+        ran: true,
+        defaultCommand,
+        exitCode: r.exitCode,
+        timedOut: r.timedOut,
+        durationMs: r.durationMs,
+      },
     };
   },
 );

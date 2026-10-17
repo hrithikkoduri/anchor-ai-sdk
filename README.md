@@ -43,11 +43,15 @@ await sandbox.destroy();
 
 `reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:
 
-| Phase | Advances to next when… |
-|---|---|
-| reproduce | `run_tests` **ran and failed** (`meta.ran === true && !ok`) |
-| fix | `run_tests` **ran and passed** |
-| verify | the model calls `finish` (after passing tests — enforced by prompt) |
+| Phase | Advances to next when… | Soft step budget |
+|---|---|---|
+| reproduce | `run_tests` **ran and failed** (`meta.ran === true && !ok`, any source — the agent may run a new test explicitly) | 12 |
+| fix | the repo's **full suite** ran and passed (`meta.defaultCommand === true` — a targeted subset run cannot advance) | 20 |
+| verify | the model calls `finish` — and only with a passing full-suite run on record | 8 |
+
+When a phase exceeds its soft budget the engine nudges the model once: "if you
+cannot {goal}, call finish(success=false)" — reproduction can be genuinely
+impossible, and that ends gracefully instead of burning the global budget.
 
 **Required tools.** The strategy declares `requiredTools`; the engine validates
 them against what you supply and refuses to start on a mismatch:
@@ -78,5 +82,8 @@ budgets, guardrails, and event stream.
 - **Budgets**: step / token / dollar caps, checked before every turn.
 - **Loop detection**: the same tool + arguments 3× in a row is blocked with an explanation.
 - **Protocol discipline**: turns with no tool calls get nudged twice, then the run is marked stalled.
+- **Finish honesty** (strategy-provided `validateFinish`): `codingStrategy` rejects
+  `finish(success=true)` unless the most recent full-suite run passed — the model
+  cannot claim success without evidence; it can always exit honestly with `success=false`.
 - **Events**: `run_started`, `phase_started`, `llm_call_*`, `tool_call`, `tool_result`,
   `guardrail`, `run_finished` — one structured stream for traces, CLIs, and dashboards.

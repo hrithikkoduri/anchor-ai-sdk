@@ -14,6 +14,7 @@ import { allTools } from "../../src/tools/index.js";
 import { codingStrategy } from "../../src/strategies/coding.js";
 import { runAgent } from "../../src/engine/loop.js";
 import type { AgentEvent } from "../../src/engine/events.js";
+import type { AgentStrategy } from "../../src/engine/strategy.js";
 
 const FIXTURE_PATH = fileURLToPath(new URL("../../../../fixtures/buggy-lib", import.meta.url));
 
@@ -200,6 +201,63 @@ describe("engine", () => {
       ),
     ).rejects.toThrow(/run_tests/);
   });
+
+  it("rejects finish(success=true) until a full-suite pass is on record", async () => {
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // fails → fix
+      // The model claims success with no evidence — the strategy rejects it.
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "trust me", success: true }) }] },
+      {
+        toolCalls: [
+          {
+            name: "edit_file",
+            arguments: JSON.stringify({
+              path: "src/sum.js",
+              old_string: "numbers.filter((n) => n >= 0).reduce((a, b) => a + b, 0)",
+              new_string: "numbers.reduce((a, b) => a + b, 0)",
+            }),
+          },
+        ],
+      },
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes → verify
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "fixed", success: true }) }] },
+    ]);
+
+    const result = await run(llm);
+
+    expect(result.ok).toBe(true);
+    expect(result.steps).toBe(5); // the rejected finish consumed a turn, the run continued
+    expect(
+      events.some((e) => e.type === "guardrail" && (e as { kind: string }).kind === "finish_rejected"),
+    ).toBe(true);
+    const toolMessages = result.messages.filter((m) => m.role === "tool").map((m) => m.content ?? "");
+    expect(toolMessages.some((m) => m.includes("finish(success=true) rejected"))).toBe(true);
+  }, 60_000);
+
+  it("nudges once when a phase exceeds its soft step budget", async () => {
+    const tiny: AgentStrategy = {
+      name: "tiny",
+      phases: [{ id: "solo", goal: "do the thing", maxSteps: 2 }],
+      systemPrompt: () => "s",
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "bash", arguments: '{"command":"echo 1"}' }] },
+      { toolCalls: [{ name: "bash", arguments: '{"command":"echo 2"}' }] },
+      { toolCalls: [{ name: "bash", arguments: '{"command":"echo 3"}' }] },
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "impossible", success: false }) }] },
+    ]);
+
+    const result = await runAgent(
+      { task: "t" },
+      { llm, sandbox, tools: allTools, strategy: tiny, onEvent: (e) => events.push(e) },
+    );
+
+    const nudges = result.messages.filter((m) => m.role === "user" && (m.content ?? "").includes("soft limit"));
+    expect(nudges).toHaveLength(1);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("finished");
+  }, 60_000);
 
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
     const llm = new ScriptedLLM([
