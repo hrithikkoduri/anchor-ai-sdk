@@ -64,6 +64,12 @@ export interface EngineOptions {
   pauseAfterPhase?: string;
   /** Auto-checkpoint (git commit) at every phase boundary. Default true when a sandbox exists. */
   checkpoints?: boolean;
+  /**
+   * Force where this run starts. Overrides the thread's resume position —
+   * the product uses it to resume interjected work at the phase it was
+   * interrupted in (or to force a fresh start). Unknown phase → startup error.
+   */
+  startPhase?: string;
   onEvent?: EventSink;
   signal?: AbortSignal;
   /**
@@ -96,6 +102,8 @@ export interface AgentResult {
   messages: LLMMessage[];
   /** The last checkpoint (git commit) taken during the run — the resume/fork point. */
   checkpointRef?: string;
+  /** The phase the run ended in — the product records it for resume decisions (interjections). */
+  phase?: string;
 }
 
 const DEFAULT_LOOP_LIMIT = 3;
@@ -160,9 +168,17 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     resumePhase = prior?.phase;
   }
 
-  // Resume starts where the thread left off (a pause boundary or a crash point).
+  // Where this run starts: an explicit startPhase wins (the product uses it to
+  // resume interjected work), then the thread's saved resume position (pause
+  // or crash), then the first phase.
   let phaseIndex = 0;
-  if (resumePhase) {
+  if (opts.startPhase !== undefined) {
+    const i = phases.findIndex((p) => p.id === opts.startPhase);
+    if (i === -1) {
+      throw new Error(`startPhase "${opts.startPhase}" is not a phase of strategy "${strategy.name}"`);
+    }
+    phaseIndex = i;
+  } else if (resumePhase) {
     const i = phases.findIndex((p) => p.id === resumePhase);
     if (i >= 0) phaseIndex = i;
   }
@@ -249,7 +265,15 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     // Cleared resume position unless the run paused (unfinished work).
     await persistThread(reason !== "paused");
 
-    return { ...extra, reason, steps, usage, messages, checkpointRef: lastCheckpointRef };
+    return {
+      ...extra,
+      reason,
+      steps,
+      usage,
+      messages,
+      checkpointRef: lastCheckpointRef,
+      phase: phases[phaseIndex]!.id,
+    };
   };
 
   try {

@@ -592,6 +592,49 @@ describe("engine", () => {
     expect(result.error).toContain("cancelled");
   }, 60_000);
 
+  it("startPhase overrides the thread's resume position", async () => {
+    const store = new MemoryThreadStore();
+    await store.save("sp-1", { messages: [], phase: "fix" });
+    const llm = new ScriptedLLM([
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "x", success: false }) }] },
+    ]);
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: codingStrategy,
+        thread: { store, id: "sp-1" },
+        startPhase: "reproduce",
+        onEvent: () => undefined,
+      },
+    );
+
+    const firstRequest = llm.seen[0]!;
+    expect(
+      firstRequest.messages.some((m) => m.role === "user" && (m.content ?? "").includes("PHASE: reproduce")),
+    ).toBe(true);
+    expect(result.phase).toBe("reproduce");
+  }, 60_000);
+
+  it("rejects an unknown startPhase at startup", async () => {
+    await expect(
+      runAgent(
+        { task: "t" },
+        {
+          llm: new ScriptedLLM([]),
+          sandbox,
+          tools: allTools,
+          strategy: codingStrategy,
+          startPhase: "nope",
+          onEvent: () => undefined,
+        },
+      ),
+    ).rejects.toThrow(/not a phase/);
+  }, 60_000);
+
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {
     const llm = new ScriptedLLM([
       { toolCalls: [{ name: "nope", arguments: "{}" }] },
