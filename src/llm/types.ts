@@ -61,4 +61,14 @@ export interface LLMRequest {
 export interface LLMClient {
   readonly model: string;
   complete(req: LLMRequest, opts?: { signal?: AbortSignal }): Promise<LLMResponse>;
+  /**
+   * The same call, streamed: `onDelta` receives text fragments as they
+   * arrive; the resolved response is the full aggregate. `complete()` is
+   * exactly `stream()` with a no-op delta handler.
+   */
+  stream(
+    req: LLMRequest,
+    onDelta: (delta: string) => void,
+    opts?: { signal?: AbortSignal },
+  ): Promise<LLMResponse>;
 }
