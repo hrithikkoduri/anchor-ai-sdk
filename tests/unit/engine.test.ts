@@ -13,7 +13,7 @@ import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools } from "../../src/tools/index.js";
 import { codingStrategy } from "../../src/strategies/coding.js";
 import { runAgent } from "../../src/engine/loop.js";
-import { MemoryStore } from "../../src/engine/session.js";
+import { MemoryThreadStore } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 
@@ -273,11 +273,11 @@ describe("engine", () => {
     expect(result.reason).toBe("finished");
   }, 60_000);
 
-  it("remembers a conversation across runs through a SessionStore", async () => {
+  it("remembers a conversation across runs through a ThreadStore", async () => {
     // The generic thread capability: run 2 sees run 1's conversation. This is
     // what makes chat agents (or any multi-turn use) possible on the engine.
-    const store = new MemoryStore();
-    const session = { store, id: "chat-1" };
+    const store = new MemoryThreadStore();
+    const thread = { store, id: "chat-1" };
     const simple: AgentStrategy = {
       name: "simple",
       phases: [{ id: "work", goal: "do work" }],
@@ -291,7 +291,7 @@ describe("engine", () => {
     ]);
     await runAgent(
       { task: "first" },
-      { llm: run1, sandbox, tools: allTools, strategy: simple, session, onEvent: (e) => events.push(e) },
+      { llm: run1, sandbox, tools: allTools, strategy: simple, thread, onEvent: (e) => events.push(e) },
     );
 
     const run2 = new ScriptedLLM([
@@ -299,7 +299,7 @@ describe("engine", () => {
     ]);
     await runAgent(
       { task: "second" },
-      { llm: run2, sandbox, tools: allTools, strategy: simple, session, onEvent: (e) => events.push(e) },
+      { llm: run2, sandbox, tools: allTools, strategy: simple, thread, onEvent: (e) => events.push(e) },
     );
 
     const firstRequest = run2.seen[0]!;
@@ -315,8 +315,8 @@ describe("engine", () => {
     expect(stored!.messages.length).toBeGreaterThan(0);
   }, 60_000);
 
-  it("passes a pre-seeded session summary into the system prompt", async () => {
-    const store = new MemoryStore();
+  it("passes a pre-seeded thread summary into the system prompt", async () => {
+    const store = new MemoryThreadStore();
     await store.save("t-sum", { summary: "earlier: fixed the parser", messages: [] });
 
     let sawSummary: string | undefined;
@@ -335,15 +335,15 @@ describe("engine", () => {
 
     await runAgent(
       { task: "x" },
-      { llm, sandbox, tools: allTools, strategy: simple, session: { store, id: "t-sum" }, onEvent: () => undefined },
+      { llm, sandbox, tools: allTools, strategy: simple, thread: { store, id: "t-sum" }, onEvent: () => undefined },
     );
 
     expect(sawSummary).toBe("earlier: fixed the parser");
   }, 60_000);
 
   it("compacts a long conversation and persists the running summary", async () => {
-    const store = new MemoryStore();
-    const session = { store, id: "long-1" };
+    const store = new MemoryThreadStore();
+    const thread = { store, id: "long-1" };
     const simple: AgentStrategy = {
       name: "simple",
       phases: [{ id: "work", goal: "do work" }],
@@ -365,7 +365,7 @@ describe("engine", () => {
         sandbox,
         tools: allTools,
         strategy: simple,
-        session,
+        thread,
         compaction: { maxEstimatedTokens: 400, keepRecentTokens: 100 },
         onEvent: (e) => events.push(e),
       },

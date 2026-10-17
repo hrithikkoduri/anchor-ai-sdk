@@ -23,7 +23,7 @@ import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExc
 import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type CompactionConfig } from "./compaction.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
 import type { AgentEvent, EventSink } from "./events.js";
-import type { SessionStore } from "./session.js";
+import type { ThreadStore } from "./thread.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 
 export interface RunTask {
@@ -52,10 +52,10 @@ export interface EngineOptions {
    * Cross-run memory (threads). When supplied, the engine loads the prior
    * conversation before the first LLM call and saves the updated one when the
    * run ends — this is what makes multi-turn agents (chat, issue→PR, …)
-   * possible. Prefer `MemoryStore` for tests and a durable `SessionStore`
+   * possible. Prefer `MemoryThreadStore` for tests and a durable `ThreadStore`
    * implementation in products.
    */
-  session?: { store: SessionStore; id: string };
+  thread?: { store: ThreadStore; id: string };
 }
 
 export type FinishReason = "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error";
@@ -104,8 +104,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   // in finishWith (every exit path).
   let priorMessages: LLMMessage[] = [];
   let runningSummary: string | undefined;
-  if (opts.session) {
-    const prior = await opts.session.store.load(opts.session.id);
+  if (opts.thread) {
+    const prior = await opts.thread.store.load(opts.thread.id);
     priorMessages = prior?.messages ?? [];
     runningSummary = prior?.summary;
   }
@@ -150,14 +150,14 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     // regenerated each run, and stale "Begin the task." markers are dropped so
     // history reads as one continuous conversation. Storage failures must not
     // kill a finished run.
-    if (opts.session) {
+    if (opts.thread) {
       const persisted = messages.filter(
         (m) =>
           m.role !== "system" &&
           !(m.role === "user" && (m.content ?? "").startsWith("Begin the task.")),
       );
       try {
-        await opts.session.store.save(opts.session.id, { summary: runningSummary, messages: persisted });
+        await opts.thread.store.save(opts.thread.id, { summary: runningSummary, messages: persisted });
       } catch {
         // swallow: a finished run is still finished
       }
