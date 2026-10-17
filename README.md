@@ -130,6 +130,14 @@ ships the in-memory default; durable stores (Postgres, SQLite) are implemented
 by the consumer. The framework never depends on a database — chat agents,
 research threads, and the issue→PR product all consume the same seam.
 
+**Compaction keeps long threads inside the context window.** When the
+conversation estimate exceeds `compaction.maxEstimatedTokens` (default 80k
+estimated tokens, chars/4), the engine folds the oldest span into the `summary`
+with one LLM call (usage counted in budgets) and keeps a recent verbatim tail;
+the system prompt is regenerated from the new summary. The cut is
+protocol-safe — it never splits a tool call from its results — and a
+`compacted` event reports what happened. Disable with `compaction: false`.
+
 ## Build your own strategy
 
 Implement `AgentStrategy`: give it `phases` (with `advanceOn` predicates over
@@ -147,5 +155,7 @@ budgets, guardrails, and event stream.
 - **Finish honesty** (strategy-provided `validateFinish`): `codingStrategy` rejects
   `finish(success=true)` unless the most recent full-suite run passed — the model
   cannot claim success without evidence; it can always exit honestly with `success=false`.
+- **Compaction**: long threads fold their oldest turns into the running summary
+  (protocol-safe cut) instead of crashing on context limits.
 - **Events**: `run_started`, `phase_started`, `llm_call_*`, `tool_call`, `tool_result`,
   `guardrail`, `run_finished` — one structured stream for traces, CLIs, and dashboards.

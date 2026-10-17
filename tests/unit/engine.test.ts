@@ -46,6 +46,19 @@ class ScriptedLLM implements LLMClient {
 
   async stream(req: LLMRequest, onDelta: (delta: string) => void): Promise<LLMResponse> {
     this.seen.push(structuredClone(req));
+    // Compaction calls carry a recognizable system prompt — answer them from
+    // a canned response so they don't consume the scripted queue.
+    const first = req.messages[0];
+    if (typeof first?.content === "string" && first.content.includes("compacting an AI agent")) {
+      return {
+        text: "COMPACTED: earlier work summarized",
+        toolCalls: [],
+        usage: { promptTokens: 50, completionTokens: 10, totalTokens: 60 },
+        model: "scripted",
+        finishReason: "stop",
+        latencyMs: 1,
+      };
+    }
     const next = this.queue.shift();
     if (!next) throw new Error("scripted LLM ran out of responses");
     if (next.text) onDelta(next.text);
@@ -326,6 +339,55 @@ describe("engine", () => {
     );
 
     expect(sawSummary).toBe("earlier: fixed the parser");
+  }, 60_000);
+
+  it("compacts a long conversation and persists the running summary", async () => {
+    const store = new MemoryStore();
+    const session = { store, id: "long-1" };
+    const simple: AgentStrategy = {
+      name: "simple",
+      phases: [{ id: "work", goal: "do work" }],
+      systemPrompt: ({ summary }) => `sys${summary ? `|${summary}` : ""}`,
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+    const big = "x".repeat(600); // ~150 estimated tokens per turn of chatter
+    const llm = new ScriptedLLM([
+      { text: big, toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo 1" }) }] },
+      { text: big, toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo 2" }) }] },
+      { text: big, toolCalls: [{ name: "bash", arguments: JSON.stringify({ command: "echo 3" }) }] },
+      { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "done", success: false }) }] },
+    ]);
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm,
+        sandbox,
+        tools: allTools,
+        strategy: simple,
+        session,
+        compaction: { maxEstimatedTokens: 400, keepRecentTokens: 100 },
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.reason).toBe("finished");
+    const compacted = events.find((e) => e.type === "compacted") as { removedMessages: number } | undefined;
+    expect(compacted).toBeDefined();
+    expect(compacted!.removedMessages).toBeGreaterThanOrEqual(1);
+
+    // A later request carries the folded summary in its system prompt…
+    const laterRequest = llm.seen.at(-1)!;
+    expect(String(laterRequest.messages[0]!.content)).toContain("COMPACTED: earlier work summarized");
+    // …the conversation keeps a phase anchor after the cut…
+    expect(
+      laterRequest.messages.some(
+        (m) => m.role === "user" && (m.content ?? "").includes("Conversation compacted"),
+      ),
+    ).toBe(true);
+    // …and the store persisted the summary for the next run.
+    const stored = await store.load("long-1");
+    expect(stored!.summary).toBe("COMPACTED: earlier work summarized");
   }, 60_000);
 
   it("feeds unknown tools and malformed arguments back as tool errors", async () => {

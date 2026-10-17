@@ -1,0 +1,137 @@
+/**
+ * Compaction — the context-window manager for long-lived threads.
+ *
+ * A thread that lives for days accumulates messages; sending the whole
+ * history every run eventually exceeds the model's context window. Standard
+ * fix, implemented here: when the conversation estimate crosses a threshold,
+ * ask the LLM to fold the OLDEST span into the running summary (one call), and
+ * keep a recent verbatim tail. The conversation is then still complete — in
+ * two tiers: summary (compressed old work) + messages (recent work).
+ *
+ * Protocol safety (the subtle part): a kept span must never START with a
+ * `tool` message, because tool results are meaningless without the assistant
+ * turn that requested them. The cut slides forward to the first non-tool
+ * message, so every kept assistant-with-tool_calls has its results with it.
+ */
+import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
+
+export interface CompactionConfig {
+  /** Compact when the conversation estimate exceeds this (estimated tokens, chars/4). */
+  maxEstimatedTokens?: number;
+  /** How much of the tail to keep verbatim. */
+  keepRecentTokens?: number;
+}
+
+export const DEFAULT_COMPACTION = {
+  maxEstimatedTokens: 80_000,
+  keepRecentTokens: 30_000,
+} as const;
+
+/** Rough token estimate: characters / 4, plus tool-call overhead. No tokenizer dependency. */
+export function estimateTokens(messages: LLMMessage[]): number {
+  let chars = 0;
+  for (const m of messages) {
+    chars += m.content?.length ?? 0;
+    for (const tc of m.tool_calls ?? []) {
+      chars += tc.name.length + tc.arguments.length;
+    }
+  }
+  return Math.ceil(chars / 4);
+}
+
+/**
+ * Where to cut: everything from the returned index onward is KEPT verbatim.
+ * Returns -1 when compaction isn't possible (the tail alone fills the budget)
+ * or wouldn't be safe/sensible.
+ */
+export function findCompactionCut(messages: LLMMessage[], keepRecentTokens: number): number {
+  let kept = 0;
+  let cut = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    kept += estimateTokens([messages[i]!]);
+    if (kept >= keepRecentTokens) {
+      cut = i;
+      break;
+    }
+  }
+  if (cut === -1) return -1; // tail alone already fills the keep-budget
+
+  // Protocol safety: a kept span must not start with a tool result.
+  while (cut < messages.length && messages[cut]!.role === "tool") cut += 1;
+  if (cut >= messages.length) return -1; // nothing left to keep
+  if (cut < 2) return -1; // messages[0] is the system prompt; need something besides it to summarize
+  return cut;
+}
+
+export interface CompactionOutcome {
+  /** The new running summary (prior summary + folded transcript). */
+  summary: string;
+  /** The verbatim tail that was kept. */
+  keptMessages: LLMMessage[];
+  removedCount: number;
+  usage: LLMUsage;
+}
+
+const COMPACT_SYSTEM = `You are compacting an AI agent's working conversation into a dense summary. Preserve: the task, what was tried (commands, edits) and their outcomes, key facts about the code (files, functions, line numbers), test status, the current phase and goal, and anything needed to continue the work without re-reading the transcript. Output ONLY the summary text.`;
+
+function renderTranscript(messages: LLMMessage[]): string {
+  const parts: string[] = [];
+  for (const m of messages) {
+    if (m.role === "assistant") {
+      if (m.content) parts.push(`assistant: ${m.content}`);
+      for (const tc of m.tool_calls ?? []) parts.push(`assistant → ${tc.name}(${tc.arguments})`);
+    } else if (m.role === "tool") {
+      parts.push(`tool result: ${m.content ?? ""}`);
+    } else {
+      parts.push(`${m.role}: ${m.content ?? ""}`);
+    }
+  }
+  return parts.join("\n");
+}
+
+/**
+ * Fold the oldest span into a summary. Returns null when compaction isn't
+ * possible (unsafe cut, nothing to summarize) or the model returned nothing —
+ * callers then simply continue with the intact conversation.
+ */
+export async function compactConversation(args: {
+  llm: LLMClient;
+  messages: LLMMessage[];
+  runningSummary?: string;
+  keepRecentTokens: number;
+  signal?: AbortSignal;
+}): Promise<CompactionOutcome | null> {
+  const cut = findCompactionCut(args.messages, args.keepRecentTokens);
+  if (cut === -1) return null;
+
+  const summarizable = args.messages.slice(1, cut); // skip the system prompt
+  if (summarizable.length === 0 || estimateTokens(summarizable) === 0) return null;
+
+  const userContent = [
+    args.runningSummary ? `Existing summary of even earlier work:\n${args.runningSummary}\n` : "",
+    `Transcript to fold in:\n${renderTranscript(summarizable)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const response = await args.llm.complete(
+    {
+      messages: [
+        { role: "system", content: COMPACT_SYSTEM },
+        { role: "user", content: userContent },
+      ],
+      maxTokens: 2000,
+    },
+    { signal: args.signal },
+  );
+
+  const summary = response.text.trim();
+  if (summary === "") return null; // nothing usable — keep the conversation intact
+
+  return {
+    summary,
+    keptMessages: args.messages.slice(cut),
+    removedCount: summarizable.length,
+    usage: response.usage,
+  };
+}

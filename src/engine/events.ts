@@ -39,6 +39,13 @@ export type AgentEvent =
     }
   | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected"; detail: string }
   | {
+      type: "compacted";
+      removedMessages: number;
+      keptMessages: number;
+      summaryChars: number;
+      usage: LLMUsage;
+    }
+  | {
       type: "run_finished";
       ok: boolean;
       summary?: string;

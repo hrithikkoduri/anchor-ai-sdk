@@ -20,6 +20,7 @@ import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.j
 import type { Sandbox } from "../sandbox/types.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 import { BudgetTracker, DEFAULT_BUDGET_LIMITS, type BudgetLimits, type BudgetExceeded } from "./budgets.js";
+import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type CompactionConfig } from "./compaction.js";
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
 import type { AgentEvent, EventSink } from "./events.js";
 import type { SessionStore } from "./session.js";
@@ -40,6 +41,11 @@ export interface EngineOptions {
   tools: Tool[];
   strategy: AgentStrategy;
   budgets?: Partial<BudgetLimits>;
+  /**
+   * Context-window management. Enabled by default (thresholds in
+   * DEFAULT_COMPACTION); pass `false` to disable entirely.
+   */
+  compaction?: CompactionConfig | false;
   onEvent?: EventSink;
   signal?: AbortSignal;
   /**
@@ -71,6 +77,10 @@ const LOOP_THRESHOLD = 3;
 export async function runAgent(task: RunTask, opts: EngineOptions): Promise<AgentResult> {
   const emit: EventSink = opts.onEvent ?? (() => undefined);
   const budgets = new BudgetTracker(opts.budgets);
+  const compaction =
+    opts.compaction === false
+      ? null
+      : { ...DEFAULT_COMPACTION, ...(typeof opts.compaction === "object" ? opts.compaction : {}) };
   const byName = new Map(opts.tools.map((t) => [t.definition.name, t] as const));
   const toolDefs: LLMToolDef[] = opts.tools.map((t) => ({ type: "function", function: t.definition }));
 
@@ -93,15 +103,15 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   // Cross-run memory: prior turns load here, the updated conversation saves
   // in finishWith (every exit path).
   let priorMessages: LLMMessage[] = [];
-  let priorSummary: string | undefined;
+  let runningSummary: string | undefined;
   if (opts.session) {
     const prior = await opts.session.store.load(opts.session.id);
     priorMessages = prior?.messages ?? [];
-    priorSummary = prior?.summary;
+    runningSummary = prior?.summary;
   }
 
   const messages: LLMMessage[] = [
-    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context, summary: priorSummary }) },
+    { role: "system", content: opts.strategy.systemPrompt({ task: task.task, context, summary: runningSummary }) },
     ...priorMessages,
     { role: "user", content: `Begin the task. ${opts.strategy.enterPhaseMessage(phases[0]!)}` },
   ];
@@ -147,7 +157,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           !(m.role === "user" && (m.content ?? "").startsWith("Begin the task.")),
       );
       try {
-        await opts.session.store.save(opts.session.id, { summary: priorSummary, messages: persisted });
+        await opts.session.store.save(opts.session.id, { summary: runningSummary, messages: persisted });
       } catch {
         // swallow: a finished run is still finished
       }
@@ -167,6 +177,34 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           ok: false,
           error: over.detail,
         });
+      }
+
+      // Context-window management: fold the oldest span into the running
+      // summary before the conversation grows past what the model can take.
+      if (compaction && estimateTokens(messages) > compaction.maxEstimatedTokens) {
+        const outcome = await compactConversation({
+          llm: opts.llm,
+          messages,
+          runningSummary,
+          keepRecentTokens: compaction.keepRecentTokens,
+          signal: opts.signal,
+        });
+        if (outcome) {
+          budgets.record(outcome.usage); // compaction costs money; budgets see it
+          runningSummary = outcome.summary;
+          const system = opts.strategy.systemPrompt({ task: task.task, context, summary: runningSummary });
+          const anchor = userMessage(
+            `${opts.strategy.enterPhaseMessage(phases[phaseIndex]!)} (Conversation compacted — continue from the summary in the system prompt.)`,
+          );
+          messages.splice(0, messages.length, { role: "system", content: system }, anchor, ...outcome.keptMessages);
+          emit({
+            type: "compacted",
+            removedMessages: outcome.removedCount,
+            keptMessages: outcome.keptMessages.length,
+            summaryChars: outcome.summary.length,
+            usage: outcome.usage,
+          });
+        }
       }
 
       steps += 1;
