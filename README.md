@@ -68,6 +68,45 @@ The prompts mention tools by name (workflow guidance for the model); the API's
 writes a repo map (file list + manifest heads) into the system prompt before the
 first LLM call — pass `context` on the task to override it.
 
+## Architecture — units of work
+
+```
+consumer (apps/harness, or anyone)
+   │   runAgent(task, { llm, sandbox, tools, strategy, budgets, onEvent })
+   ▼
+┌── ENGINE (engine/loop.ts) ────────────────────────────────────────────┐
+│  THE LOOP:  budget check → llm.stream() → dispatch tool calls         │
+│             → strategy.advanceOn(result, tool)? → repeat              │
+│  HOLDS:     conversation, current phase, evidence log, guardrails     │
+│  EMITS:     AgentEvent stream (traces, CLIs, dashboards)             │
+└────┬────────────────────┬───────────────────────┬─────────────────────┘
+     │ calls               │ consults              │ executes via
+     ▼                     ▼                       ▼
+┌───────────┐      ┌──────────────┐      ┌───────────────────┐
+│ LLMClient │      │   STRATEGY   │      │   Tool registry   │
+│ (protocol │      │ phases +     │      │ bash, edit_file,  │
+│  only)    │      │ advanceOn +  │      │ run_tests, …      │
+└───────────┘      │ finish gate  │      └────────┬──────────┘
+                   └──────────────┘               │ sandbox.exec()
+                                                  ▼
+                                         ┌──────────────────┐
+                                         │     SANDBOX      │
+                                         │  heyo / local    │
+                                         └──────────────────┘
+```
+
+Smallest → largest: **tool call** (one ToolResult — the atom) → **turn**
+(one LLM call + its tool calls; what budgets count) → **phase** (a mode
+spanning turns; exits only on its evidence signature) → **run** (one
+`runAgent()`; what a product schedules as a job) → **thread** (a product
+concept across runs — deliberately not in this package).
+
+The **evidence spine** is strategy territory, not framework: `codingStrategy`
+hangs on `run_tests` (reproduce ← failing run, fix ← passing full run,
+`finish` gate ← last full run green). The engine knows none of that — it only
+asks `advanceOn`/`validateFinish`. A research strategy picks its own spine
+with the same contract.
+
 ## Build your own strategy
 
 Implement `AgentStrategy`: give it `phases` (with `advanceOn` predicates over
