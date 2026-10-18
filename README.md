@@ -111,6 +111,18 @@ moves come back as tool errors with the reason. And no check can trap a run: a c
 override is recorded (`via: "advance_forced"` + a `check_overridden` guardrail event), and
 `finish(success=true)` stays checked.
 
+Checks are just functions: async, with `ctx.sandbox` in reach — a check can run its own
+verification, call one of the tools, or hit an external API the sandboxed agent cannot:
+
+```ts
+validateAdvance: async ({ sandbox }) => {
+  const r = await runTestsTool.run({}, { sandbox });
+  return r.ok ? { allow: true } : { allow: false, reason: "tests are red" };
+}
+```
+
+A throwing check counts as a denial (with the error as the reason), never a crash.
+
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy
 (`codingStrategy.prepareContext()`) writes a repo map (file list + manifest heads) into the system prompt before the

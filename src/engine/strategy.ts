@@ -17,6 +17,24 @@ export interface ToolResultRecord {
   meta?: Record<string, unknown>;
 }
 
+/** The verdict a check returns — allow, or deny with a reason the model will see. */
+export type CheckVerdict = { allow: boolean; reason?: string };
+
+/**
+ * What a phase's advance check sees. Checks are plain functions (decision
+ * #37) — they may be async, may run their own verification in the sandbox,
+ * and may call anything the host process can reach (an external approval
+ * API, one of the tools, a judge). The AGENT never supplies checks; the
+ * strategy does — so a check can do things the sandboxed agent cannot.
+ */
+export interface AdvanceCheckContext {
+  to: string;
+  reason?: string;
+  evidence: ToolResultRecord[];
+  /** The run's sandbox, when one exists — checks may execute their own verification. */
+  sandbox?: Sandbox;
+}
+
 export interface StrategyPhase {
   id: string;
   /** One line injected into the phase-entry message. */
@@ -32,13 +50,13 @@ export interface StrategyPhase {
    * Optional check on the move OUT of this phase (the `advance` intrinsic).
    * The agent decides when a phase is done; this validates the move — e.g.
    * "only leave fix with a green full-suite run on record". Absent = trusted:
-   * the move is allowed and recorded as unverified (decision #34).
+   * the move is allowed and recorded as unverified (decision #34). The check
+   * is just a function (decision #37): it may be async, use `ctx.sandbox` to
+   * run its own verification, or call anything the host can reach (an external
+   * approval API, a tool, a judge). A throwing check counts as a denial —
+   * `force` remains the escape.
    */
-  validateAdvance?(ctx: {
-    to: string;
-    reason?: string;
-    evidence: ToolResultRecord[];
-  }): { allow: boolean; reason?: string };
+  validateAdvance?(ctx: AdvanceCheckContext): CheckVerdict | Promise<CheckVerdict>;
 }
 
 export interface AgentStrategy {
@@ -69,11 +87,11 @@ export interface AgentStrategy {
   /**
    * Engine-enforced finish gate. Called when the model claims success; return
    * `{ allow: false, reason }` and the engine rejects the claim (the model
-   * receives the reason as a tool error and the run continues). This is how
-   * "never claim success without a passing full test run" becomes enforced
-   * rather than merely promised.
+   * receives the reason as a tool error and the run continues). Like every
+   * check, it may be async (decision #37). This is how "never claim success
+   * without a passing full test run" becomes enforced rather than promised.
    */
-  validateFinish?(evidence: ToolResultRecord[]): { allow: boolean; reason?: string };
+  validateFinish?(evidence: ToolResultRecord[]): CheckVerdict | Promise<CheckVerdict>;
   /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
   systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */

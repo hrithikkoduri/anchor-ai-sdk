@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import type { LLMClient, LLMResponse } from "../../src/llm/types.js";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { runAgent } from "../../src/engine/loop.js";
+import { bashTool } from "../../src/tools/bash.js";
 import { codingAgent } from "../../src/agents/coding/index.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 import type { AgentEvent } from "../../src/engine/events.js";
@@ -205,6 +206,89 @@ describe("advance — agent-driven moves with per-phase checks", () => {
     ).toBe(true);
     const started = events.filter((e) => e.type === "phase_started") as Array<{ phase: string; via?: string }>;
     expect(started.find((e) => e.phase === "verify")!.via).toBe("advance_forced");
+  });
+
+  it("checks are just functions — async, with the sandbox in reach", async () => {
+    // The check verifies an 'external approval' — a file here; an API in real
+    // life. It is async, and it inspects something the agent cannot fake
+    // through its evidence log: it runs its own verification via ctx.sandbox.
+    await sandbox.start();
+    const gated: AgentStrategy = {
+      name: "gated",
+      phases: [
+        {
+          id: "a",
+          goal: "get approval",
+          validateAdvance: async (ctx) => {
+            await new Promise((resolve) => setTimeout(resolve, 5)); // async work
+            const r = await ctx.sandbox!.exec("cat approved.txt 2>/dev/null || true");
+            return r.stdout.trim() === "yes"
+              ? { allow: true, reason: "approval on file" }
+              : { allow: false, reason: "external approval missing" };
+          },
+        },
+        { id: "b", goal: "done" },
+      ],
+      systemPrompt: () => "s",
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm: scripted([
+          { tools: [{ name: "advance", arguments: "{}" }] }, // denied — no approval yet
+          { tools: [{ name: "bash", arguments: JSON.stringify({ command: "echo yes > approved.txt" }) }] },
+          { tools: [{ name: "advance", arguments: "{}" }] }, // allowed — the check verifies via the sandbox
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "moved", success: false }) }] },
+        ]),
+        sandbox,
+        tools: [bashTool],
+        strategy: gated,
+      },
+    );
+
+    expect(result.phase).toBe("b");
+    const msgs = toolMessages(result.messages);
+    expect(msgs.some((c) => c.includes("external approval missing"))).toBe(true);
+    expect(msgs.some((c) => c.includes('moving to phase "b"'))).toBe(true);
+  });
+
+  it("a throwing check is a denial, not a crash — and force still escapes", async () => {
+    await sandbox.start();
+    const flaky: AgentStrategy = {
+      name: "flaky",
+      phases: [
+        {
+          id: "a",
+          goal: "do a",
+          validateAdvance: () => {
+            throw new Error("approval API is down");
+          },
+        },
+        { id: "b", goal: "done" },
+      ],
+      systemPrompt: () => "s",
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm: scripted([
+          { tools: [{ name: "advance", arguments: "{}" }] }, // denial: the check errored
+          { tools: [{ name: "advance", arguments: JSON.stringify({ force: true }) }] }, // escape
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "forced on", success: false }) }] },
+        ]),
+        sandbox,
+        strategy: flaky,
+      },
+    );
+
+    expect(result.phase).toBe("b");
+    const msgs = toolMessages(result.messages);
+    expect(msgs.some((c) => c.includes("the advance check errored: approval API is down"))).toBe(true);
+    expect(msgs.some((c) => c.includes("force override recorded"))).toBe(true);
   });
 
   it("unchecked strategies trust the agent: moves are allowed and recorded", async () => {

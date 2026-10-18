@@ -30,7 +30,7 @@ import { compactConversation, estimateTokens, DEFAULT_COMPACTION, type Compactio
 import { assistantMessage, toolResultMessage, userMessage } from "./context.js";
 import type { AgentEvent, EventSink, RunDisposition } from "./events.js";
 import type { ThreadStore } from "./thread.js";
-import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
+import type { AgentStrategy, CheckVerdict, ToolResultRecord } from "./strategy.js";
 
 export interface RunTask {
   /** The task statement (issue text). */
@@ -495,7 +495,17 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
                 `(phases: ${known}). Fix the value or drop the field.`,
             };
           } else if (claimedSuccess && strategy.validateFinish) {
-            const verdict = strategy.validateFinish(evidence);
+            // The finish check may be async and may throw — a throw is a
+            // denial with the error as the reason (decision #37).
+            let verdict: CheckVerdict;
+            try {
+              verdict = await strategy.validateFinish(evidence);
+            } catch (err) {
+              verdict = {
+                allow: false,
+                reason: `the finish check errored: ${err instanceof Error ? err.message : String(err)}`,
+              };
+            }
             if (verdict.allow) {
               acceptedFinish = true;
             } else {
@@ -544,14 +554,24 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           } else if (targetIndex === phaseIndex) {
             result = { ok: false, content: `advance rejected: already in phase "${targetId}".` };
           } else {
-            // Check on the phase being LEFT; no check = trust (decision #34):
-            // the move is allowed and recorded as unverified.
+            // Check on the phase being LEFT; no check = trust (decision #34).
+            // Checks are plain functions (decision #37): async-capable, with
+            // the sandbox in reach; a throwing check is a denial, not a crash.
             const check = phases[phaseIndex]!.validateAdvance;
             const policyFree = typeof check !== "function";
-            const verdict = check?.({ to: targetId, reason, evidence }) ?? {
-              allow: true,
-              reason: "no advance check — trusting the agent",
-            };
+            let verdict: CheckVerdict;
+            if (typeof check !== "function") {
+              verdict = { allow: true, reason: "no advance check — trusting the agent" };
+            } else {
+              try {
+                verdict = await check({ to: targetId, reason, evidence, sandbox: opts.sandbox });
+              } catch (err) {
+                verdict = {
+                  allow: false,
+                  reason: `the advance check errored: ${err instanceof Error ? err.message : String(err)}`,
+                };
+              }
+            }
             // A check can delay a move — never trap the loop (decision #36):
             // `force: true` downgrades a denial to a recorded override.
             const force = result.meta?.force === true;
