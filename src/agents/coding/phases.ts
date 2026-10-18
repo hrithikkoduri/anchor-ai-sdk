@@ -31,6 +31,6 @@ export const codingPhases: StrategyPhase[] = [
     id: "respond",
     goal: "Deliver the answer, findings, or outcome with evidence and limitations.",
     guidance:
-      "Be clear about what happened, what was verified, and what remains uncertain. A response does not publish code or post a GitHub comment. End when the request is answered or a genuine blocker needs the user.",
+      "Be clear about what happened, what was verified, and what remains uncertain. A response does not publish code or post a comment on the forge. End when the request is answered or a genuine blocker needs the user.",
   },
 ];

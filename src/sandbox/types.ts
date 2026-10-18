@@ -119,7 +119,7 @@ export interface SandboxSpec {
 
 export interface Sandbox {
   readonly id: string;
-  readonly backend: "heyo" | "local";
+  readonly backend: string;
   /** Absolute path of the repo inside the sandbox (e.g. /workspace/repo). */
   readonly workspace: string;
 

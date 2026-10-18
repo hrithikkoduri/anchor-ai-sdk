@@ -15,6 +15,7 @@
  */
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./heyo-exec.js";
+import type { ProviderHealth, SandboxProvider } from "./provider.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -87,6 +88,76 @@ function httpsHost(repoUrl: string | undefined): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Live credential probe for `SandboxProvider.probe()` — never throws. Asks
+ * whoami (the canonical check) and, best-effort, the deployment count; the
+ * structured bits ride along in `info` for consumers like `doctor`.
+ */
+export async function probeHeyo(
+  cfg: Pick<HeyoSandboxConfig, "server" | "token">,
+): Promise<ProviderHealth> {
+  const lb = new Hws({
+    server: cfg.server,
+    token: cfg.token,
+    timeoutMs: 10_000,
+  });
+  try {
+    const who = await lb.whoami();
+    let deployments: number | undefined;
+    try {
+      deployments = (await lb.deployments()).length;
+    } catch {
+      deployments = undefined; // scope may exclude list rights; whoami is the check
+    }
+    const bits = [
+      cfg.server,
+      who.namespace ? `namespace ${who.namespace}` : "(unconfined)",
+      `${who.admin_scope ?? "?"} tier`,
+      ...(deployments !== undefined
+        ? [`${deployments} deployment(s) alive`]
+        : []),
+    ];
+    return {
+      ok: true,
+      name: "heyo",
+      detail: bits.join(" · "),
+      info: { namespace: who.namespace, admin: who.admin_scope, deployments },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      name: "heyo",
+      detail: message.split("\n")[0] ?? message,
+    };
+  }
+}
+
+// Heyo admin machinery travels with the heyo subpath (it imports the SDK too).
+export { upsertHeyoSecret } from "./heyo-secret.js";
+export type { UpsertHeyoSecretArgs } from "./heyo-secret.js";
+
+/** Heyo Cloud microVMs as a sandbox provider. */
+export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
+  return {
+    name: "heyo",
+    capabilities: {
+      fork: false, // deferred: rebuild-from-checkpoint instead
+      retain: true,
+      remoteCheckpoint: true,
+      egressControl: false,
+      localPath: false, // the VM is another machine
+    },
+    create: (spec) => new HeyoSandbox(spec, cfg),
+    adopt: (handle, spec = {}) =>
+      new HeyoSandbox({ ...spec, adopt: handle.id }, cfg),
+    release: async (handle) => {
+      await new HeyoSandbox({ adopt: handle.id }, cfg).destroy();
+    },
+    probe: () => probeHeyo(cfg),
+  };
 }
 
 export class HeyoSandbox implements Sandbox {
