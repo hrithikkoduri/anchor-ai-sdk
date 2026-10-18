@@ -35,7 +35,15 @@ export type AgentEvent =
       usage: LLMUsage;
       latencyMs: number;
     }
-  | { type: "tool_call"; phase: string; step: number; name: string; input: Record<string, unknown>; callId?: string; verb?: string }
+  | {
+      type: "tool_call";
+      phase: string;
+      step: number;
+      name: string;
+      input: Record<string, unknown>;
+      callId?: string;
+      verb?: string;
+    }
   | {
       type: "tool_result";
       phase: string;
@@ -49,13 +57,26 @@ export type AgentEvent =
       contentChars: number;
       meta?: Record<string, unknown>;
     }
-  | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected" | "transition_rejected" | "check_overridden"; detail: string }
+  | {
+      type: "guardrail";
+      kind:
+        | "loop_detected"
+        | "budget_exceeded"
+        | "finish_rejected"
+        | "transition_rejected"
+        | "check_overridden";
+      detail: string;
+    }
   | { type: "checkpoint"; ref: string; label: string }
   | {
       type: "compacted";
       removedMessages: number;
       keptMessages: number;
       summaryChars: number;
+      /** The summary that replaced the folded span — the compaction's output. */
+      summary?: string;
+      /** Truncated transcript of the folded span — the compaction's input. */
+      folding?: string;
       usage: LLMUsage;
     }
   | {
@@ -64,7 +85,14 @@ export type AgentEvent =
       summary?: string;
       steps: number;
       usage: LLMUsage;
-      reason: "finished" | "max_steps" | "budget_exceeded" | "stalled" | "error" | "paused" | "cancelled";
+      reason:
+        | "finished"
+        | "max_steps"
+        | "budget_exceeded"
+        | "stalled"
+        | "error"
+        | "paused"
+        | "cancelled";
       /** Set when the run concluded via finish(): done | watch | blocked. */
       disposition?: RunDisposition;
     }

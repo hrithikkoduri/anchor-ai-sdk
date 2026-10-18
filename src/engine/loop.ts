@@ -270,6 +270,8 @@ export async function runAgent(
             removedMessages: folded.removedCount,
             keptMessages: tail.length,
             summaryChars: summary.length,
+            summary,
+            folding: folded.foldingPreview,
             usage: folded.usage,
           });
           // Compaction itself consumes budget; check again before inference.

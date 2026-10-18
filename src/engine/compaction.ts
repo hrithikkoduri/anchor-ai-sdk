@@ -73,8 +73,14 @@ export interface CompactionOutcome {
   /** The verbatim tail that was kept. */
   keptMessages: LLMMessage[];
   removedCount: number;
+  /** Truncated transcript of what was folded away — trace/journal material. */
+  foldingPreview: string;
   usage: LLMUsage;
 }
+
+/** Folded-transcript preview cap: enough to see what was folded, small enough
+ * that one compaction event cannot bloat the journal. */
+const FOLDING_PREVIEW_CHARS = 6_000;
 
 const COMPACT_SYSTEM = `You are compacting an AI agent's working conversation into a dense factual summary. Preserve user requests and corrections, observations, attempted commands and edits, their actual outcomes, file locations, verification status, and unresolved blockers. Distinguish earlier tasks from the current request. Do not carry old phase directives or engine nudges forward as instructions. Do not invent completed actions or requirements. Output ONLY the summary text.`;
 
@@ -136,10 +142,15 @@ export async function compactConversation(args: {
   const summary = response.text.trim();
   if (summary === "") return null; // nothing usable — keep the conversation intact
 
+  const folded = renderTranscript(summarizable);
   return {
     summary,
     keptMessages: args.messages.slice(cut),
     removedCount: summarizable.length,
+    foldingPreview:
+      folded.length > FOLDING_PREVIEW_CHARS
+        ? `${folded.slice(0, FOLDING_PREVIEW_CHARS)}\n[... folded transcript truncated for the record — ${folded.length} chars total ...]`
+        : folded,
     usage: response.usage,
   };
 }

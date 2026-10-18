@@ -3,16 +3,29 @@
  * The end-to-end trigger lives in engine.test.ts.
  */
 import { describe, expect, it } from "vitest";
-import { estimateTokens, findCompactionCut } from "../../src/engine/compaction.js";
-import type { LLMMessage } from "../../src/llm/types.js";
+import {
+  compactConversation,
+  estimateTokens,
+  findCompactionCut,
+} from "../../src/engine/compaction.js";
+import type { LLMClient, LLMMessage } from "../../src/llm/types.js";
 
-const msg = (role: LLMMessage["role"], content: string): LLMMessage => ({ role, content });
+const msg = (role: LLMMessage["role"], content: string): LLMMessage => ({
+  role,
+  content,
+});
 const assistantCall = (text: string, command: string): LLMMessage => ({
   role: "assistant",
   content: text,
-  tool_calls: [{ id: "c1", name: "bash", arguments: JSON.stringify({ command }) }],
+  tool_calls: [
+    { id: "c1", name: "bash", arguments: JSON.stringify({ command }) },
+  ],
 });
-const toolResult = (content: string): LLMMessage => ({ role: "tool", tool_call_id: "c1", content });
+const toolResult = (content: string): LLMMessage => ({
+  role: "tool",
+  tool_call_id: "c1",
+  content,
+});
 
 describe("estimateTokens", () => {
   it("counts content and tool-call arguments at chars/4", () => {
@@ -30,7 +43,11 @@ describe("estimateTokens", () => {
 
 describe("findCompactionCut", () => {
   it("returns -1 when the tail alone fills the keep-budget", () => {
-    const messages = [msg("system", "s"), msg("user", "u"), msg("assistant", "a")];
+    const messages = [
+      msg("system", "s"),
+      msg("user", "u"),
+      msg("assistant", "a"),
+    ];
     expect(findCompactionCut(messages, 100_000)).toBe(-1);
   });
 
@@ -63,7 +80,42 @@ describe("findCompactionCut", () => {
 
   it("keeps at least the system prompt plus one summarizable message", () => {
     const big = "x".repeat(4000);
-    const messages: LLMMessage[] = [msg("system", "s"), msg("user", big), msg("assistant", big)];
+    const messages: LLMMessage[] = [
+      msg("system", "s"),
+      msg("user", big),
+      msg("assistant", big),
+    ];
     expect(findCompactionCut(messages, 1100)).toBe(-1);
+  });
+});
+
+describe("compacted outcome", () => {
+  it("folds to a summary and a bounded preview of the folded transcript", async () => {
+    const messages: LLMMessage[] = [
+      msg("system", "s"),
+      msg("assistant", "x".repeat(30_000)), // the foldable middle
+      msg("user", "tail request"),
+    ];
+    const llm = {
+      model: "t",
+      complete: async () => ({
+        text: "SUMMARY OF EARLIER WORK",
+        toolCalls: [],
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        model: "t",
+        latencyMs: 1,
+      }),
+      stream: async () => {
+        throw new Error("unused");
+      },
+    } as unknown as LLMClient;
+    const outcome = await compactConversation({
+      llm,
+      messages,
+      keepRecentTokens: 1,
+    });
+    expect(outcome!.summary).toBe("SUMMARY OF EARLIER WORK");
+    expect(outcome!.foldingPreview).toContain("truncated for the record");
+    expect(outcome!.foldingPreview.length).toBeLessThan(6_300);
   });
 });

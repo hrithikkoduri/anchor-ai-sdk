@@ -135,7 +135,10 @@ explicit operation. The trace journal is immutable.
 Compaction summarizes factual earlier observations and retains a recent,
 protocol-safe tail. The current request survives compaction. Usage is counted
 against the budget before another inference. Generic defaults are 80k estimated
-tokens with a 30k tail; Sailor uses 24k/8k. Disable with `compaction: false`.
+tokens with a 30k tail; Sailor raises this to 256k/64k so long investigations
+keep their accumulated findings. The `compacted` event records what happened —
+the folded-transcript preview, the summary it produced, counts, and usage — so
+the trace shows both sides of the fold. Disable with `compaction: false`.
 
 ## Tools, streaming, and activity labels
 

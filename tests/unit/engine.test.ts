@@ -258,6 +258,12 @@ describe("agent runtime", () => {
     );
     expect(result.reason).toBe("finished");
     expect(events.some((event) => event.type === "compacted")).toBe(true);
+    // The trace carries both sides of the fold: what was folded and the summary.
+    const compacted = events.find((event) => event.type === "compacted") as
+      | { summary?: string; folding?: string }
+      | undefined;
+    expect(compacted!.summary).toContain("COMPACTED: earlier observations");
+    expect(compacted!.folding).toContain("old request");
     const later = llm.seen.at(-1)!;
     expect(later.messages[0]!.content).toContain("COMPACTED");
     expect(
