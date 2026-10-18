@@ -120,5 +120,5 @@ export function shq(s: string): string {
 }
 
 export function newSandboxId(): string {
-  return `sb-harness-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
+  return `sb-anchor-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
 }

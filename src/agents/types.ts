@@ -3,7 +3,7 @@
  *
  * Built-in agents live under `agents/` and are imported ready to run:
  *
- *   import { codingAgent } from "@harness/agent";
+ *   import { codingAgent } from "@anchor/core";
  *   runAgent(task, { llm, sandbox, agent: codingAgent });
  *
  * This is a convenience, not a mode: the engine resolves `agent` into the

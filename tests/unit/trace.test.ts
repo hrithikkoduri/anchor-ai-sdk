@@ -24,7 +24,7 @@ describe("redact", () => {
 
 describe("JsonlTrace", () => {
   it("writes ordered, redacted NDJSON with seq and ts", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "harness-trace-"));
+    const dir = await mkdtemp(path.join(os.tmpdir(), "anchor-trace-"));
     try {
       const trace = new JsonlTrace(path.join(dir, "nested", "run.jsonl"));
       const s0 = await trace.record({ type: "run_started", task: "fix it" });

@@ -72,7 +72,7 @@ describe("engine", () => {
   let events: AgentEvent[];
 
   beforeEach(async () => {
-    rootDir = await mkdtemp(path.join(os.tmpdir(), "harness-engine-"));
+    rootDir = await mkdtemp(path.join(os.tmpdir(), "anchor-engine-"));
     sandbox = new LocalSandbox({ localPath: FIXTURE_PATH }, { rootDir, quiet: true });
     await sandbox.start();
     events = [];

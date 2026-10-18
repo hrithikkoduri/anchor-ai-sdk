@@ -9,7 +9,7 @@
  *
  * The framework defines the shape; the consumer supplies the notebook:
  *   - `MemoryThreadStore` (here): zero-dependency default for tests and demos
- *   - our product: `PostgresThreadStore` in apps/harness (step 11)
+ *   - our product: `PostgresThreadStore` in apps/server (step 11)
  *   - strangers: SQLite, Redis, files — their call
  * The package never depends on a database.
  *

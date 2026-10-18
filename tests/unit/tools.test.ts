@@ -20,7 +20,7 @@ describe("tools", () => {
   let ctx: ToolContext;
 
   beforeEach(async () => {
-    rootDir = await mkdtemp(path.join(os.tmpdir(), "harness-tools-"));
+    rootDir = await mkdtemp(path.join(os.tmpdir(), "anchor-tools-"));
     sandbox = new LocalSandbox({}, { rootDir, quiet: true });
     await sandbox.start();
     ctx = { sandbox };

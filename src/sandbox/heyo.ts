@@ -264,7 +264,7 @@ export class HeyoSandbox implements Sandbox {
   private async cloneRepo(): Promise<void> {
     await this.guest(`mkdir -p ${this.workspace}`, { cwd: "/", timeoutSecs: 60 });
     const identity = await this.guest(
-      `git config --global user.name "harness" && git config --global user.email "harness@localhost"`,
+      `git config --global user.name "anchor" && git config --global user.email "anchor@localhost"`,
       { cwd: "/", timeoutSecs: 60 },
     );
     if (identity.exitCode !== 0) {

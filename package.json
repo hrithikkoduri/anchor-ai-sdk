@@ -1,5 +1,5 @@
 {
-  "name": "@harness/agent",
+  "name": "@anchor/core",
   "version": "0.0.1",
   "description": "Loop-first, sandbox-first agent framework: engine, tools, LLM client, sandbox adapters.",
   "type": "module",

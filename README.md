@@ -1,4 +1,4 @@
-# @harness/agent
+# @anchor/core
 
 Loop-first, sandbox-first agent framework.
 
@@ -12,7 +12,7 @@ import {
   createLLMClient,
   createSandbox,
   runAgent,
-} from "@harness/agent";
+} from "@anchor/core";
 
 // 1. Where the work happens. Bring any backend: heyo (default) or local.
 const sandbox = createSandbox(
@@ -43,7 +43,7 @@ Everything else has a sensible default — no sandbox, no tools, no strategy
 boilerplate:
 
 ```ts
-import { runAgent } from "@harness/agent";
+import { runAgent } from "@anchor/core";
 
 const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 // the default chat strategy replies and ends the run on the text-only turn
@@ -177,7 +177,7 @@ is product policy (this repo's PR babysitter, step 13).
 ## Architecture — units of work
 
 ```
-consumer (apps/harness, or anyone)
+consumer (apps/server, or anyone)
    │   runAgent(task, { llm, sandbox, agent, budgets, onEvent })
    ▼
 ┌── ENGINE (engine/loop.ts) ────────────────────────────────────────────┐
@@ -220,7 +220,7 @@ The engine then loads the prior conversation before the first LLM call and
 saves the updated one when the run ends (all exit paths):
 
 ```ts
-import { MemoryThreadStore, runAgent } from "@harness/agent";
+import { MemoryThreadStore, runAgent } from "@anchor/core";
 
 const store = new MemoryThreadStore();                 // or your own ThreadStore
 const thread = { store, id: "chat-1" };

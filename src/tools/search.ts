@@ -12,7 +12,7 @@ import { shq } from "../sandbox/types.js";
 import { truncate } from "./truncate.js";
 import { defineTool, optionalBoolean, optionalNumber, optionalString, requireSandbox, requireString } from "./types.js";
 
-const RC_MARKER = "__harness_rc=";
+const RC_MARKER = "__anchor_rc=";
 
 export const searchTool = defineTool(
   {

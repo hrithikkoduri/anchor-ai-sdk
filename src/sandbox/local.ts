@@ -1,6 +1,6 @@
 /**
  * LocalSandbox — the `Sandbox` interface implemented as plain processes on
- * this machine, in a scratch directory under `.harness/sandboxes/`.
+ * this machine, in a scratch directory under `.anchor/sandboxes/`.
  *
  * NOT a sandbox: commands run with your user's full permissions on your Mac.
  * It exists so the agent loop, tools, and tests can be developed in
@@ -30,7 +30,7 @@ import {
 } from "./types.js";
 
 export interface LocalSandboxOptions {
-  /** Where sandbox directories live. Default: `<cwd>/.harness/sandboxes`. */
+  /** Where sandbox directories live. Default: `<cwd>/.anchor/sandboxes`. */
   rootDir?: string;
   /** Silence the "no isolation" warning (used by tests). */
   quiet?: boolean;
@@ -54,7 +54,7 @@ export class LocalSandbox implements Sandbox {
     private readonly opts: LocalSandboxOptions = {},
   ) {
     this.id = newSandboxId();
-    this.root = path.join(opts.rootDir ?? path.join(process.cwd(), ".harness", "sandboxes"), this.id);
+    this.root = path.join(opts.rootDir ?? path.join(process.cwd(), ".anchor", "sandboxes"), this.id);
     this.workspace = path.join(this.root, "repo");
   }
 
@@ -80,8 +80,8 @@ export class LocalSandbox implements Sandbox {
     if (!(await exists(path.join(this.workspace, ".git")))) {
       await this.git(["init", "-q", "-b", "main", this.workspace]);
     }
-    await this.git(["-C", this.workspace, "config", "user.name", "harness"]);
-    await this.git(["-C", this.workspace, "config", "user.email", "harness@localhost"]);
+    await this.git(["-C", this.workspace, "config", "user.name", "anchor"]);
+    await this.git(["-C", this.workspace, "config", "user.email", "anchor@localhost"]);
 
     this.started = true;
   }

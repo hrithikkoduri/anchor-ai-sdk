@@ -1,12 +1,12 @@
 /**
- * @harness/agent — the public API.
+ * @anchor/core — the public API.
  *
  * Loop-first, sandbox-first agent framework: an LLM transport, a sandbox
  * abstraction with pluggable backends, a tool protocol with a coding tool
  * set, and (step 7) the engine that runs it all.
  *
  * Publishable-ready rules (decision #16): nothing here reads environment
- * variables or imports product infrastructure — consumers like apps/harness
+ * variables or imports product infrastructure — consumers like apps/server
  * own configuration and orchestration.
  */
 export * from "./llm/index.js";

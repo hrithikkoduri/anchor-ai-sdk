@@ -38,7 +38,7 @@ describe("LocalSandbox", () => {
   let rootDir: string;
 
   beforeEach(async () => {
-    rootDir = await mkdtemp(path.join(os.tmpdir(), "harness-sbx-"));
+    rootDir = await mkdtemp(path.join(os.tmpdir(), "anchor-sbx-"));
   });
 
   afterEach(async () => {
