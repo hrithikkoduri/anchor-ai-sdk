@@ -26,9 +26,22 @@ export function revivalBlock(warnAtPercent: number): string {
 }
 
 /** The runtime-only user message injected once at the warning line. */
-export function budgetWarning(usedTokens: number, limitTokens: number): string {
+export function budgetWarning(usage: {
+  tokensUsed: number;
+  tokenLimit: number;
+  stepsUsed: number;
+  stepLimit: number;
+  usdUsed?: number;
+  usdLimit?: number;
+}): string {
+  const parts = [
+    `${usage.tokensUsed}/${usage.tokenLimit} tokens`,
+    `${usage.stepsUsed}/${usage.stepLimit} steps`,
+  ];
+  if (usage.usdUsed !== undefined && usage.usdLimit !== undefined)
+    parts.push(`$${usage.usdUsed.toFixed(2)}/$${usage.usdLimit}`);
   return (
-    `Budget warning: ${usedTokens}/${limitTokens} tokens used. ` +
+    `Budget warning: the run budget is nearly spent (${parts.join(", ")}). ` +
     "If you cannot finish, call request_revival now — what remains, and your estimate of the next run's steps and tokens (include your own buffer). " +
     "Otherwise, spend what is left on the most valuable remaining step and wrap up cleanly."
   );

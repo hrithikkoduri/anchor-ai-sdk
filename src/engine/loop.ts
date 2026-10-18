@@ -336,24 +336,46 @@ export async function runAgent(
       }
       if (revivalOn && !revivalWarned) {
         // One warning, before the wall: the model can either spend what is
-        // left well or leave a funded handoff for the next run.
-        const limit = budget.limits.maxTokens;
-        const used = budget.totalTokens();
-        const tokensHit = limit > 0 && used >= limit * (revivalWarnAt / 100);
+        // left well or leave a funded handoff for the next run. Tokens,
+        // steps, AND dollars each bind — a pricier model hits the dollar cap
+        // long before the token cap, and dying without a warning means no
+        // chance to leave a handoff.
+        const tokensUsed = budget.totalTokens();
+        const tokensHit =
+          budget.limits.maxTokens > 0 &&
+          tokensUsed >= budget.limits.maxTokens * (revivalWarnAt / 100);
         const stepsHit =
           budget.limits.maxSteps > 0 &&
           steps >= budget.limits.maxSteps * (revivalWarnAt / 100);
-        if (tokensHit || stepsHit) {
+        const usdHit =
+          budget.costsKnown &&
+          budget.limits.maxUsd > 0 &&
+          budget.costUsd >= budget.limits.maxUsd * (revivalWarnAt / 100);
+        if (tokensHit || stepsHit || usdHit) {
           revivalWarned = true;
           emit({
             type: "advisory",
             kind: "budget_warning",
-            detail: `budget nearing its limit (${used}/${limit} tokens, ${steps}/${budget.limits.maxSteps} steps)`,
+            detail:
+              `budget nearing its limit (${tokensUsed}/${budget.limits.maxTokens} tokens, ` +
+              `${steps}/${budget.limits.maxSteps} steps` +
+              (budget.costsKnown
+                ? `, $${budget.costUsd.toFixed(2)}/$${budget.limits.maxUsd}`
+                : "") +
+              ")",
           });
           messages.push({
             role: "user",
             origin: "engine",
-            content: budgetWarning(used, limit),
+            content: budgetWarning({
+              tokensUsed,
+              tokenLimit: budget.limits.maxTokens,
+              stepsUsed: steps,
+              stepLimit: budget.limits.maxSteps,
+              ...(budget.costsKnown
+                ? { usdUsed: budget.costUsd, usdLimit: budget.limits.maxUsd }
+                : {}),
+            }),
           });
         }
       }

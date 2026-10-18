@@ -14,6 +14,13 @@ import type { LLMClient, LLMRequest } from "../../src/llm/types.js";
 type Turn = {
   text?: string;
   calls?: Array<{ name: string; arguments?: string }>;
+  /** Per-turn usage overrides — e.g. costUsd to make dollar caps bind. */
+  usage?: Partial<{
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    costUsd: number;
+  }>;
 };
 
 /** A minimal scripted client that records every wire request. */
@@ -29,7 +36,12 @@ function scripted(turns: Turn[]) {
         name: call.name,
         arguments: call.arguments ?? "{}",
       })),
-      usage: { promptTokens: 100, completionTokens: 10, totalTokens: 110 },
+      usage: {
+        promptTokens: 100,
+        completionTokens: 10,
+        totalTokens: 110,
+        ...(turn.usage ?? {}),
+      },
       model: "scripted",
       finishReason: "stop",
       latencyMs: 1,
@@ -120,6 +132,54 @@ describe("budget revival", () => {
     expect(first).toContain("request_revival");
     const warned = llm.seen[8]!;
     expect(JSON.stringify(warned.messages)).toContain("Budget warning:");
+  });
+
+  it("warns on dollars when the price makes them bind first", async () => {
+    // $2.50 a call against a $20 cap: 85% is $17, crossed by call 7 — the
+    // old tokens/steps-only warning would have stayed silent until death.
+    const cost = { costUsd: 2.5 };
+    const llm = scripted([
+      ...Array.from({ length: 7 }, (_, index) => ({
+        calls: [echo(index)],
+        usage: cost,
+      })),
+      {
+        calls: [
+          {
+            name: "request_revival",
+            arguments: JSON.stringify({
+              remaining: "finish under the dollar cap",
+            }),
+          },
+        ],
+        usage: cost,
+      },
+      { calls: [echo(9)], usage: cost },
+    ]);
+    const events: AgentEvent[] = [];
+    const result = await runAgent(
+      { task: "Fix the parser." },
+      {
+        llm,
+        sandbox,
+        agent: codingAgent,
+        budgets: { maxUsd: 20, maxTokens: 1_000_000_000, maxSteps: 500 },
+        revival: {},
+        onEvent: (event) => events.push(event),
+      },
+    );
+
+    expect(result.reason).toBe("budget_exceeded");
+    expect(result.revival?.remaining).toBe("finish under the dollar cap");
+    const warning = events.find(
+      (event): event is Extract<AgentEvent, { type: "advisory" }> =>
+        event.type === "advisory" && event.kind === "budget_warning",
+    );
+    expect(warning?.detail).toContain("$17.50/$20");
+    // The warning reached the model on the turn after $17.50 was spent.
+    const warned = llm.seen[7]!;
+    expect(JSON.stringify(warned.messages)).toContain("Budget warning");
+    expect(JSON.stringify(warned.messages)).toContain("$17.50/$20");
   });
 
   it("is fully off unless the consumer opts in", async () => {
