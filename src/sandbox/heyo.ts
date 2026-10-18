@@ -47,6 +47,12 @@ export interface HeyoSandboxConfig {
   imageDockerfile?: string;
   /** git kind: an app-lb secret holding the git token (private repos). */
   imageAuth?: { secret: string; key?: string };
+  /**
+   * Host-built images only: rootfs size in MB (`build.image_size_mb`). The
+   * rootfs IS the kernel's root disk — its default (~1 GiB) fills up fast
+   * when pip/venvs install into it; the /workspace data disk is `diskSizeGb`.
+   */
+  imageSizeMb?: number;
   sizeClass: HeyoSizeClass;
   diskSizeGb: number;
   /** Used to clone private repos and later push PR branches; optional. */
@@ -131,6 +137,9 @@ export class HeyoSandbox implements Sandbox {
             build: {
               store: this.cfg.imageStore ?? "https://hub.heyo.work",
               ref: this.cfg.image,
+              ...(this.cfg.imageSizeMb
+                ? { image_size_mb: this.cfg.imageSizeMb }
+                : {}),
             },
           }
         : this.cfg.imageKind === "git"
@@ -140,6 +149,9 @@ export class HeyoSandbox implements Sandbox {
                 ref: this.cfg.imageRef,
                 dockerfile: this.cfg.imageDockerfile ?? "Dockerfile",
                 ...(this.cfg.imageAuth ? { auth: this.cfg.imageAuth } : {}),
+                ...(this.cfg.imageSizeMb
+                  ? { image_size_mb: this.cfg.imageSizeMb }
+                  : {}),
               },
             }
           : {
