@@ -1,45 +1,27 @@
 /**
  * The sandbox layer's entry points: providers and their lifecycle.
  *
- * Production code opens sandboxes through a `SandboxProvider` (or the legacy
- * options shape, bridged by `providerFor`) and never depends on concrete
- * classes. The classes themselves — and their SDKs — live on subpaths:
+ * Production code opens sandboxes through a `SandboxProvider` and never
+ * depends on concrete classes. The classes, factories, and their SDKs live on
+ * subpaths so this root entry stays SDK-free (type-only imports are erased):
  *
- *   @anchor/core/sandbox/heyo   → heyo(), HeyoSandbox (imports @heyocomputer/hws)
+ *   @anchor/core/sandbox/heyo   → heyo(), HeyoSandbox, probeHeyo,
+ *                                 upsertHeyoSecret (imports @heyocomputer/hws)
  *   @anchor/core/sandbox/local  → local(), LocalSandbox
  *
- * The root export deliberately keeps only types from those modules (erased at
- * compile time), so a consumer that uses neither pays for neither.
+ * The legacy options shape (`{ local } | { heyo }`) still works through
+ * `openSandbox`/`releaseSandbox`: the bridge module loads lazily, only on
+ * that path, so a consumer who passes a provider never touches it.
  */
 import type { Sandbox, SandboxSpec } from "./types.js";
 import type { SandboxHandle, SandboxProvider } from "./provider.js";
-import { providerFor, type CreateSandboxOptions } from "./providers.js";
+import type { CreateSandboxOptions } from "./providers.js";
 
 export * from "./types.js";
 export * from "./provider.js";
-export { heyo, local, providerFor } from "./providers.js";
 export type { CreateSandboxOptions } from "./providers.js";
 export type { HeyoSandboxConfig } from "./heyo.js";
 export type { LocalSandboxOptions } from "./local.js";
-
-/**
- * A fresh sandbox with minimal validation. Prefer passing a provider
- * directly (`heyo({...}).create(spec)`) in new code; the legacy options
- * shape (`{ local } | { heyo }`) keeps older consumers working.
- */
-export function createSandbox(
-  spec: SandboxSpec,
-  opts: CreateSandboxOptions = {},
-): Sandbox {
-  if (!opts.local && spec.localPath) {
-    // Fail fast instead of initializing an empty repo in the VM (learned the
-    // hard way: a silent empty workspace cost a live agent run its trace).
-    throw new Error(
-      `localPath is a local-backend option — pass { local: true } (the --local flag), or give Heyo a repoUrl to clone`,
-    );
-  }
-  return providerFor(opts).create(spec);
-}
 
 export interface OpenSandboxArgs extends CreateSandboxOptions {
   /** The provider to open with. Defaults to the legacy options shape. */
@@ -69,10 +51,13 @@ export interface OpenSandboxArgs extends CreateSandboxOptions {
  * it is not gone, just not usable in this configuration.
  */
 export async function openSandbox(args: OpenSandboxArgs): Promise<Sandbox> {
-  // The legacy test seam (`create`) needs no provider at all — resolve one
-  // only when it will actually be used.
-  const provider =
-    args.provider ?? (args.create ? undefined : providerFor(args));
+  let provider = args.provider;
+  if (!provider && !args.create) {
+    // The legacy options shape: the bridge (and its provider SDKs) load only
+    // when it is actually used.
+    const { providerFor } = await import("./providers.js");
+    provider = providerFor(args);
+  }
   const make = args.create ?? ((spec: SandboxSpec) => provider!.create(spec));
   // Legacy seam matches the handle like before (options-derived backend);
   // the provider path requires the handle to be owned by this provider.
@@ -111,6 +96,10 @@ export async function releaseSandbox(
   handle: SandboxHandle,
   opts: CreateSandboxOptions & { provider?: SandboxProvider } = {},
 ): Promise<void> {
-  const provider = opts.provider ?? providerFor(opts);
+  let provider = opts.provider;
+  if (!provider) {
+    const { providerFor } = await import("./providers.js");
+    provider = providerFor(opts);
+  }
   await provider.release(handle);
 }

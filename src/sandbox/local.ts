@@ -28,6 +28,7 @@ import {
   type Sandbox,
   type SandboxSpec,
 } from "./types.js";
+import type { SandboxProvider } from "./provider.js";
 
 export interface LocalSandboxOptions {
   /** Where sandbox directories live. Default: `<cwd>/.anchor/sandboxes`. */
@@ -367,4 +368,24 @@ async function exists(p: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** The host machine as a sandbox provider — dev and tests; never isolation. */
+export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
+  return {
+    name: "local",
+    capabilities: {
+      fork: false,
+      retain: true,
+      remoteCheckpoint: true,
+      egressControl: false,
+    },
+    create: (spec) => new LocalSandbox(spec, opts),
+    adopt: (handle, spec = {}) =>
+      new LocalSandbox({ ...spec, adopt: handle.id }, opts),
+    release: async (handle) => {
+      await new LocalSandbox({ adopt: handle.id }, opts).destroy();
+    },
+    probe: async () => ({ ok: true, name: "local" }),
+  };
 }

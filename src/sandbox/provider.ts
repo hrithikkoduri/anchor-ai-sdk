@@ -36,7 +36,10 @@ export interface SandboxHandle {
 export interface ProviderHealth {
   ok: boolean;
   name: string;
+  /** Human-readable summary (server, scope, counts — the provider's choice). */
   detail?: string;
+  /** Provider-specific structured extras (e.g. token scope) for `doctor`s. */
+  info?: Record<string, unknown>;
 }
 
 export interface SandboxProvider {
