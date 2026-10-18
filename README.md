@@ -19,37 +19,51 @@ Only the LLM is required. Tools, a sandbox, durable memory, event subscribers,
 and custom agent behavior are optional.
 
 ```ts
-import { codingAgent, createSandbox, runAgent } from "@anchor/core";
+import { codingAgent, runAgent } from "@anchor/core";
+import { heyo } from "@anchor/core/sandbox/heyo";
 
-const sandbox = createSandbox(
-  { repoUrl: "https://github.com/you/repo.git" },
-  { heyo: { token, server, namespace, image: "heyo/bun:latest", sizeClass: "small", diskSizeGb: 4 } },
-);
+const provider = heyo({
+  token,
+  server,
+  namespace,
+  image: "heyo/bun:latest",
+  sizeClass: "small",
+  diskSizeGb: 4,
+});
+const sandbox = provider.create({ repoUrl: "https://github.com/you/repo.git" });
 try {
   await sandbox.start();
   const result = await runAgent(
     { task: "Improve the README without adding test infrastructure" },
-    { llm, sandbox, agent: codingAgent, onEvent: event => console.log(event) },
+    {
+      llm,
+      sandbox,
+      agent: codingAgent,
+      onEvent: (event) => console.log(event),
+    },
   );
 } finally {
   await sandbox.destroy();
 }
 ```
 
-`LocalSandbox` is an explicit development/test backend, **not isolation**. Real
-untrusted repository work belongs in the Heyo microVM backend. The package does
-not read environment variables or depend on the product database/queues.
+`@anchor/core/sandbox/local` is an explicit development/test backend, **not
+isolation**. Real untrusted repository work belongs in the Heyo microVM
+backend. A provider's SDK (e.g. `@heyocomputer/hws` for Heyo) is loaded only
+through its subpath — the root entry stays SDK-free. The package does not read
+environment variables or depend on the product database/queues.
 
 ## One loop, meaningful agent-controlled phases
 
 The coding profile defines an engineering approach:
 
-| Phase | Goal |
-| --- | --- |
-| `understand` | Establish the current request, scope, and relevant facts. |
-| `act` | Carry out the requested work with the smallest sound intervention. |
-| `validate` | Gather evidence appropriate to the change and its risks. |
-| `respond` | Deliver findings or an outcome, with evidence and limitations. |
+| Phase        | Goal                                                                        |
+| ------------ | --------------------------------------------------------------------------- |
+| `understand` | Establish the current request, scope, and relevant facts.                   |
+| `plan`       | Decide the change before touching code; name what is deliberately left out. |
+| `act`        | Carry out the requested work with the smallest sound intervention.          |
+| `validate`   | Gather evidence appropriate to the change and its risks.                    |
+| `respond`    | Deliver findings or an outcome, with evidence and limitations.              |
 
 These are guidance and observable progress, not prerequisites. The optional
 `set_phase({ phase, reason })` tool records a change of approach. The agent can
@@ -78,13 +92,16 @@ const agent = {
   name: "my-product",
   strategy: {
     ...codingAgent.strategy,
-    systemPrompt: ({ context, summary }) => buildCodingPrompt({
-      character: "You are our engineering colleague.",
-      tone: "Use concise technical notes.",
-      context,
-      summary,
-      additionalSections: [{ title: "Product capabilities", body: productRules }],
-    }),
+    systemPrompt: ({ context, summary }) =>
+      buildCodingPrompt({
+        character: "You are our engineering colleague.",
+        tone: "Use concise technical notes.",
+        context,
+        summary,
+        additionalSections: [
+          { title: "Product capabilities", body: productRules },
+        ],
+      }),
   },
 };
 ```
@@ -135,8 +152,10 @@ explicit operation. The trace journal is immutable.
 Compaction summarizes factual earlier observations and retains a recent,
 protocol-safe tail. The current request survives compaction. Usage is counted
 against the budget before another inference. Generic defaults are 80k estimated
-tokens with a 30k tail; Sailor raises this to 256k/64k so long investigations
-keep their accumulated findings. The `compacted` event records what happened —
+tokens with a 30k tail; products derive their own from the model's real context
+window (`compactionForContextWindow`) — Sailor folds at ~55% of the window,
+clamped to the 200–300k working range — so long investigations keep their
+accumulated findings. The `compacted` event records what happened —
 the folded-transcript preview, the summary it produced, counts, and usage — so
 the trace shows both sides of the fold. Disable with `compaction: false`.
 
@@ -156,18 +175,31 @@ Completed calls carry full text, optional provider reasoning, and optional
 `usage.reasoningTokens` (already included in completion tokens). The package
 cannot fabricate reasoning that the provider withholds.
 
+## Sandbox providers
+
+A provider is an object, not an options union: `heyo({…})` (microVMs) and
+`local()` (dev only) ship behind their subpaths; a new backend implements the
+`SandboxProvider` contract — `create(spec)`, `adopt(handle, spec)`,
+`release(handle)`, `probe()` — plus capability flags (`fork`, `retain`,
+`remoteCheckpoint`, `egressControl`) so products degrade instead of guessing.
+`provider.name` travels verbatim on handles, so a new backend can never be
+misclassified as an older one. The lifecycle helpers (`openSandbox` /
+`releaseSandbox`) adopt a retained handle, fall back to a fresh sandbox, and
+retry a fallback ref — provider-agnostic. A conformance suite (pass it → the
+adapter is done) ships under `@anchor/core/testing`.
+
 ## Sandbox execution and safeguards
 
-| Protection | Control |
-| --- | --- |
-| Resource budgets | `budgets: {maxSteps, maxTokens, maxUsd}` |
+| Protection               | Control                                                          |
+| ------------------------ | ---------------------------------------------------------------- |
+| Resource budgets         | `budgets: {maxSteps, maxTokens, maxUsd}`                         |
 | Repeated identical calls | `guardrails.repeatedToolCallLimit` (default 3; `false` disables) |
-| Cancellation | `AbortSignal`, checked before inference and between tools |
-| Context bounds | `compaction: {maxEstimatedTokens, keepRecentTokens}` |
-| Command deadlines | Guest process-group/coreutils timeout; per-call `timeout_secs` |
-| Output bounds | Tool truncation defaults: 300 lines / 20k characters |
-| Persistence | Per-batch conversation saves and changed-work checkpoints |
-| Trace secrets | Redaction at the persistence boundary |
+| Cancellation             | `AbortSignal`, checked before inference and between tools        |
+| Context bounds           | `compaction: {maxEstimatedTokens, keepRecentTokens}`             |
+| Command deadlines        | Guest process-group/coreutils timeout; per-call `timeout_secs`   |
+| Output bounds            | Tool truncation defaults: 300 lines / 20k characters             |
+| Persistence              | Per-batch conversation saves and changed-work checkpoints        |
+| Trace secrets            | Redaction at the persistence boundary                            |
 
 Heyo commands use a guest-side job and short control-plane observations rather
 than holding one HTTP exec open for the full command. The guest deadline remains
