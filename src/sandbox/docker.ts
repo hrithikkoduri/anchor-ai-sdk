@@ -63,6 +63,7 @@ export class DockerSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
+    let createdContainer = false;
 
     if (this.spec.adopt) {
       const status = await this.cli([
@@ -115,78 +116,88 @@ export class DockerSandbox implements Sandbox {
           `docker run failed: ${run.output.trim().slice(0, 500)}`,
         );
       }
+      createdContainer = true;
     }
 
-    // The workspace must exist: a named path comes from the image; a repoUrl
-    // is cloned; nothing means an empty, git-initialized directory.
-    if (this.spec.workspacePath) {
-      const present = await this.execRaw(`test -d ${shq(this.workspace)}`, {
-        cwd: "/",
-        timeoutSecs: 60,
-      });
-      if (present.exitCode !== 0) {
-        throw new Error(
-          `workspacePath ${this.workspace} does not exist in ${this.spec.image ?? this.opts.image}`,
-        );
-      }
-    } else if (this.spec.repoUrl) {
-      const clone = await this.execRaw(
-        `git clone --quiet ${shq(this.spec.repoUrl)} ${shq(this.workspace)}`,
-        { cwd: "/", timeoutSecs: 900 },
-      );
-      if (clone.exitCode !== 0) {
-        throw new Error(
-          `git clone failed: ${clone.output.trim().slice(0, 500)}`,
-        );
-      }
-      if (this.spec.ref) {
-        const checkout = await this.execRaw(
-          `git -C ${shq(this.workspace)} checkout --quiet ${shq(this.spec.ref)}`,
-          { timeoutSecs: 120 },
-        );
-        if (checkout.exitCode !== 0) {
+    try {
+      // The workspace must exist: a named path comes from the image; a repoUrl
+      // is cloned; nothing means an empty, git-initialized directory.
+      if (this.spec.workspacePath) {
+        const present = await this.execRaw(`test -d ${shq(this.workspace)}`, {
+          cwd: "/",
+          timeoutSecs: 60,
+        });
+        if (present.exitCode !== 0) {
           throw new Error(
-            `git checkout ${this.spec.ref} failed: ${checkout.output.trim()}`,
+            `workspacePath ${this.workspace} does not exist in ${this.spec.image ?? this.opts.image}`,
           );
         }
-      }
-    } else {
-      await this.execRaw(`mkdir -p ${shq(this.workspace)}`, {
-        cwd: "/",
-        timeoutSecs: 60,
-      });
-      const hasGit = await this.execRaw(
-        `test -d ${shq(`${this.workspace}/.git`)}`,
-        { cwd: "/", timeoutSecs: 60 },
-      );
-      if (hasGit.exitCode !== 0) {
-        const init = await this.execRaw(
-          `git init -q -b main ${shq(this.workspace)}`,
-          { cwd: "/", timeoutSecs: 120 },
+      } else if (this.spec.repoUrl) {
+        const clone = await this.execRaw(
+          `git clone --quiet ${shq(this.spec.repoUrl)} ${shq(this.workspace)}`,
+          { cwd: "/", timeoutSecs: 900 },
         );
-        if (init.exitCode !== 0) {
-          throw new Error(`git init failed: ${init.output.trim()}`);
+        if (clone.exitCode !== 0) {
+          throw new Error(
+            `git clone failed: ${clone.output.trim().slice(0, 500)}`,
+          );
+        }
+        if (this.spec.ref) {
+          const checkout = await this.execRaw(
+            `git -C ${shq(this.workspace)} checkout --quiet ${shq(this.spec.ref)}`,
+            { timeoutSecs: 120 },
+          );
+          if (checkout.exitCode !== 0) {
+            throw new Error(
+              `git checkout ${this.spec.ref} failed: ${checkout.output.trim()}`,
+            );
+          }
+        }
+      } else {
+        await this.execRaw(`mkdir -p ${shq(this.workspace)}`, {
+          cwd: "/",
+          timeoutSecs: 60,
+        });
+        const hasGit = await this.execRaw(
+          `test -d ${shq(`${this.workspace}/.git`)}`,
+          { cwd: "/", timeoutSecs: 60 },
+        );
+        if (hasGit.exitCode !== 0) {
+          const init = await this.execRaw(
+            `git init -q -b main ${shq(this.workspace)}`,
+            { cwd: "/", timeoutSecs: 120 },
+          );
+          if (init.exitCode !== 0) {
+            throw new Error(`git init failed: ${init.output.trim()}`);
+          }
         }
       }
+
+      const access = this.gitAccess();
+      // Benchmark images ship exec bits that their git index does not record;
+      // ignoring mode drift keeps patches (and hasChangesFrom) about CONTENT —
+      // a fresh boot must never read as "new work".
+      await access.git(["config", "core.fileMode", "false"]);
+      await access.git([
+        "config",
+        "user.name",
+        this.spec.gitIdentity?.name ?? "anchor",
+      ]);
+      await access.git([
+        "config",
+        "user.email",
+        this.spec.gitIdentity?.email ?? "anchor@localhost",
+      ]);
+
+      this.started = true;
+    } catch (error) {
+      // A failed start must not leak the container it just created (adopted
+      // containers are not ours to remove — only freshly created ones).
+      if (createdContainer) {
+        await this.cli(["rm", "-f", this.id], { timeoutSecs: 120 });
+      }
+      throw error;
     }
-
-    const access = this.gitAccess();
-    // Benchmark images ship exec bits that their git index does not record;
-    // ignoring mode drift keeps patches (and hasChangesFrom) about CONTENT —
-    // a fresh boot must never read as "new work".
-    await access.git(["config", "core.fileMode", "false"]);
-    await access.git([
-      "config",
-      "user.name",
-      this.spec.gitIdentity?.name ?? "anchor",
-    ]);
-    await access.git([
-      "config",
-      "user.email",
-      this.spec.gitIdentity?.email ?? "anchor@localhost",
-    ]);
-
-    this.started = true;
   }
 
   async exec(command: string, opts: ExecOptions = {}): Promise<ExecResult> {
