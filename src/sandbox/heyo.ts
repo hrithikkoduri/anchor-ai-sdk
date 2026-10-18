@@ -33,6 +33,14 @@ export interface HeyoSandboxConfig {
   namespace: string;
   /** VM image — heyo/bun:latest ships git + bun on Debian. */
   image: string;
+  /**
+   * How `image` resolves: a prebuilt artifact (default), or a Dockerfile
+   * manifest (`heyvm.dockerfile.v1`) the host builds itself — the path for
+   * our toolchain image, since heyvm builds are Linux-host-only.
+   */
+  imageKind?: "artifact" | "dockerfile";
+  /** The artifact store both kinds read from. Default: the public hub. */
+  imageStore?: string;
   sizeClass: HeyoSizeClass;
   diskSizeGb: number;
   /** Used to clone private repos and later push PR branches; optional. */
@@ -108,12 +116,28 @@ export class HeyoSandbox implements Sandbox {
       return;
     }
 
-    // Register the deployment (private: no routes) and boot it.
+    // Register the deployment (private: no routes) and boot it. The image
+    // comes from the namespace store: a prebuilt artifact, or a Dockerfile
+    // manifest the host builds itself.
+    const imageSource =
+      this.cfg.imageKind === "dockerfile"
+        ? {
+            build: {
+              store: this.cfg.imageStore ?? "https://hub.heyo.work",
+              ref: this.cfg.image,
+            },
+          }
+        : {
+            artifact: {
+              store: this.cfg.imageStore ?? "https://hub.heyo.work",
+              ref: this.cfg.image,
+            },
+          };
     await this.lb.createDeployment({
       id: this.id,
       namespace: this.cfg.namespace,
       routes: [],
-      artifact: { store: "https://hub.heyo.work", ref: this.cfg.image },
+      ...imageSource,
       vm: {
         driver: "firecracker",
         port: 22,
@@ -128,8 +152,13 @@ export class HeyoSandbox implements Sandbox {
         idle_action: "retain", // keep the /workspace disk between stops
       },
     });
-    const pull = await this.lb.startPull(this.id); // no-op after first pull of this image
-    await this.lb.waitForJob(pull.id);
+    // Prebuilt image → pull it (no-op after the first pull); Dockerfile
+    // manifest → the host builds the rootfs (slower the very first time).
+    const job =
+      this.cfg.imageKind === "dockerfile"
+        ? await this.lb.startBuild(this.id)
+        : await this.lb.startPull(this.id);
+    await this.lb.waitForJob(job.id);
     await this.lb.patchScaling(this.id, { min_replicas: 1 });
     await this.lb.waitForReady(this.id);
 
