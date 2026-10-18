@@ -38,9 +38,15 @@ export interface HeyoSandboxConfig {
    * manifest (`heyvm.dockerfile.v1`) the host builds itself — the path for
    * our toolchain image, since heyvm builds are Linux-host-only.
    */
-  imageKind?: "artifact" | "dockerfile";
-  /** The artifact store both kinds read from. Default: the public hub. */
+  imageKind?: "artifact" | "dockerfile" | "git";
+  /** The artifact store both store kinds read from. Default: the public hub. */
   imageStore?: string;
+  /** git kind: repo URL, ref, and Dockerfile path for host-side builds. */
+  imageRepo?: string;
+  imageRef?: string;
+  imageDockerfile?: string;
+  /** git kind: an app-lb secret holding the git token (private repos). */
+  imageAuth?: { secret: string; key?: string };
   sizeClass: HeyoSizeClass;
   diskSizeGb: number;
   /** Used to clone private repos and later push PR branches; optional. */
@@ -127,12 +133,21 @@ export class HeyoSandbox implements Sandbox {
               ref: this.cfg.image,
             },
           }
-        : {
-            artifact: {
-              store: this.cfg.imageStore ?? "https://hub.heyo.work",
-              ref: this.cfg.image,
-            },
-          };
+        : this.cfg.imageKind === "git"
+          ? {
+              build: {
+                repo: this.cfg.imageRepo,
+                ref: this.cfg.imageRef,
+                dockerfile: this.cfg.imageDockerfile ?? "Dockerfile",
+                ...(this.cfg.imageAuth ? { auth: this.cfg.imageAuth } : {}),
+              },
+            }
+          : {
+              artifact: {
+                store: this.cfg.imageStore ?? "https://hub.heyo.work",
+                ref: this.cfg.image,
+              },
+            };
     await this.lb.createDeployment({
       id: this.id,
       namespace: this.cfg.namespace,
@@ -153,11 +168,12 @@ export class HeyoSandbox implements Sandbox {
       },
     });
     // Prebuilt image → pull it (no-op after the first pull); Dockerfile
-    // manifest → the host builds the rootfs (slower the very first time).
+    // manifest or git source → the host builds the rootfs (slower the very
+    // first time).
     const job =
-      this.cfg.imageKind === "dockerfile"
-        ? await this.lb.startBuild(this.id)
-        : await this.lb.startPull(this.id);
+      this.cfg.imageKind === "artifact"
+        ? await this.lb.startPull(this.id)
+        : await this.lb.startBuild(this.id);
     await this.lb.waitForJob(job.id);
     await this.lb.patchScaling(this.id, { min_replicas: 1 });
     await this.lb.waitForReady(this.id);
