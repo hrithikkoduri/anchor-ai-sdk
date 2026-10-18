@@ -18,7 +18,14 @@
  * as failed, and the run's budget accounting still sees partial usage where
  * the provider reported it.
  */
-import type { LLMClient, LLMMessage, LLMRequest, LLMResponse, LLMToolCall, LLMUsage } from "./types.js";
+import type {
+  LLMClient,
+  LLMMessage,
+  LLMRequest,
+  LLMResponse,
+  LLMToolCall,
+  LLMUsage,
+} from "./types.js";
 
 export interface OpenAICompatibleOptions {
   baseUrl: string;
@@ -27,6 +34,17 @@ export interface OpenAICompatibleOptions {
   /** USD per million tokens — enables costUsd accounting when both are set. */
   priceInPerMTok?: number;
   priceOutPerMTok?: number;
+  /**
+   * USD per million CACHED input tokens (prompt-cache reads). Falls back to
+   * priceInPerMTok when unset — cache hits then just cost the same as misses.
+   */
+  priceCacheReadPerMTok?: number;
+  /**
+   * Ask the provider for a usage block that includes the real cost
+   * (OpenRouter's `usage: { include: true }`). Provider-reported cost beats
+   * the price table whenever it is present.
+   */
+  includeUsageCost?: boolean;
   /** Test seams. */
   fetchImpl?: typeof fetch;
   retryBaseDelayMs?: number;
@@ -53,7 +71,11 @@ interface ChatChunk {
       content?: unknown;
       reasoning?: unknown;
       reasoning_content?: unknown;
-      reasoning_details?: Array<{ type?: string; text?: string; summary?: string }>;
+      reasoning_details?: Array<{
+        type?: string;
+        text?: string;
+        summary?: string;
+      }>;
       tool_calls?: Array<{
         index?: number;
         id?: string;
@@ -62,7 +84,15 @@ interface ChatChunk {
     };
     finish_reason?: string | null;
   }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number } } | null;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    completion_tokens_details?: { reasoning_tokens?: number };
+    prompt_tokens_details?: { cached_tokens?: number };
+    /** OpenRouter, with usage.include: the real cost of this call, in USD. */
+    cost?: number;
+  } | null;
 }
 
 interface StreamState {
@@ -100,7 +130,10 @@ function normalizeContent(content: unknown): string {
 function toWireMessages(messages: LLMMessage[]): unknown[] {
   return messages.map((m) => {
     if (m.role === "assistant") {
-      const out: Record<string, unknown> = { role: "assistant", content: m.content ?? "" };
+      const out: Record<string, unknown> = {
+        role: "assistant",
+        content: m.content ?? "",
+      };
       if (m.tool_calls && m.tool_calls.length > 0) {
         out.tool_calls = m.tool_calls.map((tc) => ({
           id: tc.id,
@@ -111,7 +144,11 @@ function toWireMessages(messages: LLMMessage[]): unknown[] {
       return out;
     }
     if (m.role === "tool") {
-      return { role: "tool", tool_call_id: m.tool_call_id, content: m.content ?? "" };
+      return {
+        role: "tool",
+        tool_call_id: m.tool_call_id,
+        content: m.content ?? "",
+      };
     }
     return { role: m.role, content: m.content ?? "" };
   });
@@ -128,14 +165,20 @@ export class OpenAICompatibleClient implements LLMClient {
     this.maxRetries = opts.maxRetries ?? 3;
   }
 
-  async complete(req: LLMRequest, opts: { signal?: AbortSignal } = {}): Promise<LLMResponse> {
+  async complete(
+    req: LLMRequest,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<LLMResponse> {
     return this.stream(req, () => undefined, opts);
   }
 
   async stream(
     req: LLMRequest,
     onDelta: (delta: string) => void,
-    callOpts: { signal?: AbortSignal; onReasoning?: (delta: string) => void } = {},
+    callOpts: {
+      signal?: AbortSignal;
+      onReasoning?: (delta: string) => void;
+    } = {},
   ): Promise<LLMResponse> {
     const started = Date.now();
 
@@ -145,6 +188,9 @@ export class OpenAICompatibleClient implements LLMClient {
       stream: true,
       stream_options: { include_usage: true },
     };
+    // OpenRouter bills per request and can report the real cost in the usage
+    // block; ask for it so accounting needs no price table.
+    if (this.opts.includeUsageCost) body.usage = { include: true };
     if (req.tools && req.tools.length > 0) body.tools = req.tools;
     if (req.temperature !== undefined) body.temperature = req.temperature;
     if (req.maxTokens !== undefined) body.max_tokens = req.maxTokens;
@@ -154,19 +200,24 @@ export class OpenAICompatibleClient implements LLMClient {
     let lastError: Error | undefined;
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       if (attempt > 0) {
-        const delay = (this.opts.retryBaseDelayMs ?? 1000) * 2 ** (attempt - 1) + Math.random() * 250;
+        const delay =
+          (this.opts.retryBaseDelayMs ?? 1000) * 2 ** (attempt - 1) +
+          Math.random() * 250;
         await sleep(delay);
       }
       try {
-        const candidate = await this.fetchImpl(`${this.opts.baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${this.opts.apiKey}`,
-            "content-type": "application/json",
+        const candidate = await this.fetchImpl(
+          `${this.opts.baseUrl}/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${this.opts.apiKey}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(body),
+            signal: callOpts.signal,
           },
-          body: JSON.stringify(body),
-          signal: callOpts.signal,
-        });
+        );
         if (candidate.ok) {
           res = candidate;
           break;
@@ -176,7 +227,12 @@ export class OpenAICompatibleClient implements LLMClient {
         if (!retryable) throw new LLMApiError(candidate.status, excerpt);
         lastError = new LLMApiError(candidate.status, excerpt);
       } catch (err) {
-        if (err instanceof LLMApiError && err.status !== 429 && err.status < 500) throw err;
+        if (
+          err instanceof LLMApiError &&
+          err.status !== 429 &&
+          err.status < 500
+        )
+          throw err;
         lastError = err instanceof Error ? err : new Error(String(err));
       }
     }
@@ -184,7 +240,11 @@ export class OpenAICompatibleClient implements LLMClient {
     if (!res.body) throw new Error("LLM response has no body to stream");
 
     // --- consume the SSE stream (not retried; mid-flight death is a failure) -
-    const state: StreamState = { text: "", reasoning: "", toolCalls: new Map() };
+    const state: StreamState = {
+      text: "",
+      reasoning: "",
+      toolCalls: new Map(),
+    };
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -219,13 +279,24 @@ export class OpenAICompatibleClient implements LLMClient {
     return this.finishResponse(state, started);
   }
 
-  private applyChunk(chunk: ChatChunk, state: StreamState, onDelta: (delta: string) => void, onReasoning?: (delta: string) => void): void {
+  private applyChunk(
+    chunk: ChatChunk,
+    state: StreamState,
+    onDelta: (delta: string) => void,
+    onReasoning?: (delta: string) => void,
+  ): void {
     if (chunk.model) state.model = chunk.model;
     const choice = chunk.choices?.[0];
     if (choice) {
       const delta = choice.delta ?? {};
-      const reasoning = normalizeContent(delta.reasoning ?? delta.reasoning_content) ||
-        (delta.reasoning_details ?? []).filter(detail => ["reasoning.text", "reasoning.summary"].includes(detail.type ?? "")).map(detail => detail.summary ?? detail.text ?? "").join("");
+      const reasoning =
+        normalizeContent(delta.reasoning ?? delta.reasoning_content) ||
+        (delta.reasoning_details ?? [])
+          .filter((detail) =>
+            ["reasoning.text", "reasoning.summary"].includes(detail.type ?? ""),
+          )
+          .map((detail) => detail.summary ?? detail.text ?? "")
+          .join("");
       if (reasoning) {
         state.reasoning += reasoning;
         onReasoning?.(reasoning);
@@ -238,7 +309,11 @@ export class OpenAICompatibleClient implements LLMClient {
       for (const tc of delta.tool_calls ?? []) {
         // Tool arguments arrive FRAGMENTED across deltas — accumulate by index.
         const index = tc.index ?? 0;
-        const entry = state.toolCalls.get(index) ?? { id: "", name: "", arguments: "" };
+        const entry = state.toolCalls.get(index) ?? {
+          id: "",
+          name: "",
+          arguments: "",
+        };
         if (tc.id) entry.id = tc.id;
         if (tc.function?.name) entry.name = tc.function.name;
         if (tc.function?.arguments) entry.arguments += tc.function.arguments;
@@ -253,7 +328,10 @@ export class OpenAICompatibleClient implements LLMClient {
     const toolCalls: LLMToolCall[] = [...state.toolCalls.entries()]
       .sort(([a], [b]) => a - b)
       .map(([index, tc]) => ({
-        id: tc.id !== "" ? tc.id : `call_${index}_${Math.random().toString(36).slice(2, 8)}`,
+        id:
+          tc.id !== ""
+            ? tc.id
+            : `call_${index}_${Math.random().toString(36).slice(2, 8)}`,
         name: tc.name,
         arguments: tc.arguments === "" ? "{}" : tc.arguments,
       }))
@@ -261,16 +339,34 @@ export class OpenAICompatibleClient implements LLMClient {
 
     const promptTokens = state.usage?.prompt_tokens ?? 0;
     const completionTokens = state.usage?.completion_tokens ?? 0;
+    const cachedTokens = state.usage?.prompt_tokens_details?.cached_tokens;
     const usage: LLMUsage = {
       promptTokens,
       completionTokens,
       totalTokens: state.usage?.total_tokens ?? promptTokens + completionTokens,
     };
-    const reasoningTokens = state.usage?.completion_tokens_details?.reasoning_tokens;
+    const reasoningTokens =
+      state.usage?.completion_tokens_details?.reasoning_tokens;
     if (reasoningTokens !== undefined) usage.reasoningTokens = reasoningTokens;
-    if (this.opts.priceInPerMTok !== undefined && this.opts.priceOutPerMTok !== undefined) {
+    if (cachedTokens !== undefined && cachedTokens > 0)
+      usage.cachedTokens = cachedTokens;
+    // Provider-reported cost (OpenRouter with usage.include) is the truth when
+    // present; otherwise compute it, billing the cached input share at the
+    // cache-read rate — prompt-cache reads are ~25x cheaper on deepseek.
+    const reportedCost = state.usage?.cost;
+    if (typeof reportedCost === "number") {
+      usage.costUsd = reportedCost;
+    } else if (
+      this.opts.priceInPerMTok !== undefined &&
+      this.opts.priceOutPerMTok !== undefined
+    ) {
+      const cached = Math.min(cachedTokens ?? 0, promptTokens);
+      const uncached = promptTokens - cached;
+      const cacheReadPrice =
+        this.opts.priceCacheReadPerMTok ?? this.opts.priceInPerMTok;
       usage.costUsd =
-        (promptTokens / 1_000_000) * this.opts.priceInPerMTok +
+        (uncached / 1_000_000) * this.opts.priceInPerMTok +
+        (cached / 1_000_000) * cacheReadPrice +
         (completionTokens / 1_000_000) * this.opts.priceOutPerMTok;
     }
 

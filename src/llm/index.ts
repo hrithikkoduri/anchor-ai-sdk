@@ -18,6 +18,10 @@ export interface LLMOptions {
   model: string | undefined;
   priceInPerMTok?: number;
   priceOutPerMTok?: number;
+  /** USD per million cached input tokens (prompt-cache reads). */
+  priceCacheReadPerMTok?: number;
+  /** Ask the provider for a usage block carrying the real cost (OpenRouter). */
+  includeUsageCost?: boolean;
 }
 
 export function createLLMClient(opts: LLMOptions): LLMClient {
@@ -35,5 +39,7 @@ export function createLLMClient(opts: LLMOptions): LLMClient {
     model: opts.model,
     priceInPerMTok: opts.priceInPerMTok,
     priceOutPerMTok: opts.priceOutPerMTok,
+    priceCacheReadPerMTok: opts.priceCacheReadPerMTok,
+    includeUsageCost: opts.includeUsageCost,
   });
 }

@@ -42,6 +42,8 @@ export interface LLMUsage {
   totalTokens: number;
   /** Provider-reported reasoning tokens (already included in completionTokens). */
   reasoningTokens?: number;
+  /** Input tokens served from the provider's prompt cache (already included in promptTokens). */
+  cachedTokens?: number;
   /** Computed from configured pricing; undefined when pricing is unknown. */
   costUsd?: number;
 }
@@ -66,7 +68,10 @@ export interface LLMRequest {
 
 export interface LLMClient {
   readonly model: string;
-  complete(req: LLMRequest, opts?: { signal?: AbortSignal }): Promise<LLMResponse>;
+  complete(
+    req: LLMRequest,
+    opts?: { signal?: AbortSignal },
+  ): Promise<LLMResponse>;
   /**
    * The same call, streamed: `onDelta` receives text fragments as they
    * arrive; the resolved response is the full aggregate. `complete()` is
