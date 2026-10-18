@@ -22,9 +22,8 @@ export const finishTool = defineTool(
   {
     name: "finish",
     description:
-      "End the run. Call this exactly once, when the task is done or when you are " +
-      "convinced you cannot proceed. The summary should state what changed and the " +
-      "final test status. Optional follow-up intent: disposition=watch with " +
+      "Optionally declare an outcome or handoff and end the turn. A normal final text response also ends the turn; this tool is not required. " +
+      "State what happened and which checks actually ran, without claiming unobserved verification. Optional follow-up intent: disposition=watch with " +
       "watch={checks:true,comments:true} and resumeAt=<phase> when a future run " +
       "should be woken by external signals (CI, review) and start at that phase.",
     parameters: {
@@ -36,7 +35,7 @@ export const finishTool = defineTool(
         },
         success: {
           type: "boolean",
-          description: "true if the task was completed and verified; false if blocked or unverified.",
+          description: "Your declared task outcome: true for completed work, false for blocked work. This is not test evidence or permission to publish.",
         },
         disposition: {
           type: "string",

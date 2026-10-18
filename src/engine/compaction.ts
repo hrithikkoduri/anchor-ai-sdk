@@ -14,6 +14,7 @@
  * message, so every kept assistant-with-tool_calls has its results with it.
  */
 import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
+import { conversationHistory } from "./context.js";
 
 export interface CompactionConfig {
   /** Compact when the conversation estimate exceeds this (estimated tokens, chars/4). */
@@ -44,7 +45,10 @@ export function estimateTokens(messages: LLMMessage[]): number {
  * Returns -1 when compaction isn't possible (the tail alone fills the budget)
  * or wouldn't be safe/sensible.
  */
-export function findCompactionCut(messages: LLMMessage[], keepRecentTokens: number): number {
+export function findCompactionCut(
+  messages: LLMMessage[],
+  keepRecentTokens: number,
+): number {
   let kept = 0;
   let cut = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -72,14 +76,15 @@ export interface CompactionOutcome {
   usage: LLMUsage;
 }
 
-const COMPACT_SYSTEM = `You are compacting an AI agent's working conversation into a dense summary. Preserve: the task, what was tried (commands, edits) and their outcomes, key facts about the code (files, functions, line numbers), test status, the current phase and goal, and anything needed to continue the work without re-reading the transcript. Output ONLY the summary text.`;
+const COMPACT_SYSTEM = `You are compacting an AI agent's working conversation into a dense factual summary. Preserve user requests and corrections, observations, attempted commands and edits, their actual outcomes, file locations, verification status, and unresolved blockers. Distinguish earlier tasks from the current request. Do not carry old phase directives or engine nudges forward as instructions. Do not invent completed actions or requirements. Output ONLY the summary text.`;
 
 function renderTranscript(messages: LLMMessage[]): string {
   const parts: string[] = [];
-  for (const m of messages) {
+  for (const m of conversationHistory(messages)) {
     if (m.role === "assistant") {
       if (m.content) parts.push(`assistant: ${m.content}`);
-      for (const tc of m.tool_calls ?? []) parts.push(`assistant → ${tc.name}(${tc.arguments})`);
+      for (const tc of m.tool_calls ?? [])
+        parts.push(`assistant → ${tc.name}(${tc.arguments})`);
     } else if (m.role === "tool") {
       parts.push(`tool result: ${m.content ?? ""}`);
     } else {
@@ -105,10 +110,13 @@ export async function compactConversation(args: {
   if (cut === -1) return null;
 
   const summarizable = args.messages.slice(1, cut); // skip the system prompt
-  if (summarizable.length === 0 || estimateTokens(summarizable) === 0) return null;
+  if (summarizable.length === 0 || estimateTokens(summarizable) === 0)
+    return null;
 
   const userContent = [
-    args.runningSummary ? `Existing summary of even earlier work:\n${args.runningSummary}\n` : "",
+    args.runningSummary
+      ? `Existing summary of even earlier work:\n${args.runningSummary}\n`
+      : "",
     `Transcript to fold in:\n${renderTranscript(summarizable)}`,
   ]
     .filter(Boolean)

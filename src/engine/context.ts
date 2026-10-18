@@ -11,15 +11,30 @@ import type { LLMMessage, LLMResponse } from "../llm/types.js";
 export function assistantMessage(response: LLMResponse): LLMMessage {
   return {
     role: "assistant",
-    content: response.text === "" && response.toolCalls.length > 0 ? null : response.text,
+    content:
+      response.text === "" && response.toolCalls.length > 0
+        ? null
+        : response.text,
     tool_calls: response.toolCalls.length > 0 ? response.toolCalls : undefined,
   };
 }
 
-export function toolResultMessage(toolCallId: string, content: string): LLMMessage {
+export function toolResultMessage(
+  toolCallId: string,
+  content: string,
+): LLMMessage {
   return { role: "tool", tool_call_id: toolCallId, content };
 }
 
 export function userMessage(content: string): LLMMessage {
   return { role: "user", content };
+}
+
+/** Working memory contains real conversation and observations, not system
+ * prompts or internal orchestration messages. No prefix guessing: a user's
+ * text is still their text even if it happens to start with "PHASE:". */
+export function conversationHistory(messages: LLMMessage[]): LLMMessage[] {
+  return messages.filter(
+    (message) => message.role !== "system" && message.origin !== "engine",
+  );
 }

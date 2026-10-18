@@ -94,6 +94,7 @@ export const runTestsTool = defineTool(
         exitCode: r.exitCode,
         timedOut: r.timedOut,
         durationMs: r.durationMs,
+        ...(r.failure ? { failure: r.failure } : {}),
         ...(treeHash !== undefined ? { treeHash } : {}),
       },
     };

@@ -1,281 +1,190 @@
-# @anchor/core
+# Anchor — `@anchor/core`
 
-Loop-first, sandbox-first agent framework.
+A small agent runtime: model → tools → observations → model. The agent chooses
+the approach; the runtime bounds execution and preserves the record. A normal
+final response ends the turn. It is not a verification certificate or permission
+to publish changes.
 
-The **engine** runs the agent loop (LLM ↔ tools, budgets, loop detection, events) and knows nothing about any particular domain. An **AgentStrategy** supplies behavior as data: phases, prompts, required tools, and the rules that advance phases. A **Sandbox** is where work happens (Heyo microVMs or a local process); an **LLMClient** is how the model is reached. We ship built-in agents as bundles — `codingAgent` (strategy + tools in one import), `chatAgent` — built on exactly the same public API anyone else would use.
-
-## Quick start — the built-in coding agent
+## Quick start
 
 ```ts
-import {
-  codingAgent,
-  createLLMClient,
-  createSandbox,
-  runAgent,
-} from "@anchor/core";
+import { runAgent, createLLMClient } from "@anchor/core";
 
-// 1. Where the work happens. Bring any backend: heyo (default) or local.
+const llm = createLLMClient({ baseUrl, apiKey, model });
+const result = await runAgent({ task: "Explain this idea" }, { llm });
+console.log(result.summary);
+```
+
+Only the LLM is required. Tools, a sandbox, durable memory, event subscribers,
+and custom agent behavior are optional.
+
+```ts
+import { codingAgent, createSandbox, runAgent } from "@anchor/core";
+
 const sandbox = createSandbox(
   { repoUrl: "https://github.com/you/repo.git" },
   { heyo: { token, server, namespace, image: "heyo/bun:latest", sizeClass: "small", diskSizeGb: 4 } },
 );
-await sandbox.start();
-
-// 2. Run the agent.
-const result = await runAgent(
-  { task: "add() ignores negative numbers: add(-1,-2) returns 0" },
-  {
-    llm: createLLMClient({ baseUrl, apiKey, model }),
-    sandbox,
-    agent: codingAgent,          // strategy + tools in one — see the required-tools table below
-    budgets: { maxSteps: 40, maxUsd: 5 },
-    onEvent: (e) => console.log(e.type), // llm_call, tool_call, phase_started, …
-  },
-);
-
-console.log(result.ok, result.summary, result.usage);
-await sandbox.destroy();
-```
-
-## Nothing is mandatory except the model
-
-Everything else has a sensible default — no sandbox, no tools, no strategy
-boilerplate:
-
-```ts
-import { runAgent } from "@anchor/core";
-
-const reply = await runAgent({ task: "Tell me a joke" }, { llm });
-// the default chat strategy replies and ends the run on the text-only turn
-```
-
-| Option | Default | Notes |
-|---|---|---|
-| `agent` | none | a built-in bundle — `codingAgent`, `chatAgent` — sets `strategy` + `tools` at once; explicit options below win per-field |
-| `strategy` | preset's, then `chatStrategy` | reply-and-end on a text-only turn; the coding strategy declares `requiresSandbox` + `requiredTools`, validated at startup |
-| `tools` | preset's, then `[]` | `codingAgent` brings its own; supply `allTools` or any subset to extend it or build custom agents |
-| `intrinsics` | `finish` always; `advance` for multi-phase strategies | engine-owned control tools, injected on top of `tools` (a consumer tool with a colliding name is ignored); opt out per intrinsic |
-| `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
-| `compaction` | on (safe thresholds) | `false` disables |
-| `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
-| `startPhase` | thread's resume position, else the first phase | force where a run starts — e.g. resume interjected work at the phase it was interrupted in |
-| `budgets`, `onEvent`, `thread` | safe defaults / optional | see below |
-
-For a single model call with no loop at all, skip the engine entirely —
-`llm.complete(...)` is the bare transport (the `generateText` analogue); the
-engine adds the loop, tools, guardrails, and events on top.
-
-## Streaming and activity labels
-
-`runAgent` emits `llm_text_delta` and, when the provider explicitly returns it,
-`llm_reasoning_delta` separately. Completed model calls include the full text,
-optional provider reasoning, and optional `usage.reasoningTokens`. That count
-is already included in completion tokens; do not add it to the total again.
-The framework cannot supply reasoning text or token counts a provider withholds.
-
-Tool call/result events include a stable `callId` and a human-readable `verb`:
-
-```ts
-const lookup = defineTool(
-  { name: "lookup", description: "Look up a record", parameters: {
-    type: "object", properties: { key: { type: "string" } }, required: ["key"],
-  } },
-  async ({ key }) => ({ ok: true, content: await findRecord(key) }),
-  { verb: ({ key }) => `Looking up ${key}` },
-);
-// onEvent: { type: "tool_call", callId: "…", name: "lookup",
-//            verb: "Looking up settings", input: { key: "settings" }, … }
-```
-
-`verb` can be a string or an input-dependent function; built-in tools have
-defaults such as “Reading README.md” and “Running tests”. A tool result can
-override its verb. This is developer presentation metadata, not another
-parameter the model must generate and not part of the provider function schema.
-Consumers decide whether to render it in a chat activity group, timeline, or CLI.
-
-## The coding strategy
-
-`reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:
-
-Phases never advance on their own. The agent calls `advance()` when a phase's work is done,
-and each phase's optional check (`check`) decides whether the move is allowed:
-
-| Phase | Moving on | Soft step budget |
-|---|---|---|
-| reproduce | agent calls `advance()` — checked: a failing test run must be on record | 12 |
-| fix | agent calls `advance()` — checked: the full suite must be green **on the current tree** (a targeted subset cannot satisfy it) | 20 |
-| verify | the final phase — no `advance` target; the agent calls `finish`, checked: passing full-suite run on the current tree | 8 |
-
-When a phase exceeds its soft budget the engine nudges the model once: "if you
-cannot {goal}, call finish(success=false)" — reproduction can be genuinely
-impossible, and that ends gracefully instead of burning the global budget.
-
-**Required tools.** The strategy declares `requiredTools`; the engine validates
-them against what you supply and refuses to start on a mismatch:
-
-| Tool | Why the strategy needs it |
-|---|---|
-| `run_tests` | the evidence that gates phase transitions |
-| `edit_file` | applying the fix |
-| `bash`, `read_file`, `search` | exploration and orientation |
-
-`finish` is not a capability — it's an **engine intrinsic**: injected into every run, so
-consumers never list it and strategies never require it (`intrinsics: { finish: false }`
-opts out for loops that must be ended by budgets alone). The model still sees it as a tool;
-the engine owns the declaration.
-
-**Advancing and finishing — the whole control surface.** Two verbs, one axis:
-`advance` continues (the agent says a phase is done; default target is the next phase, `to`
-jumps or goes back), `finish` stops (the run ends with its outcome). Both are engine
-intrinsics — injected automatically, never listed by consumers — and both can be checked:
-per-phase `check`, per-strategy `checkFinish`. **Moving on is trusted by
-default**: with no check, the move is allowed and recorded (`via: "advance_unverified"`); a
-check hard-gates only where the strategy wants rigor. **Claiming success is where honesty
-lives**: `checkFinish` is the caller's outcome contract. The coding agent uses both —
-reproduce → fix checks for a failing test, fix → verify for a green full suite (mid-fix
-suite runs can't teleport the phase), verify → fix checks for a failing run — and rejected
-moves come back as tool errors with the reason. And no check can trap a run: a check can
-**delay** a move, never forbid progress — `advance({force: true})` overrides a denial, the
-override is recorded (`via: "advance_forced"` + a `check_overridden` guardrail event), and
-`finish(success=true)` stays checked.
-
-Checks are just functions: async, with `ctx.sandbox` in reach — a check can run its own
-verification, call one of the tools, or hit an external API the sandboxed agent cannot.
-A phase reads exactly like this:
-
-```ts
-{
-  id: "draft",
-  goal: "write it up",
-  check: async ({ sandbox }) => {          // your rule — any function
-    const r = await runTestsTool.run({}, { sandbox });
-    return r.ok ? { allow: true } : { allow: false, reason: "tests are red" };
-  },
-  allowForce: true,                        // may the agent override a denial? (default: true)
+try {
+  await sandbox.start();
+  const result = await runAgent(
+    { task: "Improve the README without adding test infrastructure" },
+    { llm, sandbox, agent: codingAgent, onEvent: event => console.log(event) },
+  );
+} finally {
+  await sandbox.destroy();
 }
 ```
 
-A throwing check counts as a denial (with the error as the reason), never a crash.
+`LocalSandbox` is an explicit development/test backend, **not isolation**. Real
+untrusted repository work belongs in the Heyo microVM backend. The package does
+not read environment variables or depend on the product database/queues.
 
-The coding agent already uses the power: `run_tests` records a content hash of the working
-tree, and the fix-gate and finish checks recompute it through the sandbox — a green run whose
-tree has since changed is **stale** and doesn't count ("green on this tree", decision #38).
+## One loop, meaningful agent-controlled phases
 
-The prompts mention tools by name (workflow guidance for the model); the API's
-`tools` array is what actually makes them callable. The coding agent's strategy
-(`codingStrategy.prepareContext()`) writes a repo map (file list + manifest heads) into the system prompt before the
-first LLM call — pass `context` on the task to override it.
+The coding profile defines an engineering approach:
 
-**Concluding — and what comes next.** `finish({summary, success})` ends the run. Optional
-fields declare follow-up intent: `disposition` (`"done"` | `"watch"` | `"blocked"`), `watch`
-(product-defined, e.g. `{checks: true, comments: true}`) and `resumeAt` (which phase a
-future run on this thread should start at). The engine carries all three on `AgentResult`
-and the trace, and for a `watch` finish it keeps the thread's resume position at `resumeAt`
-— wake that thread later and the next run starts exactly there. What the watch spec *means*
-is product policy (this repo's PR babysitter, step 13).
+| Phase | Goal |
+| --- | --- |
+| `understand` | Establish the current request, scope, and relevant facts. |
+| `act` | Carry out the requested work with the smallest sound intervention. |
+| `validate` | Gather evidence appropriate to the change and its risks. |
+| `respond` | Deliver findings or an outcome, with evidence and limitations. |
 
-## Architecture — units of work
+These are guidance and observable progress, not prerequisites. The optional
+`set_phase({ phase, reason })` tool records a change of approach. The agent can
+skip phases, revisit an earlier one, or answer from any phase. There are no
+transition checks, test gates, forced-finish retries, or alternate workflow loop.
+Reviewing means inspecting and reporting; addressing review feedback can mean a
+focused correction. Neither inherently requires manufacturing a failing test.
 
+The runtime executes only declared tools, validates their argument shape, pairs
+every call with its result, and persists completed batches. Failed tools are
+observations the agent can interpret; they do not force another task phase.
+Repeated identical calls and resource exhaustion stop execution rather than
+forcing the model to invent ways around an internal gate.
+
+## Composed prompts and product specialization
+
+The coding prompt is assembled from named components under
+`src/agents/coding/prompts/`: character/tone, judgment, operating rules,
+verification philosophy, approach phases, and workspace/thread context.
+
+```ts
+import { codingAgent, buildCodingPrompt } from "@anchor/core";
+
+const agent = {
+  ...codingAgent,
+  name: "my-product",
+  strategy: {
+    ...codingAgent.strategy,
+    systemPrompt: ({ context, summary }) => buildCodingPrompt({
+      character: "You are our engineering colleague.",
+      tone: "Use concise technical notes.",
+      context,
+      summary,
+      additionalSections: [{ title: "Product capabilities", body: productRules }],
+    }),
+  },
+};
 ```
-consumer (apps/server, or anyone)
-   │   runAgent(task, { llm, sandbox, agent, budgets, onEvent })
-   ▼
-┌── ENGINE (engine/loop.ts) ────────────────────────────────────────────┐
-│  THE LOOP:  budget check → llm.stream() → dispatch tool calls         │
-│             → strategy.advanceOn(result, tool)? → repeat              │
-│  HOLDS:     conversation, current phase, evidence log, guardrails     │
-│  EMITS:     AgentEvent stream (traces, CLIs, dashboards)             │
-└────┬────────────────────┬───────────────────────┬─────────────────────┘
-     │ calls               │ consults              │ executes via
-     ▼                     ▼                       ▼
-┌───────────┐      ┌──────────────┐      ┌───────────────────┐
-│ LLMClient │      │   STRATEGY   │      │   Tool registry   │
-│ (protocol │      │ phases +     │      │ bash, edit_file,  │
-│  only)    │      │ advanceOn +  │      │ run_tests, …      │
-└───────────┘      │ finish gate  │      └────────┬──────────┘
-                   └──────────────┘               │ sandbox.exec()
-                                                  ▼
-                                         ┌──────────────────┐
-                                         │     SANDBOX      │
-                                         │  heyo / local    │
-                                         └──────────────────┘
-```
 
-Smallest → largest: **tool call** (one ToolResult — the atom) → **turn**
-(one LLM call + its tool calls; what budgets count) → **phase** (a mode
-spanning turns; exits only on its evidence signature) → **run** (one
-`runAgent()`; what a product schedules as a job) → **thread** (a product
-concept across runs — deliberately not in this package).
+Sailor uses this composition: it is the coding agent configured with Sailor's
+identity, workspace context, and repository-scoped GitHub tools. It does not
+define another loop, another set of phases, or another engineering personality.
 
-The **evidence spine** is strategy territory, not framework: `codingStrategy`
-hangs on `run_tests` (reproduce ← failing run, fix ← passing full run,
-`finish` gate ← last full run green). The engine knows none of that — it only
-asks for the `check`/`checkFinish` verdicts. A research strategy picks its own spine
-with the same contract.
+Any consumer may instead implement `AgentStrategy`: `name`, phase definitions,
+`systemPrompt`, optional `requiredTools`, `requiresSandbox`, and `prepareContext`.
+Required capabilities are checked at startup. Everything else is model-led.
 
-## Cross-run memory (threads)
+## Completion versus side effects
 
-A run forgets everything when it ends — unless you hand it a `ThreadStore`.
-The engine then loads the prior conversation before the first LLM call and
-saves the updated one when the run ends (all exit paths):
+`AgentResult.ok` describes the runtime outcome; `completion` distinguishes a
+normal `response` from an optional `declared` handoff. `evidence` contains
+observed tool outcomes. Do not interpret a completed response as proof that all
+tests passed or automatically push code/post comments from it.
+
+`finish({summary, success, disposition, watch, resumeAt})` remains an optional
+structured handoff. It is never required to end a response and has no finish
+gate. `watch` is consumer-defined follow-up intent. Phase metadata can support
+`pauseAfterPhase` for a caller-controlled pause without enforcing a reasoning
+workflow. `intrinsics: { finish: false, phase: false }` hides either optional tool.
+
+Sailor makes publication an explicit `publish_changes` tool, checks repository
+selection again at that boundary, and reports actual test evidence. New PRs with
+no passing test evidence are drafts. An optional publication policy can withhold
+publication, but cannot prevent the assistant from reporting the blocker and
+ending its turn. Posting a GitHub reply likewise requires `reply_on_github`.
+
+## Durable conversation and compaction
 
 ```ts
 import { MemoryThreadStore, runAgent } from "@anchor/core";
-
-const store = new MemoryThreadStore();                 // or your own ThreadStore
-const thread = { store, id: "chat-1" };
-
-await runAgent(task1, { ..., thread });                // run 1 works, conversation saved
-await runAgent(task2, { ..., thread });                // run 2 REMEMBERS run 1
+const thread = { store: new MemoryThreadStore(), id: "thread-1" };
+await runAgent({ task: "Inspect this" }, { llm, thread });
+await runAgent({ task: "Now review only; do not edit" }, { llm, thread });
 ```
 
-`ThreadStore` is the interface — `load(id) → { summary?, messages, phase? }`,
-`save(id, thread)` (overwrite semantics); the `summary` is the running
-compacted summary and flows into the strategy's system prompt. The `phase` is
-the **resume position** — written while work is in progress or paused, cleared
-when a run completes, so a follow-up on the same thread starts its phases
-fresh over the same memory. The package ships the in-memory default; durable
-stores (Postgres, SQLite) are implemented by the consumer. The framework never
-depends on a database — chat agents, research threads, and the issue→PR
-product all consume the same seam.
-(LangGraph's "checkpointer" is the same concept under a different name.)
+`ThreadStore` supplies `load(id)` and `save(id, {summary?, messages, phase?})`.
+The actual current request is appended as the latest user message and preserved
+in history. Internal messages marked `origin: "engine"` are not promoted into
+durable user instructions; ordinary text is never discarded by guessing its
+prefix. Product-specific repair of old malformed memory is a separate,
+explicit operation. The trace journal is immutable.
 
-**Compaction keeps long threads inside the context window.** When the
-conversation estimate exceeds `compaction.maxEstimatedTokens` (default 80k
-estimated tokens, chars/4), the engine folds the oldest span into the `summary`
-with one LLM call (usage counted in budgets) and keeps a recent verbatim tail;
-the system prompt is regenerated from the new summary. The cut is
-protocol-safe — it never splits a tool call from its results — and a
-`compacted` event reports what happened. Disable with `compaction: false`.
+Compaction summarizes factual earlier observations and retains a recent,
+protocol-safe tail. The current request survives compaction. Usage is counted
+against the budget before another inference. Generic defaults are 80k estimated
+tokens with a 30k tail; Sailor uses 24k/8k. Disable with `compaction: false`.
 
-## Build your own strategy
+## Tools, streaming, and activity labels
 
-Implement `AgentStrategy`: give it `phases` (with `advanceOn` predicates over
-tool results), `systemPrompt`, `enterPhaseMessage`, optionally `requiredTools`
-and `prepareContext`. Pair it with whatever tool set you want — the engine
-validates the pairing instead of assuming it. A read-only reviewer, a research
-agent, or a triage bot are each one strategy file away from the same engine,
-budgets, guardrails, and event stream.
+Built-in tools: `bash`, `read_file`, `edit_file`, `search`, `run_tests`.
+`run_tests` uses an explicit command, a supplied `testCommand`, or repository
+detection; absence of a suite is reported, not repaired by inventing one.
 
-## Guardrails — built in, wired, tuned (not opted into)
+`defineTool(definition, run, { verb })` accepts a static or input-dependent
+activity label. Tool events carry `callId` and `verb`, such as “Reading repository
+file README.md” or “Reviewing the repository code diff”. Labels are developer
+metadata, not extra model-generated arguments. Custom labels take precedence.
 
-Opt-in protections get forgotten; the framework's job is that a runaway agent
-cannot happen by accident. All of these are on by default, with dials:
+`llm_text_delta` and provider-returned `llm_reasoning_delta` are separate.
+Completed calls carry full text, optional provider reasoning, and optional
+`usage.reasoningTokens` (already included in completion tokens). The package
+cannot fabricate reasoning that the provider withholds.
 
-| Guard | Protects against | Knob |
-|---|---|---|
-| Budgets | runaway cost | `budgets: { maxSteps, maxTokens, maxUsd }` |
-| Loop detection | an identical tool call repeated forever | `guardrails.repeatedToolCallLimit` (default 3; `false` disables) |
-| Text-only stall | a coding turn that forgets to act | `guardrails.emptyTurnNudgeLimit` (default 2; `false` = never stall — budgets stay the backstop) |
-| Compaction | context-window overflow | `compaction: { maxEstimatedTokens, keepRecentTokens } \| false` |
-| Finish gate | false success claims | `strategy.checkFinish` (codingStrategy: the last full-suite run must have passed) |
-| Command timeouts | hung processes | per-call `timeout_secs`; sandbox kill deadlines |
-| Output truncation | context flooding | `truncate()` defaults — 300 lines / 20k chars, one policy |
-| Redaction | secrets in traces/DB | always on at the persistence boundary |
+## Sandbox execution and safeguards
 
-Chat-shaped strategies replace the stall guard with `finishWhenNoToolCalls`
-(a text-only turn IS the reply). Every intervention surfaces as a `guardrail`
-event on the stream (`loop_detected`, `budget_exceeded`, `finish_rejected`),
-alongside the rest: `run_started`, `phase_started`, `llm_call_*`, `tool_call`,
-`tool_result`, `compacted`, `run_finished` — one structured stream for traces,
-CLIs, and dashboards.
+| Protection | Control |
+| --- | --- |
+| Resource budgets | `budgets: {maxSteps, maxTokens, maxUsd}` |
+| Repeated identical calls | `guardrails.repeatedToolCallLimit` (default 3; `false` disables) |
+| Cancellation | `AbortSignal`, checked before inference and between tools |
+| Context bounds | `compaction: {maxEstimatedTokens, keepRecentTokens}` |
+| Command deadlines | Guest process-group/coreutils timeout; per-call `timeout_secs` |
+| Output bounds | Tool truncation defaults: 300 lines / 20k characters |
+| Persistence | Per-batch conversation saves and changed-work checkpoints |
+| Trace secrets | Redaction at the persistence boundary |
+
+Heyo commands use a guest-side job and short control-plane observations rather
+than holding one HTTP exec open for the full command. The guest deadline remains
+in force. Only observation reads are retried; ambiguous launches are not replayed.
+A transport failure has `exitCode: -1`, `timedOut: false`, and
+`failure: {kind: "transport", completion: "unknown", jobId, message}`. It does
+not prove the process was killed. Another command is withheld while an earlier
+job remains unconfirmed. The command's stdout, stderr, combined output, and
+completion receipt are captured separately.
+
+`Sandbox.hasChangesFrom(ref)` compares content trees, not commit counts; empty
+checkpoints must not produce a self-push feedback loop. Changed work can be
+checkpointed at turn/pause boundaries without mandatory agent phases.
+
+## Tests
+
+```sh
+npm test -w packages/core -- --maxWorkers=2
+```
+
+Unit tests use scripted models and local sandboxes. They verify runtime behavior,
+not that a real model will always exercise good judgment. Behavioral evaluations
+with real models are a separate, explicitly authorized step.

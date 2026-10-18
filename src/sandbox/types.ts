@@ -34,6 +34,8 @@ export interface ExecResult {
   /** True when the command hit its deadline and was killed. */
   timedOut: boolean;
   durationMs: number;
+  /** Transport failure is not a process exit or a confirmed command timeout. */
+  failure?: { kind: "transport"; completion: "unknown"; jobId?: string; message: string };
 }
 
 export interface ExecOptions {

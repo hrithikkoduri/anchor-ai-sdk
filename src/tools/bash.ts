@@ -34,7 +34,7 @@ export const bashTool = defineTool(
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(formatExec(r, timeoutSecs)),
-      meta: { command, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs },
+      meta: { command, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs, ...(r.failure ? { failure: r.failure } : {}) },
     };
   },
 );

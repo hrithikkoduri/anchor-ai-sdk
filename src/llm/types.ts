@@ -18,6 +18,8 @@ export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
   /** null is legal for an assistant message that is pure tool calls. */
   content: string | null;
+  /** Runtime-only provenance. Never serialized to the provider. */
+  origin?: "engine";
   /** assistant messages only */
   tool_calls?: LLMToolCall[];
   /** tool messages only — which call this result answers */

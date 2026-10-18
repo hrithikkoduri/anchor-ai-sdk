@@ -11,6 +11,7 @@
  * reach the context.
  */
 import type { Sandbox } from "../sandbox/types.js";
+import type { ExecResult } from "../sandbox/types.js";
 
 export interface ToolDefinition {
   name: string;
@@ -112,8 +113,10 @@ export function optionalBoolean(input: Record<string, unknown>, key: string): bo
 }
 
 /** One-line header + body, the shape every exec-backed tool returns. */
-export function formatExec(r: { exitCode: number; output: string; timedOut: boolean }, timeoutSecs: number): string {
-  const status = r.timedOut ? `timed out after ${timeoutSecs}s (killed)` : `exit code ${r.exitCode}`;
+export function formatExec(r: Pick<ExecResult, "exitCode" | "output" | "timedOut"> & Partial<Pick<ExecResult, "failure" | "durationMs">>, timeoutSecs: number): string {
+  const status = r.exitCode === -1 || r.failure
+    ? `execution request failed${r.durationMs !== undefined ? ` after ${(r.durationMs / 1000).toFixed(1)}s` : ""}; command completion is unknown (not confirmed killed)`
+    : r.timedOut ? `command exceeded its ${timeoutSecs}s deadline (exit ${r.exitCode})` : `exit code ${r.exitCode}`;
   const body = r.output.trim() === "" ? "(no output)" : r.output.trimEnd();
   return `${status}\n${body}`;
 }

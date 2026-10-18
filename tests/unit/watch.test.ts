@@ -132,7 +132,7 @@ describe("finish dispositions + watch", () => {
     expect(saved?.phase).toBeUndefined();
   });
 
-  it("an unknown resumeAt is rejected; the next finish is accepted", async () => {
+  it("a resume hint cannot turn completion into a phase-gate loop", async () => {
     await sandbox.start();
     const store = new MemoryThreadStore();
     const result = await runAgent(
@@ -141,11 +141,6 @@ describe("finish dispositions + watch", () => {
         llm: scripted([
           ...FIX_STEPS,
           { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "x", success: true, resumeAt: "nope" }) }] },
-          {
-            tools: [
-              { name: "finish", arguments: JSON.stringify({ summary: "fixed (kept in phase)", success: true }) },
-            ],
-          },
         ]),
         sandbox,
         agent: codingAgent,
@@ -154,8 +149,7 @@ describe("finish dispositions + watch", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(result.summary).toBe("fixed (kept in phase)");
-    const toolMessages = result.messages.filter((m) => m.role === "tool").map((m) => m.content ?? "");
-    expect(toolMessages.some((c) => c.includes('resumeAt "nope"'))).toBe(true);
+    expect(result.summary).toBe("x");
+    expect(result.messages.some(message => message.content?.includes("finish rejected"))).toBe(false);
   });
 });

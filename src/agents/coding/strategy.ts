@@ -1,159 +1,19 @@
-/**
- * codingStrategy — the default coding agent on top of the engine.
- *
- * Three phases; the agent drives every move and each phase carries a `check`
- * plus an explicit `allowForce` (decision #39):
- *   reproduce → advance() once a test run REPORTS FAILURE (checked)
- *   fix       → advance() once the full suite PASSES on the current tree
- *   verify    → the model reviews the diff and calls finish() (checkFinish)
- *
- * A move is never the model's claim alone — the check sees the tool results.
- * A model that says "I fixed it" without a passing test stays in `fix`.
- */
-import type { Sandbox } from "../../sandbox/types.js";
-import type { AgentStrategy, CheckVerdict, ToolResultRecord } from "../../engine/strategy.js";
+import type { AgentStrategy } from "../../engine/strategy.js";
 import { buildRepoMap } from "./repomap.js";
+import { codingPhases } from "./phases.js";
+import { buildCodingPrompt } from "./prompts/index.js";
 
-const SYSTEM_PROMPT = `You are an autonomous coding agent fixing a bug in a git repository.
-
-The repository is checked out in your working directory. You act ONLY through tools:
-- bash: shell commands (self-contained — no cd/export state persists between calls)
-- read_file / search: read and search the code
-- edit_file: replace an exact string; it must match exactly once — read the file first
-- run_tests: run the test suite (or a single test with an explicit command)
-- advance: move on when the current phase's work is done (the phase checks the move)
-- finish: end the run — the ONLY way to end it
-
-You work in three phases. You decide when to move on; the checks decide whether it is allowed:
-1. reproduce — produce evidence of the bug: find or write a test that FAILS. Do not fix code yet.
-   Once a run reports a failure, call advance() to move to fix.
-2. fix — make the failing test pass with the smallest possible change. Once the FULL suite is
-   green, call advance() to move to verify (checked: a green full-suite run must be on record).
-3. verify — run the full test suite, review your diff, then call finish.
-
-Rules:
-- NEVER call finish with success=true without a passing run_tests in the verify phase.
-- If an approach fails twice, re-read the relevant code instead of repeating commands.
-- Minimal diffs only: no refactors, no formatting changes to unrelated code.
-- If you truly cannot proceed, call finish(summary, success=false) explaining what you learned.
-- If a phase's check cannot be satisfied but you are confident moving on is right, call
-  advance({force: true}) — the override is recorded, and finish(success=true) is still checked.
-- When the work is done but a follow-up should be driven by external signals (CI results,
-  review comments), conclude with disposition="watch", watch={"checks":true,"comments":true},
-  and resumeAt set to the phase a future run should start at (usually "fix"). Use
-  disposition="blocked" when you need a human.`;
-
-const TREE_HASH_CMD = "git add -A >/dev/null 2>&1; git write-tree 2>/dev/null || true";
-
-/** The same content hash run_tests records — recomputed through the sandbox. */
-async function treeHash(sandbox: Sandbox): Promise<string | undefined> {
-  const r = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
-  const sha = r.stdout.trim();
-  return /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
-}
-
-/**
- * Is the suite green — ON THIS TREE? Not just "was green at some point": the
- * recorded full-suite run must match the tree as it stands now, or the agent
- * has changed files since and the run no longer proves anything (decision
- * #38). The check verifies directly via the sandbox; no git → evidence only.
- */
-async function suiteIsGreen(
-  evidence: ToolResultRecord[],
-  sandbox: Sandbox | undefined,
-): Promise<CheckVerdict> {
-  const lastFull = [...evidence]
-    .reverse()
-    .find((r) => r.tool === "run_tests" && r.meta?.ran === true && r.meta?.defaultCommand === true);
-  if (!lastFull) {
-    return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
-  }
-  if (!lastFull.ok) {
-    return { allow: false, reason: "the most recent full test-suite run failed — fix it first" };
-  }
-  const recorded = typeof lastFull.meta?.treeHash === "string" ? lastFull.meta.treeHash : undefined;
-  if (recorded !== undefined && sandbox !== undefined) {
-    const current = await treeHash(sandbox);
-    if (current !== undefined && current !== recorded) {
-      return {
-        allow: false,
-        reason: "the suite was green, but the working tree changed since — re-run the full suite",
-      };
-    }
-  }
-  return { allow: true };
-}
-
+/** Guidance, not a mandatory itinerary. Product identity belongs to consumers. */
 export const codingStrategy: AgentStrategy = {
   name: "coding",
-  // Capabilities only — finish/advance are engine intrinsics, injected automatically.
-  requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests"],
+  phases: codingPhases,
   requiresSandbox: true,
-  phases: [
-    {
-      id: "reproduce",
-      goal: "produce a failing test (or a failing existing test run) that demonstrates the bug",
-      // Soft deadline: reproduction can be genuinely impossible.
-      maxSteps: 12,
-      // The gate on leaving this phase: the agent decides WHEN, the check
-      // decides WHETHER. Any source counts — the agent may write a NEW test
-      // and run it explicitly. "No test command found" does not count
-      // (learned live: it advanced on an empty repo).
-      allowForce: true, // a stuck phase must never trap; the override is recorded
-      check({ to, evidence }) {
-        if (to !== "fix") {
-          return { allow: false, reason: `from reproduce the agent advances to "fix" — not "${to}"` };
-        }
-        const failing = evidence.some((r) => r.tool === "run_tests" && r.meta?.ran === true && !r.ok);
-        return failing
-          ? { allow: true, reason: "a failing test run is on record" }
-          : { allow: false, reason: "no failing test run on record — reproduce the bug first" };
-      },
-    },
-    {
-      id: "fix",
-      goal: "make the failing test pass with a minimal change",
-      maxSteps: 20,
-      allowForce: true, // the success contract lives at checkFinish, so moves stay escapable
-      async check({ to, evidence, sandbox }) {
-        if (to !== "verify") {
-          return { allow: false, reason: `from fix the agent advances to "verify" — not "${to}"` };
-        }
-        return suiteIsGreen(evidence, sandbox);
-      },
-    },
-    {
-      id: "verify",
-      goal: "run the full test suite, review the diff, then finish",
-      maxSteps: 8,
-      allowForce: true,
-      check({ to, evidence }) {
-        // Backward moves are a feature: verify found the fix wrong → fix again.
-        if (to !== "fix") {
-          return { allow: false, reason: `from verify the agent moves back to "fix" or calls finish` };
-        }
-        const lastFail = [...evidence]
-          .reverse()
-          .find((r) => r.tool === "run_tests" && r.meta?.ran === true && !r.ok);
-        return lastFail
-          ? { allow: true, reason: "a failing run is on record — back to fixing" }
-          : { allow: false, reason: "no failing test on record — there is nothing to go back to" };
-      },
-    },
-  ],
-  async checkFinish({ evidence, sandbox }) {
-    return suiteIsGreen(evidence, sandbox);
-  },
+  requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests"],
   prepareContext(sandbox) {
     if (!sandbox) throw new Error("codingStrategy requires a sandbox");
     return buildRepoMap(sandbox);
   },
-  systemPrompt({ task, context, summary }) {
-    const map = context ? `\n\n# Repository map\n${context}` : "";
-    const prior = summary ? `\n\n# Summary of earlier work on this session\n${summary}` : "";
-    return `${SYSTEM_PROMPT}${prior}\n\n# The task\n${task}${map}`;
-  },
-  enterPhaseMessage(phase) {
-    return `PHASE: ${phase.id} — ${phase.goal}.`;
+  systemPrompt({ context, summary }) {
+    return buildCodingPrompt({ context, summary });
   },
 };

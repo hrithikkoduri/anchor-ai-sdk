@@ -14,6 +14,7 @@
  * private — reached only through exec; no HTTP traffic).
  */
 import { Hws } from "@heyocomputer/hws";
+import { HeyoGuestExecutor } from "./heyo-exec.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -45,12 +46,14 @@ export interface HeyoSandboxConfig {
  * embedded `cd`, commands silently run in `/` (Heyo starts every exec fresh
  * there — its `cwd` exec option is not dependable across server versions).
  */
-export function buildGuestCommand(command: string, timeoutSecs: number, cwd: string): string {
+export function buildGuestCommand(
+  command: string,
+  timeoutSecs: number,
+  cwd: string,
+): string {
   const inner = `cd ${shq(cwd)} && ${command}`;
   return `timeout -k 5 ${timeoutSecs} bash -c ${shq(inner)}`;
 }
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class HeyoSandbox implements Sandbox {
   readonly backend = "heyo" as const;
@@ -59,6 +62,7 @@ export class HeyoSandbox implements Sandbox {
   readonly workspace = "/workspace/repo";
 
   private readonly lb: Hws;
+  private readonly executor: HeyoGuestExecutor;
   private started = false;
   private destroyed = false;
 
@@ -68,6 +72,13 @@ export class HeyoSandbox implements Sandbox {
   ) {
     this.id = newSandboxId();
     this.lb = new Hws({ server: cfg.server, token: cfg.token });
+    this.executor = new HeyoGuestExecutor((command, env) =>
+      this.lb.exec(this.id, command, {
+        env,
+        timeoutSecs: 10,
+        patienceMs: 20_000,
+      }),
+    );
   }
 
   async start(): Promise<void> {
@@ -112,11 +123,19 @@ export class HeyoSandbox implements Sandbox {
   async checkpoint(message: string): Promise<Checkpoint> {
     this.assertUsable();
     const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
-    if (add.exitCode !== 0) throw new Error(`git add failed (${add.exitCode}): ${add.output.trim()}`);
-    const commit = await this.exec(`git commit -q --allow-empty -m ${shq(message)}`, { timeoutSecs: 120 });
-    if (commit.exitCode !== 0) throw new Error(`git commit failed (${commit.exitCode}): ${commit.output.trim()}`);
+    if (add.exitCode !== 0)
+      throw new Error(`git add failed (${add.exitCode}): ${add.output.trim()}`);
+    const commit = await this.exec(
+      `git commit -q --allow-empty -m ${shq(message)}`,
+      { timeoutSecs: 120 },
+    );
+    if (commit.exitCode !== 0)
+      throw new Error(
+        `git commit failed (${commit.exitCode}): ${commit.output.trim()}`,
+      );
     const rev = await this.exec(`git rev-parse HEAD`, { timeoutSecs: 60 });
-    if (rev.exitCode !== 0) throw new Error(`git rev-parse failed: ${rev.output.trim()}`);
+    if (rev.exitCode !== 0)
+      throw new Error(`git rev-parse failed: ${rev.output.trim()}`);
     return { sha: rev.stdout.trim(), message, at: Date.now() };
   }
 
@@ -127,14 +146,20 @@ export class HeyoSandbox implements Sandbox {
     // network must not break the comparison — it fails open below).
     if (ref.startsWith("origin/")) {
       const branch = ref.slice("origin/".length);
-      await this.exec(`git fetch --quiet origin ${shq(`+refs/heads/${branch}:refs/remotes/${ref}`)} 2>/dev/null || true`, {
-        timeoutSecs: 120,
-      });
+      await this.exec(
+        `git fetch --quiet origin ${shq(`+refs/heads/${branch}:refs/remotes/${ref}`)} 2>/dev/null || true`,
+        {
+          timeoutSecs: 120,
+        },
+      );
     }
 
-    const refTree = await this.exec(`git rev-parse --verify --quiet ${shq(`${ref}^{tree}`)} || true`, {
-      timeoutSecs: 60,
-    });
+    const refTree = await this.exec(
+      `git rev-parse --verify --quiet ${shq(`${ref}^{tree}`)} || true`,
+      {
+        timeoutSecs: 60,
+      },
+    );
     const refTreeSha = refTree.stdout.trim();
     if (!refTreeSha) return true; // unresolvable ref → everything is new
 
@@ -142,7 +167,8 @@ export class HeyoSandbox implements Sandbox {
     const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
     const localTree = await this.exec(`git write-tree`, { timeoutSecs: 60 });
     const localTreeSha = localTree.stdout.trim();
-    if (add.exitCode !== 0 || localTree.exitCode !== 0 || !localTreeSha) return true; // fail open
+    if (add.exitCode !== 0 || localTree.exitCode !== 0 || !localTreeSha)
+      return true; // fail open
     return localTreeSha !== refTreeSha;
   }
 
@@ -162,7 +188,9 @@ export class HeyoSandbox implements Sandbox {
     this.destroyed = true;
     if (this.spec.keep) {
       // Stop burning compute; keep the disk so the VM can be inspected later.
-      await this.lb.patchScaling(this.id, { min_replicas: 0 }).catch(() => undefined);
+      await this.lb
+        .patchScaling(this.id, { min_replicas: 0 })
+        .catch(() => undefined);
       process.stderr.write(
         `keeping sandbox for debugging: ${this.id} (namespace ${this.cfg.namespace})\n`,
       );
@@ -180,7 +208,8 @@ export class HeyoSandbox implements Sandbox {
   // --- internals -----------------------------------------------------------
 
   private assertUsable(): void {
-    if (!this.started) throw new Error(`sandbox ${this.id} not started — call start() first`);
+    if (!this.started)
+      throw new Error(`sandbox ${this.id} not started — call start() first`);
     if (this.destroyed) throw new Error(`sandbox ${this.id} was destroyed`);
   }
 
@@ -191,61 +220,47 @@ export class HeyoSandbox implements Sandbox {
     // Our own `cd` is the source of truth (see buildGuestCommand); the exec
     // options carry env only.
     const wrapped = buildGuestCommand(command, timeoutSecs, cwd);
-    const startedAt = Date.now();
-    try {
-      const r = await this.lb.exec(this.id, wrapped, {
-        env: { ...this.spec.env, ...opts.env },
-        // The API deadline must outlive the guest deadline; the guest-side
-        // `timeout` is what actually kills the command.
-        timeoutSecs: Math.min(3600, timeoutSecs + 60),
-        patienceMs: (timeoutSecs + 90) * 1000,
-      });
-      // 124 = timed out, 137 = killed hard (128 + SIGKILL) — shell conventions.
-      const timedOut = r.exit_code === 124 || r.exit_code === 137;
-      return {
-        exitCode: r.exit_code,
-        stdout: r.stdout,
-        stderr: r.stderr,
-        output: r.output,
-        timedOut,
-        durationMs: Date.now() - startedAt,
-      };
-    } catch (err) {
-      // The API call itself failed (transport, patience). The guest-side
-      // `timeout` still reaps the process; we just cannot read its output.
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        exitCode: -1,
-        stdout: "",
-        stderr: `${message}\n`,
-        output: `${message}\n`,
-        timedOut: true,
-        durationMs: Date.now() - startedAt,
-      };
-    }
+    return this.executor.run(wrapped, timeoutSecs, {
+      ...this.spec.env,
+      ...opts.env,
+    });
   }
 
-  /** heyo/bun has git; heyo/debian does not — install it in the background and wait. */
+  /** heyo/bun has git; other images may not. The guest job handles a long
+   * installation without holding one API request open or polling blindly. */
   private async ensureGit(): Promise<void> {
-    const probe = await this.guest("command -v git || true", { cwd: "/", timeoutSecs: 60 });
+    const probe = await this.guest("command -v git || true", {
+      cwd: "/",
+      timeoutSecs: 60,
+    });
+    if (probe.exitCode !== 0)
+      throw new Error(
+        `Guest capability probe failed; Git availability is unknown: ${probe.output.trim()}`,
+      );
     if (probe.stdout.trim() !== "") return;
 
-    await this.guest(
-      "nohup sh -c 'apt-get update -qq && apt-get install -y -qq git' >/tmp/git-install.log 2>&1 &",
-      { cwd: "/", timeoutSecs: 30 },
+    const install = await this.guest(
+      "apt-get update -qq && apt-get install -y -qq git",
+      { cwd: "/", timeoutSecs: 240 },
     );
-    const deadline = Date.now() + 180_000;
-    while (Date.now() < deadline) {
-      await sleep(2000);
-      const again = await this.guest("command -v git || true", { cwd: "/", timeoutSecs: 30 });
-      if (again.stdout.trim() !== "") return;
-    }
-    throw new Error("git did not become available in the guest within 3 minutes");
+    if (install.exitCode !== 0)
+      throw new Error(
+        `Git installation did not complete successfully: ${install.output.trim()}`,
+      );
+    const again = await this.guest("command -v git || true", {
+      cwd: "/",
+      timeoutSecs: 30,
+    });
+    if (again.exitCode !== 0 || !again.stdout.trim())
+      throw new Error(
+        `Git availability could not be confirmed: ${again.output.trim()}`,
+      );
   }
 
   /** Git credentials for private repos — written outside /workspace, never in the repo. */
   private async setupGitCredentials(): Promise<void> {
-    if (!this.cfg.githubToken || !this.spec.repoUrl?.includes("github.com")) return;
+    if (!this.cfg.githubToken || !this.spec.repoUrl?.includes("github.com"))
+      return;
     const creds = Buffer.from(
       `https://x-access-token:${this.cfg.githubToken}@github.com\n`,
     ).toString("base64");
@@ -257,12 +272,17 @@ export class HeyoSandbox implements Sandbox {
       { cwd: "/", timeoutSecs: 60 },
     );
     if (r.exitCode !== 0) {
-      throw new Error(`git credential setup failed (${r.exitCode}): ${r.output.trim()}`);
+      throw new Error(
+        `git credential setup failed (${r.exitCode}): ${r.output.trim()}`,
+      );
     }
   }
 
   private async cloneRepo(): Promise<void> {
-    await this.guest(`mkdir -p ${this.workspace}`, { cwd: "/", timeoutSecs: 60 });
+    await this.guest(`mkdir -p ${this.workspace}`, {
+      cwd: "/",
+      timeoutSecs: 60,
+    });
     const identity = await this.guest(
       `git config --global user.name "anchor" && git config --global user.email "anchor@localhost"`,
       { cwd: "/", timeoutSecs: 60 },
@@ -272,25 +292,39 @@ export class HeyoSandbox implements Sandbox {
     }
 
     if (!this.spec.repoUrl) {
-      const init = await this.guest(`git init -q -b main`, { cwd: this.workspace, timeoutSecs: 60 });
-      if (init.exitCode !== 0) throw new Error(`git init failed: ${init.output.trim()}`);
+      const init = await this.guest(`git init -q -b main`, {
+        cwd: this.workspace,
+        timeoutSecs: 60,
+      });
+      if (init.exitCode !== 0)
+        throw new Error(`git init failed: ${init.output.trim()}`);
       return;
     }
 
-    const clone = await this.guest(`git clone -q ${shq(this.spec.repoUrl)} ${this.workspace}`, {
-      cwd: "/",
-      timeoutSecs: 600,
-    });
+    const clone = await this.guest(
+      `git clone -q ${shq(this.spec.repoUrl)} ${this.workspace}`,
+      {
+        cwd: "/",
+        timeoutSecs: 600,
+      },
+    );
     if (clone.exitCode !== 0) {
-      throw new Error(`git clone failed (${clone.exitCode}): ${clone.output.trim()}`);
+      throw new Error(
+        `git clone failed (${clone.exitCode}): ${clone.output.trim()}`,
+      );
     }
     if (this.spec.ref) {
-      const checkout = await this.guest(`git checkout -q ${shq(this.spec.ref)}`, {
-        cwd: this.workspace,
-        timeoutSecs: 120,
-      });
+      const checkout = await this.guest(
+        `git checkout -q ${shq(this.spec.ref)}`,
+        {
+          cwd: this.workspace,
+          timeoutSecs: 120,
+        },
+      );
       if (checkout.exitCode !== 0) {
-        throw new Error(`git checkout ${this.spec.ref} failed: ${checkout.output.trim()}`);
+        throw new Error(
+          `git checkout ${this.spec.ref} failed: ${checkout.output.trim()}`,
+        );
       }
     }
   }

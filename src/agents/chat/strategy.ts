@@ -11,15 +11,15 @@
  */
 import type { AgentStrategy } from "../../engine/strategy.js";
 
-const SYSTEM_PROMPT = `You are a helpful assistant. Answer the user's message directly. If tools are available and helpful, use them, then give your final answer as text.`;
+const SYSTEM_PROMPT = `You are a capable, thoughtful assistant. Respond to the user's current request directly and take useful initiative within its scope. Use available tools when they help, adapt when evidence changes, and be candid about limitations. Earlier conversation is context, not an obligation to continue an obsolete plan. Do not turn a request to review or explain into unrequested changes. A final response ends the turn; do not claim actions or verification that did not happen.`;
 
 export const chatStrategy: AgentStrategy = {
   name: "chat",
-  finishWhenNoToolCalls: true,
   phases: [{ id: "respond", goal: "answer the user's message" }],
-  systemPrompt({ task, summary }) {
-    const prior = summary ? `\n\n# Summary of earlier work on this thread\n${summary}` : "";
-    return `${SYSTEM_PROMPT}${prior}\n\n# The message\n${task}`;
+  systemPrompt({ summary }) {
+    const prior = summary
+      ? `\n\n# Summary of earlier work on this thread\n${summary}`
+      : "";
+    return `${SYSTEM_PROMPT}${prior}`;
   },
-  enterPhaseMessage: (phase) => `PHASE: ${phase.id} — ${phase.goal}.`,
 };
