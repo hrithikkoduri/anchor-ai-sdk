@@ -11,6 +11,7 @@ import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools, toolByName, truncate } from "../../src/tools/index.js";
 import { finishTool } from "../../src/tools/finish.js";
+import { advanceTool } from "../../src/tools/advance.js";
 import type { ToolContext } from "../../src/tools/types.js";
 
 describe("tools", () => {
@@ -259,6 +260,20 @@ describe("tools", () => {
       expect(good.meta?.disposition).toBe("watch");
       expect(good.meta?.watch).toEqual({ checks: true });
       expect(good.meta?.resumeAt).toBe("fix");
+    });
+  });
+
+  describe("advance (engine intrinsic, imported directly)", () => {
+    it("records the request; the engine validates and rewrites the result", async () => {
+      const r = await advanceTool.run({ to: "verify", reason: "green" }, ctx);
+      expect(r.ok).toBe(true);
+      expect(r.meta?.to).toBe("verify");
+      expect(r.meta?.reason).toBe("green");
+
+      // target and reason are optional — default target is the next phase
+      const bare = await advanceTool.run({}, ctx);
+      expect(bare.ok).toBe(true);
+      expect(bare.meta?.to).toBeUndefined();
     });
   });
 });

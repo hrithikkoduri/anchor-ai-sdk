@@ -97,7 +97,8 @@ describe("engine", () => {
 
   it("runs the full arc: reproduce (failing tests) → fix → verify → finish", async () => {
     const llm = new ScriptedLLM([
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // fails → advance to fix
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // fails — evidence for reproduce
+      { toolCalls: [{ name: "advance", arguments: "{}" }] }, // → fix (checked: failing run on record)
       {
         toolCalls: [
           {
@@ -110,15 +111,8 @@ describe("engine", () => {
           },
         ],
       },
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes (fix stays put — the move is agent-requested)
-      {
-        toolCalls: [
-          {
-            name: "request_transition",
-            arguments: JSON.stringify({ to: "verify", reason: "full suite is green" }),
-          },
-        ],
-      },
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes
+      { toolCalls: [{ name: "advance", arguments: "{}" }] }, // → verify (checked: green on record)
       {
         toolCalls: [
           { name: "finish", arguments: JSON.stringify({ summary: "fixed negative handling", success: true }) },
@@ -130,16 +124,16 @@ describe("engine", () => {
 
     expect(result.ok).toBe(true);
     expect(result.reason).toBe("finished");
-    expect(result.steps).toBe(5);
+    expect(result.steps).toBe(6);
     expect(result.summary).toBe("fixed negative handling");
     expect(result.usage).toEqual({
-      promptTokens: 500,
-      completionTokens: 50,
-      totalTokens: 550,
+      promptTokens: 600,
+      completionTokens: 60,
+      totalTokens: 660,
       costUsd: undefined,
     });
 
-    // reproduce advanced on evidence; fix → verify was agent-requested (#33).
+    // Every move was agent-driven and checked (#35), in order.
     const phases = events.filter((e) => e.type === "phase_started").map((e) => (e as { phase: string }).phase);
     expect(phases).toEqual(["reproduce", "fix", "verify"]);
     const testResults = events.filter((e) => e.type === "tool_result" && (e as { name: string }).name === "run_tests");
@@ -278,7 +272,7 @@ describe("engine", () => {
 
   it("rejects finish(success=true) until a full-suite pass is on record", async () => {
     const llm = new ScriptedLLM([
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // fails → fix
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // fails — evidence for reproduce
       // The model claims success with no evidence — the strategy rejects it.
       { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "trust me", success: true }) }] },
       {
@@ -293,7 +287,7 @@ describe("engine", () => {
           },
         ],
       },
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes → verify
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes — validateFinish's evidence
       { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "fixed", success: true }) }] },
     ]);
 
@@ -454,8 +448,11 @@ describe("engine", () => {
     const store = new MemoryThreadStore();
     const thread = { store, id: "pause-1" };
 
-    // Run 1: reproduce fails → the engine checkpoints and pauses before fix.
-    const run1 = new ScriptedLLM([{ toolCalls: [{ name: "run_tests", arguments: "{}" }] }]);
+    // Run 1: reproduce fails, the agent advances → the engine checkpoints and pauses before fix.
+    const run1 = new ScriptedLLM([
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] },
+      { toolCalls: [{ name: "advance", arguments: "{}" }] }, // crosses the boundary → the pause applies
+    ]);
     const r1 = await runAgent(
       { task: "t" },
       {

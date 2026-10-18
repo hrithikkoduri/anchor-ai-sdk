@@ -54,7 +54,7 @@ const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 | `agent` | none | a built-in bundle — `codingAgent`, `chatAgent` — sets `strategy` + `tools` at once; explicit options below win per-field |
 | `strategy` | preset's, then `chatStrategy` | reply-and-end on a text-only turn; the coding strategy declares `requiresSandbox` + `requiredTools`, validated at startup |
 | `tools` | preset's, then `[]` | `codingAgent` brings its own; supply `allTools` or any subset to extend it or build custom agents |
-| `intrinsics` | `finish` on; `request_transition` when the strategy adjudicates or has an `"agent_request"` phase | engine-owned control tools, injected on top of `tools` (a consumer tool with a colliding name is ignored); opt out per intrinsic |
+| `intrinsics` | `finish` always; `advance` for multi-phase strategies | engine-owned control tools, injected on top of `tools` (a consumer tool with a colliding name is ignored); opt out per intrinsic |
 | `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
 | `compaction` | on (safe thresholds) | `false` disables |
 | `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
@@ -69,11 +69,14 @@ engine adds the loop, tools, guardrails, and events on top.
 
 `reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:
 
-| Phase | Advances to next when… | Soft step budget |
+Phases never advance on their own. The agent calls `advance()` when a phase's work is done,
+and each phase's optional check (`validateAdvance`) decides whether the move is allowed:
+
+| Phase | Moving on | Soft step budget |
 |---|---|---|
-| reproduce | `run_tests` **ran and failed** (`meta.ran === true && !ok`, any source — the agent may run a new test explicitly) | 12 |
-| fix | the agent **requests the move** — `request_transition({to: "verify"})` — adjudicated: the full suite must have run and passed (`meta.defaultCommand === true`; a targeted subset cannot satisfy it) | 20 |
-| verify | the model calls `finish` — and only with a passing full-suite run on record | 8 |
+| reproduce | agent calls `advance()` — checked: a failing test run must be on record | 12 |
+| fix | agent calls `advance()` — checked: the full suite must be green on record (a targeted subset cannot satisfy it) | 20 |
+| verify | the final phase — no `advance` target; the agent calls `finish`, checked: passing full-suite run on record | 8 |
 
 When a phase exceeds its soft budget the engine nudges the model once: "if you
 cannot {goal}, call finish(success=false)" — reproduction can be genuinely
@@ -93,16 +96,17 @@ consumers never list it and strategies never require it (`intrinsics: { finish: 
 opts out for loops that must be ended by budgets alone). The model still sees it as a tool;
 the engine owns the declaration.
 
-**Agent-requested transitions.** `advanceOn` accepts an evidence predicate **or**
-`"agent_request"`. **Moving on is trusted by default**: any multi-phase strategy gives the
-agent `request_transition`, and without an `onTransitionRequest` policy the move is allowed
-and recorded (`via: "agent_request_unverified"`) — a phase whose evidence never appears can
-never trap work that later phases could do. **Claiming success is still gated** — that's
-`validateFinish`'s job, because it's the caller's outcome contract, not a control wall. The
-coding agent uses both: its `fix` phase requests `verify` (adjudicated — the full suite must
-be green on record, so mid-fix suite runs don't teleport the phase), and rejected requests
-come back as tool errors with the reason. Backward moves (verify → fix, with a failing run
-on record) work the same way.
+**Advancing and finishing — the whole control surface.** Two verbs, one axis:
+`advance` continues (the agent says a phase is done; default target is the next phase, `to`
+jumps or goes back), `finish` stops (the run ends with its outcome). Both are engine
+intrinsics — injected automatically, never listed by consumers — and both can be checked:
+per-phase `validateAdvance`, per-strategy `validateFinish`. **Moving on is trusted by
+default**: with no check, the move is allowed and recorded (`via: "advance_unverified"`); a
+check hard-gates only where the strategy wants rigor. **Claiming success is where honesty
+lives**: `validateFinish` is the caller's outcome contract. The coding agent uses both —
+reproduce → fix checks for a failing test, fix → verify for a green full suite (mid-fix
+suite runs can't teleport the phase), verify → fix checks for a failing run — and rejected
+moves come back as tool errors with the reason.
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy

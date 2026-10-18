@@ -24,7 +24,7 @@ export { searchTool } from "./search.js";
 export { runTestsTool } from "./run-tests.js";
 // Engine intrinsics — injected automatically; exported for tests/tooling only.
 export { finishTool } from "./finish.js";
-export { requestTransitionTool } from "./request-transition.js";
+export { advanceTool } from "./advance.js";
 
 export function toolDefinitions(): ToolDefinition[] {
   return allTools.map((t) => t.definition);

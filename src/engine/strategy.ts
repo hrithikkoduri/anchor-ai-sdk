@@ -2,9 +2,10 @@
  * The strategy contract — how an agent *behaves*, as data.
  *
  * The engine owns the mechanics (LLM ↔ tools, budgets, loop detection);
- * a strategy owns the phases, the prompts, and the evidence that advances a
- * phase. `codingStrategy` (reproduce → fix → verify) is the first
- * implementation; a research or triage agent would be another.
+ * a strategy owns the phases, the prompts, and the optional checks that gate
+ * moving on (`validateAdvance`) and claiming success (`validateFinish`).
+ * `codingStrategy` (reproduce → fix → verify) is the first implementation;
+ * a research or triage agent would be another.
  */
 import type { Sandbox } from "../sandbox/types.js";
 import type { ToolResult } from "../tools/types.js";
@@ -28,17 +29,17 @@ export interface StrategyPhase {
    */
   maxSteps?: number;
   /**
-   * How this phase advances (checked after every tool result):
-   *   - a function: evidence-driven — return true to advance
-   *   - "agent_request": only an accepted request_transition call moves on;
-   *     the agent decides when the phase is done and `onTransitionRequest`
-   *     adjudicates against the evidence
+   * Optional check on the move OUT of this phase (the `advance` intrinsic).
+   * The agent decides when a phase is done; this validates the move — e.g.
+   * "only leave fix with a green full-suite run on record". Absent = trusted:
+   * the move is allowed and recorded as unverified (decision #34).
    */
-  advanceOn?: AdvanceOn;
+  validateAdvance?(ctx: {
+    to: string;
+    reason?: string;
+    evidence: ToolResultRecord[];
+  }): { allow: boolean; reason?: string };
 }
-
-/** Evidence predicate, or the agent's own (adjudicated) request. */
-export type AdvanceOn = ((result: ToolResult, toolName: string) => boolean) | "agent_request";
 
 export interface AgentStrategy {
   name: string;
@@ -73,18 +74,6 @@ export interface AgentStrategy {
    * rather than merely promised.
    */
   validateFinish?(evidence: ToolResultRecord[]): { allow: boolean; reason?: string };
-  /**
-   * Adjudicate agent-requested transitions. Optional policy: when absent, the
-   * agent may move phases on request — trusted and RECORDED (`via:
-   * "agent_request_unverified"`), never blocked (decision #34). Provide the
-   * hook to hard-gate: the evidence log comes with the request — the same
-   * propose/dispose pattern as validateFinish — and a denial feeds the reason
-   * back to the model.
-   */
-  onTransitionRequest?(
-    request: { to: string; reason: string },
-    evidence: ToolResultRecord[],
-  ): { allow: boolean; reason?: string };
   /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
   systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */

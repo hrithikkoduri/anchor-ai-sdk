@@ -18,8 +18,8 @@
  */
 import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
+import { advanceTool } from "../tools/advance.js";
 import { finishTool } from "../tools/finish.js";
-import { requestTransitionTool } from "../tools/request-transition.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 // The engine defaults to chatStrategy when none is supplied — a pragmatic
 // dependency so `runAgent({ task }, { llm })` works with zero configuration.
@@ -57,12 +57,11 @@ export interface EngineOptions {
   tools?: Tool[];
   /**
    * Engine-owned control tools, injected on top of `tools`: `finish` ends the
-   * run (always on); `request_transition` asks to move phases — injected when
-   * the strategy adjudicates requests (`onTransitionRequest`) or a phase
-   * advances on "agent_request". A consumer tool with a colliding name is
-   * ignored. Opt out per intrinsic — e.g. `{ finish: false }`.
+   * run (always on); `advance` moves phases (injected for multi-phase
+   * strategies). A consumer tool with a colliding name is ignored. Opt out
+   * per intrinsic — e.g. `{ finish: false }` to require ending via budgets.
    */
-  intrinsics?: { finish?: boolean; requestTransition?: boolean };
+  intrinsics?: { finish?: boolean; advance?: boolean };
   budgets?: Partial<BudgetLimits>;
   /**
    * Context-window management. Enabled by default (thresholds in
@@ -164,11 +163,9 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   const intrinsics = opts.intrinsics ?? {};
   const injected: Tool[] = [];
   if (intrinsics.finish !== false) injected.push(finishTool);
-  // Trusted by default (decision #34): any multi-phase strategy lets the
-  // agent move on — the move is recorded; a strategy can gate with
-  // onTransitionRequest or switch the intrinsic off entirely.
-  const wantsTransitions = strategy.phases.length > 1 || typeof strategy.onTransitionRequest === "function";
-  if (intrinsics.requestTransition !== false && wantsTransitions) injected.push(requestTransitionTool);
+  // Phases never advance on their own (decision #35): any multi-phase strategy
+  // gives the agent the move verb; per-phase checks gate it when defined.
+  if (intrinsics.advance !== false && strategy.phases.length > 1) injected.push(advanceTool);
   const tools = [
     ...suppliedTools.filter((t) => !injected.some((i) => i.definition.name === t.definition.name)),
     ...injected,
@@ -516,50 +513,62 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           }
         }
 
-        // Agent-requested transitions (decision #33): request_transition is an
-        // engine intrinsic — validate the target, let the strategy adjudicate
-        // against the evidence, and rewrite the tool result with the verdict.
-        // The move itself happens AFTER the tool-result message is pushed, so
-        // the protocol stays assistant-tool_calls → tool_result → phase message.
-        let transitionTo: number | undefined;
-        let transitionUnverified = false;
-        if (call.name === "request_transition" && result.ok) {
-          const to = typeof result.meta?.to === "string" ? result.meta.to : "";
-          const reason = typeof result.meta?.reason === "string" ? result.meta.reason : "";
-          const targetIndex = phases.findIndex((p) => p.id === to);
-          if (targetIndex === -1) {
-            const known = phases.map((p) => p.id).join(", ");
-            emit({ type: "guardrail", kind: "transition_rejected", detail: `unknown phase "${to}"` });
+        // advance (decision #35): the agent says it is done with the phase.
+        // The engine resolves the target (default: next), validates it, runs
+        // the phase's optional check against the evidence, and rewrites the
+        // tool result with the verdict. The move itself happens AFTER the
+        // tool-result message is pushed, keeping the protocol ordered:
+        // assistant-tool_calls → tool_result → phase message.
+        let advanceTo: number | undefined;
+        let advanceUnverified = false;
+        if (call.name === "advance" && result.ok) {
+          const requested = typeof result.meta?.to === "string" ? result.meta.to : undefined;
+          const reason = typeof result.meta?.reason === "string" ? result.meta.reason : undefined;
+          const targetId = requested ?? phases[phaseIndex + 1]?.id;
+          const targetIndex = targetId === undefined ? -1 : phases.findIndex((p) => p.id === targetId);
+          if (targetId === undefined) {
             result = {
               ok: false,
-              content: `request_transition rejected: "${to}" is not a phase of this strategy (phases: ${known}).`,
+              content:
+                `advance rejected: "${phases[phaseIndex]!.id}" is the final phase — ` +
+                `call finish(summary, success) to end the run.`,
             };
+          } else if (targetIndex === -1) {
+            const known = phases.map((p) => p.id).join(", ");
+            emit({ type: "guardrail", kind: "transition_rejected", detail: `unknown phase "${targetId}"` });
+            result = {
+              ok: false,
+              content: `advance rejected: "${targetId}" is not a phase of this strategy (phases: ${known}).`,
+            };
+          } else if (targetIndex === phaseIndex) {
+            result = { ok: false, content: `advance rejected: already in phase "${targetId}".` };
           } else {
-            // No policy = trust (decision #34): the agent may move on; the
-            // move is recorded as unverified so traces/evals can see it.
-            const policyFree = typeof strategy.onTransitionRequest !== "function";
-            const verdict = strategy.onTransitionRequest?.({ to, reason }, evidence) ?? {
+            // Check on the phase being LEFT; no check = trust (decision #34):
+            // the move is allowed and recorded as unverified.
+            const check = phases[phaseIndex]!.validateAdvance;
+            const policyFree = typeof check !== "function";
+            const verdict = check?.({ to: targetId, reason, evidence }) ?? {
               allow: true,
-              reason: "no transition policy — trusting the agent",
+              reason: "no advance check — trusting the agent",
             };
             if (!verdict.allow) {
               const why = verdict.reason ?? "the evidence does not support it";
               emit({ type: "guardrail", kind: "transition_rejected", detail: why });
               result = {
                 ok: false,
-                content: `request_transition rejected: ${why}. Stay in "${phases[phaseIndex]!.id}" and keep working.`,
+                content: `advance rejected: ${why}. Stay in "${phases[phaseIndex]!.id}" and keep working.`,
               };
             } else {
-              transitionTo = targetIndex;
-              transitionUnverified = policyFree;
+              advanceTo = targetIndex;
+              advanceUnverified = policyFree;
               result = {
                 ok: true,
                 content:
                   `moving to phase "${phases[targetIndex]!.id}" — ${phases[targetIndex]!.goal}` +
-                  (policyFree ? " (recorded: no transition policy)" : ""),
+                  (policyFree ? " (recorded: no advance check)" : ""),
                 meta: {
                   ...result.meta,
-                  transitionedTo: phases[targetIndex]!.id,
+                  advancedTo: phases[targetIndex]!.id,
                   ...(policyFree ? { unverified: true } : {}),
                 },
               };
@@ -591,10 +600,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           break;
         }
 
-        if (transitionTo !== undefined) {
+        if (advanceTo !== undefined) {
           const finishedPhase = phases[phaseIndex]!;
           await checkpointAt(`after ${finishedPhase.id}`);
-          phaseIndex = transitionTo;
+          phaseIndex = advanceTo;
           phaseSteps = 0;
           phaseNudged = false;
           if (opts.pauseAfterPhase === finishedPhase.id) {
@@ -605,27 +614,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           emit({
             type: "phase_started",
             phase: entered.id,
-            via: transitionUnverified ? "agent_request_unverified" : "agent_request",
+            via: advanceUnverified ? "advance_unverified" : "advance",
           });
-          messages.push(userMessage(strategy.enterPhaseMessage(entered)));
-        }
-
-        const advanceOn = phases[phaseIndex]!.advanceOn;
-        if (typeof advanceOn === "function" && advanceOn(result, call.name)) {
-          const finishedPhase = phases[phaseIndex]!;
-          // The boundary is the meaningful step — checkpoint before crossing it.
-          await checkpointAt(`after ${finishedPhase.id}`);
-          phaseIndex = Math.min(phaseIndex + 1, phases.length - 1);
-          phaseSteps = 0;
-          phaseNudged = false;
-          if (opts.pauseAfterPhase === finishedPhase.id) {
-            // Pause AT the boundary: the next run resumes in the new phase
-            // (persisted via the thread) and injects its entry message there.
-            paused = true;
-            break;
-          }
-          const entered = phases[phaseIndex]!;
-          emit({ type: "phase_started", phase: entered.id, via: "evidence" });
           messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
       }
@@ -641,17 +631,15 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       const currentPhase = phases[phaseIndex]!;
       if (currentPhase.maxSteps && phaseSteps > currentPhase.maxSteps && !phaseNudged) {
         phaseNudged = true;
-        const next = phases[phaseIndex + 1];
-        const requestHint = !next
-          ? ""
-          : currentPhase.advanceOn === "agent_request"
-            ? ` If the work here is done, call request_transition({to: "${next.id}", reason: "..."}) to move on.`
-            : ` If this goal cannot be met here, you may request_transition({to: "${next.id}", reason: "..."}) to move ahead — the escape will be recorded.`;
+        const hasNext = phases[phaseIndex + 1] !== undefined;
         messages.push(
           userMessage(
             `You have spent ${phaseSteps} turns in the "${currentPhase.id}" phase (soft limit ` +
-              `${currentPhase.maxSteps}). If you cannot ${currentPhase.goal}, call ` +
-              `finish(summary, success=false) explaining what you learned.${requestHint}`,
+              `${currentPhase.maxSteps}). ` +
+              (hasNext
+                ? `If this phase is done, call advance(); if you cannot ${currentPhase.goal}, ` +
+                  `call finish(summary, success=false) explaining what you learned.`
+                : `If you cannot complete the task, call finish(summary, success=false) explaining what you learned.`),
           ),
         );
       }

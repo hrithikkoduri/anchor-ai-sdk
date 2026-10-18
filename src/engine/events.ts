@@ -16,8 +16,8 @@ export type AgentEvent =
   | {
       type: "phase_started";
       phase: string;
-      /** How the phase began: automatic evidence, an agent request, or a policy-free (trusted, recorded) request. */
-      via?: "evidence" | "agent_request" | "agent_request_unverified";
+      /** Set when the agent drove the move: a checked advance, or an ungated (trusted, recorded) one. */
+      via?: "advance" | "advance_unverified";
     }
   | { type: "llm_call_started"; phase: string; step: number }
   | { type: "llm_text_delta"; text: string }

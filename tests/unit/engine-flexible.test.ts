@@ -107,7 +107,7 @@ describe("zero-config runs", () => {
     const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
     expect(declared).toContain("finish");
     // Chat has no transitions to adjudicate — the second intrinsic stays out.
-    expect(declared).not.toContain("request_transition");
+    expect(declared).not.toContain("advance");
   });
 
   it("intrinsics: { finish: false } removes it (and the call is rejected)", async () => {
