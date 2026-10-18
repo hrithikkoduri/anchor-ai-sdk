@@ -19,6 +19,7 @@
 import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
 import { finishTool } from "../tools/finish.js";
+import { requestTransitionTool } from "../tools/request-transition.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 // The engine defaults to chatStrategy when none is supplied — a pragmatic
 // dependency so `runAgent({ task }, { llm })` works with zero configuration.
@@ -55,12 +56,13 @@ export interface EngineOptions {
   /** Capabilities. Defaults to the agent preset's tools, then `[]`; `codingStrategy` validates its own set. */
   tools?: Tool[];
   /**
-   * Engine-owned control tools, injected on top of `tools` and always
-   * available: `finish` ends the run (a consumer tool with the same name is
-   * ignored). Opt out per intrinsic — e.g. `{ finish: false }` for a loop
-   * that must be ended by budgets alone.
+   * Engine-owned control tools, injected on top of `tools`: `finish` ends the
+   * run (always on); `request_transition` asks to move phases — injected when
+   * the strategy adjudicates requests (`onTransitionRequest`) or a phase
+   * advances on "agent_request". A consumer tool with a colliding name is
+   * ignored. Opt out per intrinsic — e.g. `{ finish: false }`.
    */
-  intrinsics?: { finish?: boolean };
+  intrinsics?: { finish?: boolean; requestTransition?: boolean };
   budgets?: Partial<BudgetLimits>;
   /**
    * Context-window management. Enabled by default (thresholds in
@@ -156,14 +158,20 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   };
   const strategy = opts.strategy ?? opts.agent?.strategy ?? chatStrategy;
   const suppliedTools = opts.tools ?? opts.agent?.tools ?? [];
-  // Intrinsics: control tools the engine owns and injects (decision #32).
-  // finish ends a run — like `return` in a language, the engine provides it;
-  // consumers never list it, and a consumer tool with the same name is ignored.
+  // Intrinsics: control tools the engine owns and injects (decisions #32/#33).
+  // Like `return` in a language, the engine provides them; consumers never
+  // list them, and a consumer tool with a colliding name is ignored.
   const intrinsics = opts.intrinsics ?? {};
-  const tools =
-    intrinsics.finish === false
-      ? suppliedTools
-      : [...suppliedTools.filter((t) => t.definition.name !== "finish"), finishTool];
+  const injected: Tool[] = [];
+  if (intrinsics.finish !== false) injected.push(finishTool);
+  const wantsTransitions =
+    typeof strategy.onTransitionRequest === "function" ||
+    strategy.phases.some((p) => p.advanceOn === "agent_request");
+  if (intrinsics.requestTransition !== false && wantsTransitions) injected.push(requestTransitionTool);
+  const tools = [
+    ...suppliedTools.filter((t) => !injected.some((i) => i.definition.name === t.definition.name)),
+    ...injected,
+  ];
   const byName = new Map(tools.map((t) => [t.definition.name, t] as const));
   const toolDefs: LLMToolDef[] = tools.map((t) => ({ type: "function", function: t.definition }));
 
@@ -507,6 +515,46 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           }
         }
 
+        // Agent-requested transitions (decision #33): request_transition is an
+        // engine intrinsic — validate the target, let the strategy adjudicate
+        // against the evidence, and rewrite the tool result with the verdict.
+        // The move itself happens AFTER the tool-result message is pushed, so
+        // the protocol stays assistant-tool_calls → tool_result → phase message.
+        let transitionTo: number | undefined;
+        if (call.name === "request_transition" && result.ok) {
+          const to = typeof result.meta?.to === "string" ? result.meta.to : "";
+          const reason = typeof result.meta?.reason === "string" ? result.meta.reason : "";
+          const targetIndex = phases.findIndex((p) => p.id === to);
+          if (targetIndex === -1) {
+            const known = phases.map((p) => p.id).join(", ");
+            emit({ type: "guardrail", kind: "transition_rejected", detail: `unknown phase "${to}"` });
+            result = {
+              ok: false,
+              content: `request_transition rejected: "${to}" is not a phase of this strategy (phases: ${known}).`,
+            };
+          } else {
+            const verdict = strategy.onTransitionRequest?.({ to, reason }, evidence) ?? {
+              allow: false,
+              reason: "this strategy does not accept agent-requested transitions",
+            };
+            if (!verdict.allow) {
+              const why = verdict.reason ?? "the evidence does not support it";
+              emit({ type: "guardrail", kind: "transition_rejected", detail: why });
+              result = {
+                ok: false,
+                content: `request_transition rejected: ${why}. Stay in "${phases[phaseIndex]!.id}" and keep working.`,
+              };
+            } else {
+              transitionTo = targetIndex;
+              result = {
+                ok: true,
+                content: `moving to phase "${phases[targetIndex]!.id}" — ${phases[targetIndex]!.goal}`,
+                meta: { ...result.meta, transitionedTo: phases[targetIndex]!.id },
+              };
+            }
+          }
+        }
+
         emit({
           type: "tool_result",
           phase: phase.id,
@@ -531,7 +579,23 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           break;
         }
 
-        if (phases[phaseIndex]!.advanceOn?.(result, call.name)) {
+        if (transitionTo !== undefined) {
+          const finishedPhase = phases[phaseIndex]!;
+          await checkpointAt(`after ${finishedPhase.id}`);
+          phaseIndex = transitionTo;
+          phaseSteps = 0;
+          phaseNudged = false;
+          if (opts.pauseAfterPhase === finishedPhase.id) {
+            paused = true;
+            break;
+          }
+          const entered = phases[phaseIndex]!;
+          emit({ type: "phase_started", phase: entered.id });
+          messages.push(userMessage(strategy.enterPhaseMessage(entered)));
+        }
+
+        const advanceOn = phases[phaseIndex]!.advanceOn;
+        if (typeof advanceOn === "function" && advanceOn(result, call.name)) {
           const finishedPhase = phases[phaseIndex]!;
           // The boundary is the meaningful step — checkpoint before crossing it.
           await checkpointAt(`after ${finishedPhase.id}`);
@@ -561,11 +625,16 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       const currentPhase = phases[phaseIndex]!;
       if (currentPhase.maxSteps && phaseSteps > currentPhase.maxSteps && !phaseNudged) {
         phaseNudged = true;
+        const next = phases[phaseIndex + 1];
+        const requestHint =
+          currentPhase.advanceOn === "agent_request" && next
+            ? ` If the work here is done, call request_transition({to: "${next.id}", reason: "..."}) to move on.`
+            : "";
         messages.push(
           userMessage(
             `You have spent ${phaseSteps} turns in the "${currentPhase.id}" phase (soft limit ` +
               `${currentPhase.maxSteps}). If you cannot ${currentPhase.goal}, call ` +
-              `finish(summary, success=false) explaining what you learned.`,
+              `finish(summary, success=false) explaining what you learned.${requestHint}`,
           ),
         );
       }

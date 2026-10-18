@@ -110,7 +110,15 @@ describe("engine", () => {
           },
         ],
       },
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // passes → advance to verify
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes (fix stays put — the move is agent-requested)
+      {
+        toolCalls: [
+          {
+            name: "request_transition",
+            arguments: JSON.stringify({ to: "verify", reason: "full suite is green" }),
+          },
+        ],
+      },
       {
         toolCalls: [
           { name: "finish", arguments: JSON.stringify({ summary: "fixed negative handling", success: true }) },
@@ -122,16 +130,16 @@ describe("engine", () => {
 
     expect(result.ok).toBe(true);
     expect(result.reason).toBe("finished");
-    expect(result.steps).toBe(4);
+    expect(result.steps).toBe(5);
     expect(result.summary).toBe("fixed negative handling");
     expect(result.usage).toEqual({
-      promptTokens: 400,
-      completionTokens: 40,
-      totalTokens: 440,
+      promptTokens: 500,
+      completionTokens: 50,
+      totalTokens: 550,
       costUsd: undefined,
     });
 
-    // Phase advancement happened on evidence, in order.
+    // reproduce advanced on evidence; fix → verify was agent-requested (#33).
     const phases = events.filter((e) => e.type === "phase_started").map((e) => (e as { phase: string }).phase);
     expect(phases).toEqual(["reproduce", "fix", "verify"]);
     const testResults = events.filter((e) => e.type === "tool_result" && (e as { name: string }).name === "run_tests");
@@ -141,7 +149,7 @@ describe("engine", () => {
     const userMessages = result.messages.filter((m) => m.role === "user").map((m) => m.content ?? "");
     expect(userMessages.some((m) => m.includes("PHASE: fix"))).toBe(true);
     expect(userMessages.some((m) => m.includes("PHASE: verify"))).toBe(true);
-    expect(llm.seen[0]!.tools).toHaveLength(6);
+    expect(llm.seen[0]!.tools).toHaveLength(7);
     // The strategy's prepareContext wrote the repo map into the system prompt.
     expect(String(llm.seen[0]!.messages[0]!.content)).toContain("test.js");
 

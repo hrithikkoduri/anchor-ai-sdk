@@ -28,13 +28,17 @@ export interface StrategyPhase {
    */
   maxSteps?: number;
   /**
-   * Called after every tool result while this phase is active. Returning true
-   * advances to the next phase. Phases are evidence-driven — the coding
-   * strategy advances on a failing run_tests (reproduce) and a passing one
-   * (fix) rather than on the model's say-so.
+   * How this phase advances (checked after every tool result):
+   *   - a function: evidence-driven — return true to advance
+   *   - "agent_request": only an accepted request_transition call moves on;
+   *     the agent decides when the phase is done and `onTransitionRequest`
+   *     adjudicates against the evidence
    */
-  advanceOn?: (result: ToolResult, toolName: string) => boolean;
+  advanceOn?: AdvanceOn;
 }
+
+/** Evidence predicate, or the agent's own (adjudicated) request. */
+export type AdvanceOn = ((result: ToolResult, toolName: string) => boolean) | "agent_request";
 
 export interface AgentStrategy {
   name: string;
@@ -69,6 +73,16 @@ export interface AgentStrategy {
    * rather than merely promised.
    */
   validateFinish?(evidence: ToolResultRecord[]): { allow: boolean; reason?: string };
+  /**
+   * Adjudicate agent-requested transitions (the request_transition intrinsic).
+   * The engine validates the target phase; this hook decides with the evidence
+   * log in hand — same honesty pattern as validateFinish: the agent proposes,
+   * the evidence disposes. Return allow:false and the model gets the reason.
+   */
+  onTransitionRequest?(
+    request: { to: string; reason: string },
+    evidence: ToolResultRecord[],
+  ): { allow: boolean; reason?: string };
   /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
   systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */

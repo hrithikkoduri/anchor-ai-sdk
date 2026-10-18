@@ -40,7 +40,7 @@ export type AgentEvent =
       contentChars: number;
       meta?: Record<string, unknown>;
     }
-  | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected"; detail: string }
+  | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected" | "transition_rejected"; detail: string }
   | { type: "checkpoint"; ref: string; label: string }
   | {
       type: "compacted";

@@ -21,9 +21,13 @@ The repository is checked out in your working directory. You act ONLY through to
 - run_tests: run the test suite (or a single test with an explicit command)
 - finish: end the run — the ONLY way to end it
 
-You work in three phases. The framework advances them automatically as evidence appears:
+You work in three phases. Evidence advances you, not your claims:
 1. reproduce — produce evidence of the bug: find or write a test that FAILS. Do not fix code yet.
-2. fix — make the failing test pass with the smallest possible change.
+   The framework moves you on when a test run reports a failure.
+2. fix — make the failing test pass with the smallest possible change. When the FULL suite is
+   green and you are done fixing, request the next phase yourself:
+   request_transition({to: "verify", reason: "full suite is green"}). The framework checks the
+   evidence before moving you.
 3. verify — run the full test suite, review your diff, then call finish.
 
 Rules:
@@ -57,10 +61,10 @@ export const codingStrategy: AgentStrategy = {
       id: "fix",
       goal: "make the failing test pass with a minimal change",
       maxSteps: 20,
-      // Evidence = the repo's canonical suite passes. A targeted subset run
-      // passing must not advance the phase (it can lie about the whole).
-      advanceOn: (result, tool) =>
-        tool === "run_tests" && result.meta?.ran === true && result.meta?.defaultCommand === true && result.ok,
+      // Agent-requested (decision #33): a mid-fix suite run no longer teleports
+      // the phase. The agent requests `verify` when IT considers the fix done;
+      // onTransitionRequest below checks the evidence before allowing it.
+      advanceOn: "agent_request",
     },
     {
       id: "verify",
@@ -79,6 +83,30 @@ export const codingStrategy: AgentStrategy = {
       return { allow: false, reason: "the most recent full test-suite run failed" };
     }
     return { allow: true };
+  },
+  onTransitionRequest({ to }, evidence) {
+    const lastFull = [...evidence]
+      .reverse()
+      .find((r) => r.tool === "run_tests" && r.meta?.ran === true && r.meta?.defaultCommand === true);
+    if (to === "verify") {
+      if (!lastFull) {
+        return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
+      }
+      if (!lastFull.ok) {
+        return { allow: false, reason: "the most recent full test-suite run failed — fix it first" };
+      }
+      return { allow: true, reason: "full suite is green" };
+    }
+    if (to === "fix") {
+      // Backward moves are a feature: verify found the fix wrong → fix again.
+      const lastFail = [...evidence]
+        .reverse()
+        .find((r) => r.tool === "run_tests" && r.meta?.ran === true && !r.ok);
+      return lastFail
+        ? { allow: true, reason: "a failing run is on record — back to fixing" }
+        : { allow: false, reason: "no failing test on record — there is nothing to go back to" };
+    }
+    return { allow: false, reason: `the coding strategy does not accept a transition to "${to}"` };
   },
   prepareContext(sandbox) {
     if (!sandbox) throw new Error("codingStrategy requires a sandbox");

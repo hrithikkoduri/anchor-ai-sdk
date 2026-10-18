@@ -54,7 +54,7 @@ const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 | `agent` | none | a built-in bundle — `codingAgent`, `chatAgent` — sets `strategy` + `tools` at once; explicit options below win per-field |
 | `strategy` | preset's, then `chatStrategy` | reply-and-end on a text-only turn; the coding strategy declares `requiresSandbox` + `requiredTools`, validated at startup |
 | `tools` | preset's, then `[]` | `codingAgent` brings its own; supply `allTools` or any subset to extend it or build custom agents |
-| `intrinsics` | `finish` on | engine-owned control tools, injected on top of `tools` (a consumer tool with the same name is ignored); `{ finish: false }` opts out |
+| `intrinsics` | `finish` on; `request_transition` when the strategy adjudicates or has an `"agent_request"` phase | engine-owned control tools, injected on top of `tools` (a consumer tool with a colliding name is ignored); opt out per intrinsic |
 | `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
 | `compaction` | on (safe thresholds) | `false` disables |
 | `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
@@ -72,7 +72,7 @@ engine adds the loop, tools, guardrails, and events on top.
 | Phase | Advances to next when… | Soft step budget |
 |---|---|---|
 | reproduce | `run_tests` **ran and failed** (`meta.ran === true && !ok`, any source — the agent may run a new test explicitly) | 12 |
-| fix | the repo's **full suite** ran and passed (`meta.defaultCommand === true` — a targeted subset run cannot advance) | 20 |
+| fix | the agent **requests the move** — `request_transition({to: "verify"})` — adjudicated: the full suite must have run and passed (`meta.defaultCommand === true`; a targeted subset cannot satisfy it) | 20 |
 | verify | the model calls `finish` — and only with a passing full-suite run on record | 8 |
 
 When a phase exceeds its soft budget the engine nudges the model once: "if you
@@ -92,6 +92,14 @@ them against what you supply and refuses to start on a mismatch:
 consumers never list it and strategies never require it (`intrinsics: { finish: false }`
 opts out for loops that must be ended by budgets alone). The model still sees it as a tool;
 the engine owns the declaration.
+
+**Agent-requested transitions.** `advanceOn` accepts an evidence predicate **or**
+`"agent_request"` — and the coding agent's `fix` phase uses the latter: after the full suite
+goes green, the agent calls `request_transition({to: "verify", reason: "…"})` when *it*
+considers the fix done. The strategy adjudicates with the evidence log
+(`onTransitionRequest`, the same propose/dispose split as `validateFinish`), and rejected
+requests come back as tool errors with the reason — mid-fix suite runs no longer teleport the
+phase. Backward moves (verify → fix, with a failing run on record) work the same way.
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy

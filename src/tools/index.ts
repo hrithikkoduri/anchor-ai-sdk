@@ -22,8 +22,9 @@ export { readFileTool } from "./read-file.js";
 export { editFileTool } from "./edit-file.js";
 export { searchTool } from "./search.js";
 export { runTestsTool } from "./run-tests.js";
-// Engine intrinsic — injected automatically; exported for tests/tooling only.
+// Engine intrinsics — injected automatically; exported for tests/tooling only.
 export { finishTool } from "./finish.js";
+export { requestTransitionTool } from "./request-transition.js";
 
 export function toolDefinitions(): ToolDefinition[] {
   return allTools.map((t) => t.definition);

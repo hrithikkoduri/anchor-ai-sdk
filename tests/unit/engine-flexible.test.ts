@@ -106,6 +106,8 @@ describe("zero-config runs", () => {
     // `tools` was never supplied, yet the wire request declares finish.
     const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
     expect(declared).toContain("finish");
+    // Chat has no transitions to adjudicate — the second intrinsic stays out.
+    expect(declared).not.toContain("request_transition");
   });
 
   it("intrinsics: { finish: false } removes it (and the call is rejected)", async () => {
