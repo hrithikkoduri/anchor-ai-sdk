@@ -1,9 +1,11 @@
 /**
- * finish — end the run with a summary, and (optionally) declare what's next.
+ * finish — the engine's terminal intrinsic: end the run with a summary, and
+ * (optionally) declare what's next.
  *
- * The loop treats an accepted finish() as the terminal transition and reads
- * everything through the tool result's `meta` (the trace records it, the PR
- * description uses it). Beyond `summary`/`success`:
+ * NOT part of the tool registry: the engine injects it into every run
+ * (decision #32), so consumers never list it. The loop treats an accepted
+ * finish() as the terminal transition and reads everything through the tool
+ * result's `meta` (the trace records it, the PR description uses it). Beyond `summary`/`success`:
  *
  *   disposition "done" | "watch" | "blocked"  — how the run concluded
  *   watch       product-defined spec          — e.g. { checks: true, comments: true }

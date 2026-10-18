@@ -54,6 +54,7 @@ const reply = await runAgent({ task: "Tell me a joke" }, { llm });
 | `agent` | none | a built-in bundle — `codingAgent`, `chatAgent` — sets `strategy` + `tools` at once; explicit options below win per-field |
 | `strategy` | preset's, then `chatStrategy` | reply-and-end on a text-only turn; the coding strategy declares `requiresSandbox` + `requiredTools`, validated at startup |
 | `tools` | preset's, then `[]` | `codingAgent` brings its own; supply `allTools` or any subset to extend it or build custom agents |
+| `intrinsics` | `finish` on | engine-owned control tools, injected on top of `tools` (a consumer tool with the same name is ignored); `{ finish: false }` opts out |
 | `sandbox` | none | only needed when the strategy or a tool requires it; sandbox-dependent tools fail with a clear message otherwise |
 | `compaction` | on (safe thresholds) | `false` disables |
 | `signal` | none | an `AbortSignal` to cancel the run — it ends with reason `"cancelled"` at the next turn boundary (or when an in-flight LLM call rejects) |
@@ -85,8 +86,12 @@ them against what you supply and refuses to start on a mismatch:
 |---|---|
 | `run_tests` | the evidence that gates phase transitions |
 | `edit_file` | applying the fix |
-| `finish` | terminating the run (the only way to end it) |
 | `bash`, `read_file`, `search` | exploration and orientation |
+
+`finish` is not a capability — it's an **engine intrinsic**: injected into every run, so
+consumers never list it and strategies never require it (`intrinsics: { finish: false }`
+opts out for loops that must be ended by budgets alone). The model still sees it as a tool;
+the engine owns the declaration.
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy

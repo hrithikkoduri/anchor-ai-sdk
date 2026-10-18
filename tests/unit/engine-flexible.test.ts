@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { AgentEvent } from "../../src/engine/events.js";
-import type { LLMClient, LLMResponse } from "../../src/llm/types.js";
+import type { LLMClient, LLMRequest, LLMResponse } from "../../src/llm/types.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { allTools } from "../../src/tools/index.js";
 import { bashTool } from "../../src/tools/bash.js";
@@ -13,7 +13,8 @@ import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 
 type Scripted = { text?: string; tools?: Array<{ name: string; arguments: string }> };
 
-function scriptedLLM(queue: Scripted[]): LLMClient {
+function scriptedLLM(queue: Scripted[]): LLMClient & { seen: LLMRequest[] } {
+  const seen: LLMRequest[] = [];
   const next = (): LLMResponse => {
     const item = queue.shift();
     if (!item) throw new Error("scripted LLM ran out of responses");
@@ -32,8 +33,13 @@ function scriptedLLM(queue: Scripted[]): LLMClient {
   };
   return {
     model: "scripted",
-    complete: async () => next(),
-    stream: async (_req, onDelta) => {
+    seen,
+    complete: async (req) => {
+      seen.push(structuredClone(req));
+      return next();
+    },
+    stream: async (req, onDelta) => {
+      seen.push(structuredClone(req));
       const r = next();
       if (r.text) onDelta(r.text);
       return r;
@@ -42,7 +48,7 @@ function scriptedLLM(queue: Scripted[]): LLMClient {
 }
 
 describe("zero-config runs", () => {
-  it("runs with nothing but an LLM — chat default, no sandbox, no tools", async () => {
+  it("runs with nothing but an LLM — chat default, no sandbox, no consumer tools", async () => {
     const events: AgentEvent[] = [];
     const result = await runAgent(
       { task: "say hi" },
@@ -85,6 +91,34 @@ describe("zero-config runs", () => {
     // Explicit tools win over the preset's toolbox — the requiredTools check fails fast.
     await expect(
       runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent, tools: [bashTool] }),
-    ).rejects.toThrow(/requires tools that were not supplied: read_file, edit_file, search, run_tests, finish/);
+    ).rejects.toThrow(/requires tools that were not supplied: read_file, edit_file, search, run_tests/);
+  });
+
+  it("finish is an engine intrinsic — declared in the request without being passed", async () => {
+    const llm = scriptedLLM([
+      { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "all done" }) }] },
+    ]);
+    const result = await runAgent({ task: "say hi" }, { llm });
+
+    expect(result.ok).toBe(true);
+    expect(result.summary).toBe("all done");
+    expect(result.disposition).toBe("done");
+    // `tools` was never supplied, yet the wire request declares finish.
+    const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
+    expect(declared).toContain("finish");
+  });
+
+  it("intrinsics: { finish: false } removes it (and the call is rejected)", async () => {
+    const llm = scriptedLLM([
+      { tools: [{ name: "finish", arguments: "{}" }] },
+      { text: "fallback reply" },
+    ]);
+    const result = await runAgent({ task: "say hi" }, { llm, intrinsics: { finish: false } });
+
+    expect(result.summary).toBe("fallback reply");
+    const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
+    expect(declared).not.toContain("finish");
+    const toolMessages = result.messages.filter((m) => m.role === "tool").map((m) => m.content ?? "");
+    expect(toolMessages.some((c) => c.includes("unknown tool"))).toBe(true);
   });
 });

@@ -18,6 +18,7 @@
  */
 import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
+import { finishTool } from "../tools/finish.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 // The engine defaults to chatStrategy when none is supplied — a pragmatic
 // dependency so `runAgent({ task }, { llm })` works with zero configuration.
@@ -53,6 +54,13 @@ export interface EngineOptions {
   sandbox?: Sandbox;
   /** Capabilities. Defaults to the agent preset's tools, then `[]`; `codingStrategy` validates its own set. */
   tools?: Tool[];
+  /**
+   * Engine-owned control tools, injected on top of `tools` and always
+   * available: `finish` ends the run (a consumer tool with the same name is
+   * ignored). Opt out per intrinsic — e.g. `{ finish: false }` for a loop
+   * that must be ended by budgets alone.
+   */
+  intrinsics?: { finish?: boolean };
   budgets?: Partial<BudgetLimits>;
   /**
    * Context-window management. Enabled by default (thresholds in
@@ -147,7 +155,15 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
     emptyTurnNudgeLimit: opts.guardrails?.emptyTurnNudgeLimit ?? DEFAULT_NUDGE_LIMIT,
   };
   const strategy = opts.strategy ?? opts.agent?.strategy ?? chatStrategy;
-  const tools = opts.tools ?? opts.agent?.tools ?? [];
+  const suppliedTools = opts.tools ?? opts.agent?.tools ?? [];
+  // Intrinsics: control tools the engine owns and injects (decision #32).
+  // finish ends a run — like `return` in a language, the engine provides it;
+  // consumers never list it, and a consumer tool with the same name is ignored.
+  const intrinsics = opts.intrinsics ?? {};
+  const tools =
+    intrinsics.finish === false
+      ? suppliedTools
+      : [...suppliedTools.filter((t) => t.definition.name !== "finish"), finishTool];
   const byName = new Map(tools.map((t) => [t.definition.name, t] as const));
   const toolDefs: LLMToolDef[] = tools.map((t) => ({ type: "function", function: t.definition }));
 

@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { allTools, toolByName, truncate } from "../../src/tools/index.js";
+import { finishTool } from "../../src/tools/finish.js";
 import type { ToolContext } from "../../src/tools/types.js";
 
 describe("tools", () => {
@@ -37,11 +38,10 @@ describe("tools", () => {
   };
 
   describe("registry", () => {
-    it("exposes the six tools with JSON-schema definitions", () => {
+    it("exposes the five capability tools with JSON-schema definitions (finish is an engine intrinsic)", () => {
       expect(allTools.map((t) => t.definition.name).sort()).toEqual([
         "bash",
         "edit_file",
-        "finish",
         "read_file",
         "run_tests",
         "search",
@@ -233,10 +233,10 @@ describe("tools", () => {
     }, 15_000);
   });
 
-  describe("finish", () => {
+  describe("finish (engine intrinsic, imported directly)", () => {
     it("records the summary through the context callback", async () => {
       let captured = "";
-      const r = await tool("finish").run(
+      const r = await finishTool.run(
         { summary: "fixed the parser bug", success: true },
         { ...ctx, onFinish: (s) => (captured = s) },
       );
@@ -244,6 +244,21 @@ describe("tools", () => {
       expect(captured).toBe("fixed the parser bug");
       expect(r.content).toContain("run will stop");
       expect(r.meta?.success).toBe(true);
+    });
+
+    it("validates the watch fields and carries them through meta", async () => {
+      const bad = await finishTool.run({ summary: "x", disposition: "someday" }, ctx);
+      expect(bad.ok).toBe(false);
+      expect(bad.content).toContain("disposition");
+
+      const good = await finishTool.run(
+        { summary: "x", success: true, disposition: "watch", watch: { checks: true }, resumeAt: "fix" },
+        ctx,
+      );
+      expect(good.ok).toBe(true);
+      expect(good.meta?.disposition).toBe("watch");
+      expect(good.meta?.watch).toEqual({ checks: true });
+      expect(good.meta?.resumeAt).toBe("fix");
     });
   });
 });

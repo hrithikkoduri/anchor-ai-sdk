@@ -38,7 +38,8 @@ Rules:
 
 export const codingStrategy: AgentStrategy = {
   name: "coding",
-  requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests", "finish"],
+  // Capabilities only — `finish` is an engine intrinsic, injected automatically.
+  requiredTools: ["bash", "read_file", "edit_file", "search", "run_tests"],
   requiresSandbox: true,
   phases: [
     {
