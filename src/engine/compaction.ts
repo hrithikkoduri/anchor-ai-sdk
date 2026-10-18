@@ -28,6 +28,38 @@ export const DEFAULT_COMPACTION = {
   keepRecentTokens: 30_000,
 } as const;
 
+/** The working range the derived fold budget stays inside (product decision:
+ * folds land in the 200–300k range on big-window models). */
+export const COMPACTION_MAX_CEILING = 300_000;
+export const COMPACTION_MIN_FLOOR = 48_000;
+/** Fold at ~55% of the window: the chars/4 estimate undercounts real tokens. */
+export const COMPACTION_WINDOW_FRACTION = 0.55;
+
+/**
+ * Compaction budgets for a model with `contextLength` tokens — so switching
+ * models cannot silently break: a 1M-window folds at the 300k ceiling, a
+ * 128k-window at ~70k, and a tiny window stays proportionally below itself.
+ * The verbatim tail keeps the recent quarter.
+ */
+export function compactionForContextWindow(
+  contextLength: number,
+  opts: { ceiling?: number; floor?: number } = {},
+): CompactionConfig {
+  const ceiling = opts.ceiling ?? COMPACTION_MAX_CEILING;
+  const floor = Math.min(
+    opts.floor ?? COMPACTION_MIN_FLOOR,
+    contextLength * 0.7,
+  );
+  const maxEstimatedTokens = Math.max(
+    floor,
+    Math.min(ceiling, contextLength * COMPACTION_WINDOW_FRACTION),
+  );
+  return {
+    maxEstimatedTokens: Math.round(maxEstimatedTokens),
+    keepRecentTokens: Math.round(maxEstimatedTokens * 0.25),
+  };
+}
+
 /** Rough token estimate: characters / 4, plus tool-call overhead. No tokenizer dependency. */
 export function estimateTokens(messages: LLMMessage[]): number {
   let chars = 0;

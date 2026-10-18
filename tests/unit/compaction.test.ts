@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  compactionForContextWindow,
   compactConversation,
   estimateTokens,
   findCompactionCut,
@@ -117,5 +118,23 @@ describe("compacted outcome", () => {
     expect(outcome!.summary).toBe("SUMMARY OF EARLIER WORK");
     expect(outcome!.foldingPreview).toContain("truncated for the record");
     expect(outcome!.foldingPreview.length).toBeLessThan(6_300);
+  });
+
+  it("derives fold budgets from the model window — capped to the working range, floored for tiny windows", () => {
+    // A 1M-window model folds at the 300k ceiling, keeping the recent quarter.
+    expect(compactionForContextWindow(1_048_576)).toEqual({
+      maxEstimatedTokens: 300_000,
+      keepRecentTokens: 75_000,
+    });
+    // A 128k model scales down instead of silently overrunning its window.
+    expect(compactionForContextWindow(131_072)).toEqual({
+      maxEstimatedTokens: 72_090,
+      keepRecentTokens: 18_022,
+    });
+    // A tiny window stays proportionally below itself (70% cap on the floor).
+    expect(compactionForContextWindow(32_768)).toEqual({
+      maxEstimatedTokens: 22_938,
+      keepRecentTokens: 5_734,
+    });
   });
 });
