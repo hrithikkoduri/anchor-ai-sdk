@@ -20,6 +20,7 @@ import type { LLMClient, LLMMessage, LLMToolDef, LLMUsage } from "../llm/types.j
 import type { Sandbox } from "../sandbox/types.js";
 import { advanceTool } from "../tools/advance.js";
 import { finishTool } from "../tools/finish.js";
+import { toolVerb } from "../tools/activity.js";
 import type { Tool, ToolContext, ToolResult } from "../tools/types.js";
 // The engine defaults to chatStrategy when none is supplied — a pragmatic
 // dependency so `runAgent({ task }, { llm })` works with zero configuration.
@@ -312,6 +313,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       completionTokens: budgets.completionTokens,
       totalTokens: budgets.totalTokens(),
       costUsd: budgets.costsKnown ? budgets.costUsd : undefined,
+      ...(budgets.reasoningTokens !== undefined ? { reasoningTokens: budgets.reasoningTokens } : {}),
     };
     // Finish-shaped endings default honestly: success → "done", failure → "blocked".
     const disposition =
@@ -389,7 +391,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       const response = await opts.llm.stream(
         { messages, tools: toolDefs },
         (delta) => emit({ type: "llm_text_delta", text: delta }),
-        { signal: opts.signal },
+        { signal: opts.signal, onReasoning: (text) => emit({ type: "llm_reasoning_delta", text }) },
       );
 
       budgets.record(response.usage);
@@ -398,6 +400,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         phase: phase.id,
         step: steps,
         text: response.text,
+        ...(response.reasoning ? { reasoning: response.reasoning } : {}),
         toolCalls: response.toolCalls,
         textChars: response.text.length,
         toolCallsCount: response.toolCalls.length,
@@ -451,7 +454,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
               `(different command, or read the code again) instead.`,
           };
         } else {
-          result = await dispatch(call.name, call.arguments, byName, toolCtx, emit, phase.id, steps);
+          result = await dispatch(call.name, call.arguments, byName, toolCtx, emit, phase.id, steps, call.id);
         }
 
         const isFinish = call.name === "finish";
@@ -629,6 +632,8 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           phase: phase.id,
           step: steps,
           name: call.name,
+          callId: call.id,
+          verb: result.verb ?? toolVerb(call.name, {}, byName.get(call.name)?.verb),
           ok: result.ok,
           content: result.content,
           contentChars: result.content.length,
@@ -730,6 +735,7 @@ async function dispatch(
   emit: EventSink,
   phase: string,
   step: number,
+  callId: string,
 ): Promise<ToolResult> {
   const tool = byName.get(name);
   if (!tool) {
@@ -747,6 +753,8 @@ async function dispatch(
       content: `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
-  emit({ type: "tool_call", phase, step, name, input });
-  return tool.run(input, toolCtx);
+  const verb = toolVerb(name, input, tool.verb);
+  emit({ type: "tool_call", phase, step, name, input, callId, verb });
+  const result = await tool.run(input, toolCtx);
+  return { ...result, verb: result.verb ?? verb };
 }

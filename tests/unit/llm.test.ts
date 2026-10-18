@@ -101,6 +101,22 @@ describe("OpenAICompatibleClient", () => {
     expect(r.text).toBe("PONG"); // aggregate matches the deltas
   });
 
+  it("streams provider reasoning separately and preserves reported reasoning-token usage", async () => {
+    const fetchImpl: typeof fetch = async () => sseResponse([
+      { choices: [{ delta: { reasoning: "Checking " } }] },
+      { choices: [{ delta: { reasoning_content: "the context." } }] },
+      { choices: [{ delta: { content: "Here is the answer." } }] },
+      { choices: [{ delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 8, total_tokens: 18, completion_tokens_details: { reasoning_tokens: 5 } } },
+      "[DONE]",
+    ]);
+    const text: string[] = [], reasoning: string[] = [];
+    const result = await make(fetchImpl).stream({ messages: [{ role: "user", content: "hi" }] }, delta => text.push(delta), { onReasoning: delta => reasoning.push(delta) });
+    expect(text).toEqual(["Here is the answer."]);
+    expect(reasoning.join("")).toBe("Checking the context.");
+    expect(result.reasoning).toBe("Checking the context.");
+    expect(result.usage).toEqual({ promptTokens: 10, completionTokens: 8, totalTokens: 18, reasoningTokens: 5 });
+  });
+
   it("assembles tool calls fragmented across deltas", async () => {
     const fetchImpl: typeof fetch = async () => sseResponse(TOOL_FRAMES);
     const r = await make(fetchImpl).complete({ messages: [{ role: "user", content: "weather?" }] });

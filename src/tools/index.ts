@@ -35,4 +35,6 @@ export function toolByName(name: string): Tool | undefined {
 }
 
 export { truncate } from "./truncate.js";
+export { toolVerb } from "./activity.js";
+export { defineTool } from "./types.js";
 export type { Tool, ToolContext, ToolDefinition, ToolResult } from "./types.js";

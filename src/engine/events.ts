@@ -21,24 +21,28 @@ export type AgentEvent =
     }
   | { type: "llm_call_started"; phase: string; step: number }
   | { type: "llm_text_delta"; text: string }
+  | { type: "llm_reasoning_delta"; text: string }
   | {
       type: "llm_call_finished";
       phase: string;
       step: number;
       /** The full assistant turn — with toolCalls, this reconstructs the conversation (journal). */
       text: string;
+      reasoning?: string;
       toolCalls: LLMToolCall[];
       textChars: number;
       toolCallsCount: number;
       usage: LLMUsage;
       latencyMs: number;
     }
-  | { type: "tool_call"; phase: string; step: number; name: string; input: Record<string, unknown> }
+  | { type: "tool_call"; phase: string; step: number; name: string; input: Record<string, unknown>; callId?: string; verb?: string }
   | {
       type: "tool_result";
       phase: string;
       step: number;
       name: string;
+      callId?: string;
+      verb?: string;
       ok: boolean;
       /** The actual result text (already truncated by the tool) — journal material. */
       content: string;

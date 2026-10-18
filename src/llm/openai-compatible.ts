@@ -51,6 +51,9 @@ interface ChatChunk {
   choices?: Array<{
     delta?: {
       content?: unknown;
+      reasoning?: unknown;
+      reasoning_content?: unknown;
+      reasoning_details?: Array<{ type?: string; text?: string; summary?: string }>;
       tool_calls?: Array<{
         index?: number;
         id?: string;
@@ -59,13 +62,14 @@ interface ChatChunk {
     };
     finish_reason?: string | null;
   }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number } } | null;
 }
 
 interface StreamState {
   text: string;
+  reasoning: string;
   toolCalls: Map<number, { id: string; name: string; arguments: string }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+  usage?: NonNullable<ChatChunk["usage"]>;
   model?: string;
   finishReason?: string;
 }
@@ -131,7 +135,7 @@ export class OpenAICompatibleClient implements LLMClient {
   async stream(
     req: LLMRequest,
     onDelta: (delta: string) => void,
-    callOpts: { signal?: AbortSignal } = {},
+    callOpts: { signal?: AbortSignal; onReasoning?: (delta: string) => void } = {},
   ): Promise<LLMResponse> {
     const started = Date.now();
 
@@ -180,7 +184,7 @@ export class OpenAICompatibleClient implements LLMClient {
     if (!res.body) throw new Error("LLM response has no body to stream");
 
     // --- consume the SSE stream (not retried; mid-flight death is a failure) -
-    const state: StreamState = { text: "", toolCalls: new Map() };
+    const state: StreamState = { text: "", reasoning: "", toolCalls: new Map() };
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -196,7 +200,7 @@ export class OpenAICompatibleClient implements LLMClient {
       } catch {
         return; // tolerate a malformed fragment rather than killing the turn
       }
-      this.applyChunk(chunk, state, onDelta);
+      this.applyChunk(chunk, state, onDelta, callOpts.onReasoning);
     };
 
     for (;;) {
@@ -215,11 +219,17 @@ export class OpenAICompatibleClient implements LLMClient {
     return this.finishResponse(state, started);
   }
 
-  private applyChunk(chunk: ChatChunk, state: StreamState, onDelta: (delta: string) => void): void {
+  private applyChunk(chunk: ChatChunk, state: StreamState, onDelta: (delta: string) => void, onReasoning?: (delta: string) => void): void {
     if (chunk.model) state.model = chunk.model;
     const choice = chunk.choices?.[0];
     if (choice) {
       const delta = choice.delta ?? {};
+      const reasoning = normalizeContent(delta.reasoning ?? delta.reasoning_content) ||
+        (delta.reasoning_details ?? []).filter(detail => ["reasoning.text", "reasoning.summary"].includes(detail.type ?? "")).map(detail => detail.summary ?? detail.text ?? "").join("");
+      if (reasoning) {
+        state.reasoning += reasoning;
+        onReasoning?.(reasoning);
+      }
       const piece = normalizeContent(delta.content);
       if (piece !== "") {
         state.text += piece;
@@ -256,6 +266,8 @@ export class OpenAICompatibleClient implements LLMClient {
       completionTokens,
       totalTokens: state.usage?.total_tokens ?? promptTokens + completionTokens,
     };
+    const reasoningTokens = state.usage?.completion_tokens_details?.reasoning_tokens;
+    if (reasoningTokens !== undefined) usage.reasoningTokens = reasoningTokens;
     if (this.opts.priceInPerMTok !== undefined && this.opts.priceOutPerMTok !== undefined) {
       usage.costUsd =
         (promptTokens / 1_000_000) * this.opts.priceInPerMTok +
@@ -264,6 +276,7 @@ export class OpenAICompatibleClient implements LLMClient {
 
     return {
       text: state.text,
+      ...(state.reasoning ? { reasoning: state.reasoning } : {}),
       toolCalls,
       usage,
       model: state.model ?? this.opts.model,

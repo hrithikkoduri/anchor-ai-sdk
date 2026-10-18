@@ -9,6 +9,7 @@ import type { LLMClient, LLMRequest, LLMResponse } from "../../src/llm/types.js"
 import { runAgent } from "../../src/engine/loop.js";
 import { allTools } from "../../src/tools/index.js";
 import { bashTool } from "../../src/tools/bash.js";
+import { defineTool } from "../../src/tools/types.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 
 type Scripted = { text?: string; tools?: Array<{ name: string; arguments: string }> };
@@ -48,6 +49,15 @@ function scriptedLLM(queue: Scripted[]): LLMClient & { seen: LLMRequest[] } {
 }
 
 describe("zero-config runs", () => {
+  it("emits stable call IDs and configurable activity verbs without leaking display metadata into tool schemas", async () => {
+    const events: AgentEvent[] = [];
+    const tool = defineTool({ name: "lookup", description: "Look something up", parameters: { type: "object" } }, async () => ({ ok: true, content: "found" }), { verb: input => `Looking up ${input.key}` });
+    const llm = scriptedLLM([{ tools: [{ name: "lookup", arguments: '{"key":"weather"}' }] }, { text: "Done." }]);
+    await runAgent({ task: "lookup" }, { llm, tools: [tool], onEvent: event => events.push(event) });
+    expect(events.find(e => e.type === "tool_call")).toMatchObject({ name: "lookup", callId: "call_0", verb: "Looking up weather" });
+    expect(events.find(e => e.type === "tool_result")).toMatchObject({ callId: "call_0", verb: "Looking up weather" });
+    expect(llm.seen[0]!.tools?.find(t => t.function.name === "lookup")?.function).not.toHaveProperty("verb");
+  });
   it("runs with nothing but an LLM — chat default, no sandbox, no consumer tools", async () => {
     const events: AgentEvent[] = [];
     const result = await runAgent(

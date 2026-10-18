@@ -38,12 +38,16 @@ export interface LLMUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Provider-reported reasoning tokens (already included in completionTokens). */
+  reasoningTokens?: number;
   /** Computed from configured pricing; undefined when pricing is unknown. */
   costUsd?: number;
 }
 
 export interface LLMResponse {
   text: string;
+  /** Reasoning text explicitly returned by the provider, when available. */
+  reasoning?: string;
   toolCalls: LLMToolCall[];
   usage: LLMUsage;
   model: string;
@@ -69,6 +73,6 @@ export interface LLMClient {
   stream(
     req: LLMRequest,
     onDelta: (delta: string) => void,
-    opts?: { signal?: AbortSignal },
+    opts?: { signal?: AbortSignal; onReasoning?: (delta: string) => void },
   ): Promise<LLMResponse>;
 }

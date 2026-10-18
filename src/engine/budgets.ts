@@ -29,6 +29,7 @@ export class BudgetTracker {
   readonly limits: BudgetLimits;
   promptTokens = 0;
   completionTokens = 0;
+  reasoningTokens: number | undefined;
   costUsd = 0;
   costsKnown = true;
 
@@ -39,6 +40,7 @@ export class BudgetTracker {
   record(usage: LLMUsage): void {
     this.promptTokens += usage.promptTokens;
     this.completionTokens += usage.completionTokens;
+    if (usage.reasoningTokens !== undefined) this.reasoningTokens = (this.reasoningTokens ?? 0) + usage.reasoningTokens;
     if (usage.costUsd !== undefined) {
       this.costUsd += usage.costUsd;
     } else {

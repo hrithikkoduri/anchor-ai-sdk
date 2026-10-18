@@ -65,6 +65,34 @@ For a single model call with no loop at all, skip the engine entirely —
 `llm.complete(...)` is the bare transport (the `generateText` analogue); the
 engine adds the loop, tools, guardrails, and events on top.
 
+## Streaming and activity labels
+
+`runAgent` emits `llm_text_delta` and, when the provider explicitly returns it,
+`llm_reasoning_delta` separately. Completed model calls include the full text,
+optional provider reasoning, and optional `usage.reasoningTokens`. That count
+is already included in completion tokens; do not add it to the total again.
+The framework cannot supply reasoning text or token counts a provider withholds.
+
+Tool call/result events include a stable `callId` and a human-readable `verb`:
+
+```ts
+const lookup = defineTool(
+  { name: "lookup", description: "Look up a record", parameters: {
+    type: "object", properties: { key: { type: "string" } }, required: ["key"],
+  } },
+  async ({ key }) => ({ ok: true, content: await findRecord(key) }),
+  { verb: ({ key }) => `Looking up ${key}` },
+);
+// onEvent: { type: "tool_call", callId: "…", name: "lookup",
+//            verb: "Looking up settings", input: { key: "settings" }, … }
+```
+
+`verb` can be a string or an input-dependent function; built-in tools have
+defaults such as “Reading README.md” and “Running tests”. A tool result can
+override its verb. This is developer presentation metadata, not another
+parameter the model must generate and not part of the provider function schema.
+Consumers decide whether to render it in a chat activity group, timeline, or CLI.
+
 ## The coding strategy
 
 `reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:

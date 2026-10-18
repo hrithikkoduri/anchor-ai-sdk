@@ -49,10 +49,14 @@ export interface ToolResult {
   content: string;
   /** Structured data for the trace; never sent to the model. */
   meta?: Record<string, unknown>;
+  /** Human-readable activity label for traces and chat, e.g. "Reading README.md". */
+  verb?: string;
 }
 
 export interface Tool {
   definition: ToolDefinition;
+  /** Presentation metadata, never added to the provider's function schema. */
+  verb?: string | ((input: Record<string, unknown>) => string);
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -60,9 +64,11 @@ export interface Tool {
 export function defineTool(
   definition: ToolDefinition,
   run: (input: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult>,
+  options: Pick<Tool, "verb"> = {},
 ): Tool {
   return {
     definition,
+    ...options,
     run: async (input, ctx) => {
       try {
         return await run(input, ctx);
