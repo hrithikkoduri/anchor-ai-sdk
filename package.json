@@ -18,6 +18,10 @@
     "./sandbox/local": {
       "types": "./src/sandbox/local.ts",
       "default": "./src/sandbox/local.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "default": "./src/testing.ts"
     }
   },
   "files": [
@@ -29,6 +33,14 @@
   },
   "dependencies": {
     "@heyocomputer/hws": "^0.4.0"
+  },
+  "peerDependencies": {
+    "vitest": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

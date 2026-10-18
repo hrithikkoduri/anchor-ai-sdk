@@ -55,4 +55,15 @@ describe("package genericity", () => {
       );
     expect(offenders).toEqual([]);
   });
+
+  it("keeps the test framework behind the testing entry (src/testing.ts)", () => {
+    // The conformance suite is the one entry allowed to load vitest; the
+    // engine, tools, and sandbox adapters must never depend on a test runner.
+    const forbidden = /from\s+["']vitest["']|import\(\s*["']vitest["']/;
+    const offenders = files(SRC)
+      .filter((file) => forbidden.test(content(file)))
+      .map(rel)
+      .filter((file) => file !== "testing.ts");
+    expect(offenders).toEqual([]);
+  });
 });

@@ -144,10 +144,11 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
   return {
     name: "heyo",
     capabilities: {
-      fork: false,
+      fork: false, // deferred: rebuild-from-checkpoint instead
       retain: true,
       remoteCheckpoint: true,
       egressControl: false,
+      localPath: false, // the VM is another machine
     },
     create: (spec) => new HeyoSandbox(spec, cfg),
     adopt: (handle, spec = {}) =>

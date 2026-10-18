@@ -375,10 +375,11 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
   return {
     name: "local",
     capabilities: {
-      fork: false,
+      fork: true, // real: fork() copies the workspace dir at a checkpoint
       retain: true,
-      remoteCheckpoint: true,
+      remoteCheckpoint: true, // file-backed pushes to a host origin work
       egressControl: false,
+      localPath: true,
     },
     create: (spec) => new LocalSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

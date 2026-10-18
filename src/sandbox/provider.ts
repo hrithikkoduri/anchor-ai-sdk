@@ -22,6 +22,12 @@ export interface SandboxCapabilities {
   remoteCheckpoint: boolean;
   /** Network egress can be restricted per sandbox. */
   egressControl: boolean;
+  /**
+   * Reads `SandboxSpec.localPath` — can copy a directory from the provider's
+   * own host. False for anything that runs on another machine; the
+   * conformance suite gates its host-filesystem scenarios on this.
+   */
+  localPath: boolean;
   /** Provider-specific flags, addable without breaking the contract. */
   [flag: string]: boolean;
 }
