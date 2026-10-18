@@ -177,7 +177,8 @@ cannot fabricate reasoning that the provider withholds.
 
 ## Sandbox providers
 
-A provider is an object, not an options union: `heyo({…})` (microVMs) and
+A provider is an object, not an options union: `heyo({…})` (microVMs),
+`docker({ image })` (local containers — the benchmark environment), and
 `local()` (dev only) ship behind their subpaths; a new backend implements the
 `SandboxProvider` contract — `create(spec)`, `adopt(handle, spec)`,
 `release(handle)`, `probe()` — plus capability flags (`fork`, `retain`,

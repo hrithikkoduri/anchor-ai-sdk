@@ -19,6 +19,10 @@
       "types": "./src/sandbox/local.ts",
       "default": "./src/sandbox/local.ts"
     },
+    "./sandbox/docker": {
+      "types": "./src/sandbox/docker.ts",
+      "default": "./src/sandbox/docker.ts"
+    },
     "./testing": {
       "types": "./src/testing.ts",
       "default": "./src/testing.ts"

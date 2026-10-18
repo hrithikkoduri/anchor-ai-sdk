@@ -115,6 +115,20 @@ export interface SandboxSpec {
    * fresh sandbox built from `repoUrl`/`ref`.
    */
   adopt?: string;
+  /**
+   * The image for THIS sandbox, when the provider can vary it per sandbox
+   * (the docker backend). Providers with a configured fixed image (heyo) or
+   * none at all (local) reject it loudly — silently dropping an image would
+   * run the wrong environment.
+   */
+  image?: string;
+  /**
+   * Use a directory that ALREADY EXISTS inside the sandbox as the workspace,
+   * skipping clone/init — benchmark images arrive with the repo checked out
+   * (e.g. `/testbed`). Distinct from `localPath`, which imports a directory
+   * from the provider's own host. Unsupported providers reject it loudly.
+   */
+  workspacePath?: string;
 }
 
 export interface Sandbox {

@@ -29,6 +29,7 @@ import {
   type SandboxSpec,
 } from "./types.js";
 import type { SandboxProvider } from "./provider.js";
+import { checkpointVia, hasChangesFromVia, type GitAccess } from "./git.js";
 
 export interface LocalSandboxOptions {
   /** Where sandbox directories live. Default: `<cwd>/.anchor/sandboxes`. */
@@ -65,6 +66,11 @@ export class LocalSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
+    if (this.spec.image || this.spec.workspacePath) {
+      throw new Error(
+        "the local backend has no per-sandbox image/workspacePath — use localPath for host directories, or the docker backend",
+      );
+    }
     if (!this.opts.quiet) {
       process.stderr.write(
         `\u26a0 running locally — no isolation (${this.id})\n`,
@@ -141,83 +147,12 @@ export class LocalSandbox implements Sandbox {
     opts?: { push?: string },
   ): Promise<Checkpoint> {
     this.assertUsable();
-    await this.git(["-C", this.workspace, "add", "-A"]);
-    // --allow-empty: a checkpoint that changes nothing is still a valid point
-    // to resume or fork from.
-    await this.git([
-      "-C",
-      this.workspace,
-      "commit",
-      "-q",
-      "--allow-empty",
-      "-m",
-      message,
-    ]);
-    const sha = (
-      await this.git(["-C", this.workspace, "rev-parse", "HEAD"])
-    ).trim();
-    const checkpoint: Checkpoint = { sha, message, at: Date.now() };
-    if (opts?.push) {
-      // Off-machine durability; failures are reported, never thrown.
-      const push = await this.exec(
-        `git push --force origin ${shq(`HEAD:refs/heads/${opts.push}`)}`,
-        { timeoutSecs: 180 },
-      );
-      if (push.exitCode === 0) checkpoint.pushedTo = opts.push;
-      else {
-        checkpoint.pushError = push.output.trim().slice(0, 300);
-        process.stderr.write(
-          `checkpoint push to ${opts.push} failed: ${checkpoint.pushError}\n`,
-        );
-      }
-    }
-    return checkpoint;
+    return checkpointVia(this.gitAccess(), message, opts ?? {});
   }
 
   async hasChangesFrom(ref: string): Promise<boolean> {
     this.assertUsable();
-
-    // Best-effort refresh of remote-tracking refs: a deleted branch or an
-    // offline host must not break the comparison (it fails open below).
-    if (ref.startsWith("origin/")) {
-      const branch = ref.slice("origin/".length);
-      try {
-        await this.git([
-          "-C",
-          this.workspace,
-          "fetch",
-          "--quiet",
-          "origin",
-          `+refs/heads/${branch}:refs/remotes/${ref}`,
-        ]);
-      } catch {
-        /* missing branch or no network — compare against what we have */
-      }
-    }
-
-    let refTree: string;
-    try {
-      refTree = (
-        await this.git([
-          "-C",
-          this.workspace,
-          "rev-parse",
-          "--verify",
-          "--quiet",
-          `${ref}^{tree}`,
-        ])
-      ).trim();
-    } catch {
-      return true; // unresolvable ref → everything is new
-    }
-    if (!refTree) return true;
-
-    // Stage first (same trick as the freshness checks): uncommitted work counts.
-    await this.git(["-C", this.workspace, "add", "-A"]);
-    const localTree = (
-      await this.git(["-C", this.workspace, "write-tree"])
-    ).trim();
-    return localTree !== refTree;
+    return hasChangesFromVia(this.gitAccess(), ref);
   }
 
   async fork(ref?: string): Promise<Sandbox> {
@@ -268,14 +203,30 @@ export class LocalSandbox implements Sandbox {
   }
 
   /** Internal git helper — throws on failure, unlike exec (which reports). */
-  private async git(args: string[]): Promise<string> {
-    const r = await this.run("git", args, this.root, {}, 120);
+  private git(args: string[]): Promise<string> {
+    return this.gitAt(this.root, args);
+  }
+
+  /** git in a specific directory; throws on failure with output in the message. */
+  private async gitAt(
+    cwd: string,
+    args: string[],
+    opts: { timeoutSecs?: number } = {},
+  ): Promise<string> {
+    const r = await this.run("git", args, cwd, {}, opts.timeoutSecs ?? 120);
     if (r.exitCode !== 0) {
       throw new Error(
         `git ${args.join(" ")} failed (${r.exitCode}): ${r.output.trim()}`,
       );
     }
     return r.stdout;
+  }
+
+  private gitAccess(): GitAccess {
+    return {
+      git: (args, opts) => this.gitAt(this.workspace, args, opts ?? {}),
+      shell: (command, opts) => this.exec(command, opts),
+    };
   }
 
   private run(

@@ -16,6 +16,7 @@
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./heyo-exec.js";
 import type { ProviderHealth, SandboxProvider } from "./provider.js";
+import { checkpointVia, hasChangesFromVia, type GitAccess } from "./git.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -189,6 +190,11 @@ export class HeyoSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
+    if (this.spec.image || this.spec.workspacePath) {
+      throw new Error(
+        "the heyo backend uses its configured image — per-sandbox image/workspacePath belong to the docker backend",
+      );
+    }
 
     if (this.spec.adopt) {
       // Adopt the retained deployment: wake it and verify the workspace is
@@ -291,74 +297,12 @@ export class HeyoSandbox implements Sandbox {
     opts?: { push?: string },
   ): Promise<Checkpoint> {
     this.assertUsable();
-    const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
-    if (add.exitCode !== 0)
-      throw new Error(`git add failed (${add.exitCode}): ${add.output.trim()}`);
-    const commit = await this.exec(
-      `git commit -q --allow-empty -m ${shq(message)}`,
-      { timeoutSecs: 120 },
-    );
-    if (commit.exitCode !== 0)
-      throw new Error(
-        `git commit failed (${commit.exitCode}): ${commit.output.trim()}`,
-      );
-    const rev = await this.exec(`git rev-parse HEAD`, { timeoutSecs: 60 });
-    if (rev.exitCode !== 0)
-      throw new Error(`git rev-parse failed: ${rev.output.trim()}`);
-    const checkpoint: Checkpoint = {
-      sha: rev.stdout.trim(),
-      message,
-      at: Date.now(),
-    };
-    if (opts?.push) {
-      // Off-machine durability: a lost VM must not lose the checkpoint.
-      // Failures are reported, never thrown — the run continues.
-      const push = await this.exec(
-        `git push --quiet --force origin ${shq(`HEAD:refs/heads/${opts.push}`)}`,
-        { timeoutSecs: 180 },
-      );
-      if (push.exitCode === 0) checkpoint.pushedTo = opts.push;
-      else {
-        checkpoint.pushError = push.output.trim().slice(0, 300);
-        process.stderr.write(
-          `checkpoint push to ${opts.push} failed: ${checkpoint.pushError}\n`,
-        );
-      }
-    }
-    return checkpoint;
+    return checkpointVia(this.gitAccess(), message, opts ?? {});
   }
 
   async hasChangesFrom(ref: string): Promise<boolean> {
     this.assertUsable();
-
-    // Best-effort refresh of remote-tracking refs (missing branch / no
-    // network must not break the comparison — it fails open below).
-    if (ref.startsWith("origin/")) {
-      const branch = ref.slice("origin/".length);
-      await this.exec(
-        `git fetch --quiet origin ${shq(`+refs/heads/${branch}:refs/remotes/${ref}`)} 2>/dev/null || true`,
-        {
-          timeoutSecs: 120,
-        },
-      );
-    }
-
-    const refTree = await this.exec(
-      `git rev-parse --verify --quiet ${shq(`${ref}^{tree}`)} || true`,
-      {
-        timeoutSecs: 60,
-      },
-    );
-    const refTreeSha = refTree.stdout.trim();
-    if (!refTreeSha) return true; // unresolvable ref → everything is new
-
-    // Stage first (same trick as the freshness checks): uncommitted work counts.
-    const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
-    const localTree = await this.exec(`git write-tree`, { timeoutSecs: 60 });
-    const localTreeSha = localTree.stdout.trim();
-    if (add.exitCode !== 0 || localTree.exitCode !== 0 || !localTreeSha)
-      return true; // fail open
-    return localTreeSha !== refTreeSha;
+    return hasChangesFromVia(this.gitAccess(), ref);
   }
 
   async fork(ref?: string): Promise<Sandbox> {
@@ -406,6 +350,24 @@ export class HeyoSandbox implements Sandbox {
   }
 
   /** Raw guest call — no started/destroyed checks (start() itself uses this). */
+  private gitAccess(): GitAccess {
+    return {
+      git: async (args, opts) => {
+        const r = await this.exec(
+          `git ${args.map((arg) => shq(arg)).join(" ")}`,
+          { timeoutSecs: opts?.timeoutSecs ?? 120 },
+        );
+        if (r.exitCode !== 0) {
+          throw new Error(
+            `git ${args.join(" ")} failed (${r.exitCode}): ${r.output.trim()}`,
+          );
+        }
+        return r.stdout;
+      },
+      shell: (command, opts) => this.exec(command, opts),
+    };
+  }
+
   private async guest(command: string, opts: ExecOptions): Promise<ExecResult> {
     const timeoutSecs = clampTimeout(opts.timeoutSecs);
     const cwd = opts.cwd ?? "/";
