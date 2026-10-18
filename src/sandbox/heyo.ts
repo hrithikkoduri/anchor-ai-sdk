@@ -55,7 +55,10 @@ export interface HeyoSandboxConfig {
   imageSizeMb?: number;
   sizeClass: HeyoSizeClass;
   diskSizeGb: number;
-  /** Used to clone private repos and later push PR branches; optional. */
+  /**
+   * Deprecated: prefer `SandboxSpec.git.token` (a callback — installation
+   * tokens expire mid-run). Still honored for compatibility.
+   */
   githubToken?: string;
 }
 
@@ -73,6 +76,17 @@ export function buildGuestCommand(
 ): string {
   const inner = `cd ${shq(cwd)} && ${command}`;
   return `timeout -k 5 ${timeoutSecs} bash -c ${shq(inner)}`;
+}
+
+/** The host of an https repo URL — credentials apply there; ssh/other → undefined. */
+function httpsHost(repoUrl: string | undefined): string | undefined {
+  if (!repoUrl) return undefined;
+  try {
+    const url = new URL(repoUrl);
+    return url.protocol === "https:" ? url.host : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export class HeyoSandbox implements Sandbox {
@@ -366,10 +380,21 @@ export class HeyoSandbox implements Sandbox {
 
   /** Git credentials for private repos — written outside /workspace, never in the repo. */
   private async setupGitCredentials(): Promise<void> {
-    if (!this.cfg.githubToken || !this.spec.repoUrl?.includes("github.com"))
-      return;
+    // The spec's callback wins (it re-mints per start/adopt); the config
+    // string stays honored for compatibility.
+    const tokenFor =
+      this.spec.git?.token ??
+      (this.cfg.githubToken ? () => this.cfg.githubToken! : undefined);
+    if (!tokenFor) return;
+    // https repos only, and the host comes from the repo URL unless named —
+    // any git host works (Bitbucket, Azure DevOps, self-hosted), not only
+    // github.com. ssh/git@ URLs authenticate via the key instead.
+    const host = this.spec.git?.host ?? httpsHost(this.spec.repoUrl);
+    if (!host) return;
+    const username = this.spec.git?.username ?? "x-access-token";
+    const token = await tokenFor();
     const creds = Buffer.from(
-      `https://x-access-token:${this.cfg.githubToken}@github.com\n`,
+      `https://${username}:${token}@${host}\n`,
     ).toString("base64");
     const r = await this.guest(
       [

@@ -88,6 +88,18 @@ export interface SandboxSpec {
    * Consumers set their bot identity so commits are attributed correctly.
    */
   gitIdentity?: { name: string; email: string };
+  /**
+   * Git credentials for https clone/push. `token` is a CALLBACK, not a
+   * string: provider tokens expire (GitHub installation tokens live ~1h) and
+   * runs can outlive them — the sandbox re-resolves at every start/adopt.
+   * `host` defaults to the repo URL's host (any git host works, not only
+   * github.com); `username` defaults to the token's conventional user.
+   */
+  git?: {
+    token: () => Promise<string> | string;
+    host?: string;
+    username?: string;
+  };
   /** Survive destroy() — keep the sandbox around for debugging. */
   keep?: boolean;
   /**
