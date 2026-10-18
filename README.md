@@ -94,12 +94,15 @@ opts out for loops that must be ended by budgets alone). The model still sees it
 the engine owns the declaration.
 
 **Agent-requested transitions.** `advanceOn` accepts an evidence predicate **or**
-`"agent_request"` — and the coding agent's `fix` phase uses the latter: after the full suite
-goes green, the agent calls `request_transition({to: "verify", reason: "…"})` when *it*
-considers the fix done. The strategy adjudicates with the evidence log
-(`onTransitionRequest`, the same propose/dispose split as `validateFinish`), and rejected
-requests come back as tool errors with the reason — mid-fix suite runs no longer teleport the
-phase. Backward moves (verify → fix, with a failing run on record) work the same way.
+`"agent_request"`. **Moving on is trusted by default**: any multi-phase strategy gives the
+agent `request_transition`, and without an `onTransitionRequest` policy the move is allowed
+and recorded (`via: "agent_request_unverified"`) — a phase whose evidence never appears can
+never trap work that later phases could do. **Claiming success is still gated** — that's
+`validateFinish`'s job, because it's the caller's outcome contract, not a control wall. The
+coding agent uses both: its `fix` phase requests `verify` (adjudicated — the full suite must
+be green on record, so mid-fix suite runs don't teleport the phase), and rejected requests
+come back as tool errors with the reason. Backward moves (verify → fix, with a failing run
+on record) work the same way.
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy

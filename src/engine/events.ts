@@ -13,7 +13,12 @@ export type RunDisposition = "done" | "watch" | "blocked";
 
 export type AgentEvent =
   | { type: "run_started"; task: string; phases: string[] }
-  | { type: "phase_started"; phase: string }
+  | {
+      type: "phase_started";
+      phase: string;
+      /** How the phase began: automatic evidence, an agent request, or a policy-free (trusted, recorded) request. */
+      via?: "evidence" | "agent_request" | "agent_request_unverified";
+    }
   | { type: "llm_call_started"; phase: string; step: number }
   | { type: "llm_text_delta"; text: string }
   | {

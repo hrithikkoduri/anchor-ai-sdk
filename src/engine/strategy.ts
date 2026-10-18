@@ -74,10 +74,12 @@ export interface AgentStrategy {
    */
   validateFinish?(evidence: ToolResultRecord[]): { allow: boolean; reason?: string };
   /**
-   * Adjudicate agent-requested transitions (the request_transition intrinsic).
-   * The engine validates the target phase; this hook decides with the evidence
-   * log in hand — same honesty pattern as validateFinish: the agent proposes,
-   * the evidence disposes. Return allow:false and the model gets the reason.
+   * Adjudicate agent-requested transitions. Optional policy: when absent, the
+   * agent may move phases on request — trusted and RECORDED (`via:
+   * "agent_request_unverified"`), never blocked (decision #34). Provide the
+   * hook to hard-gate: the evidence log comes with the request — the same
+   * propose/dispose pattern as validateFinish — and a denial feeds the reason
+   * back to the model.
    */
   onTransitionRequest?(
     request: { to: string; reason: string },

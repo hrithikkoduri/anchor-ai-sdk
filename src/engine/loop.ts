@@ -164,9 +164,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
   const intrinsics = opts.intrinsics ?? {};
   const injected: Tool[] = [];
   if (intrinsics.finish !== false) injected.push(finishTool);
-  const wantsTransitions =
-    typeof strategy.onTransitionRequest === "function" ||
-    strategy.phases.some((p) => p.advanceOn === "agent_request");
+  // Trusted by default (decision #34): any multi-phase strategy lets the
+  // agent move on — the move is recorded; a strategy can gate with
+  // onTransitionRequest or switch the intrinsic off entirely.
+  const wantsTransitions = strategy.phases.length > 1 || typeof strategy.onTransitionRequest === "function";
   if (intrinsics.requestTransition !== false && wantsTransitions) injected.push(requestTransitionTool);
   const tools = [
     ...suppliedTools.filter((t) => !injected.some((i) => i.definition.name === t.definition.name)),
@@ -521,6 +522,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         // The move itself happens AFTER the tool-result message is pushed, so
         // the protocol stays assistant-tool_calls → tool_result → phase message.
         let transitionTo: number | undefined;
+        let transitionUnverified = false;
         if (call.name === "request_transition" && result.ok) {
           const to = typeof result.meta?.to === "string" ? result.meta.to : "";
           const reason = typeof result.meta?.reason === "string" ? result.meta.reason : "";
@@ -533,9 +535,12 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
               content: `request_transition rejected: "${to}" is not a phase of this strategy (phases: ${known}).`,
             };
           } else {
+            // No policy = trust (decision #34): the agent may move on; the
+            // move is recorded as unverified so traces/evals can see it.
+            const policyFree = typeof strategy.onTransitionRequest !== "function";
             const verdict = strategy.onTransitionRequest?.({ to, reason }, evidence) ?? {
-              allow: false,
-              reason: "this strategy does not accept agent-requested transitions",
+              allow: true,
+              reason: "no transition policy — trusting the agent",
             };
             if (!verdict.allow) {
               const why = verdict.reason ?? "the evidence does not support it";
@@ -546,10 +551,17 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
               };
             } else {
               transitionTo = targetIndex;
+              transitionUnverified = policyFree;
               result = {
                 ok: true,
-                content: `moving to phase "${phases[targetIndex]!.id}" — ${phases[targetIndex]!.goal}`,
-                meta: { ...result.meta, transitionedTo: phases[targetIndex]!.id },
+                content:
+                  `moving to phase "${phases[targetIndex]!.id}" — ${phases[targetIndex]!.goal}` +
+                  (policyFree ? " (recorded: no transition policy)" : ""),
+                meta: {
+                  ...result.meta,
+                  transitionedTo: phases[targetIndex]!.id,
+                  ...(policyFree ? { unverified: true } : {}),
+                },
               };
             }
           }
@@ -590,7 +602,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
             break;
           }
           const entered = phases[phaseIndex]!;
-          emit({ type: "phase_started", phase: entered.id });
+          emit({
+            type: "phase_started",
+            phase: entered.id,
+            via: transitionUnverified ? "agent_request_unverified" : "agent_request",
+          });
           messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
 
@@ -609,7 +625,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
             break;
           }
           const entered = phases[phaseIndex]!;
-          emit({ type: "phase_started", phase: entered.id });
+          emit({ type: "phase_started", phase: entered.id, via: "evidence" });
           messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
       }
@@ -626,10 +642,11 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       if (currentPhase.maxSteps && phaseSteps > currentPhase.maxSteps && !phaseNudged) {
         phaseNudged = true;
         const next = phases[phaseIndex + 1];
-        const requestHint =
-          currentPhase.advanceOn === "agent_request" && next
+        const requestHint = !next
+          ? ""
+          : currentPhase.advanceOn === "agent_request"
             ? ` If the work here is done, call request_transition({to: "${next.id}", reason: "..."}) to move on.`
-            : "";
+            : ` If this goal cannot be met here, you may request_transition({to: "${next.id}", reason: "..."}) to move ahead — the escape will be recorded.`;
         messages.push(
           userMessage(
             `You have spent ${phaseSteps} turns in the "${currentPhase.id}" phase (soft limit ` +

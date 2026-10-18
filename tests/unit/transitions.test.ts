@@ -8,6 +8,7 @@ import type { LLMClient, LLMResponse } from "../../src/llm/types.js";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { codingAgent } from "../../src/agents/coding/index.js";
+import type { AgentStrategy } from "../../src/engine/strategy.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 
 const FIXTURE = fileURLToPath(new URL("../../../../fixtures/buggy-lib", import.meta.url));
@@ -166,5 +167,45 @@ describe("agent-requested transitions", () => {
     expect(result.phase).toBe("fix");
     const msgs = toolMessages(result.messages);
     expect(msgs.some((c) => c.includes('moving to phase "fix"'))).toBe(true);
+  });
+
+  it("policy-free strategies trust the agent: moves are allowed and recorded", async () => {
+    // No onTransitionRequest, and evidence alone can never advance phase "a" —
+    // the agent must be able to move on anyway (just not claim success).
+    const multi: AgentStrategy = {
+      name: "multi",
+      phases: [
+        { id: "a", goal: "do a", advanceOn: () => false },
+        { id: "b", goal: "do b" },
+      ],
+      systemPrompt: () => "s",
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+    const events: AgentEvent[] = [];
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm: scripted([
+          {
+            tools: [
+              {
+                name: "request_transition",
+                arguments: JSON.stringify({ to: "b", reason: "a cannot be done here; b still can" }),
+              },
+            ],
+          },
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "moved on", success: false }) }] },
+        ]),
+        strategy: multi,
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.phase).toBe("b");
+    const started = events.filter((e) => e.type === "phase_started") as Array<{ phase: string; via?: string }>;
+    expect(started.map((e) => e.phase)).toEqual(["a", "b"]);
+    expect(started[1]!.via).toBe("agent_request_unverified");
+    const msgs = toolMessages(result.messages);
+    expect(msgs.some((c) => c.includes('moving to phase "b"') && c.includes("no transition policy"))).toBe(true);
   });
 });
