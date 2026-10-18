@@ -15,6 +15,7 @@
  */
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./heyo-exec.js";
+import type { ProviderHealth } from "./provider.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -88,6 +89,26 @@ function httpsHost(repoUrl: string | undefined): string | undefined {
     return undefined;
   }
 }
+
+/** Cheap health check for `SandboxProvider.probe()` — never throws. */
+export async function probeHeyo(
+  cfg: HeyoSandboxConfig,
+): Promise<ProviderHealth> {
+  try {
+    await new Hws({ server: cfg.server, token: cfg.token }).healthz();
+    return { ok: true, name: "heyo", detail: cfg.server };
+  } catch (err) {
+    return {
+      ok: false,
+      name: "heyo",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+// Heyo admin machinery travels with the heyo subpath (it imports the SDK too).
+export { upsertHeyoSecret } from "./heyo-secret.js";
+export type { UpsertHeyoSecretArgs } from "./heyo-secret.js";
 
 export class HeyoSandbox implements Sandbox {
   readonly backend = "heyo" as const;

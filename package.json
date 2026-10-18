@@ -10,6 +10,14 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./sandbox/heyo": {
+      "types": "./src/sandbox/heyo.ts",
+      "default": "./src/sandbox/heyo.ts"
+    },
+    "./sandbox/local": {
+      "types": "./src/sandbox/local.ts",
+      "default": "./src/sandbox/local.ts"
     }
   },
   "files": [

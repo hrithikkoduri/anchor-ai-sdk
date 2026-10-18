@@ -1,67 +1,49 @@
 /**
- * The one place that knows which Sandbox implementations exist.
+ * The sandbox layer's entry points: providers and their lifecycle.
  *
- * Production code asks for a sandbox here and only here; everything above this
- * line (`agent/`, `tools/`) depends solely on the `Sandbox` interface. The
- * swap between backends is therefore a single constructor call:
+ * Production code opens sandboxes through a `SandboxProvider` (or the legacy
+ * options shape, bridged by `providerFor`) and never depends on concrete
+ * classes. The classes themselves — and their SDKs — live on subpaths:
  *
- *   createSandbox(spec, { heyo })        → HeyoSandbox (real microVM — default)
- *   createSandbox(spec, { local: true }) → LocalSandbox (dev/tests only)
+ *   @anchor/core/sandbox/heyo   → heyo(), HeyoSandbox (imports @heyocomputer/hws)
+ *   @anchor/core/sandbox/local  → local(), LocalSandbox
+ *
+ * The root export deliberately keeps only types from those modules (erased at
+ * compile time), so a consumer that uses neither pays for neither.
  */
-import { HeyoSandbox, type HeyoSandboxConfig } from "./heyo.js";
-import { LocalSandbox, type LocalSandboxOptions } from "./local.js";
 import type { Sandbox, SandboxSpec } from "./types.js";
+import type { SandboxHandle, SandboxProvider } from "./provider.js";
+import { providerFor, type CreateSandboxOptions } from "./providers.js";
 
 export * from "./types.js";
-export { HeyoSandbox, buildGuestCommand } from "./heyo.js";
+export * from "./provider.js";
+export { heyo, local, providerFor } from "./providers.js";
+export type { CreateSandboxOptions } from "./providers.js";
 export type { HeyoSandboxConfig } from "./heyo.js";
-export { upsertHeyoSecret } from "./heyo-secret.js";
-export type { UpsertHeyoSecretArgs } from "./heyo-secret.js";
-export { LocalSandbox } from "./local.js";
 export type { LocalSandboxOptions } from "./local.js";
 
-export interface CreateSandboxOptions {
-  /**
-   * Run locally instead of in a microVM. Dev/test only — set by the `--local`
-   * CLI flag or directly by tests; never by configuration.
-   */
-  local?: boolean | LocalSandboxOptions;
-  /** Heyo connection. Required unless `local` is set. */
-  heyo?: HeyoSandboxConfig;
-}
-
+/**
+ * A fresh sandbox with minimal validation. Prefer passing a provider
+ * directly (`heyo({...}).create(spec)`) in new code; the legacy options
+ * shape (`{ local } | { heyo }`) keeps older consumers working.
+ */
 export function createSandbox(
   spec: SandboxSpec,
   opts: CreateSandboxOptions = {},
 ): Sandbox {
-  if (opts.local) {
-    return new LocalSandbox(
-      spec,
-      typeof opts.local === "object" ? opts.local : {},
-    );
-  }
-  if (!opts.heyo?.token) {
-    throw new Error(
-      "the heyo backend needs a token — set HEYO_TOKEN in .env (and HEYO_NAMESPACE), or pass --local",
-    );
-  }
-  if (spec.localPath) {
+  if (!opts.local && spec.localPath) {
     // Fail fast instead of initializing an empty repo in the VM (learned the
-    // hard way: a silent empty workspace cost a live agent run its whole trace).
+    // hard way: a silent empty workspace cost a live agent run its trace).
     throw new Error(
       `localPath is a local-backend option — pass { local: true } (the --local flag), or give Heyo a repoUrl to clone`,
     );
   }
-  return new HeyoSandbox(spec, opts.heyo);
-}
-
-/** A retained sandbox's coordinates — enough to re-open or release it later. */
-export interface SandboxHandle {
-  id: string;
-  backend: "heyo" | "local";
+  return providerFor(opts).create(spec);
 }
 
 export interface OpenSandboxArgs extends CreateSandboxOptions {
+  /** The provider to open with. Defaults to the legacy options shape. */
+  provider?: SandboxProvider;
   /** Base spec for a fresh sandbox when no retained one applies. */
   spec: SandboxSpec;
   /** The retained sandbox to try first (this thread's own — see SandboxSpec.retain). */
@@ -72,7 +54,7 @@ export interface OpenSandboxArgs extends CreateSandboxOptions {
   onRetainedGone?: (handle: SandboxHandle) => Promise<void> | void;
   /** `spec.ref` was unusable — the owner clears its stale ref here. */
   onRefUnusable?: (ref: string) => Promise<void> | void;
-  /** Construction override (test factories). Defaults to `createSandbox`. */
+  /** Legacy test seam: construct sandboxes from specs directly. */
   create?: (spec: SandboxSpec) => Sandbox;
 }
 
@@ -83,15 +65,22 @@ export interface OpenSandboxArgs extends CreateSandboxOptions {
  *   3. when the fresh clone's `ref` is unusable, report it (onRefUnusable) and
  *      retry `fallbackSpec`.
  * The callbacks are bookkeeping for the owner (clearing DB pointers); they
- * must not throw. A mismatched retained backend is skipped silently — it is
- * not gone, just not usable in this configuration.
+ * must not throw. A handle owned by a different provider is skipped silently —
+ * it is not gone, just not usable in this configuration.
  */
 export async function openSandbox(args: OpenSandboxArgs): Promise<Sandbox> {
-  const make =
-    args.create ?? ((spec: SandboxSpec) => createSandbox(spec, args));
-  const wantBackend: "heyo" | "local" = args.local ? "local" : "heyo";
-  if (args.adopt && args.adopt.backend === wantBackend) {
-    const adopted = make({ ...args.spec, adopt: args.adopt.id });
+  // The legacy test seam (`create`) needs no provider at all — resolve one
+  // only when it will actually be used.
+  const provider =
+    args.provider ?? (args.create ? undefined : providerFor(args));
+  const make = args.create ?? ((spec: SandboxSpec) => provider!.create(spec));
+  // Legacy seam matches the handle like before (options-derived backend);
+  // the provider path requires the handle to be owned by this provider.
+  const owner = provider?.name ?? (args.local ? "local" : "heyo");
+  if (args.adopt && args.adopt.backend === owner) {
+    const adopted = args.create
+      ? make({ ...args.spec, adopt: args.adopt.id })
+      : provider!.adopt(args.adopt, args.spec);
     try {
       await adopted.start();
       return adopted;
@@ -115,26 +104,13 @@ export async function openSandbox(args: OpenSandboxArgs): Promise<Sandbox> {
 /**
  * Release a retained sandbox: destroy it by handle alone — no workspace spec,
  * no start(). A sandbox that is already gone is not an error. Pass the same
- * `CreateSandboxOptions` the sandbox was created with (a local backend's
- * `rootDir` matters here).
+ * provider (or legacy options) the sandbox was created with — a local
+ * backend's `rootDir` matters here.
  */
 export async function releaseSandbox(
   handle: SandboxHandle,
-  opts: CreateSandboxOptions = {},
+  opts: CreateSandboxOptions & { provider?: SandboxProvider } = {},
 ): Promise<void> {
-  const spec: SandboxSpec = { adopt: handle.id };
-  const sandbox =
-    handle.backend === "local"
-      ? new LocalSandbox(spec, typeof opts.local === "object" ? opts.local : {})
-      : new HeyoSandbox(spec, requiredHeyoConfig(opts));
-  await sandbox.destroy();
-}
-
-function requiredHeyoConfig(opts: CreateSandboxOptions): HeyoSandboxConfig {
-  if (!opts.heyo?.token) {
-    throw new Error(
-      "releaseSandbox: a heyo token is required for the heyo backend — set HEYO_TOKEN in .env",
-    );
-  }
-  return opts.heyo;
+  const provider = opts.provider ?? providerFor(opts);
+  await provider.release(handle);
 }
