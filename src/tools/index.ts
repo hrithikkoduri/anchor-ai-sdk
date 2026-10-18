@@ -14,7 +14,13 @@ import { runTestsTool } from "./run-tests.js";
 import { searchTool } from "./search.js";
 import type { Tool, ToolDefinition } from "./types.js";
 
-export const allTools: Tool[] = [bashTool, readFileTool, editFileTool, searchTool, runTestsTool];
+export const allTools: Tool[] = [
+  bashTool,
+  readFileTool,
+  editFileTool,
+  searchTool,
+  runTestsTool,
+];
 
 // Individual capabilities — supply any subset to runAgent (the registry is the full set).
 export { bashTool } from "./bash.js";
@@ -35,5 +41,13 @@ export function toolByName(name: string): Tool | undefined {
 
 export { truncate } from "./truncate.js";
 export { toolVerb } from "./activity.js";
-export { defineTool } from "./types.js";
+export {
+  defineTool,
+  formatExec,
+  optionalBoolean,
+  optionalNumber,
+  optionalString,
+  requireSandbox,
+  requireString,
+} from "./types.js";
 export type { Tool, ToolContext, ToolDefinition, ToolResult } from "./types.js";
