@@ -390,8 +390,10 @@ export class HeyoSandbox implements Sandbox {
       cwd: "/",
       timeoutSecs: 60,
     });
+    const gitName = this.spec.gitIdentity?.name ?? "anchor";
+    const gitEmail = this.spec.gitIdentity?.email ?? "anchor@localhost";
     const identity = await this.guest(
-      `git config --global user.name "anchor" && git config --global user.email "anchor@localhost"`,
+      `git config --global user.name ${shq(gitName)} && git config --global user.email ${shq(gitEmail)}`,
       { cwd: "/", timeoutSecs: 60 },
     );
     if (identity.exitCode !== 0) {

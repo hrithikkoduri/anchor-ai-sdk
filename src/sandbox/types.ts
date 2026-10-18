@@ -83,6 +83,11 @@ export interface SandboxSpec {
    * Environment for every command. Secrets travel here and only here.
    */
   env?: Record<string, string>;
+  /**
+   * The committer identity for checkpoints (default `anchor <anchor@localhost>`).
+   * Consumers set their bot identity so commits are attributed correctly.
+   */
+  gitIdentity?: { name: string; email: string };
   /** Survive destroy() — keep the sandbox around for debugging. */
   keep?: boolean;
   /**

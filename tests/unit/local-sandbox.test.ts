@@ -349,4 +349,24 @@ describe("LocalSandbox", () => {
       await sb.destroy();
     }
   });
+
+  it("uses the configured git identity for checkpoints (default stays anchor)", async () => {
+    const sb = make({
+      gitIdentity: {
+        name: "sailor-app-dev[bot]",
+        email: "12345+sailor-app-dev[bot]@users.noreply.github.com",
+      },
+    });
+    await sb.start();
+    try {
+      await sb.exec(`echo "work" > work.txt`);
+      await sb.checkpoint("identity check");
+      const log = await sb.exec(`git log -1 --format='%an <%ae>'`);
+      expect(log.stdout.trim()).toBe(
+        "sailor-app-dev[bot] <12345+sailor-app-dev[bot]@users.noreply.github.com>",
+      );
+    } finally {
+      await sb.destroy();
+    }
+  });
 });

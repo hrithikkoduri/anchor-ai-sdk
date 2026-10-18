@@ -74,13 +74,19 @@ export class LocalSandbox implements Sandbox {
       // Adopt the retained directory: the workspace must still be there.
       if (!(await exists(path.join(this.workspace, ".git"))))
         throw new Error(`retained sandbox ${this.id} has no workspace`);
-      await this.git(["-C", this.workspace, "config", "user.name", "anchor"]);
+      await this.git([
+        "-C",
+        this.workspace,
+        "config",
+        "user.name",
+        this.spec.gitIdentity?.name ?? "anchor",
+      ]);
       await this.git([
         "-C",
         this.workspace,
         "config",
         "user.email",
-        "anchor@localhost",
+        this.spec.gitIdentity?.email ?? "anchor@localhost",
       ]);
       this.started = true;
       return;
@@ -103,13 +109,19 @@ export class LocalSandbox implements Sandbox {
     if (!(await exists(path.join(this.workspace, ".git")))) {
       await this.git(["init", "-q", "-b", "main", this.workspace]);
     }
-    await this.git(["-C", this.workspace, "config", "user.name", "anchor"]);
+    await this.git([
+      "-C",
+      this.workspace,
+      "config",
+      "user.name",
+      this.spec.gitIdentity?.name ?? "anchor",
+    ]);
     await this.git([
       "-C",
       this.workspace,
       "config",
       "user.email",
-      "anchor@localhost",
+      this.spec.gitIdentity?.email ?? "anchor@localhost",
     ]);
 
     this.started = true;
