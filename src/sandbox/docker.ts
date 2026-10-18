@@ -171,6 +171,10 @@ export class DockerSandbox implements Sandbox {
     }
 
     const access = this.gitAccess();
+    // Benchmark images ship exec bits that their git index does not record;
+    // ignoring mode drift keeps patches (and hasChangesFrom) about CONTENT —
+    // a fresh boot must never read as "new work".
+    await access.git(["config", "core.fileMode", "false"]);
     await access.git([
       "config",
       "user.name",
