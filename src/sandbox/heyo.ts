@@ -70,7 +70,8 @@ export class HeyoSandbox implements Sandbox {
     private readonly spec: SandboxSpec,
     private readonly cfg: HeyoSandboxConfig,
   ) {
-    this.id = newSandboxId();
+    // Adopting keeps the retained deployment's id — same VM, same disk.
+    this.id = spec.adopt ?? newSandboxId();
     this.lb = new Hws({ server: cfg.server, token: cfg.token });
     this.executor = new HeyoGuestExecutor((command, env) =>
       this.lb.exec(this.id, command, {
@@ -83,6 +84,29 @@ export class HeyoSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
+
+    if (this.spec.adopt) {
+      // Adopt the retained deployment: wake it and verify the workspace is
+      // still there. Refreshing git identity + credentials is idempotent.
+      try {
+        await this.lb.patchScaling(this.id, { min_replicas: 1 });
+        await this.lb.waitForReady(this.id);
+      } catch (err) {
+        throw new Error(
+          `retained sandbox ${this.id} is unavailable: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      await this.ensureGit();
+      await this.setupGitCredentials();
+      const probe = await this.guest(
+        `[ -d ${this.workspace}/.git ] && echo ok || echo missing`,
+        { cwd: "/", timeoutSecs: 30 },
+      );
+      if (probe.stdout.trim() !== "ok")
+        throw new Error(`retained sandbox ${this.id} has no workspace`);
+      this.started = true;
+      return;
+    }
 
     // Register the deployment (private: no routes) and boot it.
     await this.lb.createDeployment({
@@ -120,7 +144,10 @@ export class HeyoSandbox implements Sandbox {
     return this.guest(command, { ...opts, cwd: opts.cwd ?? this.workspace });
   }
 
-  async checkpoint(message: string): Promise<Checkpoint> {
+  async checkpoint(
+    message: string,
+    opts?: { push?: string },
+  ): Promise<Checkpoint> {
     this.assertUsable();
     const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
     if (add.exitCode !== 0)
@@ -136,7 +163,27 @@ export class HeyoSandbox implements Sandbox {
     const rev = await this.exec(`git rev-parse HEAD`, { timeoutSecs: 60 });
     if (rev.exitCode !== 0)
       throw new Error(`git rev-parse failed: ${rev.output.trim()}`);
-    return { sha: rev.stdout.trim(), message, at: Date.now() };
+    const checkpoint: Checkpoint = {
+      sha: rev.stdout.trim(),
+      message,
+      at: Date.now(),
+    };
+    if (opts?.push) {
+      // Off-machine durability: a lost VM must not lose the checkpoint.
+      // Failures are reported, never thrown — the run continues.
+      const push = await this.exec(
+        `git push --quiet --force origin ${shq(`HEAD:refs/heads/${opts.push}`)}`,
+        { timeoutSecs: 180 },
+      );
+      if (push.exitCode === 0) checkpoint.pushedTo = opts.push;
+      else {
+        checkpoint.pushError = push.output.trim().slice(0, 300);
+        process.stderr.write(
+          `checkpoint push to ${opts.push} failed: ${checkpoint.pushError}\n`,
+        );
+      }
+    }
+    return checkpoint;
   }
 
   async hasChangesFrom(ref: string): Promise<boolean> {
@@ -186,13 +233,16 @@ export class HeyoSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
-    if (this.spec.keep) {
-      // Stop burning compute; keep the disk so the VM can be inspected later.
+    if (this.spec.keep || this.spec.retain) {
+      // Stop burning compute; keep the /workspace disk so a later run can
+      // wake this VM (retain) or a human can inspect it (keep).
       await this.lb
         .patchScaling(this.id, { min_replicas: 0 })
         .catch(() => undefined);
       process.stderr.write(
-        `keeping sandbox for debugging: ${this.id} (namespace ${this.cfg.namespace})\n`,
+        this.spec.keep
+          ? `keeping sandbox for debugging: ${this.id} (namespace ${this.cfg.namespace})\n`
+          : `retained sandbox for thread continuation: ${this.id} (namespace ${this.cfg.namespace})\n`,
       );
       return;
     }

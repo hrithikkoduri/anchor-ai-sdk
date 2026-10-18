@@ -179,9 +179,20 @@ export async function runAgent(
     if (opts.sandbox && opts.checkpoints !== false) {
       try {
         if (await opts.sandbox.hasChangesFrom("HEAD")) {
-          const cp = await opts.sandbox.checkpoint("agent turn checkpoint");
+          const cp = await opts.sandbox.checkpoint(
+            "agent turn checkpoint",
+            opts.checkpointPushRef
+              ? { push: opts.checkpointPushRef }
+              : undefined,
+          );
           checkpointRef = cp.sha;
-          emit({ type: "checkpoint", ref: cp.sha, label: "turn boundary" });
+          emit({
+            type: "checkpoint",
+            ref: cp.sha,
+            label: "turn boundary",
+            ...(cp.pushedTo ? { pushedTo: cp.pushedTo } : {}),
+            ...(cp.pushError ? { pushError: cp.pushError } : {}),
+          });
         }
       } catch {
         /* best-effort snapshot; never a reason to keep reasoning */

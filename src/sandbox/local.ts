@@ -53,16 +53,39 @@ export class LocalSandbox implements Sandbox {
     private readonly spec: SandboxSpec,
     private readonly opts: LocalSandboxOptions = {},
   ) {
-    this.id = newSandboxId();
-    this.root = path.join(opts.rootDir ?? path.join(process.cwd(), ".anchor", "sandboxes"), this.id);
+    // Adopting points at the retained sandbox's directory — same workspace.
+    this.id = spec.adopt ?? newSandboxId();
+    this.root = path.join(
+      opts.rootDir ?? path.join(process.cwd(), ".anchor", "sandboxes"),
+      this.id,
+    );
     this.workspace = path.join(this.root, "repo");
   }
 
   async start(): Promise<void> {
     if (this.started) return;
     if (!this.opts.quiet) {
-      process.stderr.write(`\u26a0 running locally — no isolation (${this.id})\n`);
+      process.stderr.write(
+        `\u26a0 running locally — no isolation (${this.id})\n`,
+      );
     }
+
+    if (this.spec.adopt) {
+      // Adopt the retained directory: the workspace must still be there.
+      if (!(await exists(path.join(this.workspace, ".git"))))
+        throw new Error(`retained sandbox ${this.id} has no workspace`);
+      await this.git(["-C", this.workspace, "config", "user.name", "anchor"]);
+      await this.git([
+        "-C",
+        this.workspace,
+        "config",
+        "user.email",
+        "anchor@localhost",
+      ]);
+      this.started = true;
+      return;
+    }
+
     await mkdir(this.root, { recursive: true });
 
     if (this.spec.localPath) {
@@ -81,7 +104,13 @@ export class LocalSandbox implements Sandbox {
       await this.git(["init", "-q", "-b", "main", this.workspace]);
     }
     await this.git(["-C", this.workspace, "config", "user.name", "anchor"]);
-    await this.git(["-C", this.workspace, "config", "user.email", "anchor@localhost"]);
+    await this.git([
+      "-C",
+      this.workspace,
+      "config",
+      "user.email",
+      "anchor@localhost",
+    ]);
 
     this.started = true;
   }
@@ -94,14 +123,42 @@ export class LocalSandbox implements Sandbox {
     return this.run("bash", ["-c", command], cwd, env, timeoutSecs);
   }
 
-  async checkpoint(message: string): Promise<Checkpoint> {
+  async checkpoint(
+    message: string,
+    opts?: { push?: string },
+  ): Promise<Checkpoint> {
     this.assertUsable();
     await this.git(["-C", this.workspace, "add", "-A"]);
     // --allow-empty: a checkpoint that changes nothing is still a valid point
     // to resume or fork from.
-    await this.git(["-C", this.workspace, "commit", "-q", "--allow-empty", "-m", message]);
-    const sha = (await this.git(["-C", this.workspace, "rev-parse", "HEAD"])).trim();
-    return { sha, message, at: Date.now() };
+    await this.git([
+      "-C",
+      this.workspace,
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      message,
+    ]);
+    const sha = (
+      await this.git(["-C", this.workspace, "rev-parse", "HEAD"])
+    ).trim();
+    const checkpoint: Checkpoint = { sha, message, at: Date.now() };
+    if (opts?.push) {
+      // Off-machine durability; failures are reported, never thrown.
+      const push = await this.exec(
+        `git push --force origin ${shq(`HEAD:refs/heads/${opts.push}`)}`,
+        { timeoutSecs: 180 },
+      );
+      if (push.exitCode === 0) checkpoint.pushedTo = opts.push;
+      else {
+        checkpoint.pushError = push.output.trim().slice(0, 300);
+        process.stderr.write(
+          `checkpoint push to ${opts.push} failed: ${checkpoint.pushError}\n`,
+        );
+      }
+    }
+    return checkpoint;
   }
 
   async hasChangesFrom(ref: string): Promise<boolean> {
@@ -112,7 +169,14 @@ export class LocalSandbox implements Sandbox {
     if (ref.startsWith("origin/")) {
       const branch = ref.slice("origin/".length);
       try {
-        await this.git(["-C", this.workspace, "fetch", "--quiet", "origin", `+refs/heads/${branch}:refs/remotes/${ref}`]);
+        await this.git([
+          "-C",
+          this.workspace,
+          "fetch",
+          "--quiet",
+          "origin",
+          `+refs/heads/${branch}:refs/remotes/${ref}`,
+        ]);
       } catch {
         /* missing branch or no network — compare against what we have */
       }
@@ -121,7 +185,14 @@ export class LocalSandbox implements Sandbox {
     let refTree: string;
     try {
       refTree = (
-        await this.git(["-C", this.workspace, "rev-parse", "--verify", "--quiet", `${ref}^{tree}`])
+        await this.git([
+          "-C",
+          this.workspace,
+          "rev-parse",
+          "--verify",
+          "--quiet",
+          `${ref}^{tree}`,
+        ])
       ).trim();
     } catch {
       return true; // unresolvable ref → everything is new
@@ -130,7 +201,9 @@ export class LocalSandbox implements Sandbox {
 
     // Stage first (same trick as the freshness checks): uncommitted work counts.
     await this.git(["-C", this.workspace, "add", "-A"]);
-    const localTree = (await this.git(["-C", this.workspace, "write-tree"])).trim();
+    const localTree = (
+      await this.git(["-C", this.workspace, "write-tree"])
+    ).trim();
     return localTree !== refTree;
   }
 
@@ -141,13 +214,20 @@ export class LocalSandbox implements Sandbox {
     // and uncommitted working-tree changes are not carried over (a plain
     // checkout preserves local modifications when ref == HEAD — learned by a
     // failing test).
-    const child = new LocalSandbox({ localPath: this.workspace, keep: this.spec.keep }, this.opts);
+    const child = new LocalSandbox(
+      { localPath: this.workspace, keep: this.spec.keep },
+      this.opts,
+    );
     await child.start();
     const target = ref ?? "HEAD";
-    const checkout = await child.exec(`git checkout -q -f ${shq(target)}`, { timeoutSecs: 60 });
+    const checkout = await child.exec(`git checkout -q -f ${shq(target)}`, {
+      timeoutSecs: 60,
+    });
     if (checkout.exitCode !== 0) {
       await child.destroy();
-      throw new Error(`fork: checkout ${target} failed: ${checkout.output.trim()}`);
+      throw new Error(
+        `fork: checkout ${target} failed: ${checkout.output.trim()}`,
+      );
     }
     return child;
   }
@@ -155,8 +235,12 @@ export class LocalSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
-    if (this.spec.keep) {
-      process.stderr.write(`keeping sandbox for debugging: ${this.root}\n`);
+    if (this.spec.keep || this.spec.retain) {
+      process.stderr.write(
+        this.spec.keep
+          ? `keeping sandbox for debugging: ${this.root}\n`
+          : `retained sandbox for thread continuation: ${this.root}\n`,
+      );
       return;
     }
     await rm(this.root, { recursive: true, force: true });
@@ -165,7 +249,8 @@ export class LocalSandbox implements Sandbox {
   // --- internals -----------------------------------------------------------
 
   private assertUsable(): void {
-    if (!this.started) throw new Error(`sandbox ${this.id} not started — call start() first`);
+    if (!this.started)
+      throw new Error(`sandbox ${this.id} not started — call start() first`);
     if (this.destroyed) throw new Error(`sandbox ${this.id} was destroyed`);
   }
 
@@ -173,7 +258,9 @@ export class LocalSandbox implements Sandbox {
   private async git(args: string[]): Promise<string> {
     const r = await this.run("git", args, this.root, {}, 120);
     if (r.exitCode !== 0) {
-      throw new Error(`git ${args.join(" ")} failed (${r.exitCode}): ${r.output.trim()}`);
+      throw new Error(
+        `git ${args.join(" ")} failed (${r.exitCode}): ${r.output.trim()}`,
+      );
     }
     return r.stdout;
   }
@@ -246,8 +333,16 @@ export class LocalSandbox implements Sandbox {
         // Report timeout kills with the conventional shell codes:
         // 124 = timed out (SIGTERM), 137 = killed hard (128 + SIGKILL).
         let exitCode = code ?? -1;
-        if (timedOut && code === null) exitCode = signal === "SIGKILL" ? 137 : 124;
-        resolve({ exitCode, stdout, stderr, output, timedOut, durationMs: Date.now() - startedAt });
+        if (timedOut && code === null)
+          exitCode = signal === "SIGKILL" ? 137 : 124;
+        resolve({
+          exitCode,
+          stdout,
+          stderr,
+          output,
+          timedOut,
+          durationMs: Date.now() - startedAt,
+        });
       });
     });
   }

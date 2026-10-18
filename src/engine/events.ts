@@ -74,7 +74,15 @@ export type AgentEvent =
       kind: "materialization_nudge";
       detail: string;
     }
-  | { type: "checkpoint"; ref: string; label: string }
+  | {
+      type: "checkpoint";
+      ref: string;
+      label: string;
+      /** Branch the checkpoint was pushed to, when durability was requested. */
+      pushedTo?: string;
+      /** Why an off-machine push failed (the commit itself still exists). */
+      pushError?: string;
+    }
   | {
       type: "compacted";
       removedMessages: number;

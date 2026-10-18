@@ -22,7 +22,13 @@
  */
 
 /** VM size tiers (mirrors Heyo's size classes). */
-export type HeyoSizeClass = "micro" | "mini" | "small" | "medium" | "large" | "xlarge";
+export type HeyoSizeClass =
+  | "micro"
+  | "mini"
+  | "small"
+  | "medium"
+  | "large"
+  | "xlarge";
 
 export interface ExecResult {
   /** Exit code. 124/137 conventionally mean "timed out / killed". -1 = could not run. */
@@ -35,7 +41,12 @@ export interface ExecResult {
   timedOut: boolean;
   durationMs: number;
   /** Transport failure is not a process exit or a confirmed command timeout. */
-  failure?: { kind: "transport"; completion: "unknown"; jobId?: string; message: string };
+  failure?: {
+    kind: "transport";
+    completion: "unknown";
+    jobId?: string;
+    message: string;
+  };
 }
 
 export interface ExecOptions {
@@ -52,6 +63,10 @@ export interface Checkpoint {
   sha: string;
   message: string;
   at: number;
+  /** Branch the commit was pushed to, when off-machine durability was asked for. */
+  pushedTo?: string;
+  /** Why the push failed — the checkpoint commit itself still exists in the sandbox. */
+  pushError?: string;
 }
 
 export interface SandboxSpec {
@@ -70,6 +85,19 @@ export interface SandboxSpec {
   env?: Record<string, string>;
   /** Survive destroy() — keep the sandbox around for debugging. */
   keep?: boolean;
+  /**
+   * Survive destroy() because the THREAD continues (distinct from `keep`, the
+   * debugging switch): the sandbox is parked, and the next run on the thread
+   * adopts it by id — workspace, branch, and uncommitted work exactly as left.
+   */
+  retain?: boolean;
+  /**
+   * Adopt a previously retained sandbox by id instead of creating a new one:
+   * wakes the same VM (Heyo) or reuses the same directory (local). Throws from
+   * start() when the retained sandbox is gone — callers then fall back to a
+   * fresh sandbox built from `repoUrl`/`ref`.
+   */
+  adopt?: string;
 }
 
 export interface Sandbox {
@@ -82,8 +110,12 @@ export interface Sandbox {
   start(): Promise<void>;
   /** Run one self-contained, time-bounded command. */
   exec(command: string, opts?: ExecOptions): Promise<ExecResult>;
-  /** Commit the workspace state so the run can resume / fork from here. */
-  checkpoint(message: string): Promise<Checkpoint>;
+  /** Commit the workspace state so the run can resume / fork from here.
+   * With `push`, also force-push the commit to `refs/heads/<push>` so the
+   * checkpoint survives losing the machine. A failed push is REPORTED in the
+   * result (`pushError`), never thrown — durability is best-effort and must
+   * not end a run. */
+  checkpoint(message: string, opts?: { push?: string }): Promise<Checkpoint>;
   /**
    * Does this workspace's CONTENT (git tree) differ from `ref`?
    *

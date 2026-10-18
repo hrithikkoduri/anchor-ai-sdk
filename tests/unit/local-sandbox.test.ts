@@ -9,13 +9,23 @@
  *   5. checkpoints are real git commits with a sha to resume/fork from
  *   6. destroy is idempotent; keep preserves the workspace for debugging
  *   7. a repo can be cloned (with ref) or copied without touching the original
+ *   8. retain/adopt round-trips the SAME workspace across sandbox objects
+ *   9. checkpoint pushes are reported (pushedTo/pushError), never thrown
  *
  * The same scenario file will be parameterized over the Heyo backend in
  * step 4, so both backends provably behave identically.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local.js";
@@ -31,7 +41,8 @@ async function exists(p: string): Promise<boolean> {
 /** Run a git command in `cwd` and fail loudly if it fails (test fixtures only). */
 function git(cwd: string, ...args: string[]): void {
   const r = spawnSync("git", args, { cwd, encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
+  if (r.status !== 0)
+    throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
 }
 
 describe("LocalSandbox", () => {
@@ -45,7 +56,8 @@ describe("LocalSandbox", () => {
     await rm(rootDir, { recursive: true, force: true });
   });
 
-  const make = (spec: SandboxSpec = {}) => new LocalSandbox(spec, { rootDir, quiet: true });
+  const make = (spec: SandboxSpec = {}) =>
+    new LocalSandbox(spec, { rootDir, quiet: true });
 
   it("captures stdout, stderr, and exit codes faithfully", async () => {
     const sb = make();
@@ -98,7 +110,9 @@ describe("LocalSandbox", () => {
     const sb = make({ env: { BASE_VAR: "base" } });
     await sb.start();
     try {
-      const r = await sb.exec(`echo "$BASE_VAR/$EXTRA_VAR"`, { env: { EXTRA_VAR: "extra" } });
+      const r = await sb.exec(`echo "$BASE_VAR/$EXTRA_VAR"`, {
+        env: { EXTRA_VAR: "extra" },
+      });
       expect(r.stdout.trim()).toBe("base/extra");
     } finally {
       await sb.destroy();
@@ -247,7 +261,90 @@ describe("LocalSandbox", () => {
       const inSandbox = await sb.exec(`cat file.txt`);
       expect(inSandbox.stdout).toContain("edited");
       // The original is untouched.
-      expect(await readFile(path.join(fixture, "file.txt"), "utf8")).toBe("original\n");
+      expect(await readFile(path.join(fixture, "file.txt"), "utf8")).toBe(
+        "original\n",
+      );
+    } finally {
+      await sb.destroy();
+    }
+  });
+
+  it("retain preserves the workspace and adopt resumes it with edits intact", async () => {
+    const first = make({ retain: true });
+    await first.start();
+    await first.exec(`echo "in progress" > work.txt`);
+    await first.checkpoint("mid-work");
+    await first.destroy(); // retained — the directory stays
+    expect(await exists(first.root)).toBe(true);
+
+    const resumed = make({ adopt: first.id });
+    await resumed.start();
+    try {
+      expect(resumed.id).toBe(first.id);
+      const r = await resumed.exec(`cat work.txt`);
+      expect(r.stdout.trim()).toBe("in progress");
+      const head = await resumed.exec(`git log -1 --format=%s`);
+      expect(head.stdout.trim()).toBe("mid-work");
+    } finally {
+      await resumed.destroy();
+    }
+  });
+
+  it("adopt fails loudly when the retained sandbox is gone", async () => {
+    const ghost = make({ adopt: "sb-anchor-does-not-exist" });
+    await expect(ghost.start()).rejects.toThrow(/no workspace/);
+  });
+
+  it("checkpoint push makes the resume point durable off-machine", async () => {
+    // A repo with a bare origin — the pushed branch must appear there.
+    const origin = path.join(rootDir, "origin.git");
+    const seed = path.join(rootDir, "seed");
+    await mkdir(seed, { recursive: true });
+    git(seed, "init", "-q", "-b", "main");
+    git(seed, "config", "user.name", "fixture");
+    git(seed, "config", "user.email", "fixture@localhost");
+    await writeFile(path.join(seed, "README.md"), "v1\n");
+    git(seed, "add", "-A");
+    git(seed, "commit", "-qm", "v1");
+    git(rootDir, "init", "-q", "--bare", origin);
+    git(seed, "remote", "add", "origin", origin);
+
+    const sb = make({ localPath: seed });
+    await sb.start();
+    try {
+      await sb.exec(`echo "durable work" > work.txt`);
+      const cp = await sb.checkpoint("mid-work", {
+        push: "sailor/issue-7-checkpoint",
+      });
+      expect(cp.pushedTo).toBe("sailor/issue-7-checkpoint");
+      expect(cp.pushError).toBeUndefined();
+      const refs = spawnSync(
+        "git",
+        [
+          `--git-dir=${origin}`,
+          "rev-parse",
+          "refs/heads/sailor/issue-7-checkpoint",
+        ],
+        { encoding: "utf8" },
+      );
+      expect(refs.status).toBe(0);
+      expect(refs.stdout.trim()).toBe(cp.sha);
+    } finally {
+      await sb.destroy();
+    }
+  });
+
+  it("checkpoint push failure is reported, never thrown", async () => {
+    const sb = make(); // no origin remote to push to
+    await sb.start();
+    try {
+      await sb.exec(`echo "work" > work.txt`);
+      const cp = await sb.checkpoint("mid-work", {
+        push: "sailor/issue-7-checkpoint",
+      });
+      expect(cp.sha).toMatch(/^[0-9a-f]{40}$/);
+      expect(cp.pushError).toBeTruthy();
+      expect(cp.pushedTo).toBeUndefined();
     } finally {
       await sb.destroy();
     }

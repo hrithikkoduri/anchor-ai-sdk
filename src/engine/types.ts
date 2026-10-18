@@ -29,6 +29,12 @@ export interface EngineOptions {
   pauseAfterPhase?: string;
   /** Snapshot changed work at turn/pause boundaries, without empty commits. */
   checkpoints?: boolean;
+  /**
+   * Branch that turn-boundary checkpoints are force-pushed to (off-machine
+   * durability: a lost sandbox must not lose the work). Push failures are
+   * reported on the checkpoint event, never fatal to the run.
+   */
+  checkpointPushRef?: string;
   startPhase?: string;
   onEvent?: EventSink;
   signal?: AbortSignal;

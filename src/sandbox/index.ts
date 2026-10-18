@@ -28,9 +28,15 @@ export interface CreateSandboxOptions {
   heyo?: HeyoSandboxConfig;
 }
 
-export function createSandbox(spec: SandboxSpec, opts: CreateSandboxOptions = {}): Sandbox {
+export function createSandbox(
+  spec: SandboxSpec,
+  opts: CreateSandboxOptions = {},
+): Sandbox {
   if (opts.local) {
-    return new LocalSandbox(spec, typeof opts.local === "object" ? opts.local : {});
+    return new LocalSandbox(
+      spec,
+      typeof opts.local === "object" ? opts.local : {},
+    );
   }
   if (!opts.heyo?.token) {
     throw new Error(
@@ -45,4 +51,88 @@ export function createSandbox(spec: SandboxSpec, opts: CreateSandboxOptions = {}
     );
   }
   return new HeyoSandbox(spec, opts.heyo);
+}
+
+/** A retained sandbox's coordinates — enough to re-open or release it later. */
+export interface SandboxHandle {
+  id: string;
+  backend: "heyo" | "local";
+}
+
+export interface OpenSandboxArgs extends CreateSandboxOptions {
+  /** Base spec for a fresh sandbox when no retained one applies. */
+  spec: SandboxSpec;
+  /** The retained sandbox to try first (this thread's own — see SandboxSpec.retain). */
+  adopt?: SandboxHandle;
+  /** Retry spec when `spec.ref` turns out unusable (e.g. a deleted branch). */
+  fallbackSpec?: SandboxSpec;
+  /** The retained sandbox was gone — the owner clears its stale pointer here. */
+  onRetainedGone?: (handle: SandboxHandle) => Promise<void> | void;
+  /** `spec.ref` was unusable — the owner clears its stale ref here. */
+  onRefUnusable?: (ref: string) => Promise<void> | void;
+  /** Construction override (test factories). Defaults to `createSandbox`. */
+  create?: (spec: SandboxSpec) => Sandbox;
+}
+
+/**
+ * Open the sandbox for a piece of work — the lifecycle Sailor dogfoods:
+ *   1. adopt the retained handle when one applies (SAME workspace, edits intact);
+ *   2. on failure, report it (onRetainedGone) and build a fresh sandbox;
+ *   3. when the fresh clone's `ref` is unusable, report it (onRefUnusable) and
+ *      retry `fallbackSpec`.
+ * The callbacks are bookkeeping for the owner (clearing DB pointers); they
+ * must not throw. A mismatched retained backend is skipped silently — it is
+ * not gone, just not usable in this configuration.
+ */
+export async function openSandbox(args: OpenSandboxArgs): Promise<Sandbox> {
+  const make =
+    args.create ?? ((spec: SandboxSpec) => createSandbox(spec, args));
+  const wantBackend: "heyo" | "local" = args.local ? "local" : "heyo";
+  if (args.adopt && args.adopt.backend === wantBackend) {
+    const adopted = make({ ...args.spec, adopt: args.adopt.id });
+    try {
+      await adopted.start();
+      return adopted;
+    } catch {
+      await args.onRetainedGone?.(args.adopt);
+    }
+  }
+  const fresh = make(args.spec);
+  try {
+    await fresh.start();
+    return fresh;
+  } catch (err) {
+    if (!args.spec.ref || !args.fallbackSpec) throw err;
+    await args.onRefUnusable?.(args.spec.ref);
+    const fallback = make(args.fallbackSpec);
+    await fallback.start();
+    return fallback;
+  }
+}
+
+/**
+ * Release a retained sandbox: destroy it by handle alone — no workspace spec,
+ * no start(). A sandbox that is already gone is not an error. Pass the same
+ * `CreateSandboxOptions` the sandbox was created with (a local backend's
+ * `rootDir` matters here).
+ */
+export async function releaseSandbox(
+  handle: SandboxHandle,
+  opts: CreateSandboxOptions = {},
+): Promise<void> {
+  const spec: SandboxSpec = { adopt: handle.id };
+  const sandbox =
+    handle.backend === "local"
+      ? new LocalSandbox(spec, typeof opts.local === "object" ? opts.local : {})
+      : new HeyoSandbox(spec, requiredHeyoConfig(opts));
+  await sandbox.destroy();
+}
+
+function requiredHeyoConfig(opts: CreateSandboxOptions): HeyoSandboxConfig {
+  if (!opts.heyo?.token) {
+    throw new Error(
+      "releaseSandbox: a heyo token is required for the heyo backend — set HEYO_TOKEN in .env",
+    );
+  }
+  return opts.heyo;
 }
