@@ -219,7 +219,11 @@ export async function runAgent(
     };
   };
 
-  emit({ type: "run_started", task: task.task, phases: [phase] });
+  emit({
+    type: "run_started",
+    task: task.task,
+    phases: strategy.phases.map((item) => item.id),
+  });
   emit({ type: "phase_started", phase });
   try {
     for (;;) {
