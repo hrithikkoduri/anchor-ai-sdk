@@ -499,7 +499,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
             // denial with the error as the reason (decision #37).
             let verdict: CheckVerdict;
             try {
-              verdict = await strategy.validateFinish(evidence);
+              verdict = await strategy.validateFinish({ evidence, sandbox: opts.sandbox });
             } catch (err) {
               verdict = {
                 allow: false,

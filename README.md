@@ -75,8 +75,8 @@ and each phase's optional check (`validateAdvance`) decides whether the move is 
 | Phase | Moving on | Soft step budget |
 |---|---|---|
 | reproduce | agent calls `advance()` — checked: a failing test run must be on record | 12 |
-| fix | agent calls `advance()` — checked: the full suite must be green on record (a targeted subset cannot satisfy it) | 20 |
-| verify | the final phase — no `advance` target; the agent calls `finish`, checked: passing full-suite run on record | 8 |
+| fix | agent calls `advance()` — checked: the full suite must be green **on the current tree** (a targeted subset cannot satisfy it) | 20 |
+| verify | the final phase — no `advance` target; the agent calls `finish`, checked: passing full-suite run on the current tree | 8 |
 
 When a phase exceeds its soft budget the engine nudges the model once: "if you
 cannot {goal}, call finish(success=false)" — reproduction can be genuinely
@@ -122,6 +122,10 @@ validateAdvance: async ({ sandbox }) => {
 ```
 
 A throwing check counts as a denial (with the error as the reason), never a crash.
+
+The coding agent already uses the power: `run_tests` records a content hash of the working
+tree, and the fix-gate and finish checks recompute it through the sandbox — a green run whose
+tree has since changed is **stale** and doesn't count ("green on this tree", decision #38).
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy

@@ -18,6 +18,14 @@ const DETECT =
   `elif [ -f Makefile ]; then echo "make test"; ` +
   `else echo "none"; fi`;
 
+/**
+ * Best-effort working-tree content hash (decision #38). Checks recompute the
+ * same hash through the sandbox to prove a recorded green run still applies
+ * to the current tree — no suite re-run needed. Empty output = no git → the
+ * hash is omitted and checks fall back to pure evidence.
+ */
+const TREE_HASH_CMD = "git add -A >/dev/null 2>&1; git write-tree 2>/dev/null || true";
+
 interface ResolvedCommand {
   command: string;
   /**
@@ -67,7 +75,12 @@ export const runTestsTool = defineTool(
     }
     const { command, defaultCommand } = resolved;
     const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 600)));
-    const r = await requireSandbox(ctx).exec(command, { timeoutSecs });
+    const sandbox = requireSandbox(ctx);
+    const r = await sandbox.exec(command, { timeoutSecs });
+    // Freshness evidence: the tree hash at this moment. Checks compare it at
+    // move time — "green" only counts if the tree still matches (decision #38).
+    const tree = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
+    const treeHash = /^[0-9a-f]{40}$/.test(tree.stdout.trim()) ? tree.stdout.trim() : undefined;
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: truncate(`run_tests: ${command}\n${formatExec(r, timeoutSecs)}`),
@@ -81,6 +94,7 @@ export const runTestsTool = defineTool(
         exitCode: r.exitCode,
         timedOut: r.timedOut,
         durationMs: r.durationMs,
+        ...(treeHash !== undefined ? { treeHash } : {}),
       },
     };
   },

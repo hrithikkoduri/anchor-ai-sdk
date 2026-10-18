@@ -321,4 +321,85 @@ describe("advance — agent-driven moves with per-phase checks", () => {
     expect(started[1]!.via).toBe("advance_unverified");
     expect(toolMessages(result.messages).some((c) => c.includes("no advance check"))).toBe(true);
   });
+
+  it("green means green on THIS tree — edits after the run make the evidence stale", async () => {
+    await sandbox.start();
+    const result = await runAgent(
+      { task: "fix negatives" },
+      {
+        llm: scripted([
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // fails
+          { tools: [{ name: "advance", arguments: "{}" }] }, // → fix
+          EDIT_FIX,
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // green on tree A
+          {
+            tools: [
+              {
+                name: "edit_file",
+                arguments: JSON.stringify({
+                  path: "src/sum.js",
+                  old_string: "numbers.reduce((a, b) => a + b, 0)",
+                  new_string: "numbers.reduce((a, b) => a + b, 0) // touched",
+                }),
+              },
+            ],
+          }, // tree changes AFTER the green run
+          { tools: [{ name: "advance", arguments: "{}" }] }, // DENIED — the green run is stale
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // green on tree B
+          { tools: [{ name: "advance", arguments: "{}" }] }, // → verify
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "verified", success: true }) }] },
+        ]),
+        sandbox,
+        agent: codingAgent,
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.phase).toBe("verify");
+    expect(
+      toolMessages(result.messages).some((c) =>
+        c.includes("the suite was green, but the working tree changed since"),
+      ),
+    ).toBe(true);
+  });
+
+  it("finish is freshness-checked too — a stale green cannot claim success", async () => {
+    await sandbox.start();
+    const result = await runAgent(
+      { task: "fix negatives" },
+      {
+        llm: scripted([
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // fails
+          { tools: [{ name: "advance", arguments: "{}" }] }, // → fix
+          EDIT_FIX,
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // green
+          { tools: [{ name: "advance", arguments: "{}" }] }, // → verify
+          {
+            tools: [
+              {
+                name: "edit_file",
+                arguments: JSON.stringify({
+                  path: "src/sum.js",
+                  old_string: "numbers.reduce((a, b) => a + b, 0)",
+                  new_string: "numbers.reduce((a, b) => a + b, 0) // last minute",
+                }),
+              },
+            ],
+          },
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "trust me", success: true }) }] }, // DENIED — stale
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // re-run → green again
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "verified", success: true }) }] }, // ok
+        ]),
+        sandbox,
+        agent: codingAgent,
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(
+      toolMessages(result.messages).some(
+        (c) => c.includes("finish(success=true) rejected") && c.includes("working tree changed"),
+      ),
+    ).toBe(true);
+  });
 });

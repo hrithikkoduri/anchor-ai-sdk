@@ -208,6 +208,8 @@ describe("tools", () => {
       expect(r.ok).toBe(true);
       expect(r.content).toContain("run_tests: echo TESTS-PASS");
       expect(r.content).toContain("TESTS-PASS");
+      // freshness evidence: the working-tree content hash (decision #38)
+      expect(String(r.meta?.treeHash)).toMatch(/^[0-9a-f]{40}$/);
     });
 
     it("falls back to the task's test command", async () => {

@@ -10,7 +10,8 @@
  * A move is never the model's claim alone — the check sees the tool results.
  * A model that says "I fixed it" without a passing test stays in `fix`.
  */
-import type { AgentStrategy, ToolResultRecord } from "../../engine/strategy.js";
+import type { Sandbox } from "../../sandbox/types.js";
+import type { AgentStrategy, CheckVerdict, ToolResultRecord } from "../../engine/strategy.js";
 import { buildRepoMap } from "./repomap.js";
 
 const SYSTEM_PROMPT = `You are an autonomous coding agent fixing a bug in a git repository.
@@ -42,11 +43,46 @@ Rules:
   and resumeAt set to the phase a future run should start at (usually "fix"). Use
   disposition="blocked" when you need a human.`;
 
-/** The repo's canonical (default-command) suite run, most recent first. */
-const lastFullRun = (evidence: ToolResultRecord[]) =>
-  [...evidence]
+const TREE_HASH_CMD = "git add -A >/dev/null 2>&1; git write-tree 2>/dev/null || true";
+
+/** The same content hash run_tests records — recomputed through the sandbox. */
+async function treeHash(sandbox: Sandbox): Promise<string | undefined> {
+  const r = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
+  const sha = r.stdout.trim();
+  return /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
+}
+
+/**
+ * Is the suite green — ON THIS TREE? Not just "was green at some point": the
+ * recorded full-suite run must match the tree as it stands now, or the agent
+ * has changed files since and the run no longer proves anything (decision
+ * #38). The check verifies directly via the sandbox; no git → evidence only.
+ */
+async function suiteIsGreen(
+  evidence: ToolResultRecord[],
+  sandbox: Sandbox | undefined,
+): Promise<CheckVerdict> {
+  const lastFull = [...evidence]
     .reverse()
     .find((r) => r.tool === "run_tests" && r.meta?.ran === true && r.meta?.defaultCommand === true);
+  if (!lastFull) {
+    return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
+  }
+  if (!lastFull.ok) {
+    return { allow: false, reason: "the most recent full test-suite run failed — fix it first" };
+  }
+  const recorded = typeof lastFull.meta?.treeHash === "string" ? lastFull.meta.treeHash : undefined;
+  if (recorded !== undefined && sandbox !== undefined) {
+    const current = await treeHash(sandbox);
+    if (current !== undefined && current !== recorded) {
+      return {
+        allow: false,
+        reason: "the suite was green, but the working tree changed since — re-run the full suite",
+      };
+    }
+  }
+  return { allow: true };
+}
 
 export const codingStrategy: AgentStrategy = {
   name: "coding",
@@ -77,18 +113,11 @@ export const codingStrategy: AgentStrategy = {
       id: "fix",
       goal: "make the failing test pass with a minimal change",
       maxSteps: 20,
-      validateAdvance({ to, evidence }) {
+      async validateAdvance({ to, evidence, sandbox }) {
         if (to !== "verify") {
           return { allow: false, reason: `from fix the agent advances to "verify" — not "${to}"` };
         }
-        const lastFull = lastFullRun(evidence);
-        if (!lastFull) {
-          return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
-        }
-        if (!lastFull.ok) {
-          return { allow: false, reason: "the most recent full test-suite run failed — fix it first" };
-        }
-        return { allow: true, reason: "full suite is green" };
+        return suiteIsGreen(evidence, sandbox);
       },
     },
     {
@@ -109,15 +138,8 @@ export const codingStrategy: AgentStrategy = {
       },
     },
   ],
-  validateFinish(evidence) {
-    const lastFull = lastFullRun(evidence);
-    if (!lastFull) {
-      return { allow: false, reason: "no full test-suite run is on record — run the default test command first" };
-    }
-    if (!lastFull.ok) {
-      return { allow: false, reason: "the most recent full test-suite run failed" };
-    }
-    return { allow: true };
+  async validateFinish({ evidence, sandbox }) {
+    return suiteIsGreen(evidence, sandbox);
   },
   prepareContext(sandbox) {
     if (!sandbox) throw new Error("codingStrategy requires a sandbox");

@@ -35,6 +35,16 @@ export interface AdvanceCheckContext {
   sandbox?: Sandbox;
 }
 
+/**
+ * What a strategy's finish check sees. Like advance checks, it may be async
+ * and may use the sandbox to verify the success claim directly (decision #38).
+ */
+export interface FinishCheckContext {
+  evidence: ToolResultRecord[];
+  /** The run's sandbox, when one exists — the check may re-verify directly. */
+  sandbox?: Sandbox;
+}
+
 export interface StrategyPhase {
   id: string;
   /** One line injected into the phase-entry message. */
@@ -91,7 +101,7 @@ export interface AgentStrategy {
    * check, it may be async (decision #37). This is how "never claim success
    * without a passing full test run" becomes enforced rather than promised.
    */
-  validateFinish?(evidence: ToolResultRecord[]): CheckVerdict | Promise<CheckVerdict>;
+  validateFinish?(ctx: FinishCheckContext): CheckVerdict | Promise<CheckVerdict>;
   /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
   systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */
