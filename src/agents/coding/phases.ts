@@ -10,6 +10,12 @@ export const codingPhases: StrategyPhase[] = [
       "Inspect the real repository and prior observations. Distinguish a review, an explanation, a scope correction, and an implementation request. Ask only when a meaningful ambiguity blocks safe progress.",
   },
   {
+    id: "plan",
+    goal: "Decide the change before touching code.",
+    guidance:
+      "Name the failing path, the root-cause fix, and what is deliberately left out. Hardening beyond the reported failure is proposed in the response, not shipped — unless it is required to make the failure stop.",
+  },
+  {
     id: "act",
     goal: "Carry out the requested work with the smallest sound intervention.",
     guidance:
