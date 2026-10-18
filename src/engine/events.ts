@@ -11,6 +11,15 @@ import type { LLMToolCall, LLMUsage } from "../llm/types.js";
 /** How a finish() concluded — done, watching for events, or blocked on a human. */
 export type RunDisposition = "done" | "watch" | "blocked";
 
+/** What a budget-limited run says it still needs — see EngineOptions.revival. */
+export interface RevivalRequest {
+  /** Plain language: the work that remains. */
+  remaining: string;
+  /** The run's own estimate for the next run. Never trusted blindly. */
+  estimatedSteps?: number;
+  estimatedTokens?: number;
+}
+
 export type AgentEvent =
   | { type: "run_started"; task: string; phases: string[] }
   | {
@@ -71,8 +80,14 @@ export type AgentEvent =
       /** Non-blocking runtime guidance (e.g. the materialization advisory).
        * Advisory events never gate actions or end runs. */
       type: "advisory";
-      kind: "materialization_nudge";
+      kind: "materialization_nudge" | "budget_warning";
       detail: string;
+    }
+  | {
+      /** The dying run's handoff: what it still needs, for a consumer that may
+       * choose to fund a revival run. The engine itself grants nothing. */
+      type: "revival_requested";
+      request: RevivalRequest;
     }
   | {
       type: "checkpoint";

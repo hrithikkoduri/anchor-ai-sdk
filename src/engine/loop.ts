@@ -23,6 +23,12 @@ import {
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
 import { defineTool } from "../tools/types.js";
+import {
+  budgetWarning,
+  revivalBlock,
+  warnPercent as revivalWarnPercent,
+} from "./revival.js";
+import type { RevivalRequest } from "./events.js";
 import type {
   RunTask,
   EngineOptions,
@@ -79,9 +85,17 @@ export async function runAgent(
     phase = prior.phase;
   let summary = prior?.summary;
   const currentRequest = userMessage(task.task);
+  const revivalOn = !!opts.revival;
+  const revivalWarnAt = revivalWarnPercent(
+    opts.revival ? opts.revival.warnAtPercent : undefined,
+  );
+  let revivalWarned = false;
+  let revivalRequest: RevivalRequest | undefined;
   const system = () => ({
     role: "system" as const,
-    content: strategy.systemPrompt({ task: task.task, context, summary }),
+    content:
+      strategy.systemPrompt({ task: task.task, context, summary }) +
+      (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : ""),
   });
   const messages: LLMMessage[] = [
     system(),
@@ -147,6 +161,65 @@ export async function runAgent(
           };
         },
         { verb: (input) => `Moving into the ${String(input.phase)} phase` },
+      ),
+    );
+  }
+
+  if (revivalOn) {
+    available.set(
+      "request_revival",
+      defineTool(
+        {
+          name: "request_revival",
+          description:
+            "State what work remains and your estimate of the next run's needs when you cannot finish before the budget runs out. The consumer may fund a fresh run from it. Include your own buffer; an under-estimate fails, an inflated one is not trusted. This records a handoff; it does not end the run.",
+          parameters: {
+            type: "object",
+            properties: {
+              remaining: {
+                type: "string",
+                description: "What work remains, briefly and concretely.",
+              },
+              estimatedSteps: {
+                type: "number",
+                description: "Turns the next run likely needs to finish.",
+              },
+              estimatedTokens: {
+                type: "number",
+                description: "Total tokens the next run likely needs.",
+              },
+            },
+            required: ["remaining"],
+            additionalProperties: false,
+          },
+        },
+        async (input) => {
+          const remaining =
+            typeof input.remaining === "string" ? input.remaining.trim() : "";
+          if (!remaining)
+            return {
+              ok: false,
+              content: "Say what work remains before requesting a revival.",
+            };
+          const positive = (value: unknown) =>
+            typeof value === "number" && Number.isFinite(value) && value > 0
+              ? Math.ceil(value)
+              : undefined;
+          const estimatedSteps = positive(input.estimatedSteps);
+          const estimatedTokens = positive(input.estimatedTokens);
+          revivalRequest = {
+            remaining,
+            ...(estimatedSteps !== undefined ? { estimatedSteps } : {}),
+            ...(estimatedTokens !== undefined ? { estimatedTokens } : {}),
+          };
+          emit({ type: "revival_requested", request: revivalRequest });
+          return {
+            ok: true,
+            content:
+              "Handoff recorded. If the budget runs out, the next run starts from it; changed work is checkpointed at the boundary.",
+          };
+        },
+        { verb: "Requesting budget for the remaining work" },
       ),
     );
   }
@@ -229,6 +302,10 @@ export async function runAgent(
       checkpointRef,
       phase,
       evidence,
+      ...(revivalRequest &&
+      (reason === "budget_exceeded" || reason === "max_steps")
+        ? { revival: revivalRequest }
+        : {}),
     };
   };
 
@@ -256,6 +333,29 @@ export async function runAgent(
           over.kind === "steps" ? "max_steps" : "budget_exceeded",
           { ok: false, error: over.detail },
         );
+      }
+      if (revivalOn && !revivalWarned) {
+        // One warning, before the wall: the model can either spend what is
+        // left well or leave a funded handoff for the next run.
+        const limit = budget.limits.maxTokens;
+        const used = budget.totalTokens();
+        const tokensHit = limit > 0 && used >= limit * (revivalWarnAt / 100);
+        const stepsHit =
+          budget.limits.maxSteps > 0 &&
+          steps >= budget.limits.maxSteps * (revivalWarnAt / 100);
+        if (tokensHit || stepsHit) {
+          revivalWarned = true;
+          emit({
+            type: "advisory",
+            kind: "budget_warning",
+            detail: `budget nearing its limit (${used}/${limit} tokens, ${steps}/${budget.limits.maxSteps} steps)`,
+          });
+          messages.push({
+            role: "user",
+            origin: "engine",
+            content: budgetWarning(used, limit),
+          });
+        }
       }
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
         const folded = await compactConversation({
