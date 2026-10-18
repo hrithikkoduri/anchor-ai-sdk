@@ -70,7 +70,7 @@ engine adds the loop, tools, guardrails, and events on top.
 `reproduce → fix → verify`. Phases advance on **tool evidence**, not on the model's claims:
 
 Phases never advance on their own. The agent calls `advance()` when a phase's work is done,
-and each phase's optional check (`validateAdvance`) decides whether the move is allowed:
+and each phase's optional check (`check`) decides whether the move is allowed:
 
 | Phase | Moving on | Soft step budget |
 |---|---|---|
@@ -100,10 +100,10 @@ the engine owns the declaration.
 `advance` continues (the agent says a phase is done; default target is the next phase, `to`
 jumps or goes back), `finish` stops (the run ends with its outcome). Both are engine
 intrinsics — injected automatically, never listed by consumers — and both can be checked:
-per-phase `validateAdvance`, per-strategy `validateFinish`. **Moving on is trusted by
+per-phase `check`, per-strategy `checkFinish`. **Moving on is trusted by
 default**: with no check, the move is allowed and recorded (`via: "advance_unverified"`); a
 check hard-gates only where the strategy wants rigor. **Claiming success is where honesty
-lives**: `validateFinish` is the caller's outcome contract. The coding agent uses both —
+lives**: `checkFinish` is the caller's outcome contract. The coding agent uses both —
 reproduce → fix checks for a failing test, fix → verify for a green full suite (mid-fix
 suite runs can't teleport the phase), verify → fix checks for a failing run — and rejected
 moves come back as tool errors with the reason. And no check can trap a run: a check can
@@ -112,12 +112,18 @@ override is recorded (`via: "advance_forced"` + a `check_overridden` guardrail e
 `finish(success=true)` stays checked.
 
 Checks are just functions: async, with `ctx.sandbox` in reach — a check can run its own
-verification, call one of the tools, or hit an external API the sandboxed agent cannot:
+verification, call one of the tools, or hit an external API the sandboxed agent cannot.
+A phase reads exactly like this:
 
 ```ts
-validateAdvance: async ({ sandbox }) => {
-  const r = await runTestsTool.run({}, { sandbox });
-  return r.ok ? { allow: true } : { allow: false, reason: "tests are red" };
+{
+  id: "draft",
+  goal: "write it up",
+  check: async ({ sandbox }) => {          // your rule — any function
+    const r = await runTestsTool.run({}, { sandbox });
+    return r.ok ? { allow: true } : { allow: false, reason: "tests are red" };
+  },
+  allowForce: true,                        // may the agent override a denial? (default: true)
 }
 ```
 
@@ -176,7 +182,7 @@ concept across runs — deliberately not in this package).
 The **evidence spine** is strategy territory, not framework: `codingStrategy`
 hangs on `run_tests` (reproduce ← failing run, fix ← passing full run,
 `finish` gate ← last full run green). The engine knows none of that — it only
-asks `advanceOn`/`validateFinish`. A research strategy picks its own spine
+asks for the `check`/`checkFinish` verdicts. A research strategy picks its own spine
 with the same contract.
 
 ## Cross-run memory (threads)
@@ -234,7 +240,7 @@ cannot happen by accident. All of these are on by default, with dials:
 | Loop detection | an identical tool call repeated forever | `guardrails.repeatedToolCallLimit` (default 3; `false` disables) |
 | Text-only stall | a coding turn that forgets to act | `guardrails.emptyTurnNudgeLimit` (default 2; `false` = never stall — budgets stay the backstop) |
 | Compaction | context-window overflow | `compaction: { maxEstimatedTokens, keepRecentTokens } \| false` |
-| Finish gate | false success claims | `strategy.validateFinish` (codingStrategy: the last full-suite run must have passed) |
+| Finish gate | false success claims | `strategy.checkFinish` (codingStrategy: the last full-suite run must have passed) |
 | Command timeouts | hung processes | per-call `timeout_secs`; sandbox kill deadlines |
 | Output truncation | context flooding | `truncate()` defaults — 300 lines / 20k chars, one policy |
 | Redaction | secrets in traces/DB | always on at the persistence boundary |

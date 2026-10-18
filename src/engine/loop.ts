@@ -494,12 +494,12 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
                 `finish rejected: resumeAt "${finishResumeAt}" is not a phase of this strategy ` +
                 `(phases: ${known}). Fix the value or drop the field.`,
             };
-          } else if (claimedSuccess && strategy.validateFinish) {
+          } else if (claimedSuccess && strategy.checkFinish) {
             // The finish check may be async and may throw — a throw is a
             // denial with the error as the reason (decision #37).
             let verdict: CheckVerdict;
             try {
-              verdict = await strategy.validateFinish({ evidence, sandbox: opts.sandbox });
+              verdict = await strategy.checkFinish({ evidence, sandbox: opts.sandbox });
             } catch (err) {
               verdict = {
                 allow: false,
@@ -557,7 +557,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
             // Check on the phase being LEFT; no check = trust (decision #34).
             // Checks are plain functions (decision #37): async-capable, with
             // the sandbox in reach; a throwing check is a denial, not a crash.
-            const check = phases[phaseIndex]!.validateAdvance;
+            const check = phases[phaseIndex]!.check;
             const policyFree = typeof check !== "function";
             let verdict: CheckVerdict;
             if (typeof check !== "function") {
@@ -572,10 +572,21 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
                 };
               }
             }
-            // A check can delay a move — never trap the loop (decision #36):
-            // `force: true` downgrades a denial to a recorded override.
+            // A denial is normally escapable (decision #36): `force: true`
+            // downgrades it to a recorded override — unless the phase sets
+            // allowForce: false, which makes the check absolute (decision #39).
             const force = result.meta?.force === true;
-            if (!verdict.allow && !force) {
+            const forceable = phases[phaseIndex]!.allowForce ?? true;
+            if (!verdict.allow && force && !forceable) {
+              const why = verdict.reason ?? "the check denied it";
+              emit({ type: "guardrail", kind: "transition_rejected", detail: `${why} (force not allowed)` });
+              result = {
+                ok: false,
+                content:
+                  `advance rejected: ${why} — this check cannot be forced. ` +
+                  `Satisfy it, or call finish(summary, success=false) if you cannot.`,
+              };
+            } else if (!verdict.allow && !force) {
               const why = verdict.reason ?? "the evidence does not support it";
               emit({ type: "guardrail", kind: "transition_rejected", detail: why });
               result = {
@@ -670,7 +681,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         phaseNudged = true;
         const hasNext = phases[phaseIndex + 1] !== undefined;
         const forceHint =
-          hasNext && typeof currentPhase.validateAdvance === "function"
+          hasNext && typeof currentPhase.check === "function" && currentPhase.allowForce !== false
             ? ` If that check cannot be satisfied, you may advance({force: true}) — the override is recorded.`
             : "";
         messages.push(

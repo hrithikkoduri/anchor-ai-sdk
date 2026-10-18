@@ -3,7 +3,7 @@
  *
  * The engine owns the mechanics (LLM ↔ tools, budgets, loop detection);
  * a strategy owns the phases, the prompts, and the optional checks that gate
- * moving on (`validateAdvance`) and claiming success (`validateFinish`).
+ * moving on (`check`) and claiming success (`checkFinish`).
  * `codingStrategy` (reproduce → fix → verify) is the first implementation;
  * a research or triage agent would be another.
  */
@@ -58,15 +58,22 @@ export interface StrategyPhase {
   maxSteps?: number;
   /**
    * Optional check on the move OUT of this phase (the `advance` intrinsic).
-   * The agent decides when a phase is done; this validates the move — e.g.
-   * "only leave fix with a green full-suite run on record". Absent = trusted:
-   * the move is allowed and recorded as unverified (decision #34). The check
-   * is just a function (decision #37): it may be async, use `ctx.sandbox` to
-   * run its own verification, or call anything the host can reach (an external
-   * approval API, a tool, a judge). A throwing check counts as a denial —
-   * `force` remains the escape.
+   * The agent decides when a phase is done; this decides whether the move is
+   * allowed — e.g. "only leave fix with a green full-suite run on record".
+   * Absent = trusted: the move is allowed and recorded as unverified
+   * (decision #34). The check is just a function (decision #37): it may be
+   * async, use `ctx.sandbox` to run its own verification, or call anything
+   * the host can reach (an external approval API, a tool, a judge). A
+   * throwing check counts as a denial.
    */
-  validateAdvance?(ctx: AdvanceCheckContext): CheckVerdict | Promise<CheckVerdict>;
+  check?(ctx: AdvanceCheckContext): CheckVerdict | Promise<CheckVerdict>;
+  /**
+   * May the agent override a denial of this phase's check with
+   * `advance({force: true})`? Default true — a check can delay a move, never
+   * trap the loop (decision #36). `false` makes the gate absolute: satisfy
+   * the check, or exit via `finish(success=false)` → blocked.
+   */
+  allowForce?: boolean;
 }
 
 export interface AgentStrategy {
@@ -101,7 +108,7 @@ export interface AgentStrategy {
    * check, it may be async (decision #37). This is how "never claim success
    * without a passing full test run" becomes enforced rather than promised.
    */
-  validateFinish?(ctx: FinishCheckContext): CheckVerdict | Promise<CheckVerdict>;
+  checkFinish?(ctx: FinishCheckContext): CheckVerdict | Promise<CheckVerdict>;
   /** The constant system prompt for the whole run. `summary` is the session's running summary, when one exists. */
   systemPrompt(args: { task: string; context?: string; summary?: string }): string;
   /** The message injected whenever a new phase begins. */

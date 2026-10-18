@@ -1,6 +1,6 @@
 /**
  * advance (decision #35) — phases move when the AGENT says so; each phase's
- * optional check (`validateAdvance`) decides whether the move is allowed.
+ * optional check (`check`) decides whether the move is allowed.
  * No check = trusted and recorded.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -219,7 +219,7 @@ describe("advance — agent-driven moves with per-phase checks", () => {
         {
           id: "a",
           goal: "get approval",
-          validateAdvance: async (ctx) => {
+          check: async (ctx) => {
             await new Promise((resolve) => setTimeout(resolve, 5)); // async work
             const r = await ctx.sandbox!.exec("cat approved.txt 2>/dev/null || true");
             return r.stdout.trim() === "yes"
@@ -262,7 +262,7 @@ describe("advance — agent-driven moves with per-phase checks", () => {
         {
           id: "a",
           goal: "do a",
-          validateAdvance: () => {
+          check: () => {
             throw new Error("approval API is down");
           },
         },
@@ -291,8 +291,44 @@ describe("advance — agent-driven moves with per-phase checks", () => {
     expect(msgs.some((c) => c.includes("force override recorded"))).toBe(true);
   });
 
+  it("allowForce: false makes a check absolute — force is refused, only finish(false) exits", async () => {
+    await sandbox.start();
+    const locked: AgentStrategy = {
+      name: "locked",
+      phases: [
+        {
+          id: "a",
+          goal: "wait for the external review",
+          allowForce: false, // deliberate: this gate cannot be overridden
+          check: () => ({ allow: false, reason: "the external review has not approved" }),
+        },
+        { id: "b", goal: "done" },
+      ],
+      systemPrompt: () => "s",
+      enterPhaseMessage: (p) => `PHASE: ${p.id}`,
+    };
+
+    const result = await runAgent(
+      { task: "t" },
+      {
+        llm: scripted([
+          { tools: [{ name: "advance", arguments: "{}" }] }, // denied
+          { tools: [{ name: "advance", arguments: JSON.stringify({ force: true }) }] }, // denied — not forceable
+          { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "stuck, needs a human", success: false }) }] },
+        ]),
+        sandbox,
+        strategy: locked,
+      },
+    );
+
+    expect(result.phase).toBe("a"); // never moved
+    const msgs = toolMessages(result.messages);
+    expect(msgs.some((c) => c.includes("this check cannot be forced"))).toBe(true);
+    expect(result.ok).toBe(false); // ended honestly via finish(success=false)
+  });
+
   it("unchecked strategies trust the agent: moves are allowed and recorded", async () => {
-    // No validateAdvance anywhere — the agent decides, the move is recorded.
+    // No check anywhere — the agent decides, the move is recorded.
     const multi: AgentStrategy = {
       name: "multi",
       phases: [

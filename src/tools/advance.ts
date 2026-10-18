@@ -2,7 +2,7 @@
  * advance — the engine's second intrinsic: "I am done with this phase."
  *
  * Phases never advance on their own (decision #35). The agent drives every
- * move; the phase may carry an optional check (`validateAdvance`) that rules
+ * move; the phase may carry an optional check (`check`) that rules
  * on it — the agent proposes, the check disposes. No check = trusted, and the
  * move is recorded as unverified. In the final phase there is nothing to
  * advance to — `finish` ends the run.
@@ -19,9 +19,9 @@ export const advanceTool = defineTool(
     description:
       "Move on from the current phase (default: the next one; pass `to` to jump or go " +
       "back). The phase may validate the move and reject it with a reason. As a last " +
-      "resort, `force: true` overrides a denial — the override is recorded and does not " +
-      "make finish(success=true) pass. At the final phase there is nothing to advance " +
-      "to — call finish() to end the run.",
+      "resort, `force: true` overrides a denial where the phase allows it — the " +
+      "override is recorded and does not make finish(success=true) pass. At the final " +
+      "phase there is nothing to advance to — call finish() to end the run.",
     parameters: {
       type: "object",
       properties: {

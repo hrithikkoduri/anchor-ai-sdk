@@ -287,7 +287,7 @@ describe("engine", () => {
           },
         ],
       },
-      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes — validateFinish's evidence
+      { toolCalls: [{ name: "run_tests", arguments: "{}" }] }, // full suite passes — checkFinish's evidence
       { toolCalls: [{ name: "finish", arguments: JSON.stringify({ summary: "fixed", success: true }) }] },
     ]);
 

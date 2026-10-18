@@ -1,11 +1,11 @@
 /**
  * codingStrategy — the default coding agent on top of the engine.
  *
- * Three phases; the agent drives every move and each move is checked
- * (decision #35):
+ * Three phases; the agent drives every move and each phase carries a `check`
+ * plus an explicit `allowForce` (decision #39):
  *   reproduce → advance() once a test run REPORTS FAILURE (checked)
- *   fix       → advance() once the full suite PASSES (checked)
- *   verify    → the model reviews the diff and calls finish()
+ *   fix       → advance() once the full suite PASSES on the current tree
+ *   verify    → the model reviews the diff and calls finish() (checkFinish)
  *
  * A move is never the model's claim alone — the check sees the tool results.
  * A model that says "I fixed it" without a passing test stays in `fix`.
@@ -95,11 +95,12 @@ export const codingStrategy: AgentStrategy = {
       goal: "produce a failing test (or a failing existing test run) that demonstrates the bug",
       // Soft deadline: reproduction can be genuinely impossible.
       maxSteps: 12,
-      // Check on the move out (decision #35): the agent decides WHEN, the
-      // check decides WHETHER. Any source counts — the agent may write a NEW
-      // test and run it explicitly. "No test command found" does not count
+      // The gate on leaving this phase: the agent decides WHEN, the check
+      // decides WHETHER. Any source counts — the agent may write a NEW test
+      // and run it explicitly. "No test command found" does not count
       // (learned live: it advanced on an empty repo).
-      validateAdvance({ to, evidence }) {
+      allowForce: true, // a stuck phase must never trap; the override is recorded
+      check({ to, evidence }) {
         if (to !== "fix") {
           return { allow: false, reason: `from reproduce the agent advances to "fix" — not "${to}"` };
         }
@@ -113,7 +114,8 @@ export const codingStrategy: AgentStrategy = {
       id: "fix",
       goal: "make the failing test pass with a minimal change",
       maxSteps: 20,
-      async validateAdvance({ to, evidence, sandbox }) {
+      allowForce: true, // the success contract lives at checkFinish, so moves stay escapable
+      async check({ to, evidence, sandbox }) {
         if (to !== "verify") {
           return { allow: false, reason: `from fix the agent advances to "verify" — not "${to}"` };
         }
@@ -124,7 +126,8 @@ export const codingStrategy: AgentStrategy = {
       id: "verify",
       goal: "run the full test suite, review the diff, then finish",
       maxSteps: 8,
-      validateAdvance({ to, evidence }) {
+      allowForce: true,
+      check({ to, evidence }) {
         // Backward moves are a feature: verify found the fix wrong → fix again.
         if (to !== "fix") {
           return { allow: false, reason: `from verify the agent moves back to "fix" or calls finish` };
@@ -138,7 +141,7 @@ export const codingStrategy: AgentStrategy = {
       },
     },
   ],
-  async validateFinish({ evidence, sandbox }) {
+  async checkFinish({ evidence, sandbox }) {
     return suiteIsGreen(evidence, sandbox);
   },
   prepareContext(sandbox) {
