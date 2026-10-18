@@ -35,6 +35,8 @@ Rules:
 - If an approach fails twice, re-read the relevant code instead of repeating commands.
 - Minimal diffs only: no refactors, no formatting changes to unrelated code.
 - If you truly cannot proceed, call finish(summary, success=false) explaining what you learned.
+- If a phase's check cannot be satisfied but you are confident moving on is right, call
+  advance({force: true}) — the override is recorded, and finish(success=true) is still checked.
 - When the work is done but a follow-up should be driven by external signals (CI results,
   review comments), conclude with disposition="watch", watch={"checks":true,"comments":true},
   and resumeAt set to the phase a future run should start at (usually "fix"). Use

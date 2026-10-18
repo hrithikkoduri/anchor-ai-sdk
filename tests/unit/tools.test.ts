@@ -274,6 +274,10 @@ describe("tools", () => {
       const bare = await advanceTool.run({}, ctx);
       expect(bare.ok).toBe(true);
       expect(bare.meta?.to).toBeUndefined();
+
+      // force is carried through for the engine to record the override
+      const forced = await advanceTool.run({ force: true }, ctx);
+      expect(forced.meta?.force).toBe(true);
     });
   });
 });

@@ -16,8 +16,8 @@ export type AgentEvent =
   | {
       type: "phase_started";
       phase: string;
-      /** Set when the agent drove the move: a checked advance, or an ungated (trusted, recorded) one. */
-      via?: "advance" | "advance_unverified";
+      /** Set when the agent drove the move: checked, ungated (trusted), or forced over a denied check. */
+      via?: "advance" | "advance_unverified" | "advance_forced";
     }
   | { type: "llm_call_started"; phase: string; step: number }
   | { type: "llm_text_delta"; text: string }
@@ -45,7 +45,7 @@ export type AgentEvent =
       contentChars: number;
       meta?: Record<string, unknown>;
     }
-  | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected" | "transition_rejected"; detail: string }
+  | { type: "guardrail"; kind: "loop_detected" | "budget_exceeded" | "finish_rejected" | "transition_rejected" | "check_overridden"; detail: string }
   | { type: "checkpoint"; ref: string; label: string }
   | {
       type: "compacted";

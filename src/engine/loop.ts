@@ -521,6 +521,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
         // assistant-tool_calls → tool_result → phase message.
         let advanceTo: number | undefined;
         let advanceUnverified = false;
+        let advanceForced = false;
         if (call.name === "advance" && result.ok) {
           const requested = typeof result.meta?.to === "string" ? result.meta.to : undefined;
           const reason = typeof result.meta?.reason === "string" ? result.meta.reason : undefined;
@@ -551,7 +552,10 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
               allow: true,
               reason: "no advance check — trusting the agent",
             };
-            if (!verdict.allow) {
+            // A check can delay a move — never trap the loop (decision #36):
+            // `force: true` downgrades a denial to a recorded override.
+            const force = result.meta?.force === true;
+            if (!verdict.allow && !force) {
               const why = verdict.reason ?? "the evidence does not support it";
               emit({ type: "guardrail", kind: "transition_rejected", detail: why });
               result = {
@@ -559,17 +563,30 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
                 content: `advance rejected: ${why}. Stay in "${phases[phaseIndex]!.id}" and keep working.`,
               };
             } else {
+              const forced = !verdict.allow; // only reachable with force === true
               advanceTo = targetIndex;
-              advanceUnverified = policyFree;
+              advanceUnverified = policyFree && !forced;
+              advanceForced = forced;
+              if (forced) {
+                emit({
+                  type: "guardrail",
+                  kind: "check_overridden",
+                  detail: verdict.reason ?? "advance check denied; the agent overrode it",
+                });
+              }
               result = {
                 ok: true,
                 content:
                   `moving to phase "${phases[targetIndex]!.id}" — ${phases[targetIndex]!.goal}` +
-                  (policyFree ? " (recorded: no advance check)" : ""),
+                  (forced
+                    ? ` (force override recorded: ${verdict.reason ?? "advance check denied"})`
+                    : policyFree
+                      ? " (recorded: no advance check)"
+                      : ""),
                 meta: {
                   ...result.meta,
                   advancedTo: phases[targetIndex]!.id,
-                  ...(policyFree ? { unverified: true } : {}),
+                  ...(forced ? { forced: true } : policyFree ? { unverified: true } : {}),
                 },
               };
             }
@@ -614,7 +631,7 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
           emit({
             type: "phase_started",
             phase: entered.id,
-            via: advanceUnverified ? "advance_unverified" : "advance",
+            via: advanceForced ? "advance_forced" : advanceUnverified ? "advance_unverified" : "advance",
           });
           messages.push(userMessage(strategy.enterPhaseMessage(entered)));
         }
@@ -632,13 +649,17 @@ export async function runAgent(task: RunTask, opts: EngineOptions): Promise<Agen
       if (currentPhase.maxSteps && phaseSteps > currentPhase.maxSteps && !phaseNudged) {
         phaseNudged = true;
         const hasNext = phases[phaseIndex + 1] !== undefined;
+        const forceHint =
+          hasNext && typeof currentPhase.validateAdvance === "function"
+            ? ` If that check cannot be satisfied, you may advance({force: true}) — the override is recorded.`
+            : "";
         messages.push(
           userMessage(
             `You have spent ${phaseSteps} turns in the "${currentPhase.id}" phase (soft limit ` +
               `${currentPhase.maxSteps}). ` +
               (hasNext
                 ? `If this phase is done, call advance(); if you cannot ${currentPhase.goal}, ` +
-                  `call finish(summary, success=false) explaining what you learned.`
+                  `call finish(summary, success=false) explaining what you learned.${forceHint}`
                 : `If you cannot complete the task, call finish(summary, success=false) explaining what you learned.`),
           ),
         );

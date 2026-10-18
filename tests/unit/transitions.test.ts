@@ -164,6 +164,49 @@ describe("advance — agent-driven moves with per-phase checks", () => {
     expect(toolMessages(result.messages).some((c) => c.includes('moving to phase "fix"'))).toBe(true);
   });
 
+  it("a check can delay a move — never trap the loop: force overrides and is recorded", async () => {
+    await sandbox.start();
+    const events: AgentEvent[] = [];
+    const result = await runAgent(
+      { task: "fix negatives" },
+      {
+        llm: scripted([
+          { tools: [{ name: "run_tests", arguments: "{}" }] }, // fails — reproduce evidence
+          { tools: [{ name: "advance", arguments: "{}" }] }, // → fix (checked)
+          EDIT_FIX,
+          { tools: [{ name: "advance", arguments: "{}" }] }, // fix → verify DENIED (no green full run)
+          {
+            tools: [
+              {
+                name: "advance",
+                // No matter what the check says, the agent can keep moving.
+                arguments: JSON.stringify({ force: true, reason: "check cannot be satisfied here" }),
+              },
+            ],
+          },
+          {
+            tools: [
+              { name: "finish", arguments: JSON.stringify({ summary: "moved on under force", success: false }) },
+            ],
+          },
+        ]),
+        sandbox,
+        agent: codingAgent,
+        onEvent: (e) => events.push(e),
+      },
+    );
+
+    expect(result.phase).toBe("verify");
+    const msgs = toolMessages(result.messages);
+    expect(msgs.some((c) => c.includes("advance rejected:"))).toBe(true); // the check DID run
+    expect(msgs.some((c) => c.includes("force override recorded"))).toBe(true);
+    expect(
+      events.some((e) => e.type === "guardrail" && (e as { kind: string }).kind === "check_overridden"),
+    ).toBe(true);
+    const started = events.filter((e) => e.type === "phase_started") as Array<{ phase: string; via?: string }>;
+    expect(started.find((e) => e.phase === "verify")!.via).toBe("advance_forced");
+  });
+
   it("unchecked strategies trust the agent: moves are allowed and recorded", async () => {
     // No validateAdvance anywhere — the agent decides, the move is recorded.
     const multi: AgentStrategy = {

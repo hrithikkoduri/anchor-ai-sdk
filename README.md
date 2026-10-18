@@ -106,7 +106,10 @@ check hard-gates only where the strategy wants rigor. **Claiming success is wher
 lives**: `validateFinish` is the caller's outcome contract. The coding agent uses both —
 reproduce → fix checks for a failing test, fix → verify for a green full suite (mid-fix
 suite runs can't teleport the phase), verify → fix checks for a failing run — and rejected
-moves come back as tool errors with the reason.
+moves come back as tool errors with the reason. And no check can trap a run: a check can
+**delay** a move, never forbid progress — `advance({force: true})` overrides a denial, the
+override is recorded (`via: "advance_forced"` + a `check_overridden` guardrail event), and
+`finish(success=true)` stays checked.
 
 The prompts mention tools by name (workflow guidance for the model); the API's
 `tools` array is what actually makes them callable. The coding agent's strategy
