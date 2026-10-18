@@ -38,6 +38,12 @@ export interface EngineOptions {
 export interface GuardrailConfig {
   /** Stop repeated identical calls (default 3); false disables this limit. */
   repeatedToolCallLimit?: number | false;
+  /**
+   * After this many consecutive tool-call turns with no visible text, inject
+   * one runtime-only advisory asking for a reply or a visible status (default
+   * 8; false disables). Advisory only — it never blocks or ends the run.
+   */
+  toolOnlyNudgeLimit?: number | false;
 }
 
 export type FinishReason =

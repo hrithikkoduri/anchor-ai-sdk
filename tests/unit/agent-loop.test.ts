@@ -267,4 +267,89 @@ describe("natural agent loop", () => {
     expect(result.error).toContain("loop limit");
     expect(executed).toBe(2);
   });
+
+  it("advises a visible reply after consecutive tool-only turns — advisory, never gating", async () => {
+    sandbox = new LocalSandbox({}, { quiet: true });
+    await sandbox.start();
+    const store = new MemoryThreadStore();
+    const events: AgentEvent[] = [];
+    const llm = model([
+      ...Array.from({ length: 8 }, (_, index) => ({
+        calls: [{ name: "bash", args: { command: `echo state ${index + 1}` } }],
+      })),
+      { text: "Here is the status you asked for." },
+    ]);
+    const result = await runAgent(
+      { task: "Status?" },
+      {
+        llm,
+        sandbox,
+        agent: codingAgent,
+        thread: { store, id: "nudge" },
+        onEvent: (event) => events.push(event),
+      },
+    );
+    expect(result).toMatchObject({ reason: "finished", steps: 9 });
+    const ninth = llm.seen[8]!;
+    expect(
+      ninth.messages.some(
+        (message) =>
+          message.origin === "engine" &&
+          (message.content ?? "").includes("without writing anything visible"),
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "advisory" && event.kind === "materialization_nudge",
+      ),
+    ).toBe(true);
+    // Runtime-only: the advisory never becomes durable conversation.
+    const saved = await store.load("nudge");
+    expect(saved!.messages.some((message) => message.origin === "engine")).toBe(
+      false,
+    );
+  });
+
+  it("the advisory respects its dial, including repeated sustained silence", async () => {
+    sandbox = new LocalSandbox({}, { quiet: true });
+    await sandbox.start();
+    const llm = model([
+      ...Array.from({ length: 4 }, (_, index) => ({
+        calls: [{ name: "bash", args: { command: `echo x ${index + 1}` } }],
+      })),
+      { text: "Done." },
+    ]);
+    const events: AgentEvent[] = [];
+    await runAgent(
+      { task: "Status?" },
+      {
+        llm,
+        sandbox,
+        agent: codingAgent,
+        guardrails: { toolOnlyNudgeLimit: 2 },
+        onEvent: (event) => events.push(event),
+      },
+    );
+    expect(events.filter((event) => event.type === "advisory")).toHaveLength(2);
+
+    const off = model([
+      { calls: [{ name: "bash", args: { command: "echo 1" } }] },
+      { calls: [{ name: "bash", args: { command: "echo 2" } }] },
+      { calls: [{ name: "bash", args: { command: "echo 3" } }] },
+      { text: "Done." },
+    ]);
+    const quiet: AgentEvent[] = [];
+    await runAgent(
+      { task: "Status?" },
+      {
+        llm: off,
+        sandbox,
+        agent: codingAgent,
+        guardrails: { toolOnlyNudgeLimit: false },
+        onEvent: (event) => quiet.push(event),
+      },
+    );
+    expect(quiet.some((event) => event.type === "advisory")).toBe(false);
+  });
 });

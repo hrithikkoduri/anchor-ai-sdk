@@ -96,6 +96,8 @@ export async function runAgent(
   const evidence: ToolResultRecord[] = [];
   const signatures: string[] = [];
   const repeatLimit = opts.guardrails?.repeatedToolCallLimit ?? 3;
+  const toolOnlyNudge = opts.guardrails?.toolOnlyNudgeLimit ?? 8;
+  let silentToolTurns = 0;
   let steps = 0;
   let checkpointRef: string | undefined;
   let pauseRequested = false;
@@ -434,6 +436,28 @@ export async function runAgent(
           meta: result.meta,
         });
         messages.push(toolResultMessage(call.id, result.content));
+      }
+      // Materialization advisory (runtime-only, never persisted): a reasoning
+      // model's hidden chain is stateless between calls, so after consecutive
+      // turns that only call tools, nothing it understood is visible — and
+      // nothing will survive context folding. Ask for a reply or a visible
+      // status. Advisory only: it neither blocks actions nor ends the run.
+      if (toolOnlyNudge !== false) {
+        if (response.text.trim() !== "") silentToolTurns = 0;
+        else if (++silentToolTurns >= toolOnlyNudge) {
+          silentToolTurns = 0;
+          const detail = `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`;
+          emit({ type: "advisory", kind: "materialization_nudge", detail });
+          messages.push({
+            role: "user",
+            origin: "engine",
+            content:
+              `You have taken ${toolOnlyNudge} tool steps without writing anything visible — ` +
+              `the user cannot see your reasoning. If this request expects an answer, answer now in text. ` +
+              `If you are mid-work, state briefly what you found and what remains: ` +
+              `visible notes survive context folding, silent reasoning does not.`,
+          });
+        }
       }
       await persist();
       if (opts.signal?.aborted)

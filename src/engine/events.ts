@@ -67,6 +67,13 @@ export type AgentEvent =
         | "check_overridden";
       detail: string;
     }
+  | {
+      /** Non-blocking runtime guidance (e.g. the materialization advisory).
+       * Advisory events never gate actions or end runs. */
+      type: "advisory";
+      kind: "materialization_nudge";
+      detail: string;
+    }
   | { type: "checkpoint"; ref: string; label: string }
   | {
       type: "compacted";
