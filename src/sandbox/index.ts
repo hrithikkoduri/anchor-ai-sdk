@@ -15,6 +15,8 @@ import type { Sandbox, SandboxSpec } from "./types.js";
 export * from "./types.js";
 export { HeyoSandbox, buildGuestCommand } from "./heyo.js";
 export type { HeyoSandboxConfig } from "./heyo.js";
+export { upsertHeyoSecret } from "./heyo-secret.js";
+export type { UpsertHeyoSecretArgs } from "./heyo-secret.js";
 export { LocalSandbox } from "./local.js";
 export type { LocalSandboxOptions } from "./local.js";
 
