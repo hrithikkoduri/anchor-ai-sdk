@@ -104,6 +104,36 @@ export class LocalSandbox implements Sandbox {
     return { sha, message, at: Date.now() };
   }
 
+  async hasChangesFrom(ref: string): Promise<boolean> {
+    this.assertUsable();
+
+    // Best-effort refresh of remote-tracking refs: a deleted branch or an
+    // offline host must not break the comparison (it fails open below).
+    if (ref.startsWith("origin/")) {
+      const branch = ref.slice("origin/".length);
+      try {
+        await this.git(["-C", this.workspace, "fetch", "--quiet", "origin", `+refs/heads/${branch}:refs/remotes/${ref}`]);
+      } catch {
+        /* missing branch or no network — compare against what we have */
+      }
+    }
+
+    let refTree: string;
+    try {
+      refTree = (
+        await this.git(["-C", this.workspace, "rev-parse", "--verify", "--quiet", `${ref}^{tree}`])
+      ).trim();
+    } catch {
+      return true; // unresolvable ref → everything is new
+    }
+    if (!refTree) return true;
+
+    // Stage first (same trick as the freshness checks): uncommitted work counts.
+    await this.git(["-C", this.workspace, "add", "-A"]);
+    const localTree = (await this.git(["-C", this.workspace, "write-tree"])).trim();
+    return localTree !== refTree;
+  }
+
   async fork(ref?: string): Promise<Sandbox> {
     this.assertUsable();
     // Copy the current workspace (files + .git) into a fresh sandbox, then

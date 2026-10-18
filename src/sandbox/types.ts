@@ -83,6 +83,22 @@ export interface Sandbox {
   /** Commit the workspace state so the run can resume / fork from here. */
   checkpoint(message: string): Promise<Checkpoint>;
   /**
+   * Does this workspace's CONTENT (git tree) differ from `ref`?
+   *
+   * Compares TREES, never commit lists. Checkpoints create commits at phase
+   * boundaries without changing content, so a consumer reacting to git
+   * history (push delivery, CI triggers, webhooks) must never treat "new
+   * commits" as "new work" — ask this instead. (Getting this wrong upstream
+   * caused a push ↔ wake feedback loop, 2026-10-18: every acknowledgment
+   * run's empty checkpoints were re-pushed as "new commits".)
+   *
+   * `origin/<branch>` refs are refreshed with a best-effort fetch first;
+   * uncommitted working-tree changes count (the tree is staged). A ref that
+   * can't be resolved, or any git failure, fails OPEN → `true` (assume there
+   * is work to deliver — never silently drop a delivery).
+   */
+  hasChangesFrom(ref: string): Promise<boolean>;
+  /**
    * Create a NEW sandbox whose workspace is a copy of this one at `ref`
    * (default: current HEAD). Uncommitted working-tree changes are NOT carried
    * over — a fork is a clean checkpoint state. The base primitive for

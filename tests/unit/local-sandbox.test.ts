@@ -170,6 +170,44 @@ describe("LocalSandbox", () => {
     }
   });
 
+  it("hasChangesFrom compares TREES — checkpoint-only changes are not new work", async () => {
+    // An origin with one commit on main.
+    const origin = path.join(rootDir, "origin-changes.git-src");
+    await mkdir(origin, { recursive: true });
+    git(origin, "init", "-q", "-b", "main");
+    git(origin, "config", "user.name", "fixture");
+    git(origin, "config", "user.email", "fixture@localhost");
+    await writeFile(path.join(origin, "README.md"), "v1\n");
+    git(origin, "add", "-A");
+    git(origin, "commit", "-qm", "v1");
+
+    const sb = make({ repoUrl: origin });
+    await sb.start();
+    try {
+      expect(await sb.hasChangesFrom("origin/main")).toBe(false);
+
+      // THE LOOP TRAP, sealed at the interface: a checkpoint adds a commit
+      // but no content — it must NOT read as new work (2026-10-18).
+      await sb.checkpoint("after verify");
+      expect(await sb.hasChangesFrom("origin/main")).toBe(false);
+
+      // Uncommitted working-tree changes count.
+      await sb.exec(`echo "more" >> README.md`);
+      expect(await sb.hasChangesFrom("origin/main")).toBe(true);
+
+      // The ref is refreshed before comparing: someone else pushed.
+      await sb.exec("git reset -q --hard HEAD"); // back to v1 locally…
+      await writeFile(path.join(origin, "README.md"), "v2\n");
+      git(origin, "commit", "-qam", "v2"); // …while main moves to v2
+      expect(await sb.hasChangesFrom("origin/main")).toBe(true); // fetched, not stale
+
+      // A ref that can't be resolved fails open.
+      expect(await sb.hasChangesFrom("origin/does-not-exist")).toBe(true);
+    } finally {
+      await sb.destroy();
+    }
+  });
+
   it("forks a sandbox at a checkpoint — independent copies of that state", async () => {
     const sb = make();
     await sb.start();

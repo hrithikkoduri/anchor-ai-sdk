@@ -120,6 +120,32 @@ export class HeyoSandbox implements Sandbox {
     return { sha: rev.stdout.trim(), message, at: Date.now() };
   }
 
+  async hasChangesFrom(ref: string): Promise<boolean> {
+    this.assertUsable();
+
+    // Best-effort refresh of remote-tracking refs (missing branch / no
+    // network must not break the comparison — it fails open below).
+    if (ref.startsWith("origin/")) {
+      const branch = ref.slice("origin/".length);
+      await this.exec(`git fetch --quiet origin ${shq(`+refs/heads/${branch}:refs/remotes/${ref}`)} 2>/dev/null || true`, {
+        timeoutSecs: 120,
+      });
+    }
+
+    const refTree = await this.exec(`git rev-parse --verify --quiet ${shq(`${ref}^{tree}`)} || true`, {
+      timeoutSecs: 60,
+    });
+    const refTreeSha = refTree.stdout.trim();
+    if (!refTreeSha) return true; // unresolvable ref → everything is new
+
+    // Stage first (same trick as the freshness checks): uncommitted work counts.
+    const add = await this.exec(`git add -A`, { timeoutSecs: 120 });
+    const localTree = await this.exec(`git write-tree`, { timeoutSecs: 60 });
+    const localTreeSha = localTree.stdout.trim();
+    if (add.exitCode !== 0 || localTree.exitCode !== 0 || !localTreeSha) return true; // fail open
+    return localTreeSha !== refTreeSha;
+  }
+
   async fork(ref?: string): Promise<Sandbox> {
     // Heyo's native path is different from a copy: the sandbox is retained
     // (idle_action: retain), so a resume WAKES the same VM and finds the
