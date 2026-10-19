@@ -29,7 +29,12 @@ import {
   type SandboxSpec,
 } from "./types.js";
 import type { SandboxProvider } from "./provider.js";
-import { checkpointVia, hasChangesFromVia, type GitAccess } from "./git.js";
+import {
+  checkpointVia,
+  hasChangesFromVia,
+  reservedScratchPrepCommand,
+  type GitAccess,
+} from "./git.js";
 
 export interface LocalSandboxOptions {
   /** Where sandbox directories live. Default: `<cwd>/.anchor/sandboxes`. */
@@ -98,6 +103,7 @@ export class LocalSandbox implements Sandbox {
         "user.email",
         this.spec.gitIdentity?.email ?? "anchor@localhost",
       ]);
+      await this.prepareScratch();
       this.started = true;
       return;
     }
@@ -133,6 +139,7 @@ export class LocalSandbox implements Sandbox {
       "user.email",
       this.spec.gitIdentity?.email ?? "anchor@localhost",
     ]);
+    await this.prepareScratch();
 
     this.started = true;
   }
@@ -230,6 +237,17 @@ export class LocalSandbox implements Sandbox {
       git: (args, opts) => this.gitAt(this.workspace, args, opts ?? {}),
       shell: (command, opts) => this.exec(command, opts),
     };
+  }
+
+  /** The reserved .anchor dir: git-excluded (status/diff), checkpoint-carried. */
+  private async prepareScratch(): Promise<void> {
+    await this.run(
+      "bash",
+      ["-c", reservedScratchPrepCommand()],
+      this.workspace,
+      {},
+      60,
+    );
   }
 
   private run(

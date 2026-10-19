@@ -13,6 +13,29 @@
  */
 import { shq, type Checkpoint, type ExecResult } from "./types.js";
 
+/**
+ * The reserved scratch dir INSIDE the repo. Git-excluded for normal status
+ * and diffs (so it never pollutes a deliverable), but force-added to
+ * checkpoints — the notes ride durability alongside the repo. Agents keep
+ * their working notes at `<workspace>/.anchor/notes.md`.
+ */
+export const RESERVED_SCRATCH_DIR = ".anchor";
+export const RESERVED_NOTES_PATH = `${RESERVED_SCRATCH_DIR}/notes.md`;
+
+/**
+ * Start-time prep (idempotent): keep `.anchor` out of git status/diff and
+ * make sure the dir exists. Backends run this once the workspace is in place.
+ */
+export function reservedScratchPrepCommand(): string {
+  return (
+    `mkdir -p ${RESERVED_SCRATCH_DIR} && ` +
+    `if [ -d .git ]; then ` +
+    `(grep -qxF "${RESERVED_SCRATCH_DIR}/" .git/info/exclude 2>/dev/null || ` +
+    `echo "${RESERVED_SCRATCH_DIR}/" >> .git/info/exclude); ` +
+    `fi`
+  );
+}
+
 export interface GitAccess {
   /**
    * Run `git <args…>` in the workspace directory. Resolves with stdout;
@@ -30,6 +53,12 @@ export async function checkpointVia(
   opts: { push?: string } = {},
 ): Promise<Checkpoint> {
   await access.git(["add", "-A"]);
+  // The reserved notes file is git-excluded for status/diff but must ride
+  // durability: force-add it (tolerant — it may not exist yet) so checkpoints
+  // carry the agent's working memory alongside the repo.
+  await access
+    .shell(`git add -f ${RESERVED_NOTES_PATH} 2>/dev/null || true`)
+    .catch(() => undefined);
   // --allow-empty: a checkpoint that changes nothing is still a valid point
   // to resume or fork from.
   await access.git(["commit", "-q", "--allow-empty", "-m", message]);

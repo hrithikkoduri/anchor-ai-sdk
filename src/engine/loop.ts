@@ -391,6 +391,15 @@ export async function runAgent(
           budget.record(folded.usage);
           summary = folded.summary;
           const tail = folded.keptMessages;
+          // After a fold the model's earlier detail is gone from context;
+          // point it at the durable record (see the Working notes section).
+          const foldNote = {
+            role: "user" as const,
+            content:
+              "[runtime] Context was folded to stay within the window. Your working notes " +
+              "file (.anchor/notes.md, git-excluded) is the durable record of findings and " +
+              "next steps — re-read it when you need detail from before the fold.",
+          };
           // Preserve the actual current request even if its earlier position
           // was folded. Do not replace it with a generic "Begin" instruction.
           messages.splice(
@@ -398,6 +407,7 @@ export async function runAgent(
             messages.length,
             system(),
             ...(tail.includes(currentRequest) ? [] : [currentRequest]),
+            foldNote,
             ...tail,
           );
           emit({

@@ -26,7 +26,12 @@ import {
   type Sandbox,
   type SandboxSpec,
 } from "./types.js";
-import { checkpointVia, hasChangesFromVia, type GitAccess } from "./git.js";
+import {
+  checkpointVia,
+  hasChangesFromVia,
+  reservedScratchPrepCommand,
+  type GitAccess,
+} from "./git.js";
 import type { ProviderHealth, SandboxProvider } from "./provider.js";
 
 export interface DockerSandboxOptions {
@@ -190,6 +195,8 @@ export class DockerSandbox implements Sandbox {
         "user.email",
         this.spec.gitIdentity?.email ?? "anchor@localhost",
       ]);
+      // The reserved .anchor dir: git-excluded (status/diff), checkpoint-carried.
+      await this.execRaw(reservedScratchPrepCommand(), { timeoutSecs: 60 });
 
       this.started = true;
     } catch (error) {

@@ -33,6 +33,14 @@ export function buildCodingPrompt(options: CodingPromptOptions = {}): string {
       body: options.verification ?? verification,
     },
     {
+      title: "Working notes",
+      body:
+        "For long or multi-step work keep a running notes file at `<workspace>/.anchor/notes.md` " +
+        "(you can create it yourself; it is git-excluded and never part of the deliverable): " +
+        "verified facts, the current hypothesis, next steps, open questions. " +
+        "Update it at meaningful transitions and re-read it when resuming or after a context fold.",
+    },
+    {
       title: "Approach phases",
       body: [
         "These describe your approach, not prerequisites. Choose the phases that fit, skip or revisit when appropriate, and conclude from any phase. Use set_phase to record a meaningful change of approach; do not call it as ceremony.",

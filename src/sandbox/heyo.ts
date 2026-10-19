@@ -16,7 +16,12 @@
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./heyo-exec.js";
 import type { ProviderHealth, SandboxProvider } from "./provider.js";
-import { checkpointVia, hasChangesFromVia, type GitAccess } from "./git.js";
+import {
+  checkpointVia,
+  hasChangesFromVia,
+  reservedScratchPrepCommand,
+  type GitAccess,
+} from "./git.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -217,6 +222,7 @@ export class HeyoSandbox implements Sandbox {
       );
       if (probe.stdout.trim() !== "ok")
         throw new Error(`retained sandbox ${this.id} has no workspace`);
+      await this.prepareScratch();
       this.started = true;
       return;
     }
@@ -286,6 +292,7 @@ export class HeyoSandbox implements Sandbox {
     await this.ensureGit();
     await this.setupGitCredentials();
     await this.cloneRepo();
+    await this.prepareScratch();
     this.started = true;
   }
 
@@ -368,6 +375,14 @@ export class HeyoSandbox implements Sandbox {
       },
       shell: (command, opts) => this.exec(command, opts),
     };
+  }
+
+  /** The reserved .anchor dir: git-excluded (status/diff), checkpoint-carried. */
+  private async prepareScratch(): Promise<void> {
+    await this.guest(reservedScratchPrepCommand(), {
+      cwd: this.workspace,
+      timeoutSecs: 60,
+    });
   }
 
   private async guest(command: string, opts: ExecOptions): Promise<ExecResult> {
