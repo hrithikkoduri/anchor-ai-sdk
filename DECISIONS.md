@@ -2,7 +2,7 @@
 
 Anchor grew inside the Sailor monorepo and moved here with its history (git
 subtree split). Entries #51–#64 below were moved verbatim at extraction time;
-the monorepo's `DESIGN.md` keeps the full, combined log (including
+the Sailor repo's `DECISIONS.md` keeps the full, combined log (including
 Sailor-only decisions). The summaries of the earlier entries exist so the
 reasons behind the API travel with the code; follow the monorepo log for
 their full text.
