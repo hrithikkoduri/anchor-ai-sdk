@@ -98,6 +98,18 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 - **Vercel AI-SDK bridge** — an adapter over `LLMClient`. _Trigger:_ a third
   ecosystem asks. _Size:_ M.
 
+## Agent capabilities
+
+- **Skills (load into the sandbox)** — a consumer ships skill bundles (a
+  `SKILL.md` + assets/scripts); the SDK materializes them into a reserved
+  sandbox directory (`.anchor/skills/<name>/`, git-excluded like notes),
+  lists them in the prompt with a read-first contract, and the agent invokes
+  them through its existing tools — mechanics here, content stays
+  consumer-owned. _Where:_ `src/agents/` (prompt section) +
+  `src/sandbox/` (materialization) + the option types in `src/engine/`.
+  _Trigger:_ the first consumer with skills to load (Sailor is the likely
+  first). _Size:_ M.
+
 ## In flight (work, not deferred)
 
 - The benchmark rounds run from `evals/benchmarks/swe-bench/`: Opus 5.5 on Lite-10 (budgets
