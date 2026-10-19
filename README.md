@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/anchor-ai-sdk"><img src="https://img.shields.io/npm/v/anchor-ai-sdk?style=flat-square&color=0f1115" alt="npm" /></a>
   <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hrithikkoduri/anchor-ai-sdk/ci.yml?style=flat-square&label=ci&color=0f1115" alt="CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/npm/l/anchor-ai-sdk?style=flat-square&color=0f1115" alt="license" /></a>
+  <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/anchor-ai-sdk?style=flat-square&color=0f1115" alt="license" /></a>
   <img src="https://img.shields.io/node/v/anchor-ai-sdk?style=flat-square&color=0f1115" alt="node" />
 </p>
 
@@ -113,7 +113,7 @@ a non-coding agent (its own strategy and tool, no sandbox).
 A backend is "done" when `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` passes — exec fidelity, kill deadlines, env secrets,
 checkpoints, retain/adopt, git identity, pushes, and `fork` where declared.
-See [`src/sandbox/README.md`](src/sandbox/README.md) for the provider guide.
+See [`src/sandbox/README.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md) for the provider guide.
 
 ## Proof, not promises
 
