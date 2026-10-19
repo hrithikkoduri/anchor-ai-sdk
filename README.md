@@ -132,7 +132,7 @@ See [`src/sandbox/README.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blo
 ## Status
 
 **Early alpha (0.x).** The API will move before 1.0 — pin exact versions. The
-[`DECISIONS.md`](DECISIONS.md) is the engineering log: every API has a written
+[`DECISIONS.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/DECISIONS.md) is the engineering log: every API has a written
 reason, and the reasons moved with the code when this repo was extracted from
 its monorepo.
 
