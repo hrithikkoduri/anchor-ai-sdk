@@ -110,6 +110,21 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   _Trigger:_ the first consumer with skills to load (Sailor is the likely
   first). _Size:_ M.
 
+- **Background long commands** — a command past the consumer's threshold
+  (Sailor: 120s) returns a job handle instead of holding the turn; when the
+  job finishes, the harness delivers its output through the consumer's
+  event/inbox path, so the model never polls. The executor job registry and
+  fail-fast path landed first (decision #68); this adds the background
+  result type, delivery hook, and trace/UI. _Where:_ `src/sandbox/` (job
+  handles), `src/engine/` (result delivery), `src/tools/`. _Trigger:_ the
+  2026-10-19 WebRover #19 wedge (a 175s command lost its receipt).
+  _Size:_ M.
+
+- **Parallel tool calls (full)** — read-only calls from one turn already
+  dispatch concurrently (decision #69). Concurrent mutations are deferred:
+  they need per-tool concurrency metadata plus isolation/ordering guarantees
+  the single-flight sandbox gate deliberately avoids. _Size:_ L.
+
 ## In flight (work, not deferred)
 
 - The benchmark rounds run from `evals/benchmarks/swe-bench/`: Opus 5.5 on Lite-10 (budgets

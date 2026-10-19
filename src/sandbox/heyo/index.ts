@@ -425,10 +425,15 @@ export class HeyoSandbox implements Sandbox {
     // Our own `cd` is the source of truth (see buildGuestCommand); the exec
     // options carry env only.
     const wrapped = buildGuestCommand(command, timeoutSecs, cwd);
-    return this.executor.run(wrapped, timeoutSecs, {
-      ...this.spec.env,
-      ...opts.env,
-    });
+    return this.executor.run(
+      wrapped,
+      timeoutSecs,
+      {
+        ...this.spec.env,
+        ...opts.env,
+      },
+      { concurrent: opts.concurrent },
+    );
   }
 
   /** heyo/bun has git; other images may not. The guest job handles a long

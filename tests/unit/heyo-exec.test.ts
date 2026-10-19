@@ -115,6 +115,61 @@ describe("Heyo short-request execution", () => {
     expect(formatExec(result, 2)).toContain("2s deadline");
   });
 
+  it("kills an expired job whose receipt never arrived and clears the slot", async () => {
+    let clock = 0,
+      launches = 0,
+      kills = 0;
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.includes("pkill -f")) {
+          kills++;
+          return reply("killed");
+        }
+        return launches === 1 ? reply("RUNNING") : done();
+      },
+      async (ms) => {
+        clock += ms;
+      },
+      () => clock,
+    );
+    const first = await executor.run("stuck mutation", 2);
+    expect(first.failure).toMatchObject({
+      kind: "transport",
+      completion: "unknown",
+    });
+    expect(first.output).toContain("killed and the exec slot cleared");
+    expect(kills).toBe(1);
+
+    // The lost receipt must not wedge the sandbox: the next command runs.
+    const second = await executor.run("next mutation", 2);
+    expect(second.exitCode).toBe(0);
+    expect(launches).toBe(2);
+  });
+
+  it("runs concurrent read-only jobs without refusing the second one", async () => {
+    let launches = 0;
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        return done();
+      },
+      async () => undefined,
+    );
+    const [a, b] = await Promise.all([
+      executor.run("read a", 120, undefined, { concurrent: true }),
+      executor.run("read b", 120, undefined, { concurrent: true }),
+    ]);
+    expect([a.exitCode, b.exitCode]).toEqual([0, 0]);
+    expect(launches).toBe(2);
+  });
+
   it("executes the actual spool wrapper locally and preserves stdout, stderr, exit status and env", async () => {
     directory = await mkdtemp(path.join(os.tmpdir(), "anchor-job-test-"));
     const shell = promisify(execFile);

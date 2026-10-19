@@ -86,6 +86,14 @@ files, `timeout -k`, atomic exit receipt) and *observes* it with short polling
 requests — copy that pattern for any backend with request ceilings or lossy
 responses.
 
+**Several jobs, not one slot.** A backend may run concurrent execs
+(`ExecOptions.concurrent`, set only by read-only tools); mutations keep the
+safety gate and wait for an unresolved earlier job instead of overlapping it.
+A job past its guest-side deadline (the supervisor's `timeout -k` already
+fired) is **killed and cleared**: the adapter `pkill`s the guest job and
+removes its receipt directory before failing the call. A lost receipt fails
+that one command; it must never wedge every later command in the sandbox.
+
 **The conformance suite** — `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
 self-containment, kill deadlines, env secrets, checkpoints, retain/adopt, git
@@ -103,7 +111,10 @@ when this passes (live backends opt in: `RUN_LIVE_HEYO_TESTS=1`,
 3. Honor the spec: `repoUrl`/`ref`, `localPath` (only if `capabilities.localPath`
    — host directories, used by tests and copies), `retain`, `gitIdentity`,
    `git.token` (callback), `env` secrets.
-4. Exec: timeouts, kill deadlines, env/cwd, the unknown-completion rule above.
+4. Exec: timeouts, kill deadlines, env/cwd, the unknown-completion rule above;
+   concurrent read-only calls opt in with `ExecOptions.concurrent`, and an
+   expired job is killed and cleared (a lost receipt fails one command, never
+   the sandbox).
 5. Checkpoints: `checkpoint(message, { push? })`; push failures reported, not
    thrown; `destroy()` idempotent; `adopt` fails as "gone" not "crash".
 6. Run `runSandboxConformance(provider)` until green; add a live, opt-in test.

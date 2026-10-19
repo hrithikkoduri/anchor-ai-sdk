@@ -460,3 +460,28 @@ contract is unchanged (it never authorizes or blocks anything); the old "do
 not call it as ceremony" framing — which read as permission to skip — is
 gone. Small wording, real consequence: the timeline reports the actual
 approach instead of a constant.
+
+## Decision #68 — a lost exec receipt fails one command, never the sandbox
+
+A Heyo guest job can lose its completion receipt (a detached Chromium/Playwright
+repro did): the client kept the job "pending" forever, so every later command
+was refused with "previous command is still running" — the run died `blocked`
+with no code changed. The executor now keeps a per-sandbox job registry, and a
+job past its guest-side deadline (the supervisor's `timeout -k` already fired)
+is killed in the guest and its receipt directory removed before the call is
+failed. The kill pattern is expanded inside the guest from a uuid variable, so
+the control command's own command line can never match it. Mutations keep the
+safety gate — they wait while an unresolved job is still inside its deadline —
+but a lost receipt can no longer wedge every later command. Regression:
+`tests/unit/heyo-exec.test.ts`.
+
+## Decision #69 — read-only tools run concurrently; mutations stay serial
+
+A model turn that returns several `read_file`/`search` calls now dispatches
+them together instead of one round trip per file; results still reach the
+conversation in the model's call order. The engine takes the parallel path
+only when *every* call in the turn is `readOnly`: a mixed turn stays
+sequential, and `finish`/`set_phase`/`bash`/`edit_file`/`run_tests` never run
+concurrently. The sandbox opts in per call via `ExecOptions.concurrent`
+(Heyo's executor allows multiple jobs; mutations keep the unresolved-job
+gate). Regression: `tests/unit/parallel-reads.test.ts`.

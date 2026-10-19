@@ -557,94 +557,186 @@ export async function runAgent(
           }
         | undefined;
       let runaway = false;
-      for (const call of response.toolCalls) {
-        const tool = available.get(call.name);
-        let input: Record<string, unknown> = {};
-        let invalid: string | undefined;
-        try {
-          const parsed: unknown = call.arguments.trim()
-            ? JSON.parse(call.arguments)
-            : {};
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-            throw new Error("expected a JSON object");
-          input = parsed as Record<string, unknown>;
-        } catch (err) {
-          invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-        }
-        const verb = toolVerb(call.name, input, tool?.verb);
-        emit({
-          type: "tool_call",
-          name: call.name,
-          callId: call.id,
-          input,
-          verb,
-          phase,
-          step: steps,
-        });
-        const signature = `${call.name}:${call.arguments}`;
-        if (repeatLimit !== false) {
-          signatures.push(signature);
-          if (signatures.length > repeatLimit) signatures.shift();
-          runaway ||=
-            signatures.length === repeatLimit &&
-            signatures.every((value) => value === signature);
-        }
-        let result: ToolResult;
-        if (declared || pauseRequested || signal.aborted || runaway) {
-          result = {
-            ok: false,
-            content: declared
-              ? "Not executed: the turn was already concluded."
-              : pauseRequested
-                ? "Not executed: the caller requested a pause at this phase boundary."
-                : signal.aborted
-                  ? "Not executed: cancelled by signal."
-                  : "Not executed: repeated identical calls reached the loop limit.",
-          };
-        } else if (invalid || !tool) {
-          result = {
-            ok: false,
-            content:
-              invalid ??
-              `unknown tool "${call.name}" — available: ${[...available.keys()].join(", ")}`,
-          };
-        } else {
+      const calls = response.toolCalls;
+      // Read-only calls are independent: several file reads / searches in one
+      // model turn should cost one round trip, not N. A mixed turn keeps the
+      // model's order — only an all-read-only turn takes the parallel path.
+      const parallelReads =
+        calls.length > 1 &&
+        calls.every((call) => available.get(call.name)?.readOnly === true) &&
+        !declared &&
+        !pauseRequested &&
+        !signal.aborted;
+      if (parallelReads) {
+        const prepared = calls.map((call) => {
+          const tool = available.get(call.name);
+          let input: Record<string, unknown> = {};
+          let invalid: string | undefined;
           try {
-            result = await tool.run(input, { sandbox: opts.sandbox });
+            const parsed: unknown = call.arguments.trim()
+              ? JSON.parse(call.arguments)
+              : {};
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+              throw new Error("expected a JSON object");
+            input = parsed as Record<string, unknown>;
           } catch (err) {
+            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+          }
+          const verb = toolVerb(call.name, input, tool?.verb);
+          emit({
+            type: "tool_call",
+            name: call.name,
+            callId: call.id,
+            input,
+            verb,
+            phase,
+            step: steps,
+          });
+          const signature = `${call.name}:${call.arguments}`;
+          if (repeatLimit !== false) {
+            signatures.push(signature);
+            if (signatures.length > repeatLimit) signatures.shift();
+            runaway ||=
+              signatures.length === repeatLimit &&
+              signatures.every((value) => value === signature);
+          }
+          return { call, tool, input, invalid, verb, skipped: runaway };
+        });
+        const results = await Promise.all(
+          prepared.map(
+            async ({ tool, input, invalid, skipped }): Promise<ToolResult> => {
+              if (skipped)
+                return {
+                  ok: false,
+                  content:
+                    "Not executed: repeated identical calls reached the loop limit.",
+                };
+              if (invalid || !tool)
+                return {
+                  ok: false,
+                  content:
+                    invalid ??
+                    `unknown tool — available: ${[...available.keys()].join(", ")}`,
+                };
+              try {
+                return await tool.run(input, { sandbox: opts.sandbox });
+              } catch (err) {
+                return {
+                  ok: false,
+                  content: `error: ${err instanceof Error ? err.message : String(err)}`,
+                };
+              }
+            },
+          ),
+        );
+        for (let i = 0; i < prepared.length; i++) {
+          const { call, verb } = prepared[i]!;
+          const result = results[i]!;
+          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
+          emit({
+            type: "tool_result",
+            name: call.name,
+            callId: call.id,
+            verb: result.verb ?? verb,
+            phase,
+            step: steps,
+            ok: result.ok,
+            content: result.content,
+            contentChars: result.content.length,
+            meta: result.meta,
+          });
+          messages.push(toolResultMessage(call.id, result.content));
+        }
+      } else {
+        for (const call of response.toolCalls) {
+          const tool = available.get(call.name);
+          let input: Record<string, unknown> = {};
+          let invalid: string | undefined;
+          try {
+            const parsed: unknown = call.arguments.trim()
+              ? JSON.parse(call.arguments)
+              : {};
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+              throw new Error("expected a JSON object");
+            input = parsed as Record<string, unknown>;
+          } catch (err) {
+            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+          }
+          const verb = toolVerb(call.name, input, tool?.verb);
+          emit({
+            type: "tool_call",
+            name: call.name,
+            callId: call.id,
+            input,
+            verb,
+            phase,
+            step: steps,
+          });
+          const signature = `${call.name}:${call.arguments}`;
+          if (repeatLimit !== false) {
+            signatures.push(signature);
+            if (signatures.length > repeatLimit) signatures.shift();
+            runaway ||=
+              signatures.length === repeatLimit &&
+              signatures.every((value) => value === signature);
+          }
+          let result: ToolResult;
+          if (declared || pauseRequested || signal.aborted || runaway) {
             result = {
               ok: false,
-              content: `error: ${err instanceof Error ? err.message : String(err)}`,
+              content: declared
+                ? "Not executed: the turn was already concluded."
+                : pauseRequested
+                  ? "Not executed: the caller requested a pause at this phase boundary."
+                  : signal.aborted
+                    ? "Not executed: cancelled by signal."
+                    : "Not executed: repeated identical calls reached the loop limit.",
             };
-          }
-          if (call.name === "finish" && tool === finish && result.ok) {
-            const meta = result.meta ?? {};
-            const handoff = meta.handoff;
-            declared = {
-              ok: meta.success !== false,
-              summary: String(meta.summary ?? ""),
-              ...(handoff !== undefined &&
-              typeof handoff === "object" &&
-              handoff !== null
-                ? { handoff: handoff as Record<string, unknown> }
-                : {}),
+          } else if (invalid || !tool) {
+            result = {
+              ok: false,
+              content:
+                invalid ??
+                `unknown tool "${call.name}" — available: ${[...available.keys()].join(", ")}`,
             };
+          } else {
+            try {
+              result = await tool.run(input, { sandbox: opts.sandbox });
+            } catch (err) {
+              result = {
+                ok: false,
+                content: `error: ${err instanceof Error ? err.message : String(err)}`,
+              };
+            }
+            if (call.name === "finish" && tool === finish && result.ok) {
+              const meta = result.meta ?? {};
+              const handoff = meta.handoff;
+              declared = {
+                ok: meta.success !== false,
+                summary: String(meta.summary ?? ""),
+                ...(handoff !== undefined &&
+                typeof handoff === "object" &&
+                handoff !== null
+                  ? { handoff: handoff as Record<string, unknown> }
+                  : {}),
+              };
+            }
           }
+          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
+          emit({
+            type: "tool_result",
+            name: call.name,
+            callId: call.id,
+            verb: result.verb ?? verb,
+            phase,
+            step: steps,
+            ok: result.ok,
+            content: result.content,
+            contentChars: result.content.length,
+            meta: result.meta,
+          });
+          messages.push(toolResultMessage(call.id, result.content));
         }
-        evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
-        emit({
-          type: "tool_result",
-          name: call.name,
-          callId: call.id,
-          verb: result.verb ?? verb,
-          phase,
-          step: steps,
-          ok: result.ok,
-          content: result.content,
-          contentChars: result.content.length,
-          meta: result.meta,
-        });
-        messages.push(toolResultMessage(call.id, result.content));
       }
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive

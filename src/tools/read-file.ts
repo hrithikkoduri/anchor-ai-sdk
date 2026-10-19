@@ -58,7 +58,10 @@ export const readFileTool = defineTool(
       `}' ` +
       shq(path);
 
-    const r = await requireSandbox(ctx).exec(cmd, { timeoutSecs: 120 });
+    const r = await requireSandbox(ctx).exec(cmd, {
+      timeoutSecs: 120,
+      concurrent: true,
+    });
     if (r.exitCode !== 0) {
       return {
         ok: false,
@@ -75,4 +78,5 @@ export const readFileTool = defineTool(
       meta: { path, from: offset, to: Math.min(end, offset + limit - 1) },
     };
   },
+  { readOnly: true },
 );

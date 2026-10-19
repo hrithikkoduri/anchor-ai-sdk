@@ -56,6 +56,11 @@ export interface Tool {
   definition: ToolDefinition;
   /** Presentation metadata, never added to the provider's function schema. */
   verb?: string | ((input: Record<string, unknown>) => string);
+  /**
+   * The tool only reads the workspace. The engine may execute several
+   * read-only calls from one model turn concurrently; mutations stay serial.
+   */
+  readOnly?: boolean;
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -66,7 +71,7 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb"> = {},
+  options: Pick<Tool, "verb" | "readOnly"> = {},
 ): Tool {
   return {
     definition,

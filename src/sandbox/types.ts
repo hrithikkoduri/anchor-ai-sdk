@@ -47,6 +47,13 @@ export interface ExecOptions {
   env?: Record<string, string>;
   /** Kill the command after this many seconds. Default 120, max 3600. */
   timeoutSecs?: number;
+  /**
+   * Read-only commands may run alongside other exec calls. Mutations must
+   * leave this unset: the adapter then waits/refuses rather than overlapping
+   * an unresolved command. Set only for tools that cannot change the
+   * workspace (read_file, search).
+   */
+  concurrent?: boolean;
 }
 
 export interface Checkpoint {
