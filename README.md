@@ -98,7 +98,7 @@ try {
 }
 ```
 
-Runnable versions of both snippets live in [`examples/`](examples/) — including
+Runnable versions of both snippets live in [`examples/`](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples) — including
 a non-coding agent (its own strategy and tool, no sandbox).
 
 ## Providers
@@ -127,7 +127,7 @@ See [`src/sandbox/README.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blo
 - **Evaluation:** Anchor vs mini-swe-agent on SWE-bench Lite — same
   container, same model, same official grader — resolved the same 7/10 at
   roughly **one-third of the cost**
-  ([`evals/results/comparison.md`](evals/results/comparison.md)).
+  ([`evals/results/comparison.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/evals/results/comparison.md)).
 
 ## Status
 
