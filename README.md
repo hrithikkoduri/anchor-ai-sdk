@@ -98,6 +98,9 @@ try {
 }
 ```
 
+Runnable versions of both snippets live in [`examples/`](examples/) — including
+a non-coding agent (its own strategy and tool, no sandbox).
+
 ## Providers
 
 | subpath | backend | status |
