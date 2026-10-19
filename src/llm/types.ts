@@ -55,6 +55,8 @@ export interface LLMResponse {
   toolCalls: LLMToolCall[];
   usage: LLMUsage;
   model: string;
+  /** Upstream name, when the gateway reports one. Absent on a direct API. */
+  provider?: string;
   finishReason?: string;
   latencyMs: number;
 }
@@ -63,6 +65,8 @@ export interface LLMRequest {
   messages: LLMMessage[];
   tools?: LLMToolDef[];
   temperature?: number;
+  /** Fixed sample, when the provider supports it. */
+  seed?: number;
   maxTokens?: number;
 }
 

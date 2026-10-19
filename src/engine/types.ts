@@ -25,7 +25,7 @@ export interface EngineOptions {
   budgets?: Partial<BudgetLimits>;
   /**
    * Per-call cap on one model response (reasoning + text + tool calls).
-   * Default `DEFAULT_MAX_OUTPUT_TOKENS` (12k); pass `false` to leave output
+   * Default `DEFAULT_MAX_OUTPUT_TOKENS` (16k); pass `false` to leave output
    * unbounded. Explicit option wins over the agent bundle's suggestion.
    *
    * This is a hard stop, not a nudge: a response that hits it ends with
@@ -114,6 +114,12 @@ export interface EngineOptions {
    * remains the fast in-process path; this is the cross-process one.
    */
   cancel?: { everyMs?: number; isCancelled: () => boolean | Promise<boolean> };
+  /**
+   * Sampling pin for this run. Absent fields are left unset, so the provider
+   * default applies. Set both for a benchmark that must not drift between
+   * upstreams.
+   */
+  sampling?: { temperature?: number; seed?: number };
   /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
@@ -158,6 +164,15 @@ export interface GuardrailConfig {
    * course-correct before the hard stop. Advisory only.
    */
   verboseTurnLimit?: number | false;
+  /**
+   * A prose-only turn is read as the model's final answer. After tool work it
+   * can just as easily be a mid-task status report, and the loop cannot tell
+   * the two apart from shape alone. When the agent has a declared-completion
+   * tool (`finish`), ask once before accepting prose as the result: call
+   * `finish`, take another action, or repeat the reply (default true; false
+   * disables). One-shot — it never turns into a loop.
+   */
+  proseCheckpoint?: boolean;
 }
 
 export type FinishReason =

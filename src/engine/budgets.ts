@@ -16,7 +16,7 @@ export interface BudgetLimits {
 
 export const DEFAULT_BUDGET_LIMITS: BudgetLimits = {
   maxSteps: 40,
-  maxTokens: 1_500_000,
+  maxTokens: 3_000_000,
   maxUsd: 5,
 };
 
@@ -26,10 +26,10 @@ export const DEFAULT_BUDGET_LIMITS: BudgetLimits = {
  * call returns, so a single degenerate generation can burn minutes and tens
  * of thousands of tokens before anything reacts. This bounds one call.
  *
- * 12k leaves ample room for normal work (typical turns here run ~1k) while
+ * 16k leaves ample room for normal work (typical turns here run ~1k) while
  * cutting off a runaway. A capped response ends with finishReason "length".
  */
-export const DEFAULT_MAX_OUTPUT_TOKENS = 12_000;
+export const DEFAULT_MAX_OUTPUT_TOKENS = 16_000;
 
 export interface BudgetExceeded {
   kind: "steps" | "tokens" | "usd";

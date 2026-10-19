@@ -713,3 +713,88 @@ sanctioned home for long-lived reasoning is already `.anchor/notes.md`, which
 is git-excluded and never elided (#66). Elision bounds the replay of prose the
 model has already acted on. Regressions:
 `tests/unit/assistant-text-elision.test.ts`.
+
+## Decision #78 — A nudge must never be able to end the run
+
+The silent-tool nudge existed to fix a real problem: a reasoning model that
+takes tool turn after tool turn without saying anything visible, so nothing it
+understood survives a context fold. Its text ended with *"If this request
+expects an answer, answer now in text."* That sentence is a sanctioned exit, and
+a model that reads it will take it.
+
+On `mwaskom__seaborn-2848` it did. Eight silent tool turns, the nudge fired, the
+model replied *"Status update — I reproduced the failure and I'm mid-fix."* with
+no tool call, and the loop read it as the run's final answer. Nine steps, no
+patch, `completion: "response"`. The bug is not the nudge alone: an ordinary
+prose turn is the normal way runs end (four of the eight completed tasks that
+round never called `finish`), so the loop cannot tell "I am done" from "I am
+still working" by shape.
+
+The fix is a checkpoint, not a ban. A prose-only turn that directly answers an
+engine nudge (silent-tool or verbosity) is not accepted as the result: the
+engine injects one runtime-only message — call `finish`, continue working, or
+repeat the reply — and takes the model's next turn as the answer. One-shot per
+run, so it can never become a loop, and it only applies when the agent carries
+the intrinsic `finish` tool; without a declared-completion path, prose must stay
+a valid exit. `guardrails.proseCheckpoint` (default true) is the off switch.
+Both nudges were also reworded to require a next action and to offer no
+prose-only exit.
+
+Deliberately scoped to nudge-triggered prose. An earlier version gated every
+prose turn after tool work; that broke nineteen engine tests and would have
+added a call to every chat turn that used a tool. The pathology is not "the
+model stopped" — it is "the engine asked for something visible and the model
+treated the request as permission to finish." That is the turn worth checking.
+
+Regressions: `tests/unit/prose-checkpoint.test.ts`.
+
+## Decision #79 — A capped reply continues once; the run budget is 3M
+
+Sphinx-10325 on the 120-step GLM 5.3 round died at step 62 because one prose
+turn hit `maxOutputTokens` (then 12k) with no tool call, and #75 treated that
+as `stalled`. The model had been editing and running tests on the previous
+twelve turns. The cap did its job — it stopped a 44k-character essay — and
+then the engine threw away the run. A chopped sentence must not be published
+as the answer. It also must not be the end of a run that was still working.
+
+The first capped prose turn now gets the same treatment as a nudge: one
+runtime-only message ("do not rewrite it; next turn must include a tool
+call, or call `finish`"), and the loop continues. `pendingProseCheck` is set,
+so a following prose reply is the #78 checkpoint rather than an automatic
+end. A second capped prose turn in the same run still stalls, so a model that
+keeps writing essays cannot loop. `guardrails.proseCheckpoint: false` restores
+the old immediate stall. Advisory kind: `output_cap_continue`.
+
+The default cap itself moves from 12k to 16k
+(`DEFAULT_MAX_OUTPUT_TOKENS`). The verbosity nudge stays at 8k, still below
+the cap, so it can fire before the hard stop on a turn that also called a
+tool. `truncatedReplyChars` stays 12k characters — that bounds what is
+replayed, not what one call may generate.
+
+The per-run token budget moves from 1.5M to 3M
+(`DEFAULT_BUDGET_LIMITS.maxTokens`). Seaborn-2848 on the same round hit
+1,517,539/1,500,000 at step 82 with a patch already on disk. The step ceiling
+was 120; the token ceiling is what killed it. The eval arm does not pin its
+own copy: it calls `runAgent` without `maxOutputTokens` or `maxTokens`, so it
+consumes these defaults. A caller can still override both.
+
+Regressions: `tests/unit/max-output-tokens.test.ts`.
+
+## Decision #80 — Benchmarks call one API, and say which one served
+
+The GLM 5.3 rounds moved because `z-ai/glm-5.3` on OpenRouter is not one
+model. Forty-plus upstreams share the slug, at different prices and
+quantizations, and the engine sent no temperature, so each call was a fresh
+sample from whichever upstream the router picked. A benchmark of the agent
+cannot also be a benchmark of the router.
+
+`--llm parasail` points the eval at Parasail's own API
+(`https://api.parasail.io/v1`, key `PARASAIL_API_KEY`, model
+`zai-org/GLM-5.3`) and pins `temperature: 0`, `seed: 42`. Those two are
+engine options (`sampling`), not new defaults: a product run that does not
+set them still leaves sampling to the provider. The OpenRouter key is
+untouched. Each `llm_call_finished` now records the `model` the response
+named, and `provider` when a gateway sends one, so the next run can prove
+what served it instead of inferring from the bill.
+
+Regressions: `tests/unit/llm.test.ts`.

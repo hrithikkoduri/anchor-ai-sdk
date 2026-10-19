@@ -274,7 +274,7 @@ describe("natural agent loop", () => {
     expect(executed).toBe(2);
   });
 
-  it("advises a visible reply after consecutive tool-only turns — advisory, never gating", async () => {
+  it("advises a visible reply after consecutive tool-only turns", async () => {
     sandbox = new LocalSandbox({}, { quiet: true });
     await sandbox.start();
     const store = new MemoryThreadStore();
@@ -283,6 +283,9 @@ describe("natural agent loop", () => {
       ...Array.from({ length: 8 }, (_, index) => ({
         calls: [{ name: "bash", args: { command: `echo state ${index + 1}` } }],
       })),
+      { text: "Here is the status you asked for." },
+      // #78: the prose answered the nudge, so it is checked once. The model
+      // repeats itself and the run ends on its own terms.
       { text: "Here is the status you asked for." },
     ]);
     const result = await runAgent(
@@ -295,7 +298,7 @@ describe("natural agent loop", () => {
         onEvent: (event) => events.push(event),
       },
     );
-    expect(result).toMatchObject({ reason: "finished", steps: 9 });
+    expect(result).toMatchObject({ reason: "finished", steps: 10 });
     const ninth = llm.seen[8]!;
     expect(
       ninth.messages.some(
@@ -325,6 +328,7 @@ describe("natural agent loop", () => {
         calls: [{ name: "bash", args: { command: `echo x ${index + 1}` } }],
       })),
       { text: "Done." },
+      { text: "Done." },
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
@@ -337,7 +341,14 @@ describe("natural agent loop", () => {
         onEvent: (event) => events.push(event),
       },
     );
-    expect(events.filter((event) => event.type === "advisory")).toHaveLength(2);
+    const advisories = events.filter((event) => event.type === "advisory");
+    expect(
+      advisories.filter((event) => event.kind === "materialization_nudge"),
+    ).toHaveLength(2);
+    // #78: the prose that answered the last nudge is checked once.
+    expect(
+      advisories.filter((event) => event.kind === "prose_checkpoint"),
+    ).toHaveLength(1);
 
     const off = model([
       { calls: [{ name: "bash", args: { command: "echo 1" } }] },

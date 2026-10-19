@@ -37,6 +37,8 @@ describe("verbose turn nudge", () => {
     const llm = scripted([
       { text: "Let me think about this at length...", tools: [readTool], usage: big },
       { text: "Done.", usage: small },
+      // #78: the prose answered the verbosity nudge, so it is checked once.
+      { text: "Done.", usage: small },
     ]);
     const result = await runAgent(
       { task: "Explain the code" },
@@ -133,7 +135,7 @@ describe("verbose turn nudge", () => {
 
   it("fires strictly above the 8k default, not at it", async () => {
     // The limit is a floor on tolerance: a turn that lands exactly on it has
-    // not overshot, and the cap (12k) is what bounds it.
+    // not overshot, and the cap (16k) is what bounds it.
     const llm = scripted([
       { text: "exactly at the limit", tools: [readTool], usage: atLimit },
       { text: "Done.", usage: small },

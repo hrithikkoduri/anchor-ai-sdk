@@ -241,6 +241,16 @@ export async function runAgent(
   );
   let silentToolTurns = 0;
   let steps = 0;
+  // #78: the engine asked the model for something visible and the model
+  // answered in prose and stopped. That is a checkpoint, not a result. Scoped
+  // to nudges on purpose: an ordinary prose ending after tool work is the
+  // normal way runs finish, and gating it would cost every run an extra call.
+  let pendingProseCheck = false;
+  let proseChecked = false;
+  // A capped prose turn is incomplete, not an answer. Continue once (#79);
+  // a second cap in the same run stalls, so a runaway essay cannot loop.
+  let outputCapContinued = false;
+  const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
   let checkpointRef: string | undefined;
   let pauseRequested = false;
   if (phaseOn) {
@@ -602,6 +612,12 @@ export async function runAgent(
             function: tool.definition,
           })),
           ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
+          ...(opts.sampling?.temperature !== undefined
+            ? { temperature: opts.sampling.temperature }
+            : {}),
+          ...(opts.sampling?.seed !== undefined
+            ? { seed: opts.sampling.seed }
+            : {}),
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {
@@ -621,6 +637,8 @@ export async function runAgent(
         toolCallsCount: response.toolCalls.length,
         usage: response.usage,
         latencyMs: response.latencyMs,
+        model: response.model,
+        ...(response.provider ? { provider: response.provider } : {}),
       });
       // A capped response is a real event, not a curiosity: the model may have
       // been mid-thought, or about to emit the tool call it never reached.
@@ -677,21 +695,79 @@ export async function runAgent(
             error: "model returned neither text nor tool calls",
           });
         // An unfinished sentence is not an answer. A reply cut off by the cap
-        // must never be accepted as the run's result: it would report success
-        // on work the model never actually completed.
-        if (outputCapped)
+        // must never be accepted as the run's result. It also must not end a
+        // run that was still working (#79): same shape as a nudge — inject
+        // one runtime message and take the next turn. Once per run; a second
+        // capped prose turn stalls, so this cannot loop.
+        if (outputCapped) {
+          if (!outputCapContinued && proseCheckpoint) {
+            outputCapContinued = true;
+            pendingProseCheck = true;
+            emit({
+              type: "advisory",
+              kind: "output_cap_continue",
+              detail:
+                `step ${steps} hit the ${maxOutputTokens}-token output cap with no tool call — ` +
+                `asked to continue instead of ending`,
+            });
+            messages.push({
+              role: "user",
+              origin: "engine",
+              content:
+                `Your last reply was cut off by the ${maxOutputTokens}-token output cap and had no tool call, so it was not accepted. ` +
+                `Do not rewrite it. Continue the work — your next turn must include a tool call.` +
+                (available.has("finish")
+                  ? " If the work is already complete, call `finish`."
+                  : ""),
+            });
+            await persist();
+            continue;
+          }
           return conclude("stalled", {
             ok: false,
             error:
               `model output hit the ${maxOutputTokens}-token cap mid-reply ` +
               `and returned no tool call — the reply is incomplete`,
           });
+        }
+        // The engine just asked for something visible, and the model answered
+        // in prose and stopped. That is exactly the shape that cut a run off
+        // mid-task (#78). Ask once whether the run is really over; the model
+        // decides: call `finish`, take another action, or repeat the reply
+        // (which ends the run). One-shot, so this can never become a loop.
+        if (
+          proseCheckpoint &&
+          pendingProseCheck &&
+          !proseChecked &&
+          available.has("finish")
+        ) {
+          proseChecked = true;
+          emit({
+            type: "advisory",
+            kind: "prose_checkpoint",
+            detail:
+              `step ${steps} replied with text and no tool call after tool work — ` +
+              `asked whether the run is finished or continuing`,
+          });
+          messages.push({
+            role: "user",
+            origin: "engine",
+            content:
+              "You wrote a reply but did not call `finish`. If the work is complete, " +
+              "call `finish` with your outcome. If it is not complete, continue " +
+              "working — your next turn must include a tool call. If you are done " +
+              "and have nothing to add, repeat your reply and the run will end.",
+          });
+          await persist();
+          continue;
+        }
         return conclude("finished", {
           ok: true,
           summary: response.text.trim(),
           completion: "response",
         });
       }
+      pendingProseCheck = false;
 
       let declared:
         | {
@@ -900,10 +976,12 @@ export async function runAgent(
             origin: "engine",
             content:
               `You have taken ${toolOnlyNudge} tool steps without writing anything visible — ` +
-              `the user cannot see your reasoning. If this request expects an answer, answer now in text. ` +
-              `If you are mid-work, state briefly what you found and what remains: ` +
+              `the user cannot see your reasoning. State in one line what you found and what remains, ` +
+              `then keep moving in the same turn with your next tool call: ` +
               `visible notes survive context folding, silent reasoning does not.`,
           });
+          // #78: if the next turn is prose-only, it was answering this nudge.
+          pendingProseCheck = true;
         }
       }
       // Verbosity advisory — the mirror of the one above. That one answers a
@@ -925,9 +1003,12 @@ export async function runAgent(
           content:
             `Your last turn produced ${response.usage.completionTokens} tokens of output without moving the work forward. ` +
             `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
-            `a command or an edit. If you are stuck, say what you tried and what you saw; ` +
-            `do not re-derive what you have already established.`,
+            `a command or an edit. If you are stuck, say what you tried in one line and try a different approach; ` +
+            `do not re-derive what you have already established. Do not end this turn without a tool call.`,
         });
+        // #78: same rule as the silent-tool nudge — a prose reply that follows
+        // engine guidance is a checkpoint, not automatically the answer.
+        pendingProseCheck = true;
       }
       await persist();
       if (signal.aborted)

@@ -40,6 +40,10 @@ export type AgentEvent =
       toolCallsCount: number;
       usage: LLMUsage;
       latencyMs: number;
+      /** Model id the provider said it served, when the response carried one. */
+      model?: string;
+      /** Upstream name, when a gateway reported one. */
+      provider?: string;
     }
   | {
       type: "tool_call";
@@ -94,8 +98,10 @@ export type AgentEvent =
         | "budget_warning"
         | "snapshot_failed"
         | "output_truncated"
+        | "output_cap_continue"
         | "verbose_turn"
-        | "assistant_text_elided";
+        | "assistant_text_elided"
+        | "prose_checkpoint";
       detail: string;
     }
   | {

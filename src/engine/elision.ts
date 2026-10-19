@@ -28,9 +28,8 @@ export const DEFAULT_MAX_ASSISTANT_CHARS = 20_000;
 /**
  * A capped turn is incomplete: its tail stops mid-token, so only its head is
  * worth replaying. This is the dial for that tighter budget — deliberately
- * below `DEFAULT_MAX_ASSISTANT_CHARS`, and numerically equal to the 12k-token
- * output cap (note the unit: 12k CHARS here, ≈ 3k tokens — a quarter of that
- * cap's worst-case 48k chars of output).
+ * below `DEFAULT_MAX_ASSISTANT_CHARS`. 12k CHARS, not tokens: about 3k tokens,
+ * a fraction of a capped turn, so a chopped essay is not replayed in full.
  */
 export const DEFAULT_TRUNCATED_REPLY_CHARS = 12_000;
 

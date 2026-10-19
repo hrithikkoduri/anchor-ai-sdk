@@ -43,7 +43,7 @@ trust. Anchor ships the hard parts.
 
 | | |
 | --- | --- |
-| **Agent loop with dials** | Budgets (steps / tokens / USD), repeated-call detection, silent-tool and verbose-turn advisories, a per-call output cap (12k, nudge at 8k), and assistant-text elision (20k replay, 12k head-only when capped, spilled and pointed at) — guardrails on by default, each with an off switch. Phases describe the approach — never a second gated execution engine. |
+| **Agent loop with dials** | Budgets (steps / tokens / USD), repeated-call detection, silent-tool and verbose-turn advisories, a per-call output cap (16k, nudge at 8k; a capped prose turn continues once instead of ending), and assistant-text elision (20k replay, 12k head-only when capped, spilled and pointed at) — guardrails on by default, each with an off switch. Phases describe the approach — never a second gated execution engine. |
 | **Streaming by default** | One wire path: every model call streams. Text and reasoning deltas, tool calls, compaction, checkpoints, and finishes all arrive as typed events. |
 | **Durable memory** | `ThreadStore` carries conversation across runs; compaction is derived from the model's *real* context window; reasoning is journaled but never re-sent. |
 | **Notes & spill storage** | A reserved `.anchor/notes.md` (git-excluded, checkpoint-carried) is the agent's durable memory across folds; oversized tool output spills to sandbox files and stays addressable instead of vanishing. |

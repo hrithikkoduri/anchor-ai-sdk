@@ -36,6 +36,7 @@ export interface EvalArmContext {
   llm: LLMClient;
   budgets?: Partial<BudgetLimits>;
   compaction?: CompactionConfig;
+  sampling?: { temperature?: number; seed?: number };
   onEvent?: (event: AgentEvent) => void;
   signal?: AbortSignal;
   /** Directory for side artifacts (trajectories etc.), when the caller has one. */
@@ -68,6 +69,7 @@ export interface EvalRunOptions {
   llm: LLMClient;
   budgets?: Partial<BudgetLimits>;
   compaction?: CompactionConfig;
+  sampling?: { temperature?: number; seed?: number };
   signal?: AbortSignal;
   /** Called as each task finishes — where predictions and traces get written. */
   onResult?: (result: EvalTaskResult) => Promise<void> | void;
@@ -183,6 +185,7 @@ export async function runEvalSuite(
             : {}),
           ...(options.budgets ? { budgets: options.budgets } : {}),
           ...(options.compaction ? { compaction: options.compaction } : {}),
+          ...(options.sampling ? { sampling: options.sampling } : {}),
           ...(options.onEvent
             ? { onEvent: (event: AgentEvent) => options.onEvent?.(task, event) }
             : {}),

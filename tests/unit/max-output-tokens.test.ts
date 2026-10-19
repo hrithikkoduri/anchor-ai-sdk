@@ -28,17 +28,17 @@ describe("max output tokens", () => {
 
   const ok = (text = "No changes.") => [{ text }];
 
-  it("sends the 12k default on every call", async () => {
+  it("sends the 16k default on every call", async () => {
     const llm = scripted(ok());
     await runAgent({ task: "Explain the code" }, { llm, sandbox, agent: codingAgent });
-    expect(DEFAULT_MAX_OUTPUT_TOKENS).toBe(12_000);
-    expect(llm.seen[0]!.maxTokens).toBe(12_000);
+    expect(DEFAULT_MAX_OUTPUT_TOKENS).toBe(16_000);
+    expect(llm.seen[0]!.maxTokens).toBe(16_000);
   });
 
   it("applies the same default to a non-coding agent", async () => {
     const llm = scripted(ok("Understood."));
     await runAgent({ task: "Say hi" }, { llm, agent: chatAgent });
-    expect(llm.seen[0]!.maxTokens).toBe(12_000);
+    expect(llm.seen[0]!.maxTokens).toBe(16_000);
   });
 
   it("lets an explicit engine option win over the agent's suggestion", async () => {
@@ -73,24 +73,69 @@ describe("max output tokens", () => {
     expect(llm.seen[0]!.maxTokens).toBeUndefined();
   });
 
-  it("reports a capped response instead of swallowing it", async () => {
+  it("continues once after a capped prose turn, then stalls on a second", async () => {
     const events: AgentEvent[] = [];
-    const llm = scripted([{ text: "I was halfway through expl", finishReason: "length" }]);
+    const llm = scripted([
+      { text: "I was halfway through expl", finishReason: "length" },
+      { text: "still writing the same essay", finishReason: "length" },
+    ]);
     const result = await runAgent(
       { task: "Explain the code" },
       { llm, sandbox, agent: codingAgent, maxOutputTokens: 1_000, onEvent: (e) => events.push(e) },
     );
-    const advisory = events.find(
+    const truncated = events.find(
       (e): e is Extract<AgentEvent, { type: "advisory" }> =>
         e.type === "advisory" && e.kind === "output_truncated",
     );
-    expect(advisory).toBeDefined();
-    expect(advisory!.detail).toContain("1000-token output cap");
-    expect(advisory!.detail).toContain("incomplete");
-    // The important half: a cut-off reply is never published as the answer.
+    expect(truncated).toBeDefined();
+    expect(truncated!.detail).toContain("1000-token output cap");
+    expect(
+      events.some((e) => e.type === "advisory" && e.kind === "output_cap_continue"),
+    ).toBe(true);
+    // The continue message is what the model sees on the next call.
+    const followUp = llm.seen[1]!.messages.at(-1)!;
+    expect(followUp.role).toBe("user");
+    expect(followUp.content).toContain("was not accepted");
+    expect(followUp.content).toContain("must include a tool call");
+    // A cut-off reply is never published as the answer, and a second cap ends it.
     expect(result.ok).toBe(false);
     expect(result.completion).not.toBe("response");
     expect(result.reason).toBe("stalled");
+    expect(result.steps).toBe(2);
+  });
+
+  it("keeps going when the turn after a cap is real work", async () => {
+    const llm = scripted([
+      { text: "halfway through the edit", finishReason: "length" },
+      {
+        text: "applying the fix",
+        tools: [{ name: "read_file", arguments: JSON.stringify({ path: "src/lib.js" }) }],
+      },
+      { text: "Done." },
+    ]);
+    const result = await runAgent(
+      { task: "Explain the code" },
+      { llm, sandbox, agent: codingAgent, maxOutputTokens: 1_000 },
+    );
+    expect(result.ok).toBe(true);
+    expect(result.steps).toBe(3);
+    expect(result.completion).toBe("response");
+  });
+
+  it("still stalls immediately when the prose checkpoint is off", async () => {
+    const llm = scripted([{ text: "cut off", finishReason: "length" }]);
+    const result = await runAgent(
+      { task: "Explain the code" },
+      {
+        llm,
+        sandbox,
+        agent: codingAgent,
+        maxOutputTokens: 1_000,
+        guardrails: { proseCheckpoint: false },
+      },
+    );
+    expect(result.reason).toBe("stalled");
+    expect(result.steps).toBe(1);
   });
 
   it("accepts a truncated turn that still delivered its tool call", async () => {

@@ -33,6 +33,11 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
   --limit <n>             run only the first n tasks
   --task <instance_id>    run a single task
   --model <id>            model override (default: configured LLM)
+  --llm openrouter|parasail
+                          which API to call (default openrouter). parasail
+                          reads PARASAIL_API_KEY and pins temperature 0, seed 42
+  --temperature <n>       sampling temperature (parasail default 0)
+  --seed <n>              sampling seed (parasail default 42)
   --max-steps <n>         budget: steps per task (engine default 40)
   --max-usd <n>           budget: dollars per task (engine default 5)
   --image-tag <tag>       boot task images as <repo>:<tag> (prewarmed)
@@ -85,7 +90,47 @@ if (
 
 loadDotEnv();
 const cfg = evalsConfig();
-const model = String(args.get("model") ?? cfg.llm.model);
+const llmName = String(args.get("llm") ?? "openrouter");
+if (llmName !== "openrouter" && llmName !== "parasail") {
+  say(`unknown llm "${llmName}" — openrouter or parasail`);
+  process.exit(1);
+}
+const parasail = llmName === "parasail";
+const model = String(
+  args.get("model") ?? (parasail ? "zai-org/GLM-5.3" : cfg.llm.model),
+);
+const baseUrl = parasail ? "https://api.parasail.io/v1" : cfg.llm.baseUrl;
+const apiKey = parasail
+  ? process.env.PARASAIL_API_KEY || undefined
+  : cfg.llm.apiKey;
+if (parasail && !apiKey) {
+  say("PARASAIL_API_KEY is not set — add it to .env (do not commit it)");
+  process.exit(1);
+}
+const temperature = args.has("temperature")
+  ? Number(args.get("temperature"))
+  : parasail
+    ? 0
+    : undefined;
+const seed = args.has("seed")
+  ? Number(args.get("seed"))
+  : parasail
+    ? 42
+    : undefined;
+if (
+  (temperature !== undefined && !Number.isFinite(temperature)) ||
+  (seed !== undefined && !Number.isInteger(seed))
+) {
+  say("--temperature must be a number and --seed an integer");
+  process.exit(1);
+}
+const sampling =
+  temperature !== undefined || seed !== undefined
+    ? {
+        ...(temperature !== undefined ? { temperature } : {}),
+        ...(seed !== undefined ? { seed } : {}),
+      }
+    : undefined;
 
 // The model's real catalog entry prices the run and sizes compaction, exactly
 // as the product does — the eval must not run a differently-configured engine.
@@ -94,9 +139,19 @@ const model = String(args.get("model") ?? cfg.llm.model);
 // (2026-10-18: 2x/10x off for GLM 5.3). Catalog unreachable → cost reads as
 // unknown rather than wrong.
 const { llm, catalog, compaction } = await llmFromCatalog({
-  baseUrl: cfg.llm.baseUrl,
-  apiKey: cfg.llm.apiKey,
+  baseUrl,
+  apiKey,
   model,
+  // Published Parasail rates. Their catalog may not match the OpenRouter
+  // price shape, and an unpriced run hides a bad trajectory. OpenRouter
+  // keeps its live catalog prices.
+  ...(parasail
+    ? {
+        priceInPerMTok: 1.4,
+        priceOutPerMTok: 4.4,
+        priceCacheReadPerMTok: 0.26,
+      }
+    : {}),
 });
 const provider =
   providerName === "heyo"
@@ -140,8 +195,13 @@ const modelLabel = `${armName}@${model.replaceAll("/", "-")}`;
 const startedAt = Date.now();
 
 say(
-  `anchor eval · ${armName}@${model} · ${provider.name} · ${tasks.length} task(s)`,
+  `anchor eval · ${armName}@${model} · ${llmName} · ${provider.name} · ${tasks.length} task(s)`,
 );
+if (sampling) {
+  say(
+    `sampling: temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`,
+  );
+}
 say(
   `model: ${catalog ? `${catalog.contextLength ?? "?"}-token window` : "catalog unreachable"}`,
 );
@@ -203,6 +263,7 @@ const results = await runEvalSuite({
   llm,
   ...(Object.keys(budgets).length > 0 ? { budgets } : {}),
   ...(compaction ? { compaction } : {}),
+  ...(sampling ? { sampling } : {}),
   artifactsDir,
   onEvent: (task, event) => {
     const chunks = traces.get(task.id) ?? [];
@@ -257,6 +318,9 @@ await writeFile(
     {
       arm: armName,
       model,
+      llm: llmName,
+      baseUrl,
+      ...(sampling ? { sampling } : {}),
       provider: provider.name,
       tasks: tasks.length,
       completed,
