@@ -1,11 +1,37 @@
 # Anchor — decision log
 
 Anchor grew inside the Sailor monorepo and moved here with its history (git
-subtree split). Entries #51–#64 below were moved verbatim at extraction time;
+subtree split). Entries #51–#65 below were moved verbatim at extraction time;
 the Sailor repo's `DECISIONS.md` keeps the full, combined log (including
 Sailor-only decisions). The summaries of the earlier entries exist so the
-reasons behind the API travel with the code; follow the monorepo log for
+reasons behind the API travel with the code; follow the Sailor repo's log for
 their full text.
+
+## How this log is classified
+
+- **Architectural** — the package's shape: engine, sandbox contract,
+  durability, data flows, protocols.
+- **Cosmetic** — naming, presentation, docs.
+- **Misc** — process, tooling, packaging.
+
+| # | decision | class |
+| --- | --- | --- |
+| early | the summaries below — foundations | Architectural |
+| #51 | agent-led execution, phases as approach | Architectural |
+| #52 | SDK naming: say the noun, verb first | Cosmetic |
+| #53 | the provider seam: capabilities as promises | Architectural |
+| #54 | `llmFromCatalog` | Architectural |
+| #55 | TraceSink + TraceFanout | Architectural |
+| #56 | the run loop owns its lifecycle | Architectural |
+| #57 | the genericity guard names products | Misc |
+| #58 | revival policy + publication evidence | Architectural |
+| #59 | session store + provider `prepare()` | Architectural |
+| #60 | the legacy options bridge is gone | Architectural |
+| #61 | provider folders, stubs, sandbox README | Cosmetic |
+| #62 | naming locked, registry-verified | Cosmetic |
+| #63 | the public tool/engine surface | Architectural |
+| #64 | `finish()` carries a consumer-shaped handoff | Architectural |
+| #65 | `anchor-ai-sdk` everywhere + publish guard | Misc |
 
 ## Early decisions that shaped the package (summarized at extraction)
 
