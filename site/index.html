@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anchor — the agent harness SDK</title>
+<meta name="description" content="Loop-first, sandbox-first agent harness SDK. Give it a task and a machine — it reasons, runs tools, checks its own work, and keeps the receipts." />
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg" />
+        <img src="assets/logo.svg" alt="" />
+      </picture>
+      Anchor
+    </a>
+    <div class="nav-links">
+      <a href="docs.html" data-page="docs.html">Docs</a>
+      <a href="benchmarks.html" data-page="benchmarks.html">Benchmarks</a>
+      <a class="ext" href="https://github.com/hrithikkoduri/anchor-ai-sdk">GitHub ↗</a>
+      <a class="ext" href="https://www.npmjs.com/package/anchor-ai-sdk">npm ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg" />
+    <img class="mark" src="assets/logo.svg" alt="Anchor" width="76" height="76" />
+  </picture>
+  <span class="eyebrow">The agent harness SDK</span>
+  <h1>Give it a task and a machine.</h1>
+  <p class="lede">
+    Anchor reasons, runs tools, checks its own work, and keeps the receipts —
+    so shipping an agent is wiring, not research.
+  </p>
+  <div class="install">
+    <span><span class="dollar">$</span> npm install anchor-ai-sdk</span>
+    <button class="copy" type="button" title="Copy">copy</button>
+  </div>
+  <div class="hero-actions">
+    <a class="btn solid" href="docs.html">Read the docs</a>
+    <a class="btn ghost" href="benchmarks.html">Benchmarks</a>
+  </div>
+  <p class="small muted" style="margin-top:18px">Node 22+ · MIT · early alpha (0.x)</p>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Why</span>
+      <h2>Most harnesses give you a loop and leave the hard parts to you.</h2>
+      <p class="lede">
+        A context that grows until it dies, a trace you can't replay, a "done"
+        you can't trust. Anchor ships the hard parts.
+      </p>
+    </div>
+    <div class="grid three">
+      <div class="card">
+        <span class="tick">01 — Verification</span>
+        <h3>Evidence, never vibes</h3>
+        <p>
+          Every tool result lands on <code>AgentResult.evidence</code>.
+          <code>run_tests</code> stamps the tree hash it ran against, and
+          <code>latestEvidenceForTree</code> ties a green run to the exact
+          bytes. The engine carries evidence — what to gate on it is your
+          policy, not a hidden wall.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tick">02 — Durability</span>
+        <h3>Durable by construction</h3>
+        <p>
+          Conversation, workspace, and the agent's own notes survive folds,
+          restarts, and budget deaths. The SDK ships the resumption primitives
+          — thread store, checkpoints, phase pauses, revival planning — so
+          resuming is wiring, not research.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tick">03 — Machines</span>
+        <h3>Sandbox-first</h3>
+        <p>
+          The machine is part of the design, not an afterthought: one provider
+          contract, three shipped adapters, and an executable conformance
+          suite that holds every adapter to its promises.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Out of the box</span>
+      <h2>The parts every agent needs, already wired.</h2>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Agent loop with dials</h3><p>Budgets (steps / tokens / USD), repeated-call detection, silent-tool advisories — guardrails on by default, each with an off switch. Phases describe the approach, never a second gated engine.</p></div>
+      <div class="card"><h3>Streaming by default</h3><p>One wire path: every model call streams. Text and reasoning deltas, tool calls, compaction, checkpoints, and finishes all arrive as typed events.</p></div>
+      <div class="card"><h3>Durable memory</h3><p><code>ThreadStore</code> carries the conversation across runs; compaction is derived from the model's real context window; reasoning is journaled but never re-sent.</p></div>
+      <div class="card"><h3>Notes &amp; spill storage</h3><p>A reserved <code>.anchor/notes.md</code> (git-excluded, checkpoint-carried) is the agent's memory across folds; oversized tool output spills to sandbox files and stays addressable instead of vanishing.</p></div>
+      <div class="card"><h3>Revival</h3><p>A dying run leaves a handoff (<code>request_revival</code>); <code>planRevival</code> + <code>ThreadBudget</code> fund the next run — same task, phase, and budget — and when the caps are spent, a human gets the note, quoting the agent's own words on what remains.</p></div>
+      <div class="card"><h3>Snapshots &amp; resume</h3><p>A pluggable snapshot hook (git-backed by default, push optional), phase-boundary pauses, heartbeats and cross-process cancel polling owned by the engine.</p></div>
+      <div class="card"><h3>Traces you can replay</h3><p>One fanout: one sequence number, redaction applied before every sink — NDJSON file, database rows, and a live projector share the same ordering.</p></div>
+      <div class="card"><h3>Sandbox plugins</h3><p>One <code>SandboxProvider</code> contract: Heyo microVMs, Docker, local. Capabilities are promises — the conformance suite holds adapters to them. Store-backed sessions give adopt-and-fallback continuity for free.</p></div>
+      <div class="card"><h3>Typed handoffs</h3><p><code>finish({ handoff })</code> is shaped by your JSON schema; the engine declares the parameter, carries the object, and never interprets it.</p></div>
+      <div class="card"><h3>Priced &amp; windowed models</h3><p><code>llmFromCatalog</code> reads live prices and the genuine context window from the provider catalog — budgets and compaction configure themselves correctly.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Quickstart</span>
+      <h2>Ten lines to a working agent.</h2>
+    </div>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="name">chat.mjs</span><button class="copy" type="button">copy</button></div>
+        <pre id="snippet-chat"><span class="k">import</span> { chatAgent, llmFromCatalog, runAgent } <span class="k">from</span> <span class="s">"anchor-ai-sdk"</span>;
+
+<span class="k">const</span> { llm } = <span class="k">await</span> <span class="f">llmFromCatalog</span>({
+  baseUrl: <span class="s">"https://openrouter.ai/api/v1"</span>,
+  apiKey: process.env.OPENROUTER_KEY,
+  model: <span class="s">"z-ai/glm-5.3"</span>,
+});
+
+<span class="k">const</span> result = <span class="k">await</span> <span class="f">runAgent</span>(
+  { task: <span class="s">"Explain what this repository does"</span> },
+  { llm, agent: chatAgent },
+);
+console.<span class="f">log</span>(result.summary);</pre>
+      </div>
+      <div class="term">
+        <div class="term-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="name">repo-triage.mjs — give it a machine</span><button class="copy" type="button">copy</button></div>
+        <pre><span class="k">import</span> { codingAgent, runAgent } <span class="k">from</span> <span class="s">"anchor-ai-sdk"</span>;
+<span class="k">import</span> { docker } <span class="k">from</span> <span class="s">"anchor-ai-sdk/sandbox/docker"</span>;
+
+<span class="k">const</span> sandbox = <span class="f">docker</span>().<span class="f">create</span>({
+  repoUrl: <span class="s">"https://github.com/you/your-repo"</span>,
+  ref: <span class="s">"main"</span>,
+});
+<span class="k">await</span> sandbox.<span class="f">start</span>();
+<span class="k">try</span> {
+  <span class="k">const</span> result = <span class="k">await</span> <span class="f">runAgent</span>(
+    { task: <span class="s">"Run the tests and fix the failing case"</span> },
+    { llm, agent: codingAgent, sandbox },
+  );
+  console.<span class="f">log</span>(result.summary, result.checkpointRef);
+} <span class="k">finally</span> {
+  <span class="k">await</span> sandbox.<span class="f">destroy</span>();
+}</pre>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:14px">
+      Runnable versions live in <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples">examples/</a> —
+      including a non-coding agent with its own strategy and tool, no sandbox.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Providers</span>
+      <h2>Bring your own machine. Or ours.</h2>
+      <p class="lede">A backend is "done" when the executable conformance suite passes: exec fidelity, kill deadlines, env secrets, checkpoints, retain/adopt, git identity, pushes, and forks where declared.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>subpath</th><th>backend</th><th>status</th></tr></thead>
+        <tbody>
+          <tr><td><code>anchor-ai-sdk/sandbox/heyo</code></td><td>Heyo Cloud microVMs (Firecracker)</td><td>production path — conformance + live tests</td></tr>
+          <tr><td><code>anchor-ai-sdk/sandbox/docker</code></td><td>containers on the local daemon</td><td>conformance-tested in CI</td></tr>
+          <tr><td><code>anchor-ai-sdk/sandbox/local</code></td><td>this host, no isolation</td><td>dev / CI only</td></tr>
+          <tr><td class="muted">—</td><td class="muted">E2B, Daytona</td><td class="muted">planned</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Proof, not promises</span>
+      <h2>Measured, not asserted.</h2>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v num">7/10</div><div class="k">SWE-bench Lite resolved — same as mini-swe-agent</div><div class="n">same container · same model · official grader</div></div>
+      <div class="stat"><div class="v num">≈⅓</div><div class="k">the cost at identical resolution</div><div class="n">$0.60 vs ≈$1.99 total, 10 tasks</div></div>
+      <div class="stat"><div class="v num">≈3.2×</div><div class="k">fewer tokens on the same tasks</div><div class="n">5.3M vs ≈17.0M</div></div>
+      <div class="stat"><div class="v num">3</div><div class="k">first-class sandboxes — each held to the conformance suite</div><div class="n">microVMs · docker · local</div></div>
+    </div>
+    <p class="small muted" style="margin-top:14px">
+      The full table and the analysis — including where each arm stands —
+      are on the <a href="benchmarks.html">benchmarks page</a>. A fresh round
+      on Claude Opus 5.5 is running now.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div class="sig">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg" />
+          <img src="assets/logo.svg" alt="" />
+        </picture>
+        <strong>Anchor</strong>
+      </div>
+      <p class="small muted" style="margin-top:8px">The agent harness SDK.<br />Early alpha — pin exact versions.</p>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <span class="eyebrow">Product</span>
+        <a href="docs.html">Docs</a>
+        <a href="benchmarks.html">Benchmarks</a>
+        <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples">Examples</a>
+        <a href="https://www.npmjs.com/package/anchor-ai-sdk">npm</a>
+      </div>
+      <div class="col">
+        <span class="eyebrow">Project</span>
+        <a href="https://github.com/hrithikkoduri/anchor-ai-sdk">GitHub</a>
+        <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/DECISIONS.md">Decision log</a>
+        <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/LICENSE">MIT License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
