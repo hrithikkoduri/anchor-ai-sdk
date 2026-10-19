@@ -135,6 +135,17 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   consumer wanting specialization (a verifier or investigator teammate) —
   Sailor's verifier is the likely first. _Size:_ L.
 
+- **Export the prompt components** — `buildCodingPrompt` and
+  `CodingPromptOptions` are public, but the default section strings
+  (`character`, `tone`, `judgment`, `operatingRules`, `verification`) are not,
+  and the `exports` map blocks deep imports. A product that wants to *amend*
+  one rule — rather than replace a whole section — must either copy the text
+  (silent drift) or interpret it from an additional section (what Sailor did
+  for issue-fix scope, its decision #70). Export the components so consumers
+  compose them. _Where:_ `src/agents/coding/prompts/` +
+  `src/agents/coding/index.ts`. _Trigger:_ the first consumer amending a rule
+  (Sailor, now). _Size:_ S.
+
 ## In flight (work, not deferred)
 
 - **Background long commands landed** (decision #70, 2026-10-19):
