@@ -117,7 +117,42 @@ bare-origin pushes, and `fork` where declared. Scenarios assert through
 when this passes (live backends opt in: `RUN_LIVE_HEYO_TESTS=1`,
 `ANCHOR_DOCKER_TEST_IMAGE` like the Docker image).
 
+## Images and boot cost
+
+`start()` pays for the image, and that price is **not** free — budget for it.
+The Heyo adapter resolves the rootfs from `imageKind`:
+
+| `imageKind` | at `start()` | cost |
+|---|---|---|
+| `artifact` (**preferred**) | host **pulls** a prebuilt rootfs from `imageStore` | fast, no build |
+| `dockerfile` | host **builds** the rootfs from a manifest | slow cold start |
+| `git` | host **clones the repo and builds its Dockerfile** | slow, plus a clone |
+
+Prefer `artifact`. The build kinds pay clone-and-build on a cold start, and the
+`git` kind reads a build secret while building — that is what
+`prepare({ gitToken })` exists for (it refreshes that secret so a build never
+clones with a stale token). The reference deployment defaults to `artifact` but
+currently runs `git` because the namespace artifact store rejects uploads; that
+is tracked in `ROADMAP.md` ("Publish the ext4 + flip `HEYO_IMAGE_KIND=artifact`"),
+not an adapter defect.
+
+**Boot dominates short runs.** Measured 2026-10-19 on the reference setup: a
+13-step run took 260s wall-clock — **207s inside `start()`** (pull/build, ready
+wait, clone, credentials) and 53s of actual agent work. Anything that compares
+"run duration" across backends must separate boot from work, or a fast adapter
+reads as a slow agent.
+
+The conformance suite deliberately asserts `start()`'s **guarantees** (workspace,
+git identity, credentials, scratch), not how long they take; measure boot per
+backend yourself. `create()` stays I/O-free precisely so the boot is
+retryable/adoptable, and the boot itself lives in `start()`.
+
 ## Adding a provider — checklist
+
+> **Boot cost is part of the contract.** Prefer `artifact` images and measure
+> `start()` — see *Images and boot cost*.
+
+
 
 1. Implement `Sandbox` + `SandboxProvider`; declare `capabilities` honestly
    (they gate conformance scenarios — promises, not vibes).
