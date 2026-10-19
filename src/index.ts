@@ -30,7 +30,9 @@ export type {
 } from "./engine/loop.js";
 
 // Trace — durable run records (redaction + NDJSON)
+export * from "./trace/conversation.js";
 export * from "./trace/jsonl.js";
+export * from "./trace/live-projector.js";
 export * from "./trace/redact.js";
 export * from "./trace/sink.js";
 
