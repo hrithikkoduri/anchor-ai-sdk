@@ -58,6 +58,14 @@ export interface EngineOptions {
     threadPhase?: (handoff: Record<string, unknown>) => string | undefined;
   };
   startPhase?: string;
+  /**
+   * Let long-running shell commands outlive the turn. When set, `bash` asks
+   * the sandbox to detach at this many seconds and returns control with a job
+   * handle; the engine emits `background_started` and the consumer delivers
+   * the completion later (typically as a new inbox turn). Unset = today's
+   * fully synchronous behavior. Requires a sandbox with `pollJob` (heyo).
+   */
+  backgroundAfterSecs?: number;
   onEvent?: EventSink;
   /**
    * Durable sinks. The engine owns their sequence number (one fanout per run)

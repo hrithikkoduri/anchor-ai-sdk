@@ -170,6 +170,101 @@ describe("Heyo short-request execution", () => {
     expect(launches).toBe(2);
   });
 
+  it("detaches at backgroundAfterSecs and finishes later through poll", async () => {
+    let clock = 0;
+    let launches = 0;
+    let finished = false;
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.startsWith("u=")) return reply("killed");
+        return finished ? done() : reply("RUNNING");
+      },
+      async (ms) => {
+        clock += ms;
+      },
+      () => clock,
+    );
+    const bg = await executor.run("long repro", 600, undefined, {
+      backgroundAfterSecs: 5,
+    });
+    expect(launches).toBe(1);
+    expect(bg.background?.jobId).toMatch(/anchor-exec-/);
+    expect(bg.timedOut).toBe(false);
+    expect(bg.exitCode).toBe(-1);
+    expect(executor.hasJobs()).toBe(true);
+    expect(await executor.poll(bg.background!.jobId)).toBeUndefined();
+    finished = true;
+    const result = await executor.poll(bg.background!.jobId, {
+      startedAt: 0,
+      timeoutSecs: 600,
+    });
+    expect(result?.exitCode).toBe(0);
+    expect(result?.stdout).toBe("ok\n");
+    expect(executor.hasJobs()).toBe(false);
+  });
+
+  it("does not let a detached job gate later mutations", async () => {
+    let clock = 0;
+    let launches = 0;
+    let detached = false;
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.startsWith("u=")) return reply("killed");
+        // Before the detach: the long job is still running. After it, any
+        // observation belongs to a NEW command that has completed.
+        return detached ? done() : reply("RUNNING");
+      },
+      async (ms) => {
+        clock += ms;
+      },
+      () => clock,
+    );
+    const bg = await executor.run("long", 600, undefined, {
+      backgroundAfterSecs: 1,
+    });
+    expect(bg.background).toBeDefined();
+    detached = true;
+    launches = 0;
+    const next = await executor.run("mutate", 10);
+    expect(launches).toBe(1);
+    expect(next.exitCode).toBe(0);
+  });
+
+  it("kills a detached job and reports a missing receipt directory as gone", async () => {
+    let clock = 0;
+    let launches = 0;
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.startsWith("u=")) return reply("killed");
+        if (command.includes("GONE")) return reply("GONE");
+        return reply("RUNNING");
+      },
+      async (ms) => {
+        clock += ms;
+      },
+      () => clock,
+    );
+    const bg = await executor.run("long", 600, undefined, {
+      backgroundAfterSecs: 1,
+    });
+    const jobId = bg.background!.jobId;
+    expect(await executor.kill(jobId)).toBe(true);
+    expect(executor.hasJobs()).toBe(false);
+    await expect(executor.poll(jobId)).rejects.toThrow(/gone/i);
+  });
+
   it("executes the actual spool wrapper locally and preserves stdout, stderr, exit status and env", async () => {
     directory = await mkdtemp(path.join(os.tmpdir(), "anchor-job-test-"));
     const shell = promisify(execFile);

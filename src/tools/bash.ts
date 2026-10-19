@@ -34,12 +34,47 @@ export const bashTool = defineTool(
   },
   async (input, ctx) => {
     const command = requireString(input, "command");
+    const explicit = optionalNumber(input, "timeout_secs", 0);
+    const sandbox = requireSandbox(ctx);
+    const threshold = ctx.backgroundAfterSecs;
+    // Detach only when the consumer opted in AND this backend can hand back a
+    // live job. An explicit short deadline stays a deadline (no detach).
+    const canBackground =
+      threshold !== undefined &&
+      threshold > 0 &&
+      typeof sandbox.pollJob === "function";
+    // With background enabled, an unset timeout means "long-lived job": the
+    // hard lifetime is the tool max, and `backgroundAfterSecs` is when the
+    // model gets control back. Without it, the historical 120s default holds.
     const timeoutSecs = Math.max(
       1,
-      Math.min(3600, optionalNumber(input, "timeout_secs", 120)),
+      Math.min(
+        3600,
+        explicit > 0 ? explicit : canBackground ? 3600 : 120,
+      ),
     );
-    const sandbox = requireSandbox(ctx);
-    const r = await sandbox.exec(command, { timeoutSecs });
+    const backgroundAfterSecs =
+      canBackground && timeoutSecs > threshold ? threshold : undefined;
+    const r = await sandbox.exec(command, {
+      timeoutSecs,
+      ...(backgroundAfterSecs !== undefined ? { backgroundAfterSecs } : {}),
+    });
+    if (r.background) {
+      return {
+        ok: true,
+        verb: "Started a background command",
+        content: [
+          `Command is still running after ${backgroundAfterSecs}s — moved to the background (job ${r.background.jobId}).`,
+          `Do NOT run it again. Its output will be delivered to you as a new message when it finishes.`,
+          `Continue with other work, or end the turn; the harness will wake you with the result.`,
+        ].join("\n"),
+        meta: {
+          command,
+          background: r.background,
+          durationMs: r.durationMs,
+        },
+      };
+    }
     return {
       ok: r.exitCode === 0 && !r.timedOut,
       content: await spillOrTruncate(formatExec(r, timeoutSecs), {

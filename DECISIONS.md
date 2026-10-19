@@ -485,3 +485,25 @@ sequential, and `finish`/`set_phase`/`bash`/`edit_file`/`run_tests` never run
 concurrently. The sandbox opts in per call via `ExecOptions.concurrent`
 (Heyo's executor allows multiple jobs; mutations keep the unresolved-job
 gate). Regression: `tests/unit/parallel-reads.test.ts`.
+
+## Decision #70 — background commands are a delivery problem, not a timeout
+
+A shell command that outlives a turn used to hold the turn to its deadline and
+then be killed. Now `ExecOptions.backgroundAfterSecs` detaches it: the exec
+returns `background: { jobId }` at the threshold while the guest job keeps
+running, and `timeoutSecs` becomes the job's hard lifetime (the bash tool uses
+the 3600s cap when the model set no deadline). The engine emits
+`background_started`; the consumer — not the model — owns polling and delivery.
+Sailor persists the handle (`background_jobs`), polls it from the worker sweep
+through the thread's *retained* sandbox, and appends a `background_result`
+inbox event, so completion arrives as the next turn through the existing
+drain. No run is cancelled and the model never polls.
+
+Two invariants make it safe: a detached job does **not** gate later mutations
+(it is deliberately still running), and the sandbox must outlive the run. The
+Heyo adapter makes retention a property of the result (`spec.retain = true`)
+and `destroy()` refuses to park the VM while the executor has jobs — parking
+scales to zero and would kill them; the consumer parks after its last poll. A
+job past `timeoutSecs + 90s` with no receipt is killed and reported `lost`, the
+same fail-fast rule as decision #68. Regressions:
+`tests/unit/background-exec.test.ts`, `tests/unit/heyo-exec.test.ts`.

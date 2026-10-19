@@ -26,6 +26,8 @@ interface Job {
   deadline: number;
   started: number;
   timeoutSecs: number;
+  /** Detached on purpose — it must not gate later mutations. */
+  backgrounded?: boolean;
 }
 const MARKER = "__ANCHOR_EXEC_STREAM__";
 
@@ -37,6 +39,11 @@ export interface ExecRunOptions {
    * job instead of overlapping it.
    */
   concurrent?: boolean;
+  /**
+   * Detach after this many seconds instead of waiting for completion. The job
+   * keeps running; `poll`/`kill` address it later.
+   */
+  backgroundAfterSecs?: number;
 }
 
 export function buildJobLaunch(
@@ -73,6 +80,7 @@ export function buildJobLaunch(
 
 export function buildJobObservation(dir: string): string {
   return (
+    `if [ ! -d ${shq(dir)} ]; then printf 'GONE'; exit 0; fi; ` +
     `if [ -f ${shq(`${dir}/exit`)} ]; then ` +
     `printf 'DONE:'; cat ${shq(`${dir}/exit`)}; printf '\\n'; ` +
     ["stdout", "stderr", "output"]
@@ -113,6 +121,8 @@ export class HeyoGuestExecutor {
     const reply = await this.control(buildJobObservation(job.dir));
     if (reply.exit_code !== 0)
       throw new Error(reply.output || "Could not read the guest job receipt");
+    if (reply.stdout.trim() === "GONE")
+      throw new Error(`Guest job ${job.dir} is gone (receipt directory removed)`);
     if (reply.stdout.trim() === "RUNNING") return undefined;
     const match = /^DONE:(-?\d+)\r?\n([\s\S]*)$/.exec(reply.stdout);
     if (!match) throw new Error("Invalid guest job completion receipt");
@@ -142,7 +152,7 @@ export class HeyoGuestExecutor {
    * command line never contains the literal job path it is matching — a bare
    * `pkill -f /tmp/anchor-exec-<uuid>` would otherwise match itself.
    */
-  private async killJob(job: Job): Promise<boolean> {
+  private async killDir(job: Job): Promise<boolean> {
     const id = job.dir.slice(job.dir.lastIndexOf("anchor-exec-") + 12);
     try {
       const reply = await this.control(
@@ -154,6 +164,61 @@ export class HeyoGuestExecutor {
     }
   }
 
+  /** A detached job still in flight — the sandbox must not be parked. */
+  hasJobs(): boolean {
+    return this.jobs.size > 0;
+  }
+
+  /**
+   * Read a backgrounded job without needing the original in-memory registry:
+   * an adopted sandbox has none, so the caller passes the launch facts. The
+   * job directory is the identity (it is unique per launch inside the VM).
+   */
+  async poll(
+    jobId: string,
+    meta: { startedAt?: number; timeoutSecs?: number } = {},
+  ): Promise<ExecResult | undefined> {
+    const known = this.jobs.get(jobId);
+    const started = known?.started ?? meta.startedAt ?? this.now();
+    const timeoutSecs = known?.timeoutSecs ?? meta.timeoutSecs ?? 3600;
+    const job: Job = known ?? {
+      dir: jobId,
+      started,
+      timeoutSecs,
+      deadline: started + (timeoutSecs + 25) * 1000,
+    };
+    const result = await this.observe(job);
+    if (result) this.jobs.delete(jobId);
+    return result;
+  }
+
+  /** Kill a backgrounded job (works from an adopted sandbox too). */
+  async kill(jobId: string): Promise<boolean> {
+    const known = this.jobs.get(jobId);
+    const job: Job = known ?? {
+      dir: jobId,
+      started: this.now(),
+      timeoutSecs: 0,
+      deadline: this.now(),
+    };
+    const killed = await this.killDir(job);
+    this.jobs.delete(jobId);
+    return killed;
+  }
+
+  private backgrounded(job: Job, afterSecs: number): ExecResult {
+    job.backgrounded = true;
+    return {
+      exitCode: -1,
+      stdout: "",
+      stderr: "",
+      output: `Command still running after ${afterSecs}s; moved to the background (${job.dir}).`,
+      timedOut: false,
+      durationMs: this.now() - job.started,
+      background: { jobId: job.dir },
+    };
+  }
+
   /**
    * A job past its guest-side deadline can only be dead: the supervisor's
    * `timeout -k` already fired. Kill whatever survived (a leaked child can
@@ -162,7 +227,7 @@ export class HeyoGuestExecutor {
   private async reapExpired(now: number): Promise<void> {
     for (const job of [...this.jobs.values()]) {
       if (now < job.deadline) continue;
-      if (await this.killJob(job)) this.jobs.delete(job.dir);
+      if (await this.killDir(job)) this.jobs.delete(job.dir);
     }
   }
 
@@ -180,7 +245,9 @@ export class HeyoGuestExecutor {
     // of the gate — concurrent reads are safe and are the point of the
     // multiple-job registry.
     if (!opts.concurrent) {
-      const [blocking] = this.jobs.values();
+      const [blocking] = [...this.jobs.values()].filter(
+        (job) => !job.backgrounded,
+      );
       if (blocking) {
         return this.unknown(
           blocking,
@@ -222,7 +289,16 @@ export class HeyoGuestExecutor {
       );
     }
     let readFailures = 0;
+    const detachAt =
+      opts.backgroundAfterSecs && opts.backgroundAfterSecs > 0
+        ? opts.backgroundAfterSecs * 1000
+        : undefined;
     while (this.now() < job.deadline) {
+      if (detachAt !== undefined && this.now() - job.started >= detachAt) {
+        // Deliberately leave the job in the registry: it is still running and
+        // its receipt directory is the handle. Mutations ignore it.
+        return this.backgrounded(job, Math.round(detachAt / 1000));
+      }
       try {
         const completed = await this.observe(job);
         if (completed) {
@@ -242,7 +318,7 @@ export class HeyoGuestExecutor {
     // The guest supervisor writes `exit` by timeoutSecs + 10. No receipt by
     // timeoutSecs + 25 means it never will: fail the command, but clear the
     // slot so a single lost receipt cannot make every later command fail.
-    const cleared = await this.killJob(job);
+    const cleared = await this.killDir(job);
     if (cleared) this.jobs.delete(job.dir);
     return this.unknown(
       job,

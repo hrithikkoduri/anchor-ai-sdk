@@ -90,6 +90,35 @@ export async function runAgent(
   };
   const tools = opts.tools ?? opts.agent?.tools ?? [];
   const available = new Map(tools.map((tool) => [tool.definition.name, tool]));
+  /** The context every tool gets — including the host's background policy. */
+  const toolContext = {
+    sandbox: opts.sandbox,
+    ...(opts.backgroundAfterSecs !== undefined
+      ? { backgroundAfterSecs: opts.backgroundAfterSecs }
+      : {}),
+  };
+  /** Surface a detached command to the consumer that owns delivery. */
+  const emitBackground = (
+    name: string,
+    callId: string | undefined,
+    result: ToolResult,
+  ) => {
+    const meta = result.meta;
+    const job =
+      meta && typeof meta.background === "object" && meta.background !== null
+        ? (meta.background as { jobId?: unknown })
+        : undefined;
+    if (!job || typeof job.jobId !== "string") return;
+    emit({
+      type: "background_started",
+      jobId: job.jobId,
+      tool: name,
+      ...(callId ? { callId } : {}),
+      ...(meta && typeof meta.command === "string"
+        ? { command: meta.command }
+        : {}),
+    });
+  };
   // Terminal intrinsic — with the consumer's handoff shape when configured
   // (EngineOptions.handoff). Never required to stop.
   const finish = createFinishTool(
@@ -619,7 +648,7 @@ export async function runAgent(
                     `unknown tool — available: ${[...available.keys()].join(", ")}`,
                 };
               try {
-                return await tool.run(input, { sandbox: opts.sandbox });
+                return await tool.run(input, toolContext);
               } catch (err) {
                 return {
                   ok: false,
@@ -646,6 +675,7 @@ export async function runAgent(
             meta: result.meta,
           });
           messages.push(toolResultMessage(call.id, result.content));
+          emitBackground(call.name, call.id, result);
         }
       } else {
         for (const call of response.toolCalls) {
@@ -701,7 +731,7 @@ export async function runAgent(
             };
           } else {
             try {
-              result = await tool.run(input, { sandbox: opts.sandbox });
+              result = await tool.run(input, toolContext);
             } catch (err) {
               result = {
                 ok: false,
@@ -736,6 +766,7 @@ export async function runAgent(
             meta: result.meta,
           });
           messages.push(toolResultMessage(call.id, result.content));
+          emitBackground(call.name, call.id, result);
         }
       }
       // Materialization advisory (runtime-only, never persisted): a reasoning

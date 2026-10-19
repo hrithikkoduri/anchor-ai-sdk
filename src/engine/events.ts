@@ -64,6 +64,16 @@ export type AgentEvent =
       meta?: Record<string, unknown>;
     }
   | {
+      /** A command outlived `backgroundAfterSecs` and is still running. The
+       * consumer persists this handle and delivers the result later; the
+       * engine itself neither polls nor waits. */
+      type: "background_started";
+      jobId: string;
+      tool: string;
+      callId?: string;
+      command?: string;
+    }
+  | {
       type: "guardrail";
       kind:
         | "loop_detected"

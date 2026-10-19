@@ -31,6 +31,13 @@ export interface ExecResult {
   /** True when the command hit its deadline and was killed. */
   timedOut: boolean;
   durationMs: number;
+  /**
+   * Set when the command outlived `ExecOptions.backgroundAfterSecs` and was
+   * LEFT RUNNING in the sandbox. This is not a failure: `exitCode` is -1 only
+   * because no exit exists yet. Read the real result later with
+   * `Sandbox.pollJob(jobId)`; kill it with `Sandbox.killJob(jobId)`.
+   */
+  background?: { jobId: string };
   /** Transport failure is not a process exit or a confirmed command timeout. */
   failure?: {
     kind: "transport";
@@ -54,6 +61,17 @@ export interface ExecOptions {
    * workspace (read_file, search).
    */
   concurrent?: boolean;
+  /**
+   * Return control to the caller if the command is STILL RUNNING after this
+   * many seconds, leaving the guest job alive in the sandbox (see
+   * `ExecResult.background`). `timeoutSecs` remains the job's hard lifetime,
+   * so it must be larger than this threshold.
+   *
+   * The sandbox must outlive the turn: the caller is responsible for keeping
+   * it alive (retain/adopt) until it polls the job. Backends without detached
+   * jobs ignore the option and run normally.
+   */
+  backgroundAfterSecs?: number;
 }
 
 export interface Checkpoint {
@@ -147,6 +165,19 @@ export interface Sandbox {
   start(): Promise<void>;
   /** Run one self-contained, time-bounded command. */
   exec(command: string, opts?: ExecOptions): Promise<ExecResult>;
+  /**
+   * A backgrounded job's completion, or `undefined` while it is still
+   * running. Throws when the job is unknown (already reaped, or the sandbox
+   * was recreated). `meta` supplies the launch facts a fresh client does not
+   * have (an adopted sandbox has no in-memory registry): the original start
+   * time and the job's hard lifetime.
+   */
+  pollJob?(
+    jobId: string,
+    meta?: { startedAt?: number; timeoutSecs?: number },
+  ): Promise<ExecResult | undefined>;
+  /** Kill a backgrounded job (idempotent: false when it was already gone). */
+  killJob?(jobId: string): Promise<boolean>;
   /** Commit the workspace state so the run can resume / fork from here.
    * With `push`, also force-push the commit to `refs/heads/<push>` so the
    * checkpoint survives losing the machine. A failed push is REPORTED in the

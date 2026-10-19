@@ -94,6 +94,20 @@ fired) is **killed and cleared**: the adapter `pkill`s the guest job and
 removes its receipt directory before failing the call. A lost receipt fails
 that one command; it must never wedge every later command in the sandbox.
 
+**Background commands.** `ExecOptions.backgroundAfterSecs` asks the adapter to
+*return control* while the command is still running; the result carries
+`background: { jobId }` (not a failure). The caller reads it later with
+`pollJob(jobId, { startedAt, timeoutSecs })` — `undefined` while running, the
+`ExecResult` once finished — and may `killJob(jobId)`. `timeoutSecs` stays the
+job's hard lifetime, so it must exceed the detach threshold; a detached job no
+longer blocks later mutations (it is intentionally still running). Because the
+job lives in the guest, the sandbox must outlive the turn: the Heyo adapter
+sets `spec.retain` on detach and `destroy()` **defers parking** while the
+executor still has jobs. Polling belongs to the consumer (a worker sweep), not
+the model — see `EngineOptions.backgroundAfterSecs` and the
+`background_started` event. Heyo's `poll`/`kill` also work from a *fresh*
+adopted instance (no in-memory registry), which is what a post-run sweep uses.
+
 **The conformance suite** — `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
 self-containment, kill deadlines, env secrets, checkpoints, retain/adopt, git
