@@ -34,7 +34,7 @@ benchmark landing; data and results already live per-benchmark today.
 
 | benchmark | status | docs |
 | --- | --- | --- |
-| **swe-bench** | Round 1 shipped (GLM 5.3); Round 2 in progress (Opus 5.5) | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
+| **swe-bench** | Round 1 shipped (GLM 5.3) | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
 | **terminal-bench** | planned | [`benchmarks/terminal-bench/README.md`](benchmarks/terminal-bench/README.md) |
 | **program-bench** | planned | [`benchmarks/program-bench/README.md`](benchmarks/program-bench/README.md) |
 | **metr** | planned | [`benchmarks/metr/README.md`](benchmarks/metr/README.md) |

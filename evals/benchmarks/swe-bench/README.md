@@ -83,8 +83,3 @@ new round starts).
   **$0.60 vs ≈$1.99** and **5.28M vs ≈17.0M tokens**.
   [`results/comparison.md`](results/comparison.md) ·
   [`results/verdicts.jsonl`](results/verdicts.jsonl)
-- **Round 2 — `anthropic/claude-opus-5.5` (paused during the eval reorg):**
-  8/10 tasks completed on the anchor arm; grading partial for the first
-  batch (3 of 4 resolved — exact split in `.eval-runs/grading/opus55-anchor-p1`).
-  Resume with the two remaining tasks (matplotlib, xarray) and the mini
-  grader's report, then render the table.
