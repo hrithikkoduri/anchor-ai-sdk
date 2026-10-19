@@ -20,6 +20,7 @@ export * from "./engine/compaction.js";
 export * from "./engine/events.js";
 export * from "./engine/evidence.js";
 export * from "./engine/revival.js";
+export * from "./engine/snapshot.js";
 export * from "./engine/thread.js";
 export * from "./engine/strategy.js";
 export { runAgent } from "./engine/loop.js";

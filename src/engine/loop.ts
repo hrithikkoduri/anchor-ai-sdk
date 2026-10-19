@@ -22,6 +22,7 @@ import {
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
 import { defineTool } from "../tools/types.js";
+import { gitSnapshot } from "./snapshot.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
   budgetWarning,
@@ -288,22 +289,21 @@ export async function runAgent(
   ): Promise<AgentResult> => {
     // Snapshots are a persistence concern, not a phase the model must enter.
     // Avoid empty commits, especially for reviews and simple conversation.
-    if (opts.sandbox && opts.checkpoints !== false) {
+    if (opts.sandbox && opts.snapshot !== false) {
       try {
-        if (await opts.sandbox.hasChangesFrom("HEAD")) {
-          const cp = await opts.sandbox.checkpoint(
-            "agent turn checkpoint",
-            opts.checkpointPushRef
-              ? { push: opts.checkpointPushRef }
-              : undefined,
-          );
-          checkpointRef = cp.sha;
+        const snapshot = await (opts.snapshot ?? gitSnapshot())({
+          reason: reason === "paused" ? "pause" : "finish",
+          label: "turn boundary",
+          sandbox: opts.sandbox,
+        });
+        if (snapshot) {
+          checkpointRef = snapshot.ref;
           emit({
             type: "checkpoint",
-            ref: cp.sha,
+            ref: snapshot.ref,
             label: "turn boundary",
-            ...(cp.pushedTo ? { pushedTo: cp.pushedTo } : {}),
-            ...(cp.pushError ? { pushError: cp.pushError } : {}),
+            ...(snapshot.pushedTo ? { pushedTo: snapshot.pushedTo } : {}),
+            ...(snapshot.pushError ? { pushError: snapshot.pushError } : {}),
           });
         }
       } catch {

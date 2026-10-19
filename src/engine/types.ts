@@ -27,14 +27,15 @@ export interface EngineOptions {
   guardrails?: GuardrailConfig;
   /** Caller-controlled pause when the agent leaves a named phase. */
   pauseAfterPhase?: string;
-  /** Snapshot changed work at turn/pause boundaries, without empty commits. */
-  checkpoints?: boolean;
   /**
-   * Branch that turn-boundary checkpoints are force-pushed to (off-machine
-   * durability: a lost sandbox must not lose the work). Push failures are
-   * reported on the checkpoint event, never fatal to the run.
+   * Snapshot changed work at run boundaries (finish/pause), without empty
+   * commits. Default: the package's `gitSnapshot()` — a git commit via the
+   * sandbox, no push. Pass your own to snapshot differently (a remote push, an
+   * artifact store, another VCS) or `false` to turn snapshots off. Whatever
+   * it returns is surfaced on the checkpoint event and
+   * `AgentResult.checkpointRef`; a throw is best-effort and never fatal.
    */
-  checkpointPushRef?: string;
+  snapshot?: SnapshotFn | false;
   /**
    * Budget revival (absent or false = OFF; consumers opt in). Near
    * `warnAtPercent`% of the run's budget the engine injects one warning and
@@ -81,6 +82,28 @@ export interface EngineOptions {
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
 }
+
+/** What a snapshot produced — the engine reports it, never interprets it. */
+export interface SnapshotResult {
+  /** The snapshot's identity (a commit sha, an artifact id, …). */
+  ref: string;
+  /** Where it was pushed, when the implementation pushes anywhere. */
+  pushedTo?: string;
+  /** A push that failed — reported, never thrown (durability is best-effort). */
+  pushError?: string;
+}
+
+/**
+ * How a consumer snapshots changed work. The engine calls it at run
+ * boundaries and reports what comes back; it never assumes git.
+ */
+export type SnapshotFn = (context: {
+  /** Why the snapshot is being taken. */
+  reason: "finish" | "pause";
+  /** Human label for the trace, e.g. "turn boundary". */
+  label: string;
+  sandbox: Sandbox;
+}) => SnapshotResult | undefined | Promise<SnapshotResult | undefined>;
 
 export interface GuardrailConfig {
   /** Stop repeated identical calls (default 3); false disables this limit. */
