@@ -17,6 +17,6 @@ export interface E2BSandboxOptions {
 
 export function e2b(_opts: E2BSandboxOptions = {}): SandboxProvider {
   throw new Error(
-    "the e2b provider is not implemented yet — see packages/core/src/sandbox/README.md (coming soon)",
+    "the e2b provider is not implemented yet (coming soon) — see src/sandbox/README.md for what a provider must do",
   );
 }

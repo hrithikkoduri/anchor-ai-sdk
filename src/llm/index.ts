@@ -2,8 +2,8 @@
  * LLM factory — options in, client out.
  *
  * No environment access here (publishable-ready rule): the consumer passes
- * plain options; the app owns configuration. apps/server calls this with
- * `cfg.llm` straight from its config module.
+ * plain options — an app hands in its own config object, this module never
+ * looks one up.
  */
 import { OpenAICompatibleClient } from "./openai-compatible.js";
 import type { LLMClient } from "./types.js";

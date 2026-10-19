@@ -12,9 +12,11 @@ sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
 sandbox/local             local/index.ts              the host, NO isolation — dev/CI
-sandbox/e2b               e2b/index.ts                stub — coming soon
-sandbox/daytona           daytona/index.ts            stub — coming soon
 ```
+
+E2B and Daytona are **planned** — stub modules exist in-repo (`e2b/`,
+`daytona/`) so the shape is visible, but they are not exported subpaths and
+their factories throw until they pass the conformance suite.
 
 Two ways to open one (`index.ts`):
 
@@ -109,8 +111,9 @@ when this passes (live backends opt in: `RUN_LIVE_HEYO_TESTS=1`,
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-E2B and Daytona have stub subpaths so the shape is visible; their factories
-throw with a pointer here until implemented.
+E2B and Daytona are planned: the stub modules stay in-repo as signposts but
+are not exported; their factories throw with a pointer here until they pass
+the conformance suite.
 
 ## Layout
 

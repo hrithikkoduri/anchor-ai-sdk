@@ -17,6 +17,6 @@ export interface DaytonaSandboxOptions {
 
 export function daytona(_opts: DaytonaSandboxOptions = {}): SandboxProvider {
   throw new Error(
-    "the daytona provider is not implemented yet — see packages/core/src/sandbox/README.md (coming soon)",
+    "the daytona provider is not implemented yet (coming soon) — see src/sandbox/README.md for what a provider must do",
   );
 }

@@ -1,0 +1,48 @@
+# The extracted Anchor repo's CI. This file rides the subtree split (it is
+# ignored while nested in the monorepo) so the new repo has CI from day one.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+      # Unit suite: engine, tools, llm, trace, genericity guards, and the
+      # LOCAL conformance scenarios (no daemon needed).
+      - run: npm test
+
+  conformance-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The conformance suite needs an image with bash + git + coreutils.
+      - name: Build the test image
+        run: |
+          docker build -t anchor-conformance - <<'EOF'
+          FROM node:22-bookworm
+          RUN apt-get update \
+            && apt-get install -y --no-install-recommends git ca-certificates \
+            && rm -rf /var/lib/apt/lists/*
+          EOF
+      - run: npm install
+      - run: npm test -- docker-sandbox
+        env:
+          ANCHOR_DOCKER_TEST_IMAGE: anchor-conformance
+
+  # Live remote backends stay manual and secret-gated: Actions → Run workflow
+  # with HEYO_TOKEN / HEYO_NAMESPACE / HEYO_SERVER secrets configured, then
+  # RUN_LIVE_HEYO_TESTS=1. Never in the default path — a provider outage must
+  # not read as a red build.

@@ -6,8 +6,8 @@
  * set, and (step 7) the engine that runs it all.
  *
  * Publishable-ready rules (decision #16): nothing here reads environment
- * variables or imports product infrastructure — consumers like apps/server
- * own configuration and orchestration.
+ * variables or imports product infrastructure — consumer applications own
+ * configuration and orchestration.
  */
 export * from "./llm/index.js";
 export * from "./llm/from-catalog.js";

@@ -4,6 +4,11 @@
   "description": "Loop-first, sandbox-first agent framework: engine, tools, LLM client, sandbox adapters.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hrithikkoduri/anchor-sdk.git"
+  },
+  "sideEffects": false,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -23,38 +28,34 @@
       "types": "./src/sandbox/docker/index.ts",
       "default": "./src/sandbox/docker/index.ts"
     },
-    "./sandbox/e2b": {
-      "types": "./src/sandbox/e2b/index.ts",
-      "default": "./src/sandbox/e2b/index.ts"
-    },
-    "./sandbox/daytona": {
-      "types": "./src/sandbox/daytona/index.ts",
-      "default": "./src/sandbox/daytona/index.ts"
-    },
     "./testing": {
       "types": "./src/testing.ts",
       "default": "./src/testing.ts"
     }
   },
   "files": [
-    "src"
+    "dist"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@heyocomputer/hws": "^0.4.0"
-  },
   "peerDependencies": {
+    "@heyocomputer/hws": ">=0.4",
     "vitest": ">=3"
   },
   "peerDependenciesMeta": {
+    "@heyocomputer/hws": {
+      "optional": true
+    },
     "vitest": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@heyocomputer/hws": "^0.4.0",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
