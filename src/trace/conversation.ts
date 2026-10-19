@@ -111,10 +111,13 @@ export function projectConversation(
       text.text = typeof p.text === "string" ? p.text : "";
       text.complete = true;
       const usage = p.usage as { reasoningTokens?: number } | undefined;
-      if (
-        typeof p.reasoning === "string" ||
-        usage?.reasoningTokens !== undefined
-      ) {
+      // Zero is not evidence of reasoning: providers that report
+      // `reasoning_tokens: 0` on every call (GLM tool turns) must not create
+      // an empty "Provider reasoning · 0 tokens" block.
+      const hasReasoningText =
+        typeof p.reasoning === "string" && p.reasoning.trim() !== "";
+      const reasoningTokens = usage?.reasoningTokens ?? 0;
+      if (hasReasoningText || reasoningTokens > 0) {
         const reasoning = textPart("reasoning", event.seq);
         if (typeof p.reasoning === "string") reasoning.text = p.reasoning;
         reasoning.reasoningTokens = usage?.reasoningTokens;

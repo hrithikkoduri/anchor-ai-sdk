@@ -65,8 +65,15 @@ export function createLiveProjector(
           publish({
             kind: "assistant_done",
             text: event.text,
-            reasoning: event.reasoning,
-            reasoningTokens: event.usage.reasoningTokens,
+            // Send reasoning only when it is actually something: an empty
+            // string or 0 tokens is the provider's default, not a block.
+            ...(event.reasoning?.trim()
+              ? { reasoning: event.reasoning }
+              : {}),
+            ...(event.usage.reasoningTokens !== undefined &&
+            event.usage.reasoningTokens > 0
+              ? { reasoningTokens: event.usage.reasoningTokens }
+              : {}),
           });
           break;
         case "compacted":

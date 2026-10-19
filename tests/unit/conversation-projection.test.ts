@@ -30,6 +30,21 @@ describe("conversation projection", () => {
     expect(result.finished).toBe(false);
     expect(result.sequence).toBe(3);
   });
+  it("does not invent a reasoning part for zero reasoning tokens", () => {
+    const result = projectConversation(
+      [
+        event(0, "llm_call_started", { step: 1 }),
+        event(1, "llm_call_finished", {
+          step: 1,
+          text: "",
+          reasoning: "",
+          usage: { reasoningTokens: 0 },
+        }),
+      ],
+      "running",
+    );
+    expect(result.parts.map((p) => p.kind)).toEqual(["text"]);
+  });
   it("keeps assistant/tool/assistant order and pairs repeated tool names by call ID", () => {
     const result = projectConversation(
       [
@@ -281,6 +296,34 @@ describe("live projection", () => {
       // The wire sequence IS the journal sequence (the fanout's).
       sequence: 3,
     });
+  });
+  it("omits empty reasoning and zero tokens from the live assistant frame", async () => {
+    const frames: Record<string, unknown>[] = [];
+    const fanout = new TraceFanout([
+      createLiveProjector((frame) => frames.push(frame)),
+    ]);
+    fanout.record({ type: "llm_call_started", step: 1, phase: "act" });
+    fanout.record({
+      type: "llm_call_finished",
+      step: 1,
+      phase: "act",
+      text: "",
+      textChars: 0,
+      toolCalls: [{ id: "c1", name: "bash", arguments: "{}" }],
+      toolCallsCount: 1,
+      usage: {
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        reasoningTokens: 0,
+      },
+      latencyMs: 5,
+    });
+    await fanout.flush();
+    const done = frames.at(-1)!;
+    expect(done).toMatchObject({ kind: "assistant_done", text: "" });
+    expect("reasoning" in done).toBe(false);
+    expect("reasoningTokens" in done).toBe(false);
   });
   it("publishes compaction as a live frame carrying the summary", async () => {
     const frames: Record<string, unknown>[] = [];
