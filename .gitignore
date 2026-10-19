@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+.venv*/
+.eval-runs/
+traces/
+.DS_Store

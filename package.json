@@ -1,6 +1,6 @@
 {
   "name": "anchor-ai-sdk",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Loop-first, sandbox-first agent framework: engine, tools, LLM client, sandbox adapters.",
   "type": "module",
   "license": "MIT",
@@ -20,28 +20,28 @@
     "microvm"
   ],
   "sideEffects": false,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./sandbox/heyo": {
-      "types": "./src/sandbox/heyo/index.ts",
-      "default": "./src/sandbox/heyo/index.ts"
+      "types": "./dist/sandbox/heyo/index.d.ts",
+      "default": "./dist/sandbox/heyo/index.js"
     },
     "./sandbox/local": {
-      "types": "./src/sandbox/local/index.ts",
-      "default": "./src/sandbox/local/index.ts"
+      "types": "./dist/sandbox/local/index.d.ts",
+      "default": "./dist/sandbox/local/index.js"
     },
     "./sandbox/docker": {
-      "types": "./src/sandbox/docker/index.ts",
-      "default": "./src/sandbox/docker/index.ts"
+      "types": "./dist/sandbox/docker/index.d.ts",
+      "default": "./dist/sandbox/docker/index.js"
     },
     "./testing": {
-      "types": "./src/testing.ts",
-      "default": "./src/testing.ts"
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "files": [
@@ -52,7 +52,8 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run build && node scripts/verify-dist-exports.mjs",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
   },
   "peerDependencies": {
     "@heyocomputer/hws": ">=0.4",
