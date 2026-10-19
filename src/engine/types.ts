@@ -23,6 +23,34 @@ export interface EngineOptions {
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean };
   budgets?: Partial<BudgetLimits>;
+  /**
+   * Per-call cap on one model response (reasoning + text + tool calls).
+   * Default `DEFAULT_MAX_OUTPUT_TOKENS` (12k); pass `false` to leave output
+   * unbounded. Explicit option wins over the agent bundle's suggestion.
+   *
+   * This is a hard stop, not a nudge: a response that hits it ends with
+   * finishReason "length", and the engine emits an `output_truncated`
+   * advisory so a chopped reply (or a lost tool call) is never silent.
+   */
+  maxOutputTokens?: number | false;
+  /**
+   * Replay budget for the assistant's OWN text, in chars (default 20_000;
+   * `false` disables). Oversized replies keep a head and a tail with the full
+   * text spilled to scratch and pointed at; a reply cut off by
+   * `maxOutputTokens` keeps only its head, because its tail is mid-token.
+   *
+   * This bounds what is SENT to the provider. The stored transcript
+   * (`AgentResult.messages`) and the event stream keep the full text.
+   */
+  maxAssistantChars?: number | false;
+  /**
+   * Tighter replay budget (chars) for a turn that hit `maxOutputTokens`, since
+   * its text stops mid-token and only the head is worth replaying. Default
+   * `DEFAULT_TRUNCATED_REPLY_CHARS` (12_000); `false` drops the stricter rule and
+   * treats a capped turn like any other. Never raises the effective budget
+   * above `maxAssistantChars`.
+   */
+  truncatedReplyChars?: number | false;
   compaction?: CompactionConfig | false;
   guardrails?: GuardrailConfig;
   /** Caller-controlled pause when the agent leaves a named phase. */
@@ -122,6 +150,14 @@ export interface GuardrailConfig {
    * 8; false disables). Advisory only — it never blocks or ends the run.
    */
   toolOnlyNudgeLimit?: number | false;
+  /**
+   * The mirror of `toolOnlyNudgeLimit`: when one turn's output exceeds this
+   * many tokens (reasoning + text + tool calls, as the provider reports it),
+   * inject one runtime-only advisory — a status line now, act next (default
+   * 8_000; false disables). Keep it below `maxOutputTokens` so it can
+   * course-correct before the hard stop. Advisory only.
+   */
+  verboseTurnLimit?: number | false;
 }
 
 export type FinishReason =

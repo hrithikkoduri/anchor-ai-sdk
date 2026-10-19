@@ -623,3 +623,93 @@ load. If a product needs a guarantee, the lever is a generic, policy-free nudge
 — turns since the last phase change — beside `toolOnlyNudge`. That is a product
 decision, not an SDK one. Regressions:
 `tests/unit/phase-discipline.test.ts`.
+
+## Decision #75 — One call is bounded; truncation is not silent
+
+The budgets bound a *run* (steps, tokens, dollars), and the loop detector
+bounds *repetition* — the same tool call `repeatLimit` times. Neither bounds a
+single response. In the GLM 5.3 round of 2026-10-19 one call in a 35-step task
+generated 27,247 tokens over 185.5 seconds, 65% of the task's wall time and 76%
+of its output tokens, and ended by narrating its own failure ("I need to stop
+the meta-loop"). Time-to-first-token was 0.4s and the prompt was 12k tokens
+98% cached: the provider was fast and the context was small. The model simply
+kept writing, and nothing in the engine had an opinion about that.
+
+So a per-call output cap now exists, defaulting to
+`DEFAULT_MAX_OUTPUT_TOKENS` (12k). It is a parameter on the engine
+(`maxOutputTokens`) and a setting a bundle can suggest
+(`createCodingAgent({ maxOutputTokens })`); explicit engine options win, the
+same precedence `strategy` and `tools` already use, and `false` restores
+unbounded output.
+
+The cap is a hard stop, and hard stops have side effects worth naming: a
+response chopped mid-thought wastes a step, and because tool calls arrive at
+the *end* of a message, a cap that lands first can swallow the tool call
+entirely — which looks exactly like a model doing nothing. So truncation is
+surfaced rather than inferred: the response carries `finishReason: "length"`
+and the engine emits an `output_truncated` advisory. The cap is set generously
+for that reason — typical turns in that same run were ~1k tokens — so it bites
+only the runaway case.
+
+The second half of that is a correctness rule, not a nicety. The loop accepted
+any text-only response as the run's answer, without consulting `finishReason`,
+so a reply cut off mid-sentence would have been published as a completed
+run — success reported on work the model never finished. A truncated turn that
+delivered its tool call is still usable and proceeds normally; a truncated turn
+with no tool call now ends `stalled` with the cap named in the error. A visible
+failure is worth more than a plausible-looking partial answer. Regressions:
+`tests/unit/max-output-tokens.test.ts`.
+
+## Decision #76 — The verbosity nudge is the mirror of the silence nudge
+
+The engine already knows how to prod a model that only acts: after
+`toolOnlyNudgeLimit` consecutive tool turns with no visible text, it injects
+one advisory asking for a reply or a status. It had nothing for the opposite
+model — the one that only writes — which is the state a runaway generation
+starts from. In the run that prompted #75, a single turn wrote 108k characters
+of prose while the other thirty-four wrote none to 1,784, and no mechanism had
+an opinion about the difference.
+
+`guardrails.verboseTurnLimit` (default 8_000) closes the pair: when one turn's
+output exceeds the limit, the engine injects one runtime-only advisory — state
+the situation in a line, then act — and emits a `verbose_turn` event. It fires
+at most once per run, because after the model has been told, repeating it only
+adds context; the output cap is the backstop from then on.
+
+The limit is deliberately below the cap (8k here, 12k of headroom): a nudge
+that fires at the same moment as the truncation it exists to prevent would be a
+tombstone, not a warning. Both nudges are advisory — they never block an action
+or end a run — and both take `false`. Regressions:
+`tests/unit/verbose-turn-nudge.test.ts`.
+
+## Decision #77 — The model's own text gets the same boundary as tool output
+
+Tool output has had a size boundary since the spill work: `truncate.ts` keeps a
+head and a tail, and saves the full text to scratch so the clipped middle stays
+addressable. The assistant's own replies had none. In the run behind #75 a
+single turn wrote 108,578 characters, and because every turn re-sends the whole
+conversation, that one reply was replayed verbatim on each of the ~29 calls
+after it — about 27k tokens per replay, roughly half the run's billed tokens,
+and the model re-reading its own essay every time it decided what to do next.
+The cap (#75) bounds what one call can *produce*. Nothing bounded what a call
+*costs forever after*.
+
+`maxAssistantChars` (default 20_000) is that boundary, and it is applied to the
+model's view rather than to the transcript. The loop keeps `messages` whole —
+persistence, replay and the event stream all keep every character — and sends a
+projected copy built once per turn (`elidedByMessage`, a `WeakMap` keyed by
+message identity, so compaction moving messages around cannot desynchronise
+it). The omitted middle is spilled to scratch like any other clipped output and
+pointed at, so the omission is recoverable rather than final.
+
+A turn cut off by the output cap gets a stricter rule: `truncatedReplyChars`
+(default 12_000, `false` to drop the stricter rule) and **head only**, because
+a capped reply stops mid-token — the head carries the intent, the tail is a
+fragment. Both dials are chars, and the capped budget can only lower the
+effective budget, never raise it.
+
+None of this is a substitute for durable state, and it does not need to be: the
+sanctioned home for long-lived reasoning is already `.anchor/notes.md`, which
+is git-excluded and never elided (#66). Elision bounds the replay of prose the
+model has already acted on. Regressions:
+`tests/unit/assistant-text-elision.test.ts`.

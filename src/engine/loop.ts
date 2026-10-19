@@ -8,7 +8,13 @@ import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
-import { BudgetTracker } from "./budgets.js";
+import { BudgetTracker, DEFAULT_MAX_OUTPUT_TOKENS } from "./budgets.js";
+import {
+  DEFAULT_TRUNCATED_REPLY_CHARS,
+  DEFAULT_MAX_ASSISTANT_CHARS,
+  elideReply,
+  spillReply,
+} from "./elision.js";
 import {
   compactConversation,
   DEFAULT_COMPACTION,
@@ -185,10 +191,54 @@ export async function runAgent(
     opts.compaction === false
       ? null
       : { ...DEFAULT_COMPACTION, ...opts.compaction };
+  // The model's view of the transcript, bounded by assistant-text elision
+  // (#77). `messages` stays whole — this only changes what is SENT.
+  const elidedByMessage = new WeakMap<LLMMessage, LLMMessage>();
+  const forModel = (): LLMMessage[] =>
+    messages.map((m) => elidedByMessage.get(m) ?? m);
   const evidence: ToolResultRecord[] = [];
   const signatures: string[] = [];
-  const repeatLimit = opts.guardrails?.repeatedToolCallLimit ?? 3;
-  const toolOnlyNudge = opts.guardrails?.toolOnlyNudgeLimit ?? 8;
+  // Thresholds that double as switches (`number | false`) must be positive
+  // when numeric. 0 is not "off" — `false` is — and left alone it would mean
+  // "immediately" for the nudges while meaning "uncapped" for the caps.
+  const positiveNumber = (name: string, value: number): number => {
+    if (!Number.isFinite(value) || value <= 0)
+      throw new Error(
+        `anchor: ${name} must be a positive number or false (got ${value})`,
+      );
+    return value;
+  };
+  const threshold = (name: string, value: number | false): number | false =>
+    value === false ? false : positiveNumber(name, value);
+  const repeatLimit = threshold(
+    "guardrails.repeatedToolCallLimit",
+    opts.guardrails?.repeatedToolCallLimit ?? 3,
+  );
+  const toolOnlyNudge = threshold(
+    "guardrails.toolOnlyNudgeLimit",
+    opts.guardrails?.toolOnlyNudgeLimit ?? 8,
+  );
+  const verboseTurnLimit = threshold(
+    "guardrails.verboseTurnLimit",
+    opts.guardrails?.verboseTurnLimit ?? 8_000,
+  );
+  let verboseNudged = false;
+  // Per-call output cap. The agent bundle may suggest one; an explicit engine
+  // option wins, exactly like `strategy` and `tools` resolution.
+  const outputTokenCap =
+    opts.maxOutputTokens ?? opts.agent?.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+  const maxOutputTokens =
+    outputTokenCap === false
+      ? undefined
+      : positiveNumber("maxOutputTokens", outputTokenCap);
+  const maxAssistantChars = threshold(
+    "maxAssistantChars",
+    opts.maxAssistantChars ?? DEFAULT_MAX_ASSISTANT_CHARS,
+  );
+  const truncatedReplyChars = threshold(
+    "truncatedReplyChars",
+    opts.truncatedReplyChars ?? DEFAULT_TRUNCATED_REPLY_CHARS,
+  );
   let silentToolTurns = 0;
   let steps = 0;
   let checkpointRef: string | undefined;
@@ -496,7 +546,7 @@ export async function runAgent(
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
         const folded = await compactConversation({
           llm: opts.llm,
-          messages,
+          messages: forModel(),
           runningSummary: summary,
           keepRecentTokens: compact.keepRecentTokens,
           signal,
@@ -546,11 +596,12 @@ export async function runAgent(
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(
         {
-          messages,
+          messages: forModel(),
           tools: [...available.values()].map((tool) => ({
             type: "function",
             function: tool.definition,
           })),
+          ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {
@@ -571,12 +622,69 @@ export async function runAgent(
         usage: response.usage,
         latencyMs: response.latencyMs,
       });
-      messages.push(assistantMessage(response));
+      // A capped response is a real event, not a curiosity: the model may have
+      // been mid-thought, or about to emit the tool call it never reached.
+      const outputCapped =
+        maxOutputTokens !== undefined && response.finishReason === "length";
+      if (outputCapped) {
+        emit({
+          type: "advisory",
+          kind: "output_truncated",
+          detail:
+            `step ${steps} hit the ${maxOutputTokens}-token output cap ` +
+            `(finishReason "length") — the reply, including any tool call it ` +
+            `was still writing, is incomplete`,
+        });
+      }
+      const assistantTurn = assistantMessage(response);
+      messages.push(assistantTurn);
+      // The model's own words get a boundary too (#77). A runaway reply is
+      // replayed bounded while the transcript and the event stream keep it
+      // whole; a capped turn keeps its head only, since its tail is mid-token.
+      if (maxAssistantChars !== false) {
+        const truncatedRule = outputCapped && truncatedReplyChars !== false;
+        const replyBudget = truncatedRule
+          ? Math.min(maxAssistantChars, truncatedReplyChars)
+          : maxAssistantChars;
+        if (response.text.length > replyBudget) {
+          const pointer = await spillReply(opts.sandbox, response.text);
+          const elided = elideReply(response.text, replyBudget, {
+            tail: !truncatedRule,
+            ...(pointer
+              ? {
+                  note: `full reply saved at ${pointer} — read_file it if you need the earlier text`,
+                }
+              : {}),
+          });
+          elidedByMessage.set(assistantTurn, {
+            ...assistantTurn,
+            content: elided.text,
+          });
+          emit({
+            type: "advisory",
+            kind: "assistant_text_elided",
+            detail:
+              `step ${steps}: ${response.text.length} chars of assistant text replayed as ${replyBudget}` +
+              `${truncatedRule ? " (truncated turn — head only)" : ""}; ${elided.omittedChars} omitted` +
+              `${pointer ? `; full text at ${pointer}` : ""}`,
+          });
+        }
+      }
       if (!response.toolCalls.length) {
         if (!response.text.trim())
           return conclude("stalled", {
             ok: false,
             error: "model returned neither text nor tool calls",
+          });
+        // An unfinished sentence is not an answer. A reply cut off by the cap
+        // must never be accepted as the run's result: it would report success
+        // on work the model never actually completed.
+        if (outputCapped)
+          return conclude("stalled", {
+            ok: false,
+            error:
+              `model output hit the ${maxOutputTokens}-token cap mid-reply ` +
+              `and returned no tool call — the reply is incomplete`,
           });
         return conclude("finished", {
           ok: true,
@@ -797,6 +905,29 @@ export async function runAgent(
               `visible notes survive context folding, silent reasoning does not.`,
           });
         }
+      }
+      // Verbosity advisory — the mirror of the one above. That one answers a
+      // model that only acts; this one answers a model that only writes. One
+      // turn past `verboseTurnLimit` tokens means it is deliberating in prose
+      // instead of moving, which is where a runaway generation starts. Fires
+      // at most once per run: after that the output cap is the backstop.
+      if (
+        verboseTurnLimit !== false &&
+        !verboseNudged &&
+        response.usage.completionTokens > verboseTurnLimit
+      ) {
+        verboseNudged = true;
+        const detail = `step ${steps} produced ${response.usage.completionTokens} output tokens in one turn (limit ${verboseTurnLimit}) — advised a status line and an action`;
+        emit({ type: "advisory", kind: "verbose_turn", detail });
+        messages.push({
+          role: "user",
+          origin: "engine",
+          content:
+            `Your last turn produced ${response.usage.completionTokens} tokens of output without moving the work forward. ` +
+            `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
+            `a command or an edit. If you are stuck, say what you tried and what you saw; ` +
+            `do not re-derive what you have already established.`,
+        });
       }
       await persist();
       if (signal.aborted)

@@ -7,6 +7,10 @@ import type {
 export type Turn = {
   text?: string;
   tools?: Array<{ name: string; arguments: string }>;
+  /** e.g. "length" — a response the provider cut off at the output cap. */
+  finishReason?: string;
+  /** Override the default tiny usage (10/5/15) — e.g. to simulate a huge turn. */
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 };
 export function scripted(queue: Turn[]): LLMClient & { seen: LLMRequest[] } {
   const seen: LLMRequest[] = [];
@@ -16,8 +20,9 @@ export function scripted(queue: Turn[]): LLMClient & { seen: LLMRequest[] } {
       id: `c${seen.length}-${i}`,
       ...tool,
     })),
-    usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+    usage: turn.usage ?? { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
     model: "scripted",
+    ...(turn.finishReason !== undefined ? { finishReason: turn.finishReason } : {}),
     latencyMs: 1,
   });
   return {

@@ -20,4 +20,9 @@ export interface Agent {
   strategy: AgentStrategy;
   /** Capabilities the run may call — a curated subset of the tool registry. */
   tools: Tool[];
+  /**
+   * Per-call output cap this bundle suggests (see `EngineOptions.maxOutputTokens`).
+   * An explicit engine option wins; absent, the engine default applies.
+   */
+  maxOutputTokens?: number | false;
 }

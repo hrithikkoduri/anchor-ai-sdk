@@ -89,7 +89,13 @@ export type AgentEvent =
       /** Non-blocking runtime guidance (e.g. the materialization advisory).
        * Advisory events never gate actions or end runs. */
       type: "advisory";
-      kind: "materialization_nudge" | "budget_warning" | "snapshot_failed";
+      kind:
+        | "materialization_nudge"
+        | "budget_warning"
+        | "snapshot_failed"
+        | "output_truncated"
+        | "verbose_turn"
+        | "assistant_text_elided";
       detail: string;
     }
   | {
