@@ -4,15 +4,17 @@
  * proves the resume pointer survives a "watch" conclusion.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import type { LLMClient, LLMResponse } from "../../src/llm/types.js";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import { codingAgent } from "../../src/agents/coding/index.js";
+import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 
-const FIXTURE = fileURLToPath(new URL("../../../../fixtures/buggy-lib", import.meta.url));
 
 type Scripted = { text?: string; tools?: Array<{ name: string; arguments: string }> };
 
@@ -59,11 +61,15 @@ const FIX_STEPS: Scripted[] = [
 
 describe("finish dispositions + watch", () => {
   let sandbox: LocalSandbox;
-  beforeEach(() => {
-    sandbox = new LocalSandbox({ localPath: FIXTURE }, { quiet: true });
+  let fixtureDir: string;
+  beforeEach(async () => {
+    fixtureDir = await mkdtemp(path.join(os.tmpdir(), "anchor-buggy-"));
+    await scaffoldBuggyLib(fixtureDir);
+    sandbox = new LocalSandbox({ localPath: fixtureDir }, { quiet: true });
   });
   afterEach(async () => {
     await sandbox.destroy();
+    await rm(fixtureDir, { recursive: true, force: true });
   });
 
   it("a watch finish carries the intent and keeps the thread's resume phase", async () => {

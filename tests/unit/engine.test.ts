@@ -1,8 +1,8 @@
 /** Runtime regression tests. No model/network/VM calls: real local fixture,
  * scripted decisions, observed tool results, budgets and durable memory. */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
@@ -12,11 +12,9 @@ import {
   type StoredThread,
 } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
+import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { call, scripted } from "../helpers/scripted.js";
 
-const FIXTURE = fileURLToPath(
-  new URL("../../../../fixtures/buggy-lib", import.meta.url),
-);
 const edit = () =>
   call("edit_file", {
     path: "src/sum.js",
@@ -26,14 +24,20 @@ const edit = () =>
 
 describe("agent runtime", () => {
   let sandbox: LocalSandbox;
+  let fixtureDir: string;
   let events: AgentEvent[];
   beforeEach(async () => {
-    sandbox = new LocalSandbox({ localPath: FIXTURE }, { quiet: true });
+    // The fixture is scaffolded, not read from the repo root: the package's
+    // suites must run unchanged from an extracted repository.
+    fixtureDir = await mkdtemp(path.join(os.tmpdir(), "anchor-buggy-"));
+    await scaffoldBuggyLib(fixtureDir);
+    sandbox = new LocalSandbox({ localPath: fixtureDir }, { quiet: true });
     await sandbox.start();
     events = [];
   });
   afterEach(async () => {
     await sandbox.destroy();
+    await rm(fixtureDir, { recursive: true, force: true });
   });
 
   it("allows an appropriate reproduce/fix/validate approach without enforcing it", async () => {
