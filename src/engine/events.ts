@@ -101,7 +101,9 @@ export type AgentEvent =
         | "output_cap_continue"
         | "verbose_turn"
         | "assistant_text_elided"
-        | "prose_checkpoint";
+        | "prose_checkpoint"
+        | "repeated_call"
+        | "empty_turn";
       detail: string;
     }
   | {

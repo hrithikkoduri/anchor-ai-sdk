@@ -36,7 +36,7 @@ import {
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
-import type { EventSink, RevivalRequest } from "./events.js";
+import type { AgentEvent, EventSink, RevivalRequest } from "./events.js";
 import type {
   RunTask,
   EngineOptions,
@@ -250,7 +250,29 @@ export async function runAgent(
   // A capped prose turn is incomplete, not an answer. Continue once (#79);
   // a second cap in the same run stalls, so a runaway essay cannot loop.
   let outputCapContinued = false;
+  // The first identical-call loop is a course-correction. The second stalls,
+  // so a no-op edit cannot burn the token budget.
+  let loopNudged = false;
+  // An empty turn (no text, no tool call) gets one correction. The flag is
+  // how the next empty turn is recognized as "after the advisory."
+  let emptyNudged = false;
   const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
+  /**
+   * The shared course-correction mechanic. Callers own the policy — when this
+   * fires, the message, and whether a repeat ends the run. This only records
+   * the advisory, puts that message in front of the model, and marks a
+   * following prose reply as a checkpoint rather than an answer.
+   */
+  const courseCorrect = async (args: {
+    kind: Extract<AgentEvent, { type: "advisory" }>["kind"];
+    detail: string;
+    content: string;
+  }): Promise<void> => {
+    pendingProseCheck = true;
+    emit({ type: "advisory", kind: args.kind, detail: args.detail });
+    messages.push({ role: "user", origin: "engine", content: args.content });
+    await persist();
+  };
   let checkpointRef: string | undefined;
   let pauseRequested = false;
   if (phaseOn) {
@@ -689,11 +711,28 @@ export async function runAgent(
         }
       }
       if (!response.toolCalls.length) {
-        if (!response.text.trim())
+        if (!response.text.trim()) {
+          // Flag, not a message scan: the advisory is already in the
+          // conversation, but the stop decision is this boolean.
+          if (!emptyNudged) {
+            emptyNudged = true;
+            await courseCorrect({
+              kind: "empty_turn",
+              detail: `step ${steps} returned neither text nor a tool call — asked for a real action`,
+              content:
+                "Your last turn had no visible text and no tool call, so it was not accepted. " +
+                "A reasoning-only turn does not count. Your next turn must include a tool call" +
+                (available.has("finish")
+                  ? ", or call `finish` if the work is already done."
+                  : "."),
+            });
+            continue;
+          }
           return conclude("stalled", {
             ok: false,
             error: "model returned neither text nor tool calls",
           });
+        }
         // An unfinished sentence is not an answer. A reply cut off by the cap
         // must never be accepted as the run's result. It also must not end a
         // run that was still working (#79): same shape as a nudge — inject
@@ -702,17 +741,11 @@ export async function runAgent(
         if (outputCapped) {
           if (!outputCapContinued && proseCheckpoint) {
             outputCapContinued = true;
-            pendingProseCheck = true;
-            emit({
-              type: "advisory",
+            await courseCorrect({
               kind: "output_cap_continue",
               detail:
                 `step ${steps} hit the ${maxOutputTokens}-token output cap with no tool call — ` +
                 `asked to continue instead of ending`,
-            });
-            messages.push({
-              role: "user",
-              origin: "engine",
               content:
                 `Your last reply was cut off by the ${maxOutputTokens}-token output cap and had no tool call, so it was not accepted. ` +
                 `Do not rewrite it. Continue the work — your next turn must include a tool call.` +
@@ -720,7 +753,6 @@ export async function runAgent(
                   ? " If the work is already complete, call `finish`."
                   : ""),
             });
-            await persist();
             continue;
           }
           return conclude("stalled", {
@@ -742,23 +774,17 @@ export async function runAgent(
           available.has("finish")
         ) {
           proseChecked = true;
-          emit({
-            type: "advisory",
+          await courseCorrect({
             kind: "prose_checkpoint",
             detail:
               `step ${steps} replied with text and no tool call after tool work — ` +
               `asked whether the run is finished or continuing`,
-          });
-          messages.push({
-            role: "user",
-            origin: "engine",
             content:
               "You wrote a reply but did not call `finish`. If the work is complete, " +
               "call `finish` with your outcome. If it is not complete, continue " +
               "working — your next turn must include a tool call. If you are done " +
               "and have nothing to add, repeat your reply and the run will end.",
           });
-          await persist();
           continue;
         }
         return conclude("finished", {
@@ -969,19 +995,15 @@ export async function runAgent(
         if (response.text.trim() !== "") silentToolTurns = 0;
         else if (++silentToolTurns >= toolOnlyNudge) {
           silentToolTurns = 0;
-          const detail = `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`;
-          emit({ type: "advisory", kind: "materialization_nudge", detail });
-          messages.push({
-            role: "user",
-            origin: "engine",
+          await courseCorrect({
+            kind: "materialization_nudge",
+            detail: `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`,
             content:
               `You have taken ${toolOnlyNudge} tool steps without writing anything visible — ` +
               `the user cannot see your reasoning. State in one line what you found and what remains, ` +
               `then keep moving in the same turn with your next tool call: ` +
               `visible notes survive context folding, silent reasoning does not.`,
           });
-          // #78: if the next turn is prose-only, it was answering this nudge.
-          pendingProseCheck = true;
         }
       }
       // Verbosity advisory — the mirror of the one above. That one answers a
@@ -995,20 +1017,15 @@ export async function runAgent(
         response.usage.completionTokens > verboseTurnLimit
       ) {
         verboseNudged = true;
-        const detail = `step ${steps} produced ${response.usage.completionTokens} output tokens in one turn (limit ${verboseTurnLimit}) — advised a status line and an action`;
-        emit({ type: "advisory", kind: "verbose_turn", detail });
-        messages.push({
-          role: "user",
-          origin: "engine",
+        await courseCorrect({
+          kind: "verbose_turn",
+          detail: `step ${steps} produced ${response.usage.completionTokens} output tokens in one turn (limit ${verboseTurnLimit}) — advised a status line and an action`,
           content:
             `Your last turn produced ${response.usage.completionTokens} tokens of output without moving the work forward. ` +
             `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
             `a command or an edit. If you are stuck, say what you tried in one line and try a different approach; ` +
             `do not re-derive what you have already established. Do not end this turn without a tool call.`,
         });
-        // #78: same rule as the silent-tool nudge — a prose reply that follows
-        // engine guidance is a checkpoint, not automatically the answer.
-        pendingProseCheck = true;
       }
       await persist();
       if (signal.aborted)
@@ -1024,8 +1041,26 @@ export async function runAgent(
           summary: `Paused at the ${phase} phase by caller policy.`,
         });
       if (runaway) {
+        if (!loopNudged) {
+          loopNudged = true;
+          signatures.length = 0;
+          await courseCorrect({
+            kind: "repeated_call",
+            detail:
+              `step ${steps}: identical tool call repeated ${repeatLimit} times — the repeat was not executed`,
+            content:
+              `This tool call was byte-for-byte the same as the previous ${repeatLimit - 1}, so it was not executed. ` +
+              `The last one already ran, and its result is in the conversation above. Running the same arguments again cannot produce a new result. ` +
+              `Use that result. If it was an edit that changed nothing, the text you tried to replace is not in the file — read the file and copy the exact text. ` +
+              `Your next action must be a different call` +
+              (available.has("finish")
+                ? ", or `finish` if the work is already done."
+                : "."),
+          });
+          continue;
+        }
         const error =
-          "Repeated identical tool calls reached the loop limit; execution stopped.";
+          "Repeated identical tool calls reached the loop limit a second time; execution stopped.";
         emit({ type: "guardrail", kind: "loop_detected", detail: error });
         return conclude("stalled", { ok: false, error });
       }
