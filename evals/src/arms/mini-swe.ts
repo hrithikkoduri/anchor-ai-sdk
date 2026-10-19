@@ -124,10 +124,17 @@ export function miniSweArm(opts: MiniSweArmOptions): EvalArm {
       await writeFile("/tmp/mini-task.md", task.problem);
       await writeFile("/tmp/mini-driver.py", DRIVER);
 
-      const install = await ctx.sandbox.exec(MINI_INSTALL_COMMAND, {
-        cwd: "/",
-        timeoutSecs: 1800,
-      });
+      // `env -u PYTHONPATH`: the task env now puts /testbed ahead of
+      // site-packages (tasks.ts), which the anchor arm needs. The baseline arm
+      // must stay byte-identical, so its own venv tooling opts out — a repo on
+      // sys.path can otherwise shadow a dependency while pip/venv run.
+      const install = await ctx.sandbox.exec(
+        `env -u PYTHONPATH bash -c ${shq(MINI_INSTALL_COMMAND)}`,
+        {
+          cwd: "/",
+          timeoutSecs: 1800,
+        },
+      );
       if (install.exitCode !== 0) {
         throw new Error(
           `mini-swe-agent install failed: ${install.output.trim().slice(0, 400)}`,
@@ -137,7 +144,7 @@ export function miniSweArm(opts: MiniSweArmOptions): EvalArm {
       let stats: { steps?: number } = {};
       try {
         const run = await ctx.sandbox.exec(
-          `/opt/mini-venv/bin/python /tmp/mini-driver.py /tmp/mini-task.md ${shq(opts.model)}`,
+          `env -u PYTHONPATH /opt/mini-venv/bin/python /tmp/mini-driver.py /tmp/mini-task.md ${shq(opts.model)}`,
           {
             cwd: ctx.sandbox.workspace,
             timeoutSecs: 3600,
