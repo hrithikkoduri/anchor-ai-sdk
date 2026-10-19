@@ -4,19 +4,19 @@
 #
 #   evals/scripts/run-mini-baseline.sh [filter-regex]
 #
-# Default filter = the instance ids in data/swebench-lite-10.jsonl. Needs
+# Default filter = the instance ids in benchmarks/swe-bench/data/swebench-lite-10.jsonl. Needs
 # LLM_API_KEY in the repo .env (passed through as OPENROUTER_API_KEY).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-repo="$(cd "$root/../.." && pwd)"
+repo="$(cd "$root/.." && pwd)"
 
 default_filter="$(node -e '
   const fs = require("fs");
   const ids = fs.readFileSync(process.argv[1], "utf8").trim().split("\n")
     .map((line) => JSON.parse(line).instance_id);
   console.log(ids.join("|"));
-' "$root/data/swebench-lite-10.jsonl")"
+' "$root/benchmarks/swe-bench/data/swebench-lite-10.jsonl")"
 filter="${1:-$default_filter}"
 
 set -a; . "$repo/.env"; set +a

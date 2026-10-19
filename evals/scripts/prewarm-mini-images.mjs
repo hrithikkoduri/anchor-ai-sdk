@@ -2,7 +2,7 @@
 /**
  * Prewarm mini-swe-agent into a committed image per task image, in parallel.
  *
- *   node scripts/prewarm-mini-images.mjs --from-tasks data/swebench-lite-10.jsonl
+ *   node scripts/prewarm-mini-images.mjs --from-tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl
  *
  * The install runs UNDER x86 EMULATION inside the task container and takes
  * minutes; doing it once per task image means eval runs never pay it again.

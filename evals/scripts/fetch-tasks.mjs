@@ -2,7 +2,7 @@
 /**
  * Fetch a SWE-bench subset as a compact task JSONL.
  *
- *   node scripts/fetch-tasks.mjs --limit 10 --out data/swebench-lite-10.jsonl
+ *   node scripts/fetch-tasks.mjs --limit 10 --out benchmarks/swe-bench/data/swebench-lite-10.jsonl
  *
  * Only what the runner needs is kept: instance_id, repo, base_commit,
  * problem_statement (+ FAIL_TO_PASS / PASS_TO_PASS for the report). Golden
@@ -32,7 +32,7 @@ const dataset = args.get("dataset") ?? "SWE-bench/SWE-bench_Lite";
 const split = args.get("split") ?? "test";
 const offset = Number(args.get("offset") ?? 0);
 const limit = Number(args.get("limit") ?? 10);
-const out = args.get("out") ?? "data/tasks.jsonl";
+const out = args.get("out") ?? "benchmarks/swe-bench/data/tasks.jsonl";
 
 const KEEP = [
   "instance_id",

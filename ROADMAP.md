@@ -83,7 +83,7 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 - **Baseline-relative suite evidence** — FAIL_TO_PASS / PASS_TO_PASS deltas:
   `run_tests` gains `junit_path` → `meta.tests` (JUnit XML parse); success =
   no baseline-passing test regresses. _Where:_ `src/tools/run-tests.ts` plus
-  the eval task JSON under `evals/data/`. _Trigger:_ evals on real repos whose
+  the eval task JSON under `evals/benchmarks/swe-bench/data/`. _Trigger:_ evals on real repos whose
   `main` is not green. _Size:_ M.
 
 ## Model providers
@@ -100,5 +100,5 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 
 ## In flight (work, not deferred)
 
-- The benchmark rounds run from `evals/`: Opus 5.5 on Lite-10 (budgets
+- The benchmark rounds run from `evals/benchmarks/swe-bench/`: Opus 5.5 on Lite-10 (budgets
   capped), then TerminalBench / METR / ProgramBench as `benchmarks/<name>/`.

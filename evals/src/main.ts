@@ -1,7 +1,7 @@
 /**
  * The harness benchmark CLI.
  *
- *   npm run eval --prefix evals -- --tasks data/swebench-lite-10.jsonl --provider docker --model z-ai/glm-5.3
+ *   npm run eval --prefix evals -- --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl --provider docker --model z-ai/glm-5.3
  *
  * No product stack behind it: no worker, no queue, no webhook, no database.
  * The app imports `anchor-ai-sdk` directly — plus exactly one thing from the

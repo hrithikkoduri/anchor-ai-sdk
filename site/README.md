@@ -31,7 +31,7 @@ needed.
 Content is kept in sync by hand with:
 
 - `README.md` — positioning, features, quickstart copy
-- `evals/results/comparison.md` — the benchmarks table (Round 2 on Opus 5.5
+- `evals/benchmarks/swe-bench/results/comparison.md` — the benchmarks table (Round 2 on Opus 5.5
   updates the page when it lands)
 - `DECISIONS.md` — anything architectural the pages assert
 

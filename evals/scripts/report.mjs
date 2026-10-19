@@ -26,7 +26,7 @@ const gradingDir = path.join(runsRoot, "grading");
 const PRICE = { in: 0.079, out: 1.4, cacheRead: 0.078 };
 
 const tasks = readFileSync(
-  path.join(root, "data", "swebench-lite-10.jsonl"),
+  path.join(root, "benchmarks", "swe-bench", "data", "swebench-lite-10.jsonl"),
   "utf8",
 )
   .trim()
