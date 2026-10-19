@@ -2,6 +2,7 @@ import type { Agent } from "../agents/types.js";
 import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
 import type { Tool } from "../tools/types.js";
+import type { TraceSink } from "../trace/sink.js";
 import type { BudgetLimits } from "./budgets.js";
 import type { CompactionConfig } from "./compaction.js";
 import type { EventSink, RevivalRequest, RunDisposition } from "./events.js";
@@ -45,6 +46,26 @@ export interface EngineOptions {
   revival?: { warnAtPercent?: number } | false;
   startPhase?: string;
   onEvent?: EventSink;
+  /**
+   * Durable sinks. The engine owns their sequence number (one fanout per run)
+   * and applies redaction once, before every sink; a broken sink never kills
+   * the run, and all sinks are flushed before runAgent resolves. `onEvent`
+   * still receives raw events for live consumers.
+   */
+  traceSinks?: TraceSink[];
+  /**
+   * Keep something alive while the run executes — a lease, a lock, a queue
+   * item. The first beat fires immediately; failures are swallowed; the timer
+   * is stopped when the run ends, however it ends.
+   */
+  heartbeat?: { everyMs?: number; beat: () => void | Promise<void> };
+  /**
+   * Poll for an out-of-band cancel — e.g. a durable flag any process can set.
+   * Truthy → the run aborts and concludes "cancelled". The caller's `signal`
+   * remains the fast in-process path; this is the cross-process one.
+   */
+  cancel?: { everyMs?: number; isCancelled: () => boolean | Promise<boolean> };
+  /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
 }

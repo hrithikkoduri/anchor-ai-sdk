@@ -23,12 +23,13 @@ import {
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
 import { defineTool } from "../tools/types.js";
+import { TraceFanout } from "../trace/sink.js";
 import {
   budgetWarning,
   revivalBlock,
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
-import type { RevivalRequest } from "./events.js";
+import type { EventSink, RevivalRequest } from "./events.js";
 import type {
   RunTask,
   EngineOptions,
@@ -49,7 +50,40 @@ export async function runAgent(
   opts: EngineOptions,
 ): Promise<AgentResult> {
   const strategy = opts.strategy ?? opts.agent?.strategy ?? chatStrategy;
-  const emit = opts.onEvent ?? (() => undefined);
+  // ---- Run lifecycle ------------------------------------------------------
+  // The engine owns the run loop end to end: one merged abort signal (the
+  // caller's signal OR a polled cancel any process can set), one heartbeat
+  // beating for as long as the run lives, and one TraceFanout assigning the
+  // single sequence number and redacting once before every sink. `onEvent`
+  // still receives raw events for live consumers.
+  const controller = new AbortController();
+  const signal = controller.signal;
+  const abortFromCaller = () => controller.abort();
+  if (opts.signal) {
+    if (opts.signal.aborted) controller.abort();
+    else opts.signal.addEventListener("abort", abortFromCaller, { once: true });
+  }
+  const timers: Array<ReturnType<typeof setInterval>> = [];
+  const fanout = opts.traceSinks?.length
+    ? new TraceFanout(opts.traceSinks)
+    : null;
+  let stopped = false;
+  /** Idempotent: stop the timers, unlink the caller's signal, flush sinks. */
+  const stopLifecycle = async (): Promise<void> => {
+    if (stopped) return;
+    stopped = true;
+    for (const timer of timers) clearInterval(timer);
+    opts.signal?.removeEventListener("abort", abortFromCaller);
+    if (fanout) await fanout.flush();
+  };
+  const emit: EventSink = (event) => {
+    fanout?.record(event);
+    try {
+      opts.onEvent?.(event);
+    } catch {
+      // A subscriber must never kill the run — same rule as sinks.
+    }
+  };
   const tools = opts.tools ?? opts.agent?.tools ?? [];
   const available = new Map(tools.map((tool) => [tool.definition.name, tool]));
   // Optional structured handoff (watch/blocked), never required to stop.
@@ -293,6 +327,10 @@ export async function runAgent(
       reason !== "paused",
       extra.disposition === "watch" ? extra.resumeAt : undefined,
     );
+    // Every exit passes through here: stop beating, unlink the caller's
+    // signal, and make sure the sinks hold the complete journal — including
+    // this run_finished — before the caller sees the result.
+    await stopLifecycle();
     return {
       ...extra,
       reason,
@@ -309,6 +347,30 @@ export async function runAgent(
     };
   };
 
+  if (opts.cancel) {
+    const everyMs = opts.cancel.everyMs ?? 2_000;
+    const timer = setInterval(() => {
+      void Promise.resolve()
+        .then(() => opts.cancel!.isCancelled())
+        .then((cancelled) => {
+          if (cancelled) controller.abort();
+        })
+        .catch(() => undefined);
+    }, everyMs);
+    timer.unref?.();
+    timers.push(timer);
+  }
+  if (opts.heartbeat) {
+    const everyMs = opts.heartbeat.everyMs ?? 30_000;
+    const beat = () =>
+      void Promise.resolve()
+        .then(() => opts.heartbeat!.beat())
+        .catch(() => undefined);
+    beat();
+    const timer = setInterval(beat, everyMs);
+    timer.unref?.();
+    timers.push(timer);
+  }
   emit({
     type: "run_started",
     task: task.task,
@@ -317,7 +379,7 @@ export async function runAgent(
   emit({ type: "phase_started", phase });
   try {
     for (;;) {
-      if (opts.signal?.aborted)
+      if (signal.aborted)
         return conclude("cancelled", {
           ok: false,
           error: "cancelled by signal",
@@ -385,7 +447,7 @@ export async function runAgent(
           messages,
           runningSummary: summary,
           keepRecentTokens: compact.keepRecentTokens,
-          signal: opts.signal,
+          signal,
         });
         if (folded) {
           budget.record(folded.usage);
@@ -440,7 +502,7 @@ export async function runAgent(
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {
-          signal: opts.signal,
+          signal,
           onReasoning: (text) => emit({ type: "llm_reasoning_delta", text }),
         },
       );
@@ -514,14 +576,14 @@ export async function runAgent(
             signatures.every((value) => value === signature);
         }
         let result: ToolResult;
-        if (declared || pauseRequested || opts.signal?.aborted || runaway) {
+        if (declared || pauseRequested || signal.aborted || runaway) {
           result = {
             ok: false,
             content: declared
               ? "Not executed: the turn was already concluded."
               : pauseRequested
                 ? "Not executed: the caller requested a pause at this phase boundary."
-                : opts.signal?.aborted
+                : signal.aborted
                   ? "Not executed: cancelled by signal."
                   : "Not executed: repeated identical calls reached the loop limit.",
           };
@@ -603,7 +665,7 @@ export async function runAgent(
         }
       }
       await persist();
-      if (opts.signal?.aborted)
+      if (signal.aborted)
         return conclude("cancelled", {
           ok: false,
           error: "cancelled by signal",
@@ -623,7 +685,7 @@ export async function runAgent(
       }
     }
   } catch (err) {
-    if (opts.signal?.aborted)
+    if (signal.aborted)
       return conclude("cancelled", { ok: false, error: "cancelled by signal" });
     const error = err instanceof Error ? err.message : String(err);
     emit({ type: "error", message: error });
