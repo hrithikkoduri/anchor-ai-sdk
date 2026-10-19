@@ -166,6 +166,8 @@ export class HeyoSandbox implements Sandbox {
   readonly id: string;
   /** The repo path inside the VM (the /workspace data disk). */
   readonly workspace = "/workspace/repo";
+  /** Scratch on the data disk, outside the repo (spills, notes). */
+  readonly scratch = "/workspace/.anchor";
 
   private readonly lb: Hws;
   private readonly executor: HeyoGuestExecutor;

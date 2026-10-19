@@ -136,6 +136,14 @@ export interface Sandbox {
   readonly backend: string;
   /** Absolute path of the repo inside the sandbox (e.g. /workspace/repo). */
   readonly workspace: string;
+  /**
+   * A lifecycle-scoped scratch directory OUTSIDE the repo (spill files from
+   * over-long outputs, agent notes). Survives retain/adopt with the sandbox;
+   * never part of the deliverable diff. Backends: local `<root>/scratch`,
+   * heyo `/workspace/.anchor`, docker `/tmp/anchor`. Consumers `mkdir -p` as
+   * needed — nothing creates it eagerly.
+   */
+  readonly scratch: string;
 
   /** Create the sandbox, get the repo into place, install toolchain bits. */
   start(): Promise<void>;

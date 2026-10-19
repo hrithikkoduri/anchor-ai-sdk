@@ -6,8 +6,13 @@
  * Paging exists so the model reads windows, not whole files.
  */
 import { shq } from "../sandbox/types.js";
-import { truncate } from "./truncate.js";
-import { defineTool, optionalNumber, requireSandbox, requireString } from "./types.js";
+import { spillOrTruncate } from "./truncate.js";
+import {
+  defineTool,
+  optionalNumber,
+  requireSandbox,
+  requireString,
+} from "./types.js";
 
 export const readFileTool = defineTool(
   {
@@ -18,9 +23,18 @@ export const readFileTool = defineTool(
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "File path (relative to the repo root, or absolute)." },
-        offset: { type: "integer", description: "First line to read (1-based, default 1)." },
-        limit: { type: "integer", description: "How many lines (default 200, max 2000)." },
+        path: {
+          type: "string",
+          description: "File path (relative to the repo root, or absolute).",
+        },
+        offset: {
+          type: "integer",
+          description: "First line to read (1-based, default 1).",
+        },
+        limit: {
+          type: "integer",
+          description: "How many lines (default 200, max 2000).",
+        },
       },
       required: ["path"],
       additionalProperties: false,
@@ -29,7 +43,10 @@ export const readFileTool = defineTool(
   async (input, ctx) => {
     const path = requireString(input, "path");
     const offset = Math.max(1, Math.floor(optionalNumber(input, "offset", 1)));
-    const limit = Math.max(1, Math.min(2000, Math.floor(optionalNumber(input, "limit", 200))));
+    const limit = Math.max(
+      1,
+      Math.min(2000, Math.floor(optionalNumber(input, "limit", 200))),
+    );
     const end = offset + limit - 1;
 
     const cmd =
@@ -51,7 +68,10 @@ export const readFileTool = defineTool(
     }
     return {
       ok: true,
-      content: truncate(`read ${path} (lines ${offset}–${end}):\n${r.output.trimEnd()}`),
+      content: await spillOrTruncate(
+        `read ${path} (lines ${offset}–${end}):\n${r.output.trimEnd()}`,
+        { sandbox: ctx.sandbox, label: "read_file" },
+      ),
       meta: { path, from: offset, to: Math.min(end, offset + limit - 1) },
     };
   },

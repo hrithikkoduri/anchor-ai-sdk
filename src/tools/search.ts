@@ -9,8 +9,15 @@
  * not trip over regex syntax. Set regex: true for real patterns.
  */
 import { shq } from "../sandbox/types.js";
-import { truncate } from "./truncate.js";
-import { defineTool, optionalBoolean, optionalNumber, optionalString, requireSandbox, requireString } from "./types.js";
+import { spillOrTruncate } from "./truncate.js";
+import {
+  defineTool,
+  optionalBoolean,
+  optionalNumber,
+  optionalString,
+  requireSandbox,
+  requireString,
+} from "./types.js";
 
 const RC_MARKER = "__anchor_rc=";
 
@@ -23,10 +30,22 @@ export const searchTool = defineTool(
     parameters: {
       type: "object",
       properties: {
-        pattern: { type: "string", description: "Text to find (or a regex when regex: true)." },
-        path: { type: "string", description: "Directory or file to search (default: the repo root)." },
-        regex: { type: "boolean", description: "Treat pattern as a regular expression (default false)." },
-        max_results: { type: "integer", description: "Maximum matches to return (default 50, max 200)." },
+        pattern: {
+          type: "string",
+          description: "Text to find (or a regex when regex: true).",
+        },
+        path: {
+          type: "string",
+          description: "Directory or file to search (default: the repo root).",
+        },
+        regex: {
+          type: "boolean",
+          description: "Treat pattern as a regular expression (default false).",
+        },
+        max_results: {
+          type: "integer",
+          description: "Maximum matches to return (default 50, max 200).",
+        },
       },
       required: ["pattern"],
       additionalProperties: false,
@@ -36,7 +55,10 @@ export const searchTool = defineTool(
     const pattern = requireString(input, "pattern");
     const path = optionalString(input, "path") ?? ".";
     const regex = optionalBoolean(input, "regex") ?? false;
-    const max = Math.max(1, Math.min(200, Math.floor(optionalNumber(input, "max_results", 50))));
+    const max = Math.max(
+      1,
+      Math.min(200, Math.floor(optionalNumber(input, "max_results", 50))),
+    );
     const head = max + 1; // one extra line reveals truncation
 
     const rgFlag = regex ? "" : " --fixed-strings";
@@ -72,12 +94,19 @@ export const searchTool = defineTool(
     let matchLines = lines;
     if (markerIdx !== -1) {
       rc = Number.parseInt(lines[markerIdx]!.slice(RC_MARKER.length), 10);
-      matchLines = [...lines.slice(0, markerIdx), ...lines.slice(markerIdx + 1)];
+      matchLines = [
+        ...lines.slice(0, markerIdx),
+        ...lines.slice(markerIdx + 1),
+      ];
     }
     matchLines = matchLines.filter((l) => l.trim() !== "");
 
     if (rc === 1) {
-      return { ok: true, content: `no matches for ${JSON.stringify(pattern)}`, meta: { pattern, path, matches: 0 } };
+      return {
+        ok: true,
+        content: `no matches for ${JSON.stringify(pattern)}`,
+        meta: { pattern, path, matches: 0 },
+      };
     }
     if (rc > 1 || (rc !== 0 && matchLines.length === 0)) {
       return {
@@ -89,10 +118,15 @@ export const searchTool = defineTool(
 
     const truncated = matchLines.length > max;
     const shown = truncated ? matchLines.slice(0, max) : matchLines;
-    const note = truncated ? `\n[... showing first ${max} of at least ${matchLines.length} matches — refine the pattern ...]` : "";
+    const note = truncated
+      ? `\n[... showing first ${max} of at least ${matchLines.length} matches — refine the pattern ...]`
+      : "";
     return {
       ok: true,
-      content: truncate(`${shown.length}${truncated ? "+" : ""} match(es) for ${JSON.stringify(pattern)} in ${path}:\n${shown.join("\n")}${note}`),
+      content: await spillOrTruncate(
+        `${shown.length}${truncated ? "+" : ""} match(es) for ${JSON.stringify(pattern)} in ${path}:\n${shown.join("\n")}${note}`,
+        { sandbox: ctx.sandbox, label: "search" },
+      ),
       meta: { pattern, path, matches: shown.length, truncated },
     };
   },

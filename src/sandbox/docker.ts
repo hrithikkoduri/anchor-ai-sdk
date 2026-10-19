@@ -45,6 +45,8 @@ export class DockerSandbox implements Sandbox {
   readonly id: string;
   /** The repo directory inside the container. */
   readonly workspace: string;
+  /** Scratch inside the container, outside the repo (spills, notes). */
+  readonly scratch = "/tmp/anchor";
 
   private started = false;
   private destroyed = false;

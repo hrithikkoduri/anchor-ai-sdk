@@ -8,8 +8,15 @@
  * Command resolution: explicit `command` → ctx.testCommand (from the task
  * spec) → repo auto-detection (package.json/pytest/Makefile).
  */
-import { truncate } from "./truncate.js";
-import { defineTool, formatExec, optionalNumber, optionalString, requireSandbox, type ToolContext } from "./types.js";
+import { spillOrTruncate } from "./truncate.js";
+import {
+  defineTool,
+  formatExec,
+  optionalNumber,
+  optionalString,
+  requireSandbox,
+  type ToolContext,
+} from "./types.js";
 
 const DETECT =
   `if [ -f package.json ] && grep -q '"test"' package.json; then ` +
@@ -24,7 +31,8 @@ const DETECT =
  * to the current tree — no suite re-run needed. Empty output = no git → the
  * hash is omitted and checks fall back to pure evidence.
  */
-const TREE_HASH_CMD = "git add -A >/dev/null 2>&1; git write-tree 2>/dev/null || true";
+const TREE_HASH_CMD =
+  "git add -A >/dev/null 2>&1; git write-tree 2>/dev/null || true";
 
 interface ResolvedCommand {
   command: string;
@@ -42,10 +50,13 @@ async function resolveCommand(
 ): Promise<ResolvedCommand | null> {
   const explicit = optionalString(input, "command");
   if (explicit) return { command: explicit, defaultCommand: false };
-  if (ctx.testCommand) return { command: ctx.testCommand, defaultCommand: true };
+  if (ctx.testCommand)
+    return { command: ctx.testCommand, defaultCommand: true };
   const probe = await requireSandbox(ctx).exec(DETECT, { timeoutSecs: 60 });
   const detected = probe.stdout.trim();
-  return detected === "" || detected === "none" ? null : { command: detected, defaultCommand: true };
+  return detected === "" || detected === "none"
+    ? null
+    : { command: detected, defaultCommand: true };
 }
 
 export const runTestsTool = defineTool(
@@ -57,8 +68,14 @@ export const runTestsTool = defineTool(
     parameters: {
       type: "object",
       properties: {
-        command: { type: "string", description: "Override the test command (e.g. a single test file)." },
-        timeout_secs: { type: "integer", description: "Kill deadline in seconds (default 600, max 3600)." },
+        command: {
+          type: "string",
+          description: "Override the test command (e.g. a single test file).",
+        },
+        timeout_secs: {
+          type: "integer",
+          description: "Kill deadline in seconds (default 600, max 3600).",
+        },
       },
       additionalProperties: false,
     },
@@ -69,21 +86,29 @@ export const runTestsTool = defineTool(
       return {
         ok: false,
         content:
-          "no test command detected — call run_tests with an explicit command (e.g. \"npm test\", \"pytest -q tests/\").",
+          'no test command detected — call run_tests with an explicit command (e.g. "npm test", "pytest -q tests/").',
         meta: {},
       };
     }
     const { command, defaultCommand } = resolved;
-    const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 600)));
+    const timeoutSecs = Math.max(
+      1,
+      Math.min(3600, optionalNumber(input, "timeout_secs", 600)),
+    );
     const sandbox = requireSandbox(ctx);
     const r = await sandbox.exec(command, { timeoutSecs });
     // Freshness evidence: the tree hash at this moment. Checks compare it at
     // move time — "green" only counts if the tree still matches (decision #38).
     const tree = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
-    const treeHash = /^[0-9a-f]{40}$/.test(tree.stdout.trim()) ? tree.stdout.trim() : undefined;
+    const treeHash = /^[0-9a-f]{40}$/.test(tree.stdout.trim())
+      ? tree.stdout.trim()
+      : undefined;
     return {
       ok: r.exitCode === 0 && !r.timedOut,
-      content: truncate(`run_tests: ${command}\n${formatExec(r, timeoutSecs)}`),
+      content: await spillOrTruncate(
+        `run_tests: ${command}\n${formatExec(r, timeoutSecs)}`,
+        { sandbox: ctx.sandbox, label: "run_tests" },
+      ),
       // `ran: true` distinguishes "the suite executed and failed" from "no
       // test command found"; `defaultCommand` distinguishes the repo's full
       // suite from a targeted run — strategies gate evidence on both.

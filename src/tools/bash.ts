@@ -3,8 +3,14 @@
  * a microVM. Runs in the repo root by default (the sandbox adapter's doing);
  * self-contained per the tool-call contract.
  */
-import { truncate } from "./truncate.js";
-import { defineTool, formatExec, optionalNumber, requireSandbox, requireString } from "./types.js";
+import { spillOrTruncate } from "./truncate.js";
+import {
+  defineTool,
+  formatExec,
+  optionalNumber,
+  requireSandbox,
+  requireString,
+} from "./types.js";
 
 export const bashTool = defineTool(
   {
@@ -28,13 +34,25 @@ export const bashTool = defineTool(
   },
   async (input, ctx) => {
     const command = requireString(input, "command");
-    const timeoutSecs = Math.max(1, Math.min(3600, optionalNumber(input, "timeout_secs", 120)));
+    const timeoutSecs = Math.max(
+      1,
+      Math.min(3600, optionalNumber(input, "timeout_secs", 120)),
+    );
     const sandbox = requireSandbox(ctx);
     const r = await sandbox.exec(command, { timeoutSecs });
     return {
       ok: r.exitCode === 0 && !r.timedOut,
-      content: truncate(formatExec(r, timeoutSecs)),
-      meta: { command, exitCode: r.exitCode, timedOut: r.timedOut, durationMs: r.durationMs, ...(r.failure ? { failure: r.failure } : {}) },
+      content: await spillOrTruncate(formatExec(r, timeoutSecs), {
+        sandbox: ctx.sandbox,
+        label: "bash",
+      }),
+      meta: {
+        command,
+        exitCode: r.exitCode,
+        timedOut: r.timedOut,
+        durationMs: r.durationMs,
+        ...(r.failure ? { failure: r.failure } : {}),
+      },
     };
   },
 );

@@ -45,6 +45,8 @@ export class LocalSandbox implements Sandbox {
   readonly id: string;
   /** The sandbox's scratch directory on the host. */
   readonly root: string;
+  /** Lifecycle-scoped scratch for spills/notes — outside the repo. */
+  readonly scratch: string;
   /** The repo directory — the local equivalent of /workspace/repo. */
   readonly workspace: string;
 
@@ -62,6 +64,7 @@ export class LocalSandbox implements Sandbox {
       this.id,
     );
     this.workspace = path.join(this.root, "repo");
+    this.scratch = path.join(this.root, "scratch");
   }
 
   async start(): Promise<void> {
