@@ -18,8 +18,7 @@ import { searchTool } from "../../tools/search.js";
 /**
  * The toolbox for one coding agent. `testCommand` — when the repo's canonical
  * suite is known from config/CLI — becomes run_tests' fallback and counts as
- * full-suite evidence (the strategy's evidence gates care about that
- * distinction).
+ * full-suite evidence (publication policies gate on that distinction).
  */
 export function createCodingTools(opts: { testCommand?: string } = {}): Tool[] {
   return [

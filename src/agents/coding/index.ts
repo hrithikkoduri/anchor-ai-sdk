@@ -11,7 +11,7 @@ export { codingPhases } from "./phases.js";
 /**
  * The coding agent — strategy + toolbox. Pass `testCommand` when the repo's
  * canonical suite is known (CLI or repo config); otherwise run_tests detects
- * one and the evidence gates still apply.
+ * one; either way run_tests tags the run as the repo's full-suite evidence.
  */
 export function createCodingAgent(opts: { testCommand?: string } = {}): Agent {
   return {
