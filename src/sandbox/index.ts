@@ -103,3 +103,117 @@ export async function releaseSandbox(
   }
   await provider.release(handle);
 }
+
+/** What a session remembers between runs: the retained handle, if any. */
+export interface SandboxSession {
+  retained?: SandboxHandle;
+}
+
+/**
+ * Where continuity lives between runs — memory, a table, a file. Keys are
+ * opaque to the package (a thread id, a task id). The package never owns a
+ * database: `openSandboxSession` calls this, the consumer implements it.
+ */
+export interface SandboxStore {
+  get(key: string): SandboxSession | null | Promise<SandboxSession | null>;
+  set(key: string, session: SandboxSession): void | Promise<void>;
+  clear(key: string): void | Promise<void>;
+}
+
+/** In-memory store: tests, demos, and single-process consumers. */
+export class MemorySandboxStore implements SandboxStore {
+  private readonly sessions = new Map<string, SandboxSession>();
+
+  get(key: string): SandboxSession | null {
+    return this.sessions.get(key) ?? null;
+  }
+
+  set(key: string, session: SandboxSession): void {
+    this.sessions.set(key, session);
+  }
+
+  clear(key: string): void {
+    this.sessions.delete(key);
+  }
+}
+
+/** One candidate for a fresh sandbox: the spec, newest-usable first. */
+export interface SandboxSource {
+  spec: SandboxSpec;
+}
+
+export interface OpenSandboxSessionArgs {
+  provider: SandboxProvider;
+  /** Continuity between runs (memory, Postgres, a file). */
+  store: SandboxStore;
+  /** Stable key for this work-stream — a thread id, a task id. Opaque. */
+  key: string;
+  /**
+   * Ordered candidates for a fresh sandbox, newest-usable first; the LAST one
+   * should be ref-less (a base clone). At least one is required.
+   */
+  sources: SandboxSource[];
+  /**
+   * A source's `spec.ref` was unusable — clear your stored ref so the next
+   * run does not retry it. Fired before the next candidate is tried.
+   */
+  onRefUnusable?: (ref: string) => Promise<void> | void;
+  /** Legacy/test seam: construct sandboxes from specs directly. */
+  create?: (spec: SandboxSpec) => Sandbox;
+}
+
+/**
+ * Open the sandbox for a piece of work, with continuity kept in a store:
+ *   1. adopt the retained handle the store remembers (SAME workspace, edits
+ *      intact) — when it is gone, the store is cleared;
+ *   2. otherwise try each source in order (newest-usable ref first), reporting
+ *      dead refs via `onRefUnusable` before the next candidate;
+ *   3. whatever opens is written back to the store, so the next run adopts it.
+ * The consumer supplies persistence; the package owns this policy.
+ */
+export async function openSandboxSession(
+  args: OpenSandboxSessionArgs,
+): Promise<Sandbox> {
+  const make =
+    args.create ?? ((spec: SandboxSpec) => args.provider.create(spec));
+  const remember = async (sandbox: Sandbox) =>
+    args.store.set(args.key, {
+      retained: { id: sandbox.id, backend: sandbox.backend },
+    });
+
+  // 1. The retained sandbox this work-stream left behind.
+  const session = await args.store.get(args.key);
+  if (session?.retained) {
+    // Adoption applies the fields a fresh start would (identity, env); the
+    // ref is irrelevant — the workspace comes from the retained disk.
+    const spec = args.sources.at(-1)?.spec ?? {};
+    const adopted = args.create
+      ? make({ ...spec, adopt: session.retained.id })
+      : args.provider.adopt(session.retained, spec);
+    try {
+      await adopted.start();
+      await remember(adopted);
+      return adopted;
+    } catch {
+      await args.store.clear(args.key);
+    }
+  }
+
+  // 2. Fresh candidates, newest-usable first.
+  let lastError: unknown;
+  for (const [index, source] of args.sources.entries()) {
+    const fresh = make(source.spec);
+    try {
+      await fresh.start();
+      await remember(fresh);
+      return fresh;
+    } catch (err) {
+      lastError = err;
+      if (index < args.sources.length - 1 && source.spec.ref)
+        await args.onRefUnusable?.(source.spec.ref);
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("openSandboxSession: no source could start");
+}

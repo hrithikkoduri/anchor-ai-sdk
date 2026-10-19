@@ -64,4 +64,12 @@ export interface SandboxProvider {
   release(handle: SandboxHandle): Promise<void>;
   /** Cheap connectivity/health check — what `doctor` calls. */
   probe(): Promise<ProviderHealth>;
+  /**
+   * Optional provider-side preparation before the first sandbox of a run is
+   * opened — refreshed credentials, warmed caches, quota checks. `gitToken`
+   * mints a fresh git credential on demand. Best-effort by contract: the
+   * CALLER decides whether a failure is fatal (the Heyo provider uses this to
+   * refresh the build secret its git-kind image builds read).
+   */
+  prepare?(args: { gitToken?: () => Promise<string> }): Promise<void>;
 }

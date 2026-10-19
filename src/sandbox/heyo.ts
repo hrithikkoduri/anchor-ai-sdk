@@ -15,6 +15,7 @@
  */
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./heyo-exec.js";
+import { upsertHeyoSecret } from "./heyo-secret.js";
 import type { ProviderHealth, SandboxProvider } from "./provider.js";
 import {
   checkpointVia,
@@ -54,6 +55,12 @@ export interface HeyoSandboxConfig {
   imageDockerfile?: string;
   /** git kind: an app-lb secret holding the git token (private repos). */
   imageAuth?: { secret: string; key?: string };
+  /**
+   * git-kind builds only: on `prepare()`, refresh the stored secret with a
+   * fresh token — installation tokens expire, and the HOST build reads the
+   * secret, not the spec.
+   */
+  buildSecretRefresh?: boolean;
   /**
    * Host-built images only: rootfs size in MB (`build.image_size_mb`). The
    * rootfs IS the kernel's root disk — its default (~1 GiB) fills up fast
@@ -161,6 +168,25 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
       new HeyoSandbox({ ...spec, adopt: handle.id }, cfg),
     release: async (handle) => {
       await new HeyoSandbox({ adopt: handle.id }, cfg).destroy();
+    },
+    prepare: async ({ gitToken } = {}) => {
+      if (
+        cfg.imageKind !== "git" ||
+        !cfg.buildSecretRefresh ||
+        !cfg.imageAuth?.secret ||
+        !cfg.imageAuth.key ||
+        !cfg.token ||
+        !gitToken
+      )
+        return;
+      await upsertHeyoSecret({
+        server: cfg.server,
+        token: cfg.token,
+        namespace: cfg.namespace,
+        secret: cfg.imageAuth.secret,
+        key: cfg.imageAuth.key,
+        value: await gitToken(),
+      });
     },
     probe: () => probeHeyo(cfg),
   };
