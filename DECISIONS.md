@@ -507,3 +507,46 @@ scales to zero and would kill them; the consumer parks after its last poll. A
 job past `timeoutSecs + 90s` with no receipt is killed and reported `lost`, the
 same fail-fast rule as decision #68. Regressions:
 `tests/unit/background-exec.test.ts`, `tests/unit/heyo-exec.test.ts`.
+
+## Decision #71 — Teams are delegation mechanics; the roster is consumer policy
+
+The run pipeline is deliberately one agent, one loop, one conversation — and
+that is still the default. But some work wants roles that should not share a
+context: the author of a fix is the worst judge of it, and an investigator
+benefits from not inheriting the implementer's assumptions. The mistake to
+avoid is the usual one — letting "multi-agent" become an orchestration
+framework the consumer must program. So the split is drawn the way everything
+else in this package is: **Anchor owns the delegation mechanics, the consumer
+owns the roster.**
+
+Mechanics (package): a `TeamSpec` (`lead` + `teammates[]`, each a normal
+`AgentSpec` plus an optional tool subset and budget share); a `delegate` tool
+the engine injects into the lead only, schema `{ teammate, task, context? }`,
+with the teammate resolved by the engine, never by the model. A delegation runs
+a **nested engine loop** against the same sandbox, emits
+`delegation_started` / `delegation_finished`, and returns the teammate's final
+text as the `delegate` tool result. Depth is 1 unless the consumer sets an
+explicit cap. Only the lead can `finish()` — a teammate's result is a tool
+result, so the consumer-shaped handoff of #64 is unchanged and no product
+disposition case is invented.
+
+Four invariants make it safe, and they are the reason this is a small feature
+rather than a framework:
+
+- **One sandbox, one budget.** Teammates share the workspace and the run's
+  budget; delegated usage is charged to it, and a per-teammate cap returns a
+  structured failure. Mutations keep the single-flight gate — concurrent
+  read-only teammates are a later step built on #69, not part of v1.
+- **Context isolation is the point.** Only the final text crosses back; the
+  teammate's transcript is trace-only. Delegation is not a way to give the
+  model more context, and the API should never be used that way.
+- **Failure is local.** A teammate error, timeout, or cap breach returns a tool
+  result the lead can retry, absorb, or answer `blocked` with — the fail-fast
+  rule of #68. A team never outlives the run's budgets and never wedges.
+- **The trace is the team.** Every event carries `agent` and the `delegate`
+  call id, so the log and the dashboard render the roster as a tree without a
+  second event schema.
+
+Decided, not built — tracked as "Agent teams" in `ROADMAP.md`. Sailor's side
+(which roles exist, what a verifier's verdict gates) is recorded in that repo's
+decision #69.

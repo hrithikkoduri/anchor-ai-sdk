@@ -115,6 +115,26 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   they need per-tool concurrency metadata plus isolation/ordering guarantees
   the single-flight sandbox gate deliberately avoids. _Size:_ L.
 
+- **Agent teams (lead + teammates)** — today a run is one `Agent`, one loop,
+  one conversation. Teams let the consumer declare a roster (`lead` +
+  teammates, each with its own prompt, tool subset, and budget share) and have
+  the engine inject a `delegate` tool into the lead: calling it runs the named
+  teammate as a **nested engine loop in the same sandbox** and returns only the
+  teammate's final text as the tool result — its transcript stays in the trace,
+  not in the lead's context. Depth is capped at 1 unless the consumer opts into
+  deeper teams with an explicit cap, and only the lead may `finish()`.
+  Delegated usage charges the run's single budget (per-teammate caps return a
+  structured failure); mutations keep the single-flight sandbox gate, with
+  concurrent read-only teammates as a later step over decision #69. Every event
+  gains `agent` + the `delegate` call id so the trace renders the team as a
+  tree, and a teammate failure comes back as a tool result the lead can retry,
+  absorb, or turn into a `blocked` finish — never a wedged run (the fail-fast
+  rule of #68). Which roles exist, their tools, and the split stay
+  consumer-owned. _Where:_ `src/engine/` (delegate tool + nesting), `src/agents/`
+  (team spec + prompt), `src/trace/` (agent-tagged events). _Trigger:_ the first
+  consumer wanting specialization (a verifier or investigator teammate) —
+  Sailor's verifier is the likely first. _Size:_ L.
+
 ## In flight (work, not deferred)
 
 - **Background long commands landed** (decision #70, 2026-10-19):
