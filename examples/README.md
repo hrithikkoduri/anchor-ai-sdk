@@ -3,7 +3,11 @@
 Runnable files — the only dependencies are the package itself and a model key.
 
 ```bash
-export OPENROUTER_KEY=...        # any OpenAI-compatible provider works
+# from the repo root: cp .env.example .env, fill in OPENROUTER_KEY, then
+set -a; source .env; set +a
+
+# or export directly — any OpenAI-compatible provider works
+export OPENROUTER_KEY=...
 
 # The ten-line quickstart: an agent, a model, nothing else.
 node examples/chat.mjs "explain what an agent harness is"
