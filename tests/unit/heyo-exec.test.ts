@@ -7,7 +7,7 @@ import path from "node:path";
 import {
   HeyoGuestExecutor,
   buildJobLaunch,
-} from "../../src/sandbox/heyo-exec.js";
+} from "../../src/sandbox/heyo/exec.js";
 import { formatExec } from "../../src/tools/types.js";
 
 const reply = (stdout: string, exit_code = 0) => ({

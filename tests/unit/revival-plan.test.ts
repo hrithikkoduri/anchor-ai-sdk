@@ -11,7 +11,7 @@ import path from "node:path";
 import { type AgentEvent } from "../../src/engine/events.js";
 import { latestEvidenceForTree } from "../../src/engine/evidence.js";
 import { planRevival, ThreadBudget } from "../../src/engine/revival.js";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 
 const room = () =>
   new ThreadBudget({ maxTurns: 5, maxUsd: 10 }, { turnsUsed: 1, usdSpent: 1 });

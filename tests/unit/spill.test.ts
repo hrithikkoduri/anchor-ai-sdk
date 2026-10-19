@@ -7,7 +7,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { spillOrTruncate, truncate } from "../../src/tools/truncate.js";
 
 const big = Array.from(

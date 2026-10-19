@@ -12,16 +12,24 @@
       "default": "./src/index.ts"
     },
     "./sandbox/heyo": {
-      "types": "./src/sandbox/heyo.ts",
-      "default": "./src/sandbox/heyo.ts"
+      "types": "./src/sandbox/heyo/index.ts",
+      "default": "./src/sandbox/heyo/index.ts"
     },
     "./sandbox/local": {
-      "types": "./src/sandbox/local.ts",
-      "default": "./src/sandbox/local.ts"
+      "types": "./src/sandbox/local/index.ts",
+      "default": "./src/sandbox/local/index.ts"
     },
     "./sandbox/docker": {
-      "types": "./src/sandbox/docker.ts",
-      "default": "./src/sandbox/docker.ts"
+      "types": "./src/sandbox/docker/index.ts",
+      "default": "./src/sandbox/docker/index.ts"
+    },
+    "./sandbox/e2b": {
+      "types": "./src/sandbox/e2b/index.ts",
+      "default": "./src/sandbox/e2b/index.ts"
+    },
+    "./sandbox/daytona": {
+      "types": "./src/sandbox/daytona/index.ts",
+      "default": "./src/sandbox/daytona/index.ts"
     },
     "./testing": {
       "types": "./src/testing.ts",

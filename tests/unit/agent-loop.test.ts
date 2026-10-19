@@ -5,7 +5,7 @@ import { runAgent } from "../../src/engine/loop.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 import { defineTool } from "../../src/tools/types.js";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import type {
   LLMClient,
   LLMRequest,

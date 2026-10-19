@@ -4,7 +4,7 @@
  * clone credential from the store, and this is the only way it gets there.
  */
 import { describe, expect, it } from "vitest";
-import { upsertHeyoSecret } from "../../src/sandbox/heyo-secret.js";
+import { upsertHeyoSecret } from "../../src/sandbox/heyo/secret.js";
 
 describe("upsertHeyoSecret", () => {
   it("puts the value under the configured secret + key", async () => {

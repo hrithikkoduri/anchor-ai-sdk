@@ -30,7 +30,7 @@ describe("package genericity", () => {
       .map(rel)
       // The one deliberate exception: relaying the host env to a local
       // subprocess is execution, not configuration.
-      .filter((file) => file !== "sandbox/local.ts");
+      .filter((file) => file !== "sandbox/local/index.ts");
     expect(offenders).toEqual([]);
   });
 
@@ -42,18 +42,19 @@ describe("package genericity", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps the Heyo SDK behind its subpath (sandbox/heyo.ts)", () => {
+  it("keeps the Heyo SDK behind its subpath (sandbox/heyo/)", () => {
     // Imports only — a doc comment may legitimately name the SDK.
     const forbidden =
       /from\s+["']@heyocomputer\/hws["']|import\(\s*["']@heyocomputer\/hws["']/;
     const offenders = files(SRC)
       .filter((file) => forbidden.test(content(file)))
       .map(rel)
-      // The subpath's own files: heyo.ts is the SDK boundary, heyo-secret.ts
-      // is Heyo admin machinery — both reachable only via /sandbox/heyo.
+      // The subpath's own files: heyo/index.ts is the SDK boundary,
+      // heyo/secret.ts is Heyo admin machinery — both reachable only via
+      // /sandbox/heyo.
       .filter(
         (file) =>
-          file !== "sandbox/heyo.ts" && file !== "sandbox/heyo-secret.ts",
+          file !== "sandbox/heyo/index.ts" && file !== "sandbox/heyo/secret.ts",
       );
     expect(offenders).toEqual([]);
   });

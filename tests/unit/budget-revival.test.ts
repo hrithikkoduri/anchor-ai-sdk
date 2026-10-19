@@ -5,7 +5,7 @@
  * here grants anything.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { codingAgent } from "../../src/agents/coding/index.js";
 import { runAgent } from "../../src/engine/loop.js";
 import type { AgentEvent } from "../../src/engine/events.js";

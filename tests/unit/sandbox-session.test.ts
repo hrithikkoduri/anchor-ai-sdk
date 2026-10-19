@@ -10,7 +10,7 @@ import {
   MemorySandboxStore,
   openSandboxSession,
 } from "../../src/sandbox/index.js";
-import { LocalSandbox, local } from "../../src/sandbox/local.js";
+import { LocalSandbox, local } from "../../src/sandbox/local/index.js";
 
 describe("openSandboxSession", () => {
   it("remembers the handle, adopts it next time, and clears it when gone", async () => {

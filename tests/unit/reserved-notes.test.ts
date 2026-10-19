@@ -12,7 +12,7 @@ import {
   reservedScratchPrepCommand,
   type GitAccess,
 } from "../../src/sandbox/git.js";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 
 function fakeAccess() {
   const calls: string[] = [];

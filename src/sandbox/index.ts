@@ -6,21 +6,25 @@
  * any one provider's vocabulary — live on subpaths so this root entry stays
  * SDK-free (type-only imports are erased):
  *
- *   @anchor/core/sandbox/heyo   → heyo(), HeyoSandbox, probeHeyo,
- *                                 upsertHeyoSecret (imports @heyocomputer/hws)
- *   @anchor/core/sandbox/local  → local(), LocalSandbox
- *   @anchor/core/sandbox/docker → docker(), DockerSandbox
+ *   @anchor/core/sandbox/heyo    → heyo(), HeyoSandbox, probeHeyo,
+ *                                  upsertHeyoSecret (imports @heyocomputer/hws)
+ *   @anchor/core/sandbox/local   → local(), LocalSandbox (dev/CI — no isolation)
+ *   @anchor/core/sandbox/docker  → docker(), DockerSandbox
+ *   @anchor/core/sandbox/e2b     → e2b() — stub, coming soon
+ *   @anchor/core/sandbox/daytona → daytona() — stub, coming soon
  *
  * Two ways to open one: `openSandbox` for explicit callbacks, and
- * `openSandboxSession` for store-backed continuity.
+ * `openSandboxSession` for store-backed continuity. README.md in this
+ * directory is the guide for new providers: the contract, the shared
+ * git/exec infra, and the conformance suite that accepts an adapter.
  */
 import type { Sandbox, SandboxSpec } from "./types.js";
 import type { SandboxHandle, SandboxProvider } from "./provider.js";
 
 export * from "./types.js";
 export * from "./provider.js";
-export type { HeyoSandboxConfig } from "./heyo.js";
-export type { LocalSandboxOptions } from "./local.js";
+export type { HeyoSandboxConfig } from "./heyo/index.js";
+export type { LocalSandboxOptions } from "./local/index.js";
 
 export interface OpenSandboxArgs {
   /** The provider to open with — explicit, always (decision #53). */

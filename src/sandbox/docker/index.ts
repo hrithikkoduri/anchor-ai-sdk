@@ -25,14 +25,14 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
-} from "./types.js";
+} from "../types.js";
 import {
   checkpointVia,
   hasChangesFromVia,
   reservedScratchPrepCommand,
   type GitAccess,
-} from "./git.js";
-import type { ProviderHealth, SandboxProvider } from "./provider.js";
+} from "../git.js";
+import type { ProviderHealth, SandboxProvider } from "../provider.js";
 
 export interface DockerSandboxOptions {
   /** Image for sandboxes whose spec names none (`spec.image` wins). */

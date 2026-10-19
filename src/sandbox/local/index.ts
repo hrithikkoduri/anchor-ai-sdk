@@ -27,14 +27,14 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
-} from "./types.js";
-import type { SandboxProvider } from "./provider.js";
+} from "../types.js";
+import type { SandboxProvider } from "../provider.js";
 import {
   checkpointVia,
   hasChangesFromVia,
   reservedScratchPrepCommand,
   type GitAccess,
-} from "./git.js";
+} from "../git.js";
 
 export interface LocalSandboxOptions {
   /** Where sandbox directories live. Default: `<cwd>/.anchor/sandboxes`. */

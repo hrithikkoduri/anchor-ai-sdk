@@ -12,7 +12,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { describe } from "vitest";
-import { docker } from "../../src/sandbox/docker.js";
+import { docker } from "../../src/sandbox/docker/index.js";
 import { runSandboxConformance } from "../../src/testing.js";
 
 const image = process.env.ANCHOR_DOCKER_TEST_IMAGE;

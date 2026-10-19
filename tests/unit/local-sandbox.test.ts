@@ -10,7 +10,7 @@ import { rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { LocalSandbox, local } from "../../src/sandbox/local.js";
+import { LocalSandbox, local } from "../../src/sandbox/local/index.js";
 import type { SandboxSpec } from "../../src/sandbox/types.js";
 import { runSandboxConformance } from "../../src/testing.js";
 

@@ -3,7 +3,7 @@
  * keep the HTTP request open for the duration of the user's command, and
  * never replay a launch when its result is ambiguous. */
 import { randomUUID } from "node:crypto";
-import { shq, type ExecResult } from "./types.js";
+import { shq, type ExecResult } from "../types.js";
 
 interface Reply {
   exit_code: number;

@@ -5,7 +5,7 @@
  * commands run in the workspace even though Heyo starts every exec in `/`.
  */
 import { describe, expect, it } from "vitest";
-import { buildGuestCommand } from "../../src/sandbox/heyo.js";
+import { buildGuestCommand } from "../../src/sandbox/heyo/index.js";
 
 describe("buildGuestCommand", () => {
   it("embeds the cd and wraps in a guest-side timeout that kills hard", () => {

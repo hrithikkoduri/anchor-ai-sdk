@@ -14,15 +14,15 @@
  * private — reached only through exec; no HTTP traffic).
  */
 import { Hws } from "@heyocomputer/hws";
-import { HeyoGuestExecutor } from "./heyo-exec.js";
-import { upsertHeyoSecret } from "./heyo-secret.js";
-import type { ProviderHealth, SandboxProvider } from "./provider.js";
+import { HeyoGuestExecutor } from "./exec.js";
+import { upsertHeyoSecret } from "./secret.js";
+import type { ProviderHealth, SandboxProvider } from "../provider.js";
 import {
   checkpointVia,
   hasChangesFromVia,
   reservedScratchPrepCommand,
   type GitAccess,
-} from "./git.js";
+} from "../git.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -33,7 +33,7 @@ import {
   type HeyoSizeClass,
   type Sandbox,
   type SandboxSpec,
-} from "./types.js";
+} from "../types.js";
 
 export interface HeyoSandboxConfig {
   token: string;
@@ -149,8 +149,8 @@ export async function probeHeyo(
 }
 
 // Heyo admin machinery travels with the heyo subpath (it imports the SDK too).
-export { upsertHeyoSecret } from "./heyo-secret.js";
-export type { UpsertHeyoSecretArgs } from "./heyo-secret.js";
+export { upsertHeyoSecret } from "./secret.js";
+export type { UpsertHeyoSecretArgs } from "./secret.js";
 
 /** Heyo Cloud microVMs as a sandbox provider. */
 export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {

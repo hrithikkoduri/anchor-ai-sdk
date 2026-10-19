@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { LocalSandbox } from "../../src/sandbox/local.js";
+import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { allTools, toolByName, truncate } from "../../src/tools/index.js";
 import { finishTool } from "../../src/tools/finish.js";
 import type { ToolContext } from "../../src/tools/types.js";
