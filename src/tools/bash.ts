@@ -18,7 +18,9 @@ export const bashTool = defineTool(
     description:
       "Run a shell command inside the sandbox (starts in the repo root). " +
       "Commands are self-contained — cd/export do not persist between calls. " +
-      "Use for git, ls, inspecting the environment, running scripts, installing packages.",
+      "Use for git, builds, tests, installs, and scripts. " +
+      "Do not search or read text with it: use search to find text and read_file " +
+      "to read files — they are read-only, and several in one turn run together.",
     parameters: {
       type: "object",
       properties: {
