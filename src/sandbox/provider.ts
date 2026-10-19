@@ -28,8 +28,12 @@ export interface SandboxCapabilities {
    * conformance suite gates its host-filesystem scenarios on this.
    */
   localPath: boolean;
-  /** Provider-specific flags, addable without breaking the contract. */
-  [flag: string]: boolean;
+  /**
+   * Provider-specific flags beyond the contract — declared, never implied.
+   * (Deliberately not an index signature: a typo must not type-check as a
+   * present capability.)
+   */
+  extra?: Record<string, boolean>;
 }
 
 /** A sandbox's coordinates — enough to re-open or release it later. */

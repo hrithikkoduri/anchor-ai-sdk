@@ -12,7 +12,6 @@ import type { ThreadStore } from "./thread.js";
 export interface RunTask {
   task: string;
   context?: string;
-  testCommand?: string;
 }
 
 export interface EngineOptions {

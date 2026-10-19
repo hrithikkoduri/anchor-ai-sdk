@@ -19,7 +19,7 @@ export const allTools: Tool[] = [
   readFileTool,
   editFileTool,
   searchTool,
-  runTestsTool,
+  runTestsTool(),
 ];
 
 // Individual capabilities — supply any subset to runAgent (the registry is the full set).

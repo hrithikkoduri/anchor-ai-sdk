@@ -30,10 +30,18 @@ import {
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
-  type HeyoSizeClass,
   type Sandbox,
   type SandboxSpec,
 } from "../types.js";
+
+/** VM size tiers (mirrors Heyo's size classes). */
+export type HeyoSizeClass =
+  | "micro"
+  | "mini"
+  | "small"
+  | "medium"
+  | "large"
+  | "xlarge";
 
 export interface HeyoSandboxConfig {
   token: string;

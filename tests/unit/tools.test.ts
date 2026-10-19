@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { allTools, toolByName, truncate } from "../../src/tools/index.js";
+import { runTestsTool } from "../../src/tools/run-tests.js";
 import { finishTool } from "../../src/tools/finish.js";
 import type { ToolContext } from "../../src/tools/types.js";
 
@@ -85,7 +86,10 @@ describe("tools", () => {
 
     it("kills a hung command at its deadline", async () => {
       const t0 = Date.now();
-      const r = await tool("bash").run({ command: "sleep 30", timeout_secs: 1 }, ctx);
+      const r = await tool("bash").run(
+        { command: "sleep 30", timeout_secs: 1 },
+        ctx,
+      );
       expect(r.ok).toBe(false);
       expect(r.meta?.timedOut).toBe(true);
       expect(Date.now() - t0).toBeLessThan(8_000);
@@ -94,13 +98,19 @@ describe("tools", () => {
 
   describe("read_file", () => {
     it("returns numbered lines for the requested range", async () => {
-      await writeFile(file("five.txt"), "line-one\nline-two\nline-three\nline-four\nline-five\n");
+      await writeFile(
+        file("five.txt"),
+        "line-one\nline-two\nline-three\nline-four\nline-five\n",
+      );
       const all = await tool("read_file").run({ path: "five.txt" }, ctx);
       expect(all.ok).toBe(true);
       expect(all.content).toContain("line-one");
       expect(all.content).toContain("line-five");
 
-      const middle = await tool("read_file").run({ path: "five.txt", offset: 2, limit: 2 }, ctx);
+      const middle = await tool("read_file").run(
+        { path: "five.txt", offset: 2, limit: 2 },
+        ctx,
+      );
       expect(middle.content).toContain("line-two");
       expect(middle.content).toContain("line-three");
       expect(middle.content).not.toContain("line-four");
@@ -116,9 +126,16 @@ describe("tools", () => {
 
   describe("edit_file", () => {
     it("replaces a unique match and reports the line", async () => {
-      await writeFile(file("app.js"), "const a = 1;\nconst b = 2;\nconst c = 3;\n");
+      await writeFile(
+        file("app.js"),
+        "const a = 1;\nconst b = 2;\nconst c = 3;\n",
+      );
       const r = await tool("edit_file").run(
-        { path: "app.js", old_string: "const b = 2;", new_string: "const b = 42;" },
+        {
+          path: "app.js",
+          old_string: "const b = 2;",
+          new_string: "const b = 42;",
+        },
         ctx,
       );
       expect(r.ok).toBe(true);
@@ -129,17 +146,25 @@ describe("tools", () => {
 
     it("refuses when the old string is not present", async () => {
       await writeFile(file("x.js"), "hello\n");
-      const r = await tool("edit_file").run({ path: "x.js", old_string: "goodbye", new_string: "hi" }, ctx);
+      const r = await tool("edit_file").run(
+        { path: "x.js", old_string: "goodbye", new_string: "hi" },
+        ctx,
+      );
       expect(r.ok).toBe(false);
       expect(r.content).toContain("not found");
     });
 
     it("refuses ambiguous matches and counts them", async () => {
       await writeFile(file("dup.js"), "same();\nother();\nsame();\n");
-      const r = await tool("edit_file").run({ path: "dup.js", old_string: "same();", new_string: "next();" }, ctx);
+      const r = await tool("edit_file").run(
+        { path: "dup.js", old_string: "same();", new_string: "next();" },
+        ctx,
+      );
       expect(r.ok).toBe(false);
       expect(r.content).toContain("appears 2 times");
-      expect(await readFile(file("dup.js"), "utf8")).toBe("same();\nother();\nsame();\n");
+      expect(await readFile(file("dup.js"), "utf8")).toBe(
+        "same();\nother();\nsame();\n",
+      );
     });
 
     it("handles multi-line replacements and empty new_string deletions", async () => {
@@ -159,14 +184,19 @@ describe("tools", () => {
         ctx,
       );
       expect(r.ok).toBe(true);
-      expect(await readFile(file("nonl.js"), "utf8")).toBe("no trailing newline here");
+      expect(await readFile(file("nonl.js"), "utf8")).toBe(
+        "no trailing newline here",
+      );
     });
   });
 
   describe("search", () => {
     beforeEach(async () => {
       await mkdir(file("src"), { recursive: true });
-      await writeFile(file("src/a.txt"), "call foo(1) now\nnothing here\na+b.c special\n");
+      await writeFile(
+        file("src/a.txt"),
+        "call foo(1) now\nnothing here\na+b.c special\n",
+      );
       await writeFile(file("src/b.txt"), "foo1 and foo22\n");
     });
 
@@ -183,17 +213,28 @@ describe("tools", () => {
     });
 
     it("supports regex mode", async () => {
-      const r = await tool("search").run({ pattern: "foo[0-9]+", regex: true }, ctx);
+      const r = await tool("search").run(
+        { pattern: "foo[0-9]+", regex: true },
+        ctx,
+      );
       expect(r.ok).toBe(true);
       expect(r.content).toContain("foo22");
-      const fixed = await tool("search").run({ pattern: "foo[0-9]+", regex: false }, ctx);
+      const fixed = await tool("search").run(
+        { pattern: "foo[0-9]+", regex: false },
+        ctx,
+      );
       expect(fixed.content).toContain("no matches");
     });
 
     it("caps results and says so", async () => {
-      const many = Array.from({ length: 8 }, (_, i) => `needle line ${i}`).join("\n");
+      const many = Array.from({ length: 8 }, (_, i) => `needle line ${i}`).join(
+        "\n",
+      );
       await writeFile(file("src/many.txt"), `${many}\n`);
-      const r = await tool("search").run({ pattern: "needle", max_results: 3 }, ctx);
+      const r = await tool("search").run(
+        { pattern: "needle", max_results: 3 },
+        ctx,
+      );
       expect(r.ok).toBe(true);
       expect(r.content).toContain("3+ match(es)");
       expect(r.content).toContain("refine the pattern");
@@ -203,7 +244,10 @@ describe("tools", () => {
 
   describe("run_tests", () => {
     it("runs an explicit command and reports ok", async () => {
-      const r = await tool("run_tests").run({ command: "echo TESTS-PASS" }, ctx);
+      const r = await tool("run_tests").run(
+        { command: "echo TESTS-PASS" },
+        ctx,
+      );
       expect(r.ok).toBe(true);
       expect(r.content).toContain("run_tests: echo TESTS-PASS");
       expect(r.content).toContain("TESTS-PASS");
@@ -211,10 +255,14 @@ describe("tools", () => {
       expect(String(r.meta?.treeHash)).toMatch(/^[0-9a-f]{40}$/);
     });
 
-    it("falls back to the task's test command", async () => {
-      const r = await tool("run_tests").run({}, { ...ctx, testCommand: "echo FROM-CTX" });
+    it("uses the configured default command when the model passes none", async () => {
+      const r = await runTestsTool({ defaultCommand: "echo FROM-CTX" }).run(
+        {},
+        ctx,
+      );
       expect(r.ok).toBe(true);
       expect(r.content).toContain("FROM-CTX");
+      expect(r.meta?.defaultCommand).toBe(true);
     });
 
     it("propagates failing exit codes", async () => {
@@ -226,7 +274,11 @@ describe("tools", () => {
     it("auto-detects npm test from package.json", async () => {
       await writeFile(
         file("package.json"),
-        JSON.stringify({ name: "x", version: "1.0.0", scripts: { test: "echo detected-ok" } }),
+        JSON.stringify({
+          name: "x",
+          version: "1.0.0",
+          scripts: { test: "echo detected-ok" },
+        }),
       );
       const r = await tool("run_tests").run({}, ctx);
       expect(r.ok).toBe(true);
@@ -249,12 +301,21 @@ describe("tools", () => {
     });
 
     it("validates the watch fields and carries them through meta", async () => {
-      const bad = await finishTool.run({ summary: "x", disposition: "someday" }, ctx);
+      const bad = await finishTool.run(
+        { summary: "x", disposition: "someday" },
+        ctx,
+      );
       expect(bad.ok).toBe(false);
       expect(bad.content).toContain("disposition");
 
       const good = await finishTool.run(
-        { summary: "x", success: true, disposition: "watch", watch: { checks: true }, resumeAt: "fix" },
+        {
+          summary: "x",
+          success: true,
+          disposition: "watch",
+          watch: { checks: true },
+          resumeAt: "fix",
+        },
         ctx,
       );
       expect(good.ok).toBe(true);
@@ -263,5 +324,4 @@ describe("tools", () => {
       expect(good.meta?.resumeAt).toBe("fix");
     });
   });
-
 });

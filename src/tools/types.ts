@@ -27,8 +27,6 @@ export interface ToolContext {
    * with a clear message instead of crashing the run.
    */
   sandbox?: Sandbox;
-  /** Default test command (from the task/repo config); run_tests falls back to it. */
-  testCommand?: string;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
 }
@@ -64,7 +62,10 @@ export interface Tool {
 /** Wrap a definition + implementation, turning thrown validation errors into ok:false results. */
 export function defineTool(
   definition: ToolDefinition,
-  run: (input: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult>,
+  run: (
+    input: Record<string, unknown>,
+    ctx: ToolContext,
+  ) => Promise<ToolResult>,
   options: Pick<Tool, "verb"> = {},
 ): Tool {
   return {
@@ -74,7 +75,10 @@ export function defineTool(
       try {
         return await run(input, ctx);
       } catch (err) {
-        return { ok: false, content: `error: ${err instanceof Error ? err.message : String(err)}` };
+        return {
+          ok: false,
+          content: `error: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     },
   };
@@ -82,7 +86,10 @@ export function defineTool(
 
 // --- input validators (the model's JSON is untrusted) -----------------------
 
-export function requireString(input: Record<string, unknown>, key: string): string {
+export function requireString(
+  input: Record<string, unknown>,
+  key: string,
+): string {
   const v = input[key];
   if (typeof v !== "string" || v.trim() === "") {
     throw new Error(`"${key}" must be a non-empty string`);
@@ -90,14 +97,21 @@ export function requireString(input: Record<string, unknown>, key: string): stri
   return v;
 }
 
-export function optionalString(input: Record<string, unknown>, key: string): string | undefined {
+export function optionalString(
+  input: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const v = input[key];
   if (v === undefined || v === null) return undefined;
   if (typeof v !== "string") throw new Error(`"${key}" must be a string`);
   return v;
 }
 
-export function optionalNumber(input: Record<string, unknown>, key: string, fallback: number): number {
+export function optionalNumber(
+  input: Record<string, unknown>,
+  key: string,
+  fallback: number,
+): number {
   const v = input[key];
   if (v === undefined || v === null) return fallback;
   const n = typeof v === "number" ? v : Number(v);
@@ -105,7 +119,10 @@ export function optionalNumber(input: Record<string, unknown>, key: string, fall
   return n;
 }
 
-export function optionalBoolean(input: Record<string, unknown>, key: string): boolean | undefined {
+export function optionalBoolean(
+  input: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
   const v = input[key];
   if (v === undefined || v === null) return undefined;
   if (typeof v !== "boolean") throw new Error(`"${key}" must be a boolean`);
@@ -113,10 +130,17 @@ export function optionalBoolean(input: Record<string, unknown>, key: string): bo
 }
 
 /** One-line header + body, the shape every exec-backed tool returns. */
-export function formatExec(r: Pick<ExecResult, "exitCode" | "output" | "timedOut"> & Partial<Pick<ExecResult, "failure" | "durationMs">>, timeoutSecs: number): string {
-  const status = r.exitCode === -1 || r.failure
-    ? `execution request failed${r.durationMs !== undefined ? ` after ${(r.durationMs / 1000).toFixed(1)}s` : ""}; command completion is unknown (not confirmed killed)`
-    : r.timedOut ? `command exceeded its ${timeoutSecs}s deadline (exit ${r.exitCode})` : `exit code ${r.exitCode}`;
+export function formatExec(
+  r: Pick<ExecResult, "exitCode" | "output" | "timedOut"> &
+    Partial<Pick<ExecResult, "failure" | "durationMs">>,
+  timeoutSecs: number,
+): string {
+  const status =
+    r.exitCode === -1 || r.failure
+      ? `execution request failed${r.durationMs !== undefined ? ` after ${(r.durationMs / 1000).toFixed(1)}s` : ""}; command completion is unknown (not confirmed killed)`
+      : r.timedOut
+        ? `command exceeded its ${timeoutSecs}s deadline (exit ${r.exitCode})`
+        : `exit code ${r.exitCode}`;
   const body = r.output.trim() === "" ? "(no output)" : r.output.trimEnd();
   return `${status}\n${body}`;
 }

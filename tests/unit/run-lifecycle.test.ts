@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { runAgent } from "../../src/engine/loop.js";
+import { chatAgent } from "../../src/agents/chat/index.js";
 import type { LLMClient } from "../../src/llm/types.js";
 import type { TraceSink, TracedEvent } from "../../src/trace/sink.js";
 import { call, scripted } from "../helpers/scripted.js";
@@ -26,7 +27,11 @@ describe("runAgent lifecycle", () => {
     };
     const result = await runAgent(
       { task: "say hello" },
-      { llm: scripted([{ text: "hello" }]), traceSinks: [sinkA, sinkB] },
+      {
+        llm: scripted([{ text: "hello" }]),
+        agent: chatAgent,
+        traceSinks: [sinkA, sinkB],
+      },
     );
     expect(result.ok).toBe(true);
     // Flushed before the result: the closing event is already in both sinks.
@@ -46,6 +51,7 @@ describe("runAgent lifecycle", () => {
       { task: "say hello" },
       {
         llm: scripted([{ text: "hello" }]),
+        agent: chatAgent,
         traceSinks: [
           {
             name: "broken",
@@ -72,6 +78,7 @@ describe("runAgent lifecycle", () => {
       { task: "say hello" },
       {
         llm: scripted([{ text: "hi" }]),
+        agent: chatAgent,
         heartbeat: {
           everyMs: 5,
           beat: () => {
@@ -107,6 +114,7 @@ describe("runAgent lifecycle", () => {
       { task: "long work" },
       {
         llm: slow,
+        agent: chatAgent,
         cancel: {
           everyMs: 1,
           isCancelled: () => {

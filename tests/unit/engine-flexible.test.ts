@@ -5,14 +5,22 @@
  */
 import { describe, expect, it } from "vitest";
 import type { AgentEvent } from "../../src/engine/events.js";
-import type { LLMClient, LLMRequest, LLMResponse } from "../../src/llm/types.js";
+import type {
+  LLMClient,
+  LLMRequest,
+  LLMResponse,
+} from "../../src/llm/types.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { allTools } from "../../src/tools/index.js";
 import { bashTool } from "../../src/tools/bash.js";
 import { defineTool } from "../../src/tools/types.js";
+import { chatAgent, chatStrategy } from "../../src/agents/chat/index.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 
-type Scripted = { text?: string; tools?: Array<{ name: string; arguments: string }> };
+type Scripted = {
+  text?: string;
+  tools?: Array<{ name: string; arguments: string }>;
+};
 
 function scriptedLLM(queue: Scripted[]): LLMClient & { seen: LLMRequest[] } {
   const seen: LLMRequest[] = [];
@@ -51,18 +59,50 @@ function scriptedLLM(queue: Scripted[]): LLMClient & { seen: LLMRequest[] } {
 describe("zero-config runs", () => {
   it("emits stable call IDs and configurable activity verbs without leaking display metadata into tool schemas", async () => {
     const events: AgentEvent[] = [];
-    const tool = defineTool({ name: "lookup", description: "Look something up", parameters: { type: "object" } }, async () => ({ ok: true, content: "found" }), { verb: input => `Looking up ${input.key}` });
-    const llm = scriptedLLM([{ tools: [{ name: "lookup", arguments: '{"key":"weather"}' }] }, { text: "Done." }]);
-    await runAgent({ task: "lookup" }, { llm, tools: [tool], onEvent: event => events.push(event) });
-    expect(events.find(e => e.type === "tool_call")).toMatchObject({ name: "lookup", callId: "call_0", verb: "Looking up weather" });
-    expect(events.find(e => e.type === "tool_result")).toMatchObject({ callId: "call_0", verb: "Looking up weather" });
-    expect(llm.seen[0]!.tools?.find(t => t.function.name === "lookup")?.function).not.toHaveProperty("verb");
+    const tool = defineTool(
+      {
+        name: "lookup",
+        description: "Look something up",
+        parameters: { type: "object" },
+      },
+      async () => ({ ok: true, content: "found" }),
+      { verb: (input) => `Looking up ${input.key}` },
+    );
+    const llm = scriptedLLM([
+      { tools: [{ name: "lookup", arguments: '{"key":"weather"}' }] },
+      { text: "Done." },
+    ]);
+    await runAgent(
+      { task: "lookup" },
+      {
+        llm,
+        strategy: chatStrategy,
+        tools: [tool],
+        onEvent: (event) => events.push(event),
+      },
+    );
+    expect(events.find((e) => e.type === "tool_call")).toMatchObject({
+      name: "lookup",
+      callId: "call_0",
+      verb: "Looking up weather",
+    });
+    expect(events.find((e) => e.type === "tool_result")).toMatchObject({
+      callId: "call_0",
+      verb: "Looking up weather",
+    });
+    expect(
+      llm.seen[0]!.tools?.find((t) => t.function.name === "lookup")?.function,
+    ).not.toHaveProperty("verb");
   });
-  it("runs with nothing but an LLM — chat default, no sandbox, no consumer tools", async () => {
+  it("runs with a bare agent — no sandbox, no consumer tools", async () => {
     const events: AgentEvent[] = [];
     const result = await runAgent(
       { task: "say hi" },
-      { llm: scriptedLLM([{ text: "Hi there!" }]), onEvent: (e) => events.push(e) },
+      {
+        llm: scriptedLLM([{ text: "Hi there!" }]),
+        agent: chatAgent,
+        onEvent: (e) => events.push(e),
+      },
     );
 
     expect(result.ok).toBe(true);
@@ -74,41 +114,68 @@ describe("zero-config runs", () => {
 
   it("the chat default loops through tools and ends on the text turn", async () => {
     const llm = scriptedLLM([
-      { tools: [{ name: "bash", arguments: JSON.stringify({ command: "echo hi" }) }] },
+      {
+        tools: [
+          { name: "bash", arguments: JSON.stringify({ command: "echo hi" }) },
+        ],
+      },
       { text: "All done." },
     ]);
-    const result = await runAgent({ task: "do a thing" }, { llm, tools: [bashTool] });
+    const result = await runAgent(
+      { task: "do a thing" },
+      { llm, strategy: chatStrategy, tools: [bashTool] },
+    );
 
     expect(result.ok).toBe(true);
     expect(result.summary).toBe("All done.");
     // No sandbox was supplied: the tool failed gracefully and the model still answered.
-    const toolMessages = result.messages.filter((m) => m.role === "tool").map((m) => m.content ?? "");
+    const toolMessages = result.messages
+      .filter((m) => m.role === "tool")
+      .map((m) => m.content ?? "");
     expect(toolMessages.some((m) => m.includes("needs a sandbox"))).toBe(true);
   });
 
   it("validates strategy requirements at startup: codingStrategy needs a sandbox", async () => {
     await expect(
-      runAgent({ task: "x" }, { llm: scriptedLLM([]), tools: allTools, strategy: codingStrategy }),
+      runAgent(
+        { task: "x" },
+        { llm: scriptedLLM([]), tools: allTools, strategy: codingStrategy },
+      ),
     ).rejects.toThrow(/requires a sandbox/);
   });
 
   it("an Agent preset bundles strategy + tools; explicit options override per-field", async () => {
     // The preset supplies both — startup reaches the sandbox check (tools satisfied).
-    await expect(runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent })).rejects.toThrow(
-      /requires a sandbox/,
-    );
+    await expect(
+      runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent }),
+    ).rejects.toThrow(/requires a sandbox/);
 
     // Explicit tools win over the preset's toolbox — the requiredTools check fails fast.
     await expect(
-      runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent, tools: [bashTool] }),
-    ).rejects.toThrow(/requires tools that were not supplied: read_file, edit_file, search, run_tests/);
+      runAgent(
+        { task: "x" },
+        { llm: scriptedLLM([]), agent: codingAgent, tools: [bashTool] },
+      ),
+    ).rejects.toThrow(
+      /requires tools that were not supplied: read_file, edit_file, search, run_tests/,
+    );
   });
 
   it("finish is an engine intrinsic — declared in the request without being passed", async () => {
     const llm = scriptedLLM([
-      { tools: [{ name: "finish", arguments: JSON.stringify({ summary: "all done" }) }] },
+      {
+        tools: [
+          {
+            name: "finish",
+            arguments: JSON.stringify({ summary: "all done" }),
+          },
+        ],
+      },
     ]);
-    const result = await runAgent({ task: "say hi" }, { llm });
+    const result = await runAgent(
+      { task: "say hi" },
+      { llm, agent: chatAgent },
+    );
 
     expect(result.ok).toBe(true);
     expect(result.summary).toBe("all done");
@@ -125,12 +192,17 @@ describe("zero-config runs", () => {
       { tools: [{ name: "finish", arguments: "{}" }] },
       { text: "fallback reply" },
     ]);
-    const result = await runAgent({ task: "say hi" }, { llm, intrinsics: { finish: false } });
+    const result = await runAgent(
+      { task: "say hi" },
+      { llm, agent: chatAgent, intrinsics: { finish: false } },
+    );
 
     expect(result.summary).toBe("fallback reply");
     const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
     expect(declared).not.toContain("finish");
-    const toolMessages = result.messages.filter((m) => m.role === "tool").map((m) => m.content ?? "");
+    const toolMessages = result.messages
+      .filter((m) => m.role === "tool")
+      .map((m) => m.content ?? "");
     expect(toolMessages.some((c) => c.includes("unknown tool"))).toBe(true);
   });
 });

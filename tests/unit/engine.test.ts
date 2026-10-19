@@ -5,6 +5,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
+import { chatAgent, chatStrategy } from "../../src/agents/chat/index.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 import { runAgent } from "../../src/engine/loop.js";
 import {
@@ -188,12 +189,16 @@ describe("agent runtime", () => {
     const store = new MemoryThreadStore();
     await runAgent(
       { task: "First question" },
-      { llm: scripted([{ text: "First answer" }]), thread: { store, id: "t" } },
+      {
+        llm: scripted([{ text: "First answer" }]),
+        agent: chatAgent,
+        thread: { store, id: "t" },
+      },
     );
     const llm = scripted([{ text: "Review findings, without edits" }]);
     await runAgent(
       { task: "Now review only" },
-      { llm, thread: { store, id: "t" } },
+      { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     const messages = llm.seen[0]!.messages;
     expect(
@@ -227,7 +232,7 @@ describe("agent runtime", () => {
     const llm = scripted([{ text: "Understood." }]);
     await runAgent(
       { task: "Discuss the title" },
-      { llm, thread: { store, id: "t" } },
+      { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     expect(
       llm.seen[0]!.messages.some((message) =>
@@ -337,7 +342,10 @@ describe("agent runtime", () => {
     llm.stream = async () => {
       throw new Error("provider unavailable");
     };
-    const failed = await runAgent({ task: "Inspect" }, { llm });
+    const failed = await runAgent(
+      { task: "Inspect" },
+      { llm, agent: chatAgent },
+    );
     expect(failed).toMatchObject({
       ok: false,
       reason: "error",
@@ -347,7 +355,7 @@ describe("agent runtime", () => {
     controller.abort();
     const cancelled = await runAgent(
       { task: "Inspect" },
-      { llm, signal: controller.signal },
+      { llm, agent: chatAgent, signal: controller.signal },
     );
     expect(cancelled).toMatchObject({ ok: false, reason: "cancelled" });
   });

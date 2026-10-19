@@ -8,7 +8,6 @@ import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { finishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
-import { chatStrategy } from "../agents/chat/strategy.js";
 import { BudgetTracker } from "./budgets.js";
 import {
   compactConversation,
@@ -49,7 +48,11 @@ export async function runAgent(
   task: RunTask,
   opts: EngineOptions,
 ): Promise<AgentResult> {
-  const strategy = opts.strategy ?? opts.agent?.strategy ?? chatStrategy;
+  const strategy = opts.strategy ?? opts.agent?.strategy;
+  if (!strategy)
+    throw new Error(
+      "runAgent needs an agent or a strategy — pass opts.agent (chatAgent, codingAgent, …) or opts.strategy",
+    );
   // ---- Run lifecycle ------------------------------------------------------
   // The engine owns the run loop end to end: one merged abort signal (the
   // caller's signal OR a polled cancel any process can set), one heartbeat
@@ -596,10 +599,7 @@ export async function runAgent(
           };
         } else {
           try {
-            result = await tool.run(input, {
-              sandbox: opts.sandbox,
-              testCommand: task.testCommand,
-            });
+            result = await tool.run(input, { sandbox: opts.sandbox });
           } catch (err) {
             result = {
               ok: false,

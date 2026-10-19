@@ -21,15 +21,6 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
-/** VM size tiers (mirrors Heyo's size classes). */
-export type HeyoSizeClass =
-  | "micro"
-  | "mini"
-  | "small"
-  | "medium"
-  | "large"
-  | "xlarge";
-
 export interface ExecResult {
   /** Exit code. 124/137 conventionally mean "timed out / killed". -1 = could not run. */
   exitCode: number;

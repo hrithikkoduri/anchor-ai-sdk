@@ -15,4 +15,21 @@ import { readFileTool } from "../../tools/read-file.js";
 import { runTestsTool } from "../../tools/run-tests.js";
 import { searchTool } from "../../tools/search.js";
 
-export const codingTools: Tool[] = [bashTool, readFileTool, editFileTool, searchTool, runTestsTool];
+/**
+ * The toolbox for one coding agent. `testCommand` — when the repo's canonical
+ * suite is known from config/CLI — becomes run_tests' fallback and counts as
+ * full-suite evidence (the strategy's evidence gates care about that
+ * distinction).
+ */
+export function createCodingTools(opts: { testCommand?: string } = {}): Tool[] {
+  return [
+    bashTool,
+    readFileTool,
+    editFileTool,
+    searchTool,
+    runTestsTool(opts.testCommand ? { defaultCommand: opts.testCommand } : {}),
+  ];
+}
+
+/** The default toolbox — no configured suite; run_tests detects one. */
+export const codingTools: Tool[] = createCodingTools();

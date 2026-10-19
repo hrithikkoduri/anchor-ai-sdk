@@ -3,6 +3,7 @@ import { access, readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { runAgent } from "../../src/engine/loop.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
+import { chatAgent, chatStrategy } from "../../src/agents/chat/index.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
 import { defineTool } from "../../src/tools/types.js";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
@@ -173,7 +174,7 @@ describe("natural agent loop", () => {
     ]);
     const result = await runAgent(
       { task: "inspect the result" },
-      { llm, tools: [fail] },
+      { llm, strategy: chatStrategy, tools: [fail] },
     );
     expect(result).toMatchObject({
       reason: "finished",
@@ -206,7 +207,7 @@ describe("natural agent loop", () => {
     const llm = model([{ text: "Here are my findings; I made no changes." }]);
     await runAgent(
       { task: "Review only. Do not edit." },
-      { llm, thread: { store, id: "t" } },
+      { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     const history = llm.seen[0]!.messages;
     expect(history.at(-1)).toEqual({
@@ -238,7 +239,12 @@ describe("natural agent loop", () => {
     };
     const result = await runAgent(
       { task: "work" },
-      { llm, tools: [mutate], signal: controller.signal },
+      {
+        llm,
+        strategy: chatStrategy,
+        tools: [mutate],
+        signal: controller.signal,
+      },
     );
     expect(result.reason).toBe("cancelled");
     expect(executed).toBe(0);
@@ -261,7 +267,7 @@ describe("natural agent loop", () => {
     );
     const result = await runAgent(
       { task: "inspect" },
-      { llm, tools: [inspect] },
+      { llm, strategy: chatStrategy, tools: [inspect] },
     );
     expect(result.reason).toBe("stalled");
     expect(result.error).toContain("loop limit");
