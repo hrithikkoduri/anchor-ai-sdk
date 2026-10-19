@@ -117,6 +117,9 @@ export async function runAgent(
       ...(meta && typeof meta.command === "string"
         ? { command: meta.command }
         : {}),
+      ...(meta && typeof meta.timeoutSecs === "number"
+        ? { timeoutSecs: meta.timeoutSecs }
+        : {}),
     });
   };
   // Terminal intrinsic — with the consumer's handoff shape when configured

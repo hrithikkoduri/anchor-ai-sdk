@@ -72,6 +72,7 @@ export const bashTool = defineTool(
           command,
           background: r.background,
           durationMs: r.durationMs,
+          timeoutSecs,
         },
       };
     }

@@ -72,6 +72,8 @@ export type AgentEvent =
       tool: string;
       callId?: string;
       command?: string;
+      /** The job's hard lifetime — the consumer's lost-receipt deadline. */
+      timeoutSecs?: number;
     }
   | {
       type: "guardrail";
