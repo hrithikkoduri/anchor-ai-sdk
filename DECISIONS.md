@@ -589,3 +589,37 @@ read-only, and several in one turn run together" — giving the model the reason
 not just the rule. This is a description, not a mechanism: no dispatch,
 ordering, or capability changed. Shipped in 0.1.4; Sailor carries the same
 steer in its product prompt until it bumps to this version.
+
+## Decision #74 — Phase discipline is an intrinsic prompt block, not a footnote
+
+`set_phase` shipped as an advisory label whose own description argued against
+it: "it does not authorize actions or require tests… You can finish a response
+from any phase without calling this tool." The first full run on that engine
+(WebRover #19, 35 steps, cancelled) never called it once — the label stayed
+`understand` through thirty-five turns of editing code, so the timeline the
+label exists to keep honest was false.
+
+The guidance was not missing, it was quiet: one sentence in the middle of the
+strategy prompt, phrased as permission, with the consumer's own sections and
+the context blocks stacked after it. Adding a second block in the same place
+would inherit all three problems, so the fix is placement and strength, not
+volume.
+
+Phases are an engine concept — a strategy declares them and `intrinsics.phase`
+registers the tool — so the discipline text is now intrinsic too. The engine
+appends `phaseDisciplineBlock(strategy.phases)` to whatever prompt the strategy
+produced, exactly as it already appends the revival block, and gates it on the
+same `intrinsics.phase` switch that registers the tool: one flag turns both
+off. The block is generic on purpose. The engine knows a strategy's phase ids
+and nothing about its tools, so it can demand focus and honesty without
+assuming that editing code means "act" or that any tool implies a transition.
+The tool description and the unknown-phase error no longer argue that the call
+is optional, and the coding prompt's own line dropped its
+"(it never authorizes or blocks anything)" parenthetical.
+
+This raises the floor for every consumer that uses the default flow. It does
+not make the label reliable: prompt-only discipline can still be dropped under
+load. If a product needs a guarantee, the lever is a generic, policy-free nudge
+— turns since the last phase change — beside `toolOnlyNudge`. That is a product
+decision, not an SDK one. Regressions:
+`tests/unit/phase-discipline.test.ts`.

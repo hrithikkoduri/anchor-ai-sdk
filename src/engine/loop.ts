@@ -29,6 +29,7 @@ import {
   revivalBlock,
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
+import { phaseDisciplineBlock } from "./phase-discipline.js";
 import type { EventSink, RevivalRequest } from "./events.js";
 import type {
   RunTask,
@@ -165,10 +166,13 @@ export async function runAgent(
   );
   let revivalWarned = false;
   let revivalRequest: RevivalRequest | undefined;
+  const phaseOn =
+    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
   const system = () => ({
     role: "system" as const,
     content:
       strategy.systemPrompt({ task: task.task, context, summary }) +
+      (phaseOn ? `\n\n${phaseDisciplineBlock(strategy.phases)}` : "") +
       (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : ""),
   });
   const messages: LLMMessage[] = [
@@ -189,14 +193,14 @@ export async function runAgent(
   let steps = 0;
   let checkpointRef: string | undefined;
   let pauseRequested = false;
-  if (strategy.phases.length > 1 && opts.intrinsics?.phase !== false) {
+  if (phaseOn) {
     available.set(
       "set_phase",
       defineTool(
         {
           name: "set_phase",
           description:
-            "Describe the current phase of your approach. You may skip phases or revisit an earlier one. This records progress; it does not authorize actions or require tests. You can finish a response from any phase without calling this tool.",
+            "Record the phase of work you are in — it keeps you focused and the thread's timeline honest. Update it when the kind of work changes; pick the phase that fits, and you may skip or revisit one.",
           parameters: {
             type: "object",
             properties: {
@@ -221,7 +225,7 @@ export async function runAgent(
           if (!target)
             return {
               ok: false,
-              content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}. This is a progress label, not a completion requirement.`,
+              content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}.`,
             };
           const previous = phase;
           phase = target.id;

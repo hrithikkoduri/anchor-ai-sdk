@@ -43,7 +43,7 @@ export function buildCodingPrompt(options: CodingPromptOptions = {}): string {
     {
       title: "Approach phases",
       body: [
-        "These describe your approach, not prerequisites. Choose the phases that fit, skip or revisit them when appropriate, and conclude from any phase. When your work shifts between kinds of activity — investigating, changing code, verifying, answering — call set_phase once to record the new phase; it labels your approach (it never authorizes or blocks anything) and keeps the thread's timeline honest.",
+        "These describe your approach, not prerequisites. Choose the phases that fit, skip or revisit them when appropriate, and conclude from any phase. When your work shifts between kinds of activity — investigating, changing code, verifying, answering — call set_phase to record the new phase and keep the thread's timeline honest.",
         ...phases.map(
           (phase) =>
             `- ${phase.id}: ${phase.goal}${phase.guidance ? ` ${phase.guidance}` : ""}`,

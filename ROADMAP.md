@@ -148,6 +148,10 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 
 ## In flight (work, not deferred)
 
+- **Phase discipline is intrinsic** (decision #74, 2026-10-19): the engine
+  appends `phaseDisciplineBlock(strategy.phases)` after the strategy prompt,
+  gated on the same `intrinsics.phase` flag that registers the tool, and the
+  `set_phase` description no longer argues that its own call is optional.
 - **Background long commands landed** (decision #70, 2026-10-19):
   `ExecOptions.backgroundAfterSecs`, `ExecResult.background`, `pollJob`/
   `killJob`, the `background_started` engine event, and Sailor's
