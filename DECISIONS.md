@@ -32,6 +32,7 @@ their full text.
 | #63 | the public tool/engine surface | Architectural |
 | #64 | `finish()` carries a consumer-shaped handoff | Architectural |
 | #65 | `anchor-ai-sdk` everywhere + publish guard | Misc |
+| #66 | set_phase at real transitions (prompt nudge) | Misc |
 
 ## Early decisions that shaped the package (summarized at extraction)
 
