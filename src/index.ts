@@ -1,5 +1,5 @@
 /**
- * @anchor/core — the public API.
+ * anchor-ai-sdk — the public API.
  *
  * Loop-first, sandbox-first agent framework: an LLM transport, a sandbox
  * abstraction with pluggable backends, a tool protocol with a coding tool

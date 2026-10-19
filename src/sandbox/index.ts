@@ -6,12 +6,12 @@
  * any one provider's vocabulary — live on subpaths so this root entry stays
  * SDK-free (type-only imports are erased):
  *
- *   @anchor/core/sandbox/heyo    → heyo(), HeyoSandbox, probeHeyo,
+ *   anchor-ai-sdk/sandbox/heyo    → heyo(), HeyoSandbox, probeHeyo,
  *                                  upsertHeyoSecret (imports @heyocomputer/hws)
- *   @anchor/core/sandbox/local   → local(), LocalSandbox (dev/CI — no isolation)
- *   @anchor/core/sandbox/docker  → docker(), DockerSandbox
- *   @anchor/core/sandbox/e2b     → e2b() — stub, coming soon
- *   @anchor/core/sandbox/daytona → daytona() — stub, coming soon
+ *   anchor-ai-sdk/sandbox/local   → local(), LocalSandbox (dev/CI — no isolation)
+ *   anchor-ai-sdk/sandbox/docker  → docker(), DockerSandbox
+ *   anchor-ai-sdk/sandbox/e2b     → e2b() — stub, coming soon
+ *   anchor-ai-sdk/sandbox/daytona → daytona() — stub, coming soon
  *
  * Two ways to open one: `openSandbox` for explicit callbacks, and
  * `openSandboxSession` for store-backed continuity. README.md in this

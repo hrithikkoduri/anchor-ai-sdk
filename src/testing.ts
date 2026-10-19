@@ -8,7 +8,7 @@
  * this file may call itself an adapter; one that fails has a bug, and one that
  * silently skips a capability it declares has a missing feature.
  *
- *   import { runSandboxConformance } from "@anchor/core/testing";
+ *   import { runSandboxConformance } from "anchor-ai-sdk/testing";
  *   runSandboxConformance(local({ rootDir, quiet: true }));
  *   runSandboxConformance(heyo(cfg), { timeoutMs: 240_000 });
  *

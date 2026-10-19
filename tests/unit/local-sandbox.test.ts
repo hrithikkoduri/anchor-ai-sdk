@@ -1,7 +1,7 @@
 /**
  * LocalSandbox conformance — the provider contract proven on the dev backend.
  *
- * The scenarios themselves live once in `@anchor/core/testing` and run against
+ * The scenarios themselves live once in `anchor-ai-sdk/testing` and run against
  * any provider; both backends (local, heyo) pass the same file. Host-filesystem
  * extras that are specifically local — keep, root removal — stay here.
  */

@@ -408,3 +408,15 @@ owns the old vocabulary as `SAILOR_HANDOFF` (`agents/sailor-handoff.ts`) plus
 `readSailorHandoff()` — the rows, thread state, and worker log are unchanged.
 A handoff without a configured schema is a tool error. Core 190 (+2), server
 54; the engine contains no occurrence of the old words.
+
+## Decision #65 — `anchor-ai-sdk` everywhere, and publishing has a guardrail
+
+Added just before extraction (supersedes #62's "rename at extraction" plan):
+the package is `anchor-ai-sdk` in the monorepo already, so the consumer
+switchover is a dependency-source swap with zero import churn.
+`scripts/prepare-publish.mjs` flips entry points to dist;
+`scripts/verify-dist-exports.mjs` (prepublishOnly) refuses a src-flavored
+publish. Snapshot failures emit a `snapshot_failed` advisory instead of a
+silent catch. The extraction uses git filter-repo over all three historical
+eras (root `src/{llm,sandbox,tools}` → `packages/agent` → `packages/core`),
+not subtree split.

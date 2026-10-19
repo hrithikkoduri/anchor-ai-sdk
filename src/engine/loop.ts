@@ -306,8 +306,17 @@ export async function runAgent(
             ...(snapshot.pushError ? { pushError: snapshot.pushError } : {}),
           });
         }
-      } catch {
-        /* best-effort snapshot; never a reason to keep reasoning */
+      } catch (err) {
+        // Best-effort — never a reason to keep reasoning, but never silent
+        // either: a non-git sandbox reads as all-new and the default git
+        // snapshot will fail here on every run. Traces must show it.
+        emit({
+          type: "advisory",
+          kind: "snapshot_failed",
+          detail:
+            "snapshot failed and was skipped: " +
+            (err instanceof Error ? err.message : String(err)),
+        });
       }
     }
     const usage = {

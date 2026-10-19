@@ -87,7 +87,7 @@ requests — copy that pattern for any backend with request ceilings or lossy
 responses.
 
 **The conformance suite** — `runSandboxConformance(provider)` from
-`@anchor/core/testing` is the acceptance test for an adapter: exec fidelity,
+`anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
 self-containment, kill deadlines, env secrets, checkpoints, retain/adopt, git
 identity, push-failure reporting, clone, `hasChangesFrom`, `localPath` copies,
 bare-origin pushes, and `fork` where declared. Scenarios assert through
