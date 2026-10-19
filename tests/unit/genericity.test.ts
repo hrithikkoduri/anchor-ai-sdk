@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const SRC = fileURLToPath(new URL("../../src", import.meta.url));
+const PACKAGE = fileURLToPath(new URL("../../", import.meta.url));
+const TESTS = path.join(PACKAGE, "tests");
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -64,6 +66,27 @@ describe("package genericity", () => {
       .filter((file) => forbidden.test(content(file)))
       .map(rel)
       .filter((file) => file !== "testing.ts");
+    expect(offenders).toEqual([]);
+  });
+
+  it("names no product — source and fixtures ship standalone", () => {
+    // Overfit smells like a name: a consumer's product noun in package code
+    // or fixtures means the abstraction learned its first customer instead of
+    // the job. The fix for a hit is to make the code generic or move it to
+    // the product — never to whitelist a file. Extend the pattern as new
+    // consumers leak. (Ecosystem nouns are fine: the docker adapter may
+    // document SWE-bench images — interoperability, not product.)
+    const forbidden = /\bsailor\b/i;
+    // Positive control: the rule can actually fire.
+    expect(forbidden.test("the Sailor app")).toBe(true);
+    expect(forbidden.test("an anchor test")).toBe(false);
+    // The rule cannot read itself: its pattern and control contain the noun
+    // by construction.
+    const guardFile = path.join(TESTS, "unit", "genericity.test.ts");
+    const offenders = [...files(SRC), ...files(TESTS)]
+      .filter((file) => file !== guardFile)
+      .filter((file) => forbidden.test(content(file)))
+      .map((file) => path.relative(PACKAGE, file));
     expect(offenders).toEqual([]);
   });
 });

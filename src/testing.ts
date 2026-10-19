@@ -412,16 +412,16 @@ const SCENARIOS: Scenario[] = [
       try {
         await sb.exec(`echo "durable work" > work.txt`);
         const cp = await sb.checkpoint("mid-work", {
-          push: "sailor/issue-7-checkpoint",
+          push: "anchor/issue-7-checkpoint",
         });
-        expect(cp.pushedTo).toBe("sailor/issue-7-checkpoint");
+        expect(cp.pushedTo).toBe("anchor/issue-7-checkpoint");
         expect(cp.pushError).toBeUndefined();
         const refs = spawnSync(
           "git",
           [
             `--git-dir=${origin}`,
             "rev-parse",
-            "refs/heads/sailor/issue-7-checkpoint",
+            "refs/heads/anchor/issue-7-checkpoint",
           ],
           { encoding: "utf8" },
         );
@@ -441,7 +441,7 @@ const SCENARIOS: Scenario[] = [
       try {
         await sb.exec(`echo "work" > work.txt`);
         const cp = await sb.checkpoint("mid-work", {
-          push: "sailor/issue-7-checkpoint",
+          push: "anchor/issue-7-checkpoint",
         });
         expect(cp.sha).toMatch(/^[0-9a-f]{40}$/);
         expect(cp.pushError).toBeTruthy();
@@ -457,8 +457,8 @@ const SCENARIOS: Scenario[] = [
     run: async ({ provider }) => {
       const sb = provider.create({
         gitIdentity: {
-          name: "sailor-app-dev[bot]",
-          email: "12345+sailor-app-dev[bot]@users.noreply.github.com",
+          name: "anchor-test[bot]",
+          email: "12345+anchor-test[bot]@users.noreply.github.com",
         },
       });
       await sb.start();
@@ -467,7 +467,7 @@ const SCENARIOS: Scenario[] = [
         await sb.checkpoint("identity check");
         const log = await sb.exec(`git log -1 --format='%an <%ae>'`);
         expect(log.stdout.trim()).toBe(
-          "sailor-app-dev[bot] <12345+sailor-app-dev[bot]@users.noreply.github.com>",
+          "anchor-test[bot] <12345+anchor-test[bot]@users.noreply.github.com>",
         );
       } finally {
         await sb.destroy();

@@ -2,9 +2,9 @@
  * Docker provider conformance — real containers.
  *
  * Opt-in: needs a Docker daemon and an image with bash + git + coreutils
- * (e.g. `harness/sailor-toolchain:latest`, built by image/build.sh):
+ * (any toolchain image you already have):
  *
- *   ANCHOR_DOCKER_TEST_IMAGE=harness/sailor-toolchain:latest \
+ *   ANCHOR_DOCKER_TEST_IMAGE=<your-image> \
  *     npm test -w packages/core -- docker-sandbox
  *
  * Docker Desktop on macOS is not on PATH by default; point ANCHOR_DOCKER_BIN

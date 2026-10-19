@@ -1,6 +1,6 @@
 /**
- * Sandbox lifecycle (openSandbox / releaseSandbox) — the dogfooded path Sailor
- * uses: adopt-with-fallback on open, destroy-by-handle on release.
+ * Sandbox lifecycle (openSandbox / releaseSandbox) — the path a product
+ * drives: adopt-with-fallback on open, destroy-by-handle on release.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";

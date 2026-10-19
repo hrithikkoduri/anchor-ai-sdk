@@ -41,7 +41,7 @@ export interface OpenSandboxArgs extends CreateSandboxOptions {
 }
 
 /**
- * Open the sandbox for a piece of work — the lifecycle Sailor dogfoods:
+ * Open the sandbox for a piece of work — the lifecycle a product runs:
  *   1. adopt the retained handle when one applies (SAME workspace, edits intact);
  *   2. on failure, report it (onRetainedGone) and build a fresh sandbox;
  *   3. when the fresh clone's `ref` is unusable, report it (onRefUnusable) and
