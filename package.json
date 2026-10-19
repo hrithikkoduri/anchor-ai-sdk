@@ -39,6 +39,10 @@
       "types": "./dist/sandbox/docker/index.d.ts",
       "default": "./dist/sandbox/docker/index.js"
     },
+    "./sandbox/e2b": {
+      "types": "./dist/sandbox/e2b/index.d.ts",
+      "default": "./dist/sandbox/e2b/index.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
@@ -53,14 +57,19 @@
     "prepublishOnly": "npm run build && node scripts/verify-dist-exports.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "e2b:template": "node scripts/build-e2b-template.mjs",
     "prepare": "npm run build"
   },
   "peerDependencies": {
     "@heyocomputer/hws": ">=0.4",
+    "e2b": ">=2.56",
     "vitest": ">=3"
   },
   "peerDependenciesMeta": {
     "@heyocomputer/hws": {
+      "optional": true
+    },
+    "e2b": {
       "optional": true
     },
     "vitest": {
@@ -70,6 +79,7 @@
   "devDependencies": {
     "@heyocomputer/hws": "^0.4.0",
     "@types/node": "^26.6.5",
+    "e2b": "^2.56.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   },

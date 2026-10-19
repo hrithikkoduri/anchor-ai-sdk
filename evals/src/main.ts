@@ -20,6 +20,7 @@ import { llmFromCatalog, type BudgetLimits } from "anchor-ai-sdk";
 import { local } from "anchor-ai-sdk/sandbox/local";
 import { heyo } from "anchor-ai-sdk/sandbox/heyo";
 import { docker } from "anchor-ai-sdk/sandbox/docker";
+import { e2b } from "anchor-ai-sdk/sandbox/e2b";
 import { anchorArm } from "./arms/anchor.js";
 import { evalsConfig, loadDotEnv } from "./config.js";
 import { miniSweArm } from "./arms/mini-swe.js";
@@ -27,8 +28,9 @@ import { loadTasks, type EvalTask } from "./tasks.js";
 import { runEvalSuite, type EvalTaskResult } from "./runner.js";
 
 const USAGE = `usage: eval --tasks <file.jsonl> [options]
-  --provider local|heyo|docker  sandbox backend (default local; docker = the
-                          benchmark environment from task images; heyo = VMs)
+  --provider local|heyo|docker|e2b  sandbox backend (default local; docker = the
+                          benchmark environment from task images; heyo/e2b = VMs)
+  --e2b-template <name>   override E2B_TEMPLATE for repo-clone tasks
   --arm anchor|mini       system under test (default anchor)
   --limit <n>             run only the first n tasks
   --task <instance_id>    run a single task
@@ -82,9 +84,10 @@ const providerName = String(args.get("provider") ?? "local");
 if (
   providerName !== "local" &&
   providerName !== "heyo" &&
-  providerName !== "docker"
+  providerName !== "docker" &&
+  providerName !== "e2b"
 ) {
-  say(`unknown provider "${providerName}" — local, heyo, or docker`);
+  say(`unknown provider "${providerName}" — local, heyo, docker, or e2b`);
   process.exit(1);
 }
 
@@ -153,12 +156,22 @@ const { llm, catalog, compaction } = await llmFromCatalog({
       }
     : {}),
 });
+const e2bTemplate = args.has("e2b-template")
+  ? String(args.get("e2b-template"))
+  : cfg.e2b.template;
 const provider =
   providerName === "heyo"
     ? heyo(cfg.heyo)
     : providerName === "docker"
       ? docker({ dockerBin: process.env.DOCKER_BIN ?? "docker" })
-      : local();
+      : providerName === "e2b"
+        ? e2b({
+            apiKey: cfg.e2b.apiKey,
+            template: e2bTemplate,
+            user: cfg.e2b.user,
+            timeoutMs: cfg.e2b.timeoutMs,
+          })
+        : local();
 
 const budgets: Partial<BudgetLimits> = {};
 if (args.has("max-steps")) budgets.maxSteps = Number(args.get("max-steps"));
@@ -179,6 +192,28 @@ if (args.has("image-tag")) {
       : task,
   );
 }
+if (providerName === "e2b") {
+  // The task's `image` is a Docker image from the SWE-bench dataset. E2B boots
+  // templates instead, so each image task needs an explicit mapping (built
+  // with `Template().fromImage(...)`), while repo-clone tasks use the default
+  // template.
+  const templateFor = (task: EvalTask): string => {
+    const mapped =
+      cfg.e2b.templateMap[task.id] ??
+      (task.image ? cfg.e2b.templateMap[task.image] : undefined);
+    if (mapped) return mapped;
+    if (!task.image) return e2bTemplate;
+    throw new Error(
+      `E2B has no template for ${task.id} (${task.image}). ` +
+        `Build one from the image and add it to E2B_TEMPLATE_MAP ` +
+        `(keyed by instance id or image).`,
+    );
+  };
+  tasks = tasks.map((task) =>
+    task.image ? { ...task, image: templateFor(task) } : task,
+  );
+}
+
 if (tasks.length === 0) {
   say(`no tasks matched in ${tasksFile}`);
   process.exit(1);
@@ -322,6 +357,15 @@ await writeFile(
       baseUrl,
       ...(sampling ? { sampling } : {}),
       provider: provider.name,
+      ...(providerName === "e2b"
+        ? {
+            e2b: {
+              template: e2bTemplate,
+              user: cfg.e2b.user ?? null,
+              templateMap: cfg.e2b.templateMap,
+            },
+          }
+        : {}),
       tasks: tasks.length,
       completed,
       failed: tasks.length - completed,
