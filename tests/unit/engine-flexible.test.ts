@@ -179,7 +179,7 @@ describe("zero-config runs", () => {
 
     expect(result.ok).toBe(true);
     expect(result.summary).toBe("all done");
-    expect(result.disposition).toBe("done");
+    expect(result.handoff).toBeUndefined();
     // `tools` was never supplied, yet the wire request declares finish.
     const declared = (llm.seen[0]!.tools ?? []).map((t) => t.function.name);
     expect(declared).toContain("finish");

@@ -11,6 +11,7 @@ import path from "node:path";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { allTools, toolByName, truncate } from "../../src/tools/index.js";
 import { runTestsTool } from "../../src/tools/run-tests.js";
+import { createFinishTool } from "../../src/tools/finish.js";
 import { finishTool } from "../../src/tools/finish.js";
 import type { ToolContext } from "../../src/tools/types.js";
 
@@ -300,28 +301,36 @@ describe("tools", () => {
       expect(r.meta?.success).toBe(true);
     });
 
-    it("validates the watch fields and carries them through meta", async () => {
+    it("carries a consumer-shaped handoff through meta, untouched", async () => {
+      const consumer = createFinishTool({
+        handoff: {
+          schema: {
+            type: "object",
+            properties: { intent: { type: "string" } },
+          },
+          description: "Test handoff.",
+        },
+      });
+      const handoff = { intent: "watch", resumeAt: "fix" };
+      const r = await consumer.run(
+        { summary: "x", success: true, handoff },
+        ctx,
+      );
+      expect(r.ok).toBe(true);
+      expect(r.meta?.handoff).toEqual(handoff);
+      // The parameter is declared from the schema (the model sees it).
+      expect(consumer.definition.parameters).toMatchObject({
+        properties: { handoff: { type: "object" } },
+      });
+    });
+
+    it("rejects a handoff when no schema is configured", async () => {
       const bad = await finishTool.run(
-        { summary: "x", disposition: "someday" },
+        { summary: "x", handoff: { intent: "watch" } },
         ctx,
       );
       expect(bad.ok).toBe(false);
-      expect(bad.content).toContain("disposition");
-
-      const good = await finishTool.run(
-        {
-          summary: "x",
-          success: true,
-          disposition: "watch",
-          watch: { checks: true },
-          resumeAt: "fix",
-        },
-        ctx,
-      );
-      expect(good.ok).toBe(true);
-      expect(good.meta?.disposition).toBe("watch");
-      expect(good.meta?.watch).toEqual({ checks: true });
-      expect(good.meta?.resumeAt).toBe("fix");
+      expect(bad.content).toContain("handoff");
     });
   });
 });

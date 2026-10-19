@@ -5,7 +5,7 @@ import type { Tool } from "../tools/types.js";
 import type { TraceSink } from "../trace/sink.js";
 import type { BudgetLimits } from "./budgets.js";
 import type { CompactionConfig } from "./compaction.js";
-import type { EventSink, RevivalRequest, RunDisposition } from "./events.js";
+import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
 
@@ -43,6 +43,19 @@ export interface EngineOptions {
    * funding a revival run is the consumer's decision.
    */
   revival?: { warnAtPercent?: number } | false;
+  /**
+   * The consumer's handoff shape for finish(). When present, finish() declares
+   * a `handoff` parameter with `schema` (a JSON-schema object the model must
+   * conform to) and the engine carries the model's object to
+   * `AgentResult.handoff` untouched — the engine never interprets it.
+   * `threadPhase` tells the engine which phase a thread should resume at,
+   * derived from the handoff (absent → the run's own phase persists).
+   */
+  handoff?: {
+    schema: Record<string, unknown>;
+    description?: string;
+    threadPhase?: (handoff: Record<string, unknown>) => string | undefined;
+  };
   startPhase?: string;
   onEvent?: EventSink;
   /**
@@ -104,7 +117,6 @@ export interface AgentResult {
   /** Present when the run ended out of budget and revival is enabled. */
   revival?: RevivalRequest;
   phase?: string;
-  disposition?: RunDisposition;
-  watch?: Record<string, unknown>;
-  resumeAt?: string;
+  /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
+  handoff?: Record<string, unknown>;
 }

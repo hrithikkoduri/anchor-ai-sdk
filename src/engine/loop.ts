@@ -6,7 +6,7 @@
  */
 import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
-import { finishTool } from "../tools/finish.js";
+import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
 import { BudgetTracker } from "./budgets.js";
 import {
@@ -89,8 +89,12 @@ export async function runAgent(
   };
   const tools = opts.tools ?? opts.agent?.tools ?? [];
   const available = new Map(tools.map((tool) => [tool.definition.name, tool]));
-  // Optional structured handoff (watch/blocked), never required to stop.
-  if (opts.intrinsics?.finish !== false) available.set("finish", finishTool);
+  // Terminal intrinsic — with the consumer's handoff shape when configured
+  // (EngineOptions.handoff). Never required to stop.
+  const finish = createFinishTool(
+    opts.handoff ? { handoff: opts.handoff } : {},
+  );
+  if (opts.intrinsics?.finish !== false) available.set("finish", finish);
   const missing = (strategy.requiredTools ?? []).filter(
     (name) => !available.has(name),
   );
@@ -261,12 +265,12 @@ export async function runAgent(
     );
   }
 
-  const persist = async (done = false, resumeAt?: string) => {
+  const persist = async (done = false, resumePhase?: string) => {
     try {
       await opts.thread?.store.save(opts.thread.id, {
         summary,
         messages: conversationHistory(messages),
-        phase: done ? resumeAt : phase,
+        phase: done ? resumePhase : phase,
       });
     } catch {
       /* a storage outage must not corrupt the model/tool protocol */
@@ -278,9 +282,7 @@ export async function runAgent(
       ok: boolean;
       summary?: string;
       error?: string;
-      disposition?: "done" | "watch" | "blocked";
-      watch?: Record<string, unknown>;
-      resumeAt?: string;
+      handoff?: Record<string, unknown>;
       completion?: "response" | "declared";
     },
   ): Promise<AgentResult> => {
@@ -324,11 +326,13 @@ export async function runAgent(
       steps,
       usage,
       reason,
-      disposition: extra.disposition,
+      ...(extra.handoff !== undefined ? { handoff: extra.handoff } : {}),
     });
     await persist(
       reason !== "paused",
-      extra.disposition === "watch" ? extra.resumeAt : undefined,
+      extra.handoff !== undefined
+        ? opts.handoff?.threadPhase?.(extra.handoff)
+        : undefined,
     );
     // Every exit passes through here: stop beating, unlink the caller's
     // signal, and make sure the sinks hold the complete journal — including
@@ -540,9 +544,7 @@ export async function runAgent(
         | {
             ok: boolean;
             summary: string;
-            disposition: "done" | "watch" | "blocked";
-            watch?: Record<string, unknown>;
-            resumeAt?: string;
+            handoff?: Record<string, unknown>;
           }
         | undefined;
       let runaway = false;
@@ -606,24 +608,17 @@ export async function runAgent(
               content: `error: ${err instanceof Error ? err.message : String(err)}`,
             };
           }
-          if (call.name === "finish" && tool === finishTool && result.ok) {
+          if (call.name === "finish" && tool === finish && result.ok) {
             const meta = result.meta ?? {};
-            const ok = meta.success !== false;
-            const disposition =
-              meta.disposition === "watch" || meta.disposition === "blocked"
-                ? meta.disposition
-                : meta.watch
-                  ? "watch"
-                  : ok
-                    ? "done"
-                    : "blocked";
+            const handoff = meta.handoff;
             declared = {
-              ok,
+              ok: meta.success !== false,
               summary: String(meta.summary ?? ""),
-              disposition,
-              watch: meta.watch as Record<string, unknown> | undefined,
-              resumeAt:
-                typeof meta.resumeAt === "string" ? meta.resumeAt : undefined,
+              ...(handoff !== undefined &&
+              typeof handoff === "object" &&
+              handoff !== null
+                ? { handoff: handoff as Record<string, unknown> }
+                : {}),
             };
           }
         }

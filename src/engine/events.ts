@@ -8,9 +8,6 @@
  */
 import type { LLMToolCall, LLMUsage } from "../llm/types.js";
 
-/** How a finish() concluded — done, watching for events, or blocked on a human. */
-export type RunDisposition = "done" | "watch" | "blocked";
-
 /** What a budget-limited run says it still needs — see EngineOptions.revival. */
 export interface RevivalRequest {
   /** Plain language: the work that remains. */
@@ -123,8 +120,8 @@ export type AgentEvent =
         | "error"
         | "paused"
         | "cancelled";
-      /** Set when the run concluded via finish(): done | watch | blocked. */
-      disposition?: RunDisposition;
+      /** Set when the run concluded via finish() with a consumer-shaped handoff. */
+      handoff?: Record<string, unknown>;
     }
   | { type: "error"; message: string };
 

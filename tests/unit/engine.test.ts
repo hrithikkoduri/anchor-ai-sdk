@@ -116,7 +116,6 @@ describe("agent runtime", () => {
     expect(result).toMatchObject({
       ok: true,
       completion: "declared",
-      disposition: "done",
       steps: 1,
     });
   });
