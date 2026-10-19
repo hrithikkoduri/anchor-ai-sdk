@@ -32,6 +32,7 @@ export type {
 // Trace — durable run records (redaction + NDJSON)
 export * from "./trace/jsonl.js";
 export * from "./trace/redact.js";
+export * from "./trace/sink.js";
 
 // Agents — built-in bundles: strategy + tools in one import (codingAgent, chatAgent)
 export * from "./agents/index.js";
