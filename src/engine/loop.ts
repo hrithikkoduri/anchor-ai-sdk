@@ -1041,7 +1041,7 @@ export async function runAgent(
           summary: `Paused at the ${phase} phase by caller policy.`,
         });
       if (runaway) {
-        if (!loopNudged) {
+        if (!loopNudged && repeatLimit !== false) {
           loopNudged = true;
           signatures.length = 0;
           await courseCorrect({
