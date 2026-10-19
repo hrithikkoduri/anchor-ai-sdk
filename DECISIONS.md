@@ -447,3 +447,16 @@ publish. Snapshot failures emit a `snapshot_failed` advisory instead of a
 silent catch. The extraction uses git filter-repo over all three historical
 eras (root `src/{llm,sandbox,tools}` → `packages/agent` → `packages/core`),
 not subtree split.
+
+## Decision #66 — set_phase at real transitions (prompt nudge)
+
+The phases stayed labels — and the label was never written: across the first
+full live thread on the new engine (3 runs, 54 steps), the model never called
+`set_phase`, so the dashboard's phase timeline read "understand" forever. The
+prompt now asks for it in the model's own terms: "when your work shifts
+between kinds of activity — investigating, changing code, verifying,
+answering — call set_phase once to record the new phase." The non-gating
+contract is unchanged (it never authorizes or blocks anything); the old "do
+not call it as ceremony" framing — which read as permission to skip — is
+gone. Small wording, real consequence: the timeline reports the actual
+approach instead of a constant.
