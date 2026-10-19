@@ -550,3 +550,42 @@ rather than a framework:
 Decided, not built — tracked as "Agent teams" in `ROADMAP.md`. Sailor's side
 (which roles exist, what a verifier's verdict gates) is recorded in that repo's
 decision #69.
+
+## Decision #72 — Reasoning is reported only when the provider produced it
+
+`llm_call_finished` carries `reasoningTokens` whenever the provider sends the
+field — and OpenAI-compatible providers send `0` on tool-only turns. Both
+projections treated "field present" as "there is reasoning", so every tool-only
+turn grew a `Provider reasoning · 0 reasoning tokens` block. In a 45-step run
+that is 45 of them, and because the empty block sat between activity groups it
+also stopped consecutive single-tool turns from merging — the dashboard read
+`1 action performed` / `0 reasoning tokens` on repeat, noise that looked like
+the model thinking.
+
+Presence of a number is not evidence of reasoning; a *value* is. The
+conversation projection now creates a reasoning part only when there is
+reasoning text or tokens greater than zero, and the live projector omits both
+empty fields instead of publishing them. The provider's `0` is still recorded
+in usage and budgets — it is honest data, just not a block. Sailor's dashboard
+applies the same rule to already-persisted traces, so the fix reached the
+running UI before the server was restarted. Shipped in 0.1.3. Regressions:
+`tests/unit/conversation-projection.test.ts`.
+
+## Decision #73 — The tool surface steers to the read-only tools
+
+Decision #69 takes the parallel path only when *every* call in a turn is
+read-only, and only `read_file` and `search` declare that flag. The first full
+run on that engine (WebRover #19, 45 steps) took the concurrent path exactly
+zero times: its vocabulary was `bash`, `read_file`, `edit_file`, `set_phase`,
+and every multi-call turn mixed in a shell `grep`/`cat`/`curl`, so `search`
+never ran and two reads cost two round trips. The parallelism was not broken —
+nothing asked the model for the tools that enable it, and the bash description
+actively invited the habit ("Use for git, ls, inspecting the environment,
+running scripts, installing packages").
+
+The bash description now says what it is *not* for — "Do not search or read
+text with it: use search to find text and read_file to read files — they are
+read-only, and several in one turn run together" — giving the model the reason,
+not just the rule. This is a description, not a mechanism: no dispatch,
+ordering, or capability changed. Shipped in 0.1.4; Sailor carries the same
+steer in its product prompt until it bumps to this version.
