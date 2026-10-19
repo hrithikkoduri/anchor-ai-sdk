@@ -1,7 +1,7 @@
 {
   "name": "anchor-ai-sdk",
   "version": "0.1.0",
-  "description": "Loop-first, sandbox-first agent framework: engine, tools, LLM client, sandbox adapters.",
+  "description": "Loop-first, sandbox-first agent harness SDK: engine, tools, LLM client, sandbox adapters.",
   "type": "module",
   "license": "MIT",
   "repository": {

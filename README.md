@@ -1,53 +1,68 @@
-# Anchor
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hrithikkoduri/anchor-ai-sdk/main/assets/logo-dark.svg" />
+    <img src="https://raw.githubusercontent.com/hrithikkoduri/anchor-ai-sdk/main/assets/logo.svg" alt="Anchor" width="96" />
+  </picture>
+</p>
 
-**Loop-first, sandbox-first agent framework.** An agent engine you can
-actually inspect: it composes its prompt, calls any OpenAI-compatible model,
-executes tools inside an isolated sandbox, journals every event, folds its own
-context, and stops honestly — a final response ends the turn, and nothing
-pretends a test passed.
+<h1 align="center">Anchor</h1>
 
-> **0.0.1 — early alpha.** This is a real, working build (engine, tools, LLM
-> client, three sandbox adapters, 193 tests), published to claim the name and
-> start the version history. The API will move before 1.0 — pin exact
-> versions. Repo: [github.com/hrithikkoduri/anchor-ai-sdk](https://github.com/hrithikkoduri/anchor-ai-sdk).
-> Docs: [anchor-sdk.dev](https://anchor-sdk.dev) (coming).
+<p align="center">
+  <strong>Loop-first, sandbox-first agent harness SDK.</strong><br />
+  Give it a task and a machine — it reasons, runs tools, checks its own work, and keeps the receipts.
+</p>
 
-## What's in the box
+<p align="center">
+  <a href="https://www.npmjs.com/package/anchor-ai-sdk"><img src="https://img.shields.io/npm/v/anchor-ai-sdk?style=flat-square&color=0f1115" alt="npm" /></a>
+  <a href="https://github.com/hrithikkoduri/anchor-ai-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hrithikkoduri/anchor-ai-sdk/ci.yml?style=flat-square&label=ci&color=0f1115" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/anchor-ai-sdk?style=flat-square&color=0f1115" alt="license" /></a>
+  <img src="https://img.shields.io/node/v/anchor-ai-sdk?style=flat-square&color=0f1115" alt="node" />
+</p>
 
-- **The engine** (`runAgent`): budgets, guardrails on by default, compaction
-  derived from the model's real context window, trace sinks with one sequence
-  number, revival handoffs, and configurable run snapshots.
-- **A tool protocol** — `bash`, `read_file`, `edit_file`, `search`,
-  `run_tests` — with structured results. Test evidence is tied to the exact
-  tree it ran against (`run_tests` records the tree hash); "green" only counts
-  if the tree still matches.
-- **A provider-agnostic LLM client**: streaming by default, priced and
-  windowed from the provider catalog (`llmFromCatalog`).
-- **Sandbox providers behind one contract**, accepted by an executable
-  conformance suite (exec fidelity, kill deadlines, checkpoints,
-  retain/adopt, git identity, pushes).
-- **Durable memory**: `ThreadStore` for conversation, git-backed checkpoints
-  for the workspace, and a reserved notes file (`.anchor/notes.md`) that
-  rides checkpoints — the agent's own durable record across folds and
-  restarts.
+---
 
-## Quickstart
+Most agent harnesses give you a loop and leave the hard parts to you: a
+context that grows until it dies, a trace you can't replay, a "done" you can't
+trust. Anchor ships the hard parts.
+
+- **Evidence over claims.** `run_tests` records the tree hash it ran against;
+  publication is an explicit tool that refuses to ship unless a green run
+  matches the *exact* tree. The engine never reads success out of a confident
+  sentence.
+- **Durable by construction.** Conversation, workspace, and the agent's own
+  notes all survive folds, restarts, and budget deaths — and resume without a
+  human.
+- **Sandbox-first.** The machine is part of the design, not an afterthought:
+  one provider contract, adapters accepted by an executable conformance
+  suite.
+
+## Out of the box
+
+| | |
+| --- | --- |
+| **Agent loop with dials** | Budgets (steps / tokens / USD), repeated-call detection, silent-tool advisories — guardrails on by default, each with an off switch. Phases describe the approach; they never gate it. |
+| **Streaming by default** | One wire path: every model call streams. Text and reasoning deltas, tool calls, compaction, checkpoints, and finishes all arrive as typed events. |
+| **Durable memory** | `ThreadStore` carries conversation across runs; compaction is derived from the model's *real* context window; reasoning is journaled but never re-sent. |
+| **Notes & spill storage** | A reserved `.anchor/notes.md` (git-excluded, checkpoint-carried) is the agent's durable memory across folds; oversized tool output spills to sandbox files and stays addressable instead of vanishing. |
+| **Revival** | A dying run leaves a funded handoff (`request_revival`); the next run continues the **same task, phase, and budget**. Once the thread's caps are spent, a human gets the note — with the agent's own words on what remains. |
+| **Snapshots & resume** | A pluggable snapshot hook (git-backed by default, push optional), phase-boundary pauses, heartbeats and cross-process cancel polling owned by the engine. |
+| **Traces you can replay** | One fanout: one sequence number, redaction applied before *every* sink — NDJSON file, database rows, and a live projector share the same ordering. |
+| **Sandbox plugins** | One `SandboxProvider` contract: Heyo microVMs, Docker, local. Capabilities are promises — the conformance suite holds adapters to them. Store-backed sessions give adopt-and-fallback continuity for free. |
+| **Typed handoffs** | `finish({ handoff })` is shaped by *your* JSON schema; the engine declares the parameter, carries the object, and never interprets it. |
+| **Priced & windowed models** | `llmFromCatalog` reads live prices and the genuine context window from the provider catalog — budgets and compaction configure themselves correctly. |
+
+## Ten lines to a working agent
 
 ```bash
 npm install anchor-ai-sdk
 ```
 
 ```ts
-import {
-  chatAgent,
-  createLLMClient,
-  llmFromCatalog,
-  runAgent,
-} from "anchor-ai-sdk";
+import { chatAgent, llmFromCatalog, runAgent } from "anchor-ai-sdk";
 
 const { llm } = await llmFromCatalog({
   baseUrl: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_KEY,
+  apiKey: process.env.OPENROUTER_KEY!,
   model: "z-ai/glm-5.3",
 });
 
@@ -58,14 +73,13 @@ const result = await runAgent(
 console.log(result.summary);
 ```
 
-With a sandbox — Docker shown; the `local` backend needs no daemon:
+## Give it a machine
 
 ```ts
-import { codingAgent, createLLMClient, runAgent } from "anchor-ai-sdk";
+import { codingAgent, runAgent } from "anchor-ai-sdk";
 import { docker } from "anchor-ai-sdk/sandbox/docker";
 
-const provider = docker();
-const sandbox = provider.create({
+const sandbox = docker().create({
   repoUrl: "https://github.com/you/your-repo",
   ref: "main",
 });
@@ -73,15 +87,9 @@ await sandbox.start();
 try {
   const result = await runAgent(
     { task: "Run the tests and fix the failing case" },
-    {
-      llm: createLLMClient({
-        /* … */
-      }),
-      agent: codingAgent,
-      sandbox,
-    },
+    { llm, agent: codingAgent, sandbox },
   );
-  console.log(result.summary);
+  console.log(result.summary, result.checkpointRef);
 } finally {
   await sandbox.destroy();
 }
@@ -89,28 +97,37 @@ try {
 
 ## Providers
 
-| subpath                        | backend                           | status                                    |
-| ------------------------------ | --------------------------------- | ----------------------------------------- |
-| `anchor-ai-sdk/sandbox/heyo`   | Heyo Cloud microVMs (Firecracker) | production path; conformance + live tests |
-| `anchor-ai-sdk/sandbox/docker` | containers on the local daemon    | conformance-tested                        |
-| `anchor-ai-sdk/sandbox/local`  | this host, **no isolation**       | dev / CI only                             |
-| —                              | E2B, Daytona                      | planned — not exported yet                |
+| subpath | backend | status |
+| --- | --- | --- |
+| `anchor-ai-sdk/sandbox/heyo` | Heyo Cloud microVMs (Firecracker) | production path; conformance + live tests |
+| `anchor-ai-sdk/sandbox/docker` | containers on the local daemon | conformance-tested in CI |
+| `anchor-ai-sdk/sandbox/local` | this host, **no isolation** | dev / CI only |
+| — | E2B, Daytona | planned |
 
 A backend is "done" when `runSandboxConformance(provider)` from
-`anchor-ai-sdk/testing` passes. The suite gates scenarios on declared
-capabilities; capabilities are promises, not vibes.
+`anchor-ai-sdk/testing` passes — exec fidelity, kill deadlines, env secrets,
+checkpoints, retain/adopt, git identity, pushes, and `fork` where declared.
+See [`src/sandbox/README.md`](src/sandbox/README.md) for the provider guide.
 
-## The philosophy, short
+## Proof, not promises
 
-Trust the reasoning; verify the claims. The engine carries _evidence_ instead
-of asserting success: a passing test run is a structured event tied to the
-exact tree; publication is an explicit tool call gated on that evidence; a
-worker death resumes from a checkpoint instead of re-deriving or pretending.
-The same discipline is being measured: Anchor vs mini-swe-agent on SWE-bench
-Lite, same container, same model, same grader — equal resolution at roughly
-one-third the cost. The comparison table ships with the first tagged release.
+- **Tests:** the engine, tools, trace layer, and every provider scenario run
+  in CI — local conformance always, Docker conformance on a purpose-built
+  image, live microVMs on demand.
+- **Genericity guards:** executable rules keep the package consumer-neutral —
+  no product nouns, no env reads, SDKs behind subpaths. They run in the same
+  suite as everything else.
+- **Evaluation:** Anchor vs mini-swe-agent on SWE-bench Lite — same
+  container, same model, same official grader — resolved the same 7/10 at
+  roughly **one-third of the cost**. The comparison table ships with the
+  evaluation folder.
 
-## Status & links
+## Status
+
+**Early alpha (0.x).** The API will move before 1.0 — pin exact versions. The
+[`DECISIONS.md`](DECISIONS.md) is the engineering log: every API has a written
+reason, and the reasons moved with the code when this repo was extracted from
+its monorepo.
 
 - Repo / issues: [github.com/hrithikkoduri/anchor-ai-sdk](https://github.com/hrithikkoduri/anchor-ai-sdk)
 - Docs: [anchor-sdk.dev](https://anchor-sdk.dev) (coming)

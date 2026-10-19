@@ -1,0 +1,20 @@
+{
+  "name": "anchor-evals",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Anchor's evaluation harness: SWE-bench tasks through pluggable arms driving anchor-ai-sdk directly (no product stack).",
+  "type": "module",
+  "dependencies": {
+    "anchor-ai-sdk": "file:.."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "eval": "tsx src/main.ts",
+    "fetch-tasks": "node scripts/fetch-tasks.mjs",
+    "typecheck": "tsc --noEmit"
+  }
+}

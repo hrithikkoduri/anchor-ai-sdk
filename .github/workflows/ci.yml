@@ -42,6 +42,19 @@ jobs:
         env:
           ANCHOR_DOCKER_TEST_IMAGE: anchor-conformance
 
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The eval harness consumes the package through file:.. — build first.
+      - run: npm ci
+      - run: npm run build
+      - name: Typecheck the eval harness
+        run: cd evals && npm install --silent && npm run typecheck
+
   # Live remote backends stay manual and secret-gated: Actions → Run workflow
   # with HEYO_TOKEN / HEYO_NAMESPACE / HEYO_SERVER secrets configured, then
   # RUN_LIVE_HEYO_TESTS=1. Never in the default path — a provider outage must
