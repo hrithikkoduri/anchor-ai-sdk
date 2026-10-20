@@ -1,7 +1,7 @@
-# swe-bench — Anchor vs mini-swe-agent
+# swe-bench: Anchor vs mini-swe-agent
 
 Scores **Anchor as a harness** on SWE-bench. Same task images, same model,
-same runner, same patch extraction, same official grader — the only variable
+same runner, same patch extraction, same official grader: the only variable
 is the harness. This benchmark's data and results live here; the shared
 runner lives in [`../../src/runner.ts`](../../src/runner.ts).
 
@@ -18,7 +18,7 @@ data/            the committed task subset (deterministic, one per repo)
 results/         verdicts + the comparison table, per round
 ```
 
-## Setup (once; venvs live at the evals root)
+## Setup (once, with venvs at the evals root)
 
 ```bash
 # grader venv
@@ -31,7 +31,7 @@ evals/.venv-mini/bin/pip install mini-swe-agent
 ```
 
 Docker Desktop must be installed and running. **The eval images are
-amd64-only** — the scripts force `DOCKER_DEFAULT_PLATFORM=linux/amd64`, and
+amd64-only**: the scripts force `DOCKER_DEFAULT_PLATFORM=linux/amd64`, and
 the platform runs them under emulation on Apple Silicon (slower, but exactly
 the images the SWE-bench numbers come from). The scripts also point
 `DOCKER_CONFIG` at an empty config so public pulls never ask for the macOS
@@ -48,12 +48,12 @@ DOCKER_BIN=/Applications/Docker.app/Contents/Resources/bin/docker \
   npm run eval --prefix evals -- --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
   --provider docker --model z-ai/glm-5.3 --max-steps 60
 
-# the baseline arm — same tasks, same model, same container:
+# the baseline arm: same tasks, same model, same container:
 DOCKER_BIN=/Applications/Docker.app/Contents/Resources/bin/docker \
   npm run eval --prefix evals -- --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
   --provider docker --model z-ai/glm-5.3 --arm mini
 
-# 3. bigger sets: Verified (500) or the full benchmark (2294) — fetch on demand
+# 3. bigger sets: Verified (500) or the full benchmark (2294): fetch on demand
 node scripts/fetch-tasks.mjs --dataset SWE-bench/SWE-bench_Verified \
   --limit 500 --out benchmarks/swe-bench/data/swebench-verified.jsonl
 
@@ -80,9 +80,9 @@ E2B_TEMPLATE_MAP='{"psf__requests-1963":"anchor-swebench-psf-requests-1963:lates
   --provider e2b --task psf__requests-1963 --model z-ai/glm-5.3 --max-steps 60
 ```
 
-`E2B_TIMEOUT_MS` controls the sandbox lifetime (default 1 hour; Hobby caps
+`E2B_TIMEOUT_MS` controls the sandbox lifetime (default 1 hour; Hobby caps there)
 there). E2B's image tasks run as `root`, matching the SWE-bench images.
-Unlike Docker, E2B is remote — `DOCKER_BIN` is irrelevant, and the grader
+Unlike Docker, E2B is remote; `DOCKER_BIN` is irrelevant, and the grader
 still runs locally in Docker exactly as before.
 
 For a fast, E2B-native sanity check (not a replacement for the official
@@ -110,12 +110,12 @@ Auto-prepulls the images, runs the official `swebench` harness in Docker (one
 worker), and writes per-instance reports under `.eval-runs/grading/<run_id>/`.
 `scripts/watch-and-grade.mjs` polls run dirs and grades completed tasks as
 they land; `scripts/report.mjs` renders the comparison table from
-`.eval-runs` (its title and prices are pinned per round — update both when a
+`.eval-runs` (its title and prices are pinned per round; update both when a
 new round starts).
 
 ## Results
 
-- **Round 1 — `z-ai/glm-5.3` (2026-10-18):** 7/10 vs 7/10 resolved — at
+- **Round 1: `z-ai/glm-5.3` (2026-10-18):** 7/10 vs 7/10 resolved, at
   **$0.60 vs ≈$1.99** and **5.28M vs ≈17.0M tokens**.
   [`results/comparison.md`](results/comparison.md) ·
   [`results/verdicts.jsonl`](results/verdicts.jsonl)

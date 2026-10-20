@@ -9,7 +9,7 @@
 
 <p align="center">
   <strong>Loop-first, sandbox-first agent harness SDK.</strong><br />
-  Give it a task and a machine — it reasons, runs tools, checks its own work, and keeps the receipts.
+  Give it a task and a machine; it reasons, runs tools, checks its own work, and keeps the receipts.
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@ trust. Anchor ships the hard parts.
   `AgentResult.evidence`; `run_tests` stamps the tree hash it ran against and
   `latestEvidenceForTree` ties a green run to the *exact* bytes (fail-closed
   when the tree can't be inspected). The engine carries evidence and never
-  reads success out of a confident sentence — what to gate on it is your
+  reads success out of a confident sentence; what to gate on it is your
   policy, not a hidden wall.
 - **Durable by construction.** Conversation, workspace, and the agent's own
   notes survive folds, restarts, and budget deaths; the SDK ships the
@@ -43,16 +43,16 @@ trust. Anchor ships the hard parts.
 
 | | |
 | --- | --- |
-| **Agent loop with dials** | Budgets (steps / tokens / USD), repeated-call detection, silent-tool and verbose-turn advisories, a per-call output cap (16k, nudge at 8k; a capped prose turn continues once instead of ending), and assistant-text elision (20k replay, 12k head-only when capped, spilled and pointed at) — guardrails on by default, each with an off switch. Phases describe the approach — never a second gated execution engine. |
+| **Agent loop with dials** | Budgets (steps / tokens / USD), repeated-call detection, silent-tool and verbose-turn advisories, a per-call output cap (16k, nudge at 8k; a capped prose turn continues once instead of ending), and assistant-text elision (20k replay, 12k head-only when capped, spilled and pointed at); guardrails on by default, each with an off switch. Phases describe the approach, never a second gated execution engine. |
 | **Streaming by default** | One wire path: every model call streams. Text and reasoning deltas, tool calls, compaction, checkpoints, and finishes all arrive as typed events. |
 | **Durable memory** | `ThreadStore` carries conversation across runs; compaction is derived from the model's *real* context window; reasoning is journaled but never re-sent. |
 | **Notes & spill storage** | A reserved `.anchor/notes.md` (git-excluded, checkpoint-carried) is the agent's durable memory across folds; oversized tool output spills to sandbox files and stays addressable instead of vanishing. |
-| **Revival** | A dying run leaves a handoff (`request_revival`); `planRevival` + `ThreadBudget` decide how to fund the next run — **same task, phase, and budget** — and when the thread's caps are spent, a human gets the note, quoting the agent's own words on what remains. |
+| **Revival** | A dying run leaves a handoff (`request_revival`); `planRevival` + `ThreadBudget` decide how to fund the next run; **same task, phase, and budget**, and when the thread's caps are spent, a human gets the note, quoting the agent's own words on what remains. |
 | **Snapshots & resume** | A pluggable snapshot hook (git-backed by default, push optional), phase-boundary pauses, heartbeats and cross-process cancel polling owned by the engine. |
-| **Traces you can replay** | One fanout: one sequence number, redaction applied before *every* sink — NDJSON file, database rows, and a live projector share the same ordering. |
-| **Sandbox plugins** | One `SandboxProvider` contract: Heyo microVMs, Docker, local. Capabilities are promises — the conformance suite holds adapters to them. Store-backed sessions give adopt-and-fallback continuity for free. |
+| **Traces you can replay** | One fanout: one sequence number, redaction applied before *every* sink; NDJSON file, database rows, and a live projector share the same ordering. |
+| **Sandbox plugins** | One `SandboxProvider` contract: Heyo microVMs, Docker, local. Capabilities are promises; the conformance suite holds adapters to them. Store-backed sessions give adopt-and-fallback continuity for free. |
 | **Typed handoffs** | `finish({ handoff })` is shaped by *your* JSON schema; the engine declares the parameter, carries the object, and never interprets it. |
-| **Priced & windowed models** | `llmFromCatalog` reads live prices and the genuine context window from the provider catalog — budgets and compaction configure themselves correctly. |
+| **Priced & windowed models** | `llmFromCatalog` reads live prices and the genuine context window from the provider catalog; budgets and compaction configure themselves correctly. |
 
 ## Ten lines to a working agent
 
@@ -98,7 +98,7 @@ try {
 }
 ```
 
-Runnable versions of both snippets live in [`examples/`](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples) — including
+Runnable versions of both snippets live in [`examples/`](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples), including
 a non-coding agent (its own strategy and tool, no sandbox).
 
 ## Providers
@@ -109,7 +109,7 @@ a non-coding agent (its own strategy and tool, no sandbox).
 | `anchor-ai-sdk/sandbox/docker` | containers on the local daemon | conformance-tested in CI |
 | `anchor-ai-sdk/sandbox/e2b` | E2B cloud sandboxes (remote) | conformance-tested live (`base` template); opt-in in CI |
 | `anchor-ai-sdk/sandbox/local` | this host, **no isolation** | dev / CI only |
-| — | Daytona | planned |
+| n/a | Daytona | planned |
 
 E2B boots a **template**, not an arbitrary Docker image at create time: pass
 `template` (or let `SandboxSpec.image` name one) and build it with the tools
@@ -117,27 +117,27 @@ the task needs. Pause/resume powers retain/adopt, and native sandbox forking
 powers `fork()`.
 
 A backend is "done" when `runSandboxConformance(provider)` from
-`anchor-ai-sdk/testing` passes — exec fidelity, kill deadlines, env secrets,
+`anchor-ai-sdk/testing` passes: exec fidelity, kill deadlines, env secrets,
 checkpoints, retain/adopt, git identity, pushes, and `fork` where declared.
 See [`src/sandbox/README.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md) for the provider guide.
 
 ## Proof, not promises
 
 - **Tests:** the engine, tools, trace layer, and every provider scenario run
-  in CI — local conformance always, Docker conformance on a purpose-built
+  in CI: local conformance always, Docker conformance on a purpose-built
   image. Live microVM conformance is opt-in with your own Heyo credentials
   (the suite skips without them).
-- **Genericity guards:** executable rules keep the package consumer-neutral —
+- **Genericity guards:** executable rules keep the package consumer-neutral:
   no product nouns, no env reads, SDKs behind subpaths. They run in the same
   suite as everything else.
-- **Evaluation:** Anchor vs mini-swe-agent on SWE-bench Lite — same
-  container, same model, same official grader — resolved the same 7/10 at
+- **Evaluation:** Anchor vs mini-swe-agent on SWE-bench Lite (same
+  container, same model, same official grader), resolved the same 7/10 at
   roughly **one-third of the cost**
   ([`evals/benchmarks/swe-bench/results/comparison.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/evals/benchmarks/swe-bench/results/comparison.md)).
 
 ## Status
 
-**Early alpha (0.x).** The API will move before 1.0 — pin exact versions. The
+**Early alpha (0.x).** The API will move before 1.0, so pin exact versions. The
 [`DECISIONS.md`](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/DECISIONS.md) is the engineering log: every API has a written
 reason, and the reasons moved with the code when this repo was extracted from
 its monorepo.
