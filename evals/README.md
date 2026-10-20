@@ -30,6 +30,10 @@ task loader, an arm, and (usually) a grader — never a second runner. Pieces
 move into `benchmarks/<name>/` when their seams are proven by a second
 benchmark landing; data and results already live per-benchmark today.
 
+## Configuration
+
+Copy `.env.example` to `.env` and fill in `LLM_API_KEY` (and `E2B_API_KEY` for the E2B backend). `.env` is gitignored; the example contains no secrets.
+
 ## Benchmarks
 
 | benchmark | status | docs |
