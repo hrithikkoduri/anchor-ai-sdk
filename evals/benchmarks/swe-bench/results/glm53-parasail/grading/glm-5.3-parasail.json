@@ -1,7 +1,5 @@
 {
   "schema_version": 2,
-  "combined": true,
-  "note": "Synthesized from two Parasail runs (a 10-task run and a 4-task retry of the failures). Per-instance source and test status are below; each source run's own report is kept at runs/<run>/grading-report.json.",
   "benchmark": "SWE-bench Lite (swebench-lite-10)",
   "model": "zai-org/GLM-5.3",
   "provider": "parasail",
@@ -17,7 +15,6 @@
   "unstopped_instances": 0,
   "instances": {
     "django__django-10914": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -140,7 +137,6 @@
       }
     },
     "matplotlib__matplotlib-18869": {
-      "source_run": "retry-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -171,7 +167,6 @@
       }
     },
     "mwaskom__seaborn-2848": {
-      "source_run": "retry-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -246,7 +241,6 @@
       }
     },
     "pallets__flask-4045": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -322,7 +316,6 @@
       }
     },
     "psf__requests-1963": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -465,7 +458,6 @@
       }
     },
     "pydata__xarray-3364": {
-      "source_run": "retry-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -601,7 +593,6 @@
       }
     },
     "pylint-dev__pylint-5859": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -636,7 +627,6 @@
       }
     },
     "pytest-dev__pytest-11143": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -775,7 +765,6 @@
       }
     },
     "sphinx-doc__sphinx-10325": {
-      "source_run": "glm-5.3-parasail",
       "verdict": "resolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -805,7 +794,6 @@
       }
     },
     "sympy__sympy-11400": {
-      "source_run": "retry-parasail",
       "verdict": "unresolved",
       "tests_status": {
         "FAIL_TO_PASS": {
@@ -858,42 +846,6 @@
           "failure": []
         }
       }
-    }
-  },
-  "source_runs": {
-    "glm-5.3-parasail": {
-      "submitted": 10,
-      "completed": 10,
-      "resolved": 6,
-      "unresolved": 4,
-      "resolved_ids": [
-        "django__django-10914",
-        "pallets__flask-4045",
-        "psf__requests-1963",
-        "pylint-dev__pylint-5859",
-        "pytest-dev__pytest-11143",
-        "sphinx-doc__sphinx-10325"
-      ],
-      "unresolved_ids": [
-        "matplotlib__matplotlib-18869",
-        "mwaskom__seaborn-2848",
-        "pydata__xarray-3364",
-        "sympy__sympy-11400"
-      ]
-    },
-    "retry-parasail": {
-      "submitted": 4,
-      "completed": 4,
-      "resolved": 3,
-      "unresolved": 1,
-      "resolved_ids": [
-        "matplotlib__matplotlib-18869",
-        "mwaskom__seaborn-2848",
-        "pydata__xarray-3364"
-      ],
-      "unresolved_ids": [
-        "sympy__sympy-11400"
-      ]
     }
   },
   "submitted_ids": [

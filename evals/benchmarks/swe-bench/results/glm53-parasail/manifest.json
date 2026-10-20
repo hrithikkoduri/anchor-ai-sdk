@@ -2,7 +2,6 @@
   {
     "task": "django__django-10914",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 37,
     "reason": "finished",
     "cost_usd": 0.2579,
@@ -12,7 +11,6 @@
   {
     "task": "matplotlib__matplotlib-18869",
     "verdict": "resolved",
-    "source_run": "retry-parasail",
     "steps": 46,
     "reason": "finished",
     "cost_usd": 0.3979,
@@ -22,7 +20,6 @@
   {
     "task": "mwaskom__seaborn-2848",
     "verdict": "resolved",
-    "source_run": "retry-parasail",
     "steps": 120,
     "reason": "max_steps",
     "cost_usd": 1.4578,
@@ -32,7 +29,6 @@
   {
     "task": "pallets__flask-4045",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 56,
     "reason": "finished",
     "cost_usd": 0.4817,
@@ -42,7 +38,6 @@
   {
     "task": "psf__requests-1963",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 71,
     "reason": "finished",
     "cost_usd": 0.461,
@@ -52,7 +47,6 @@
   {
     "task": "pydata__xarray-3364",
     "verdict": "resolved",
-    "source_run": "retry-parasail",
     "steps": 35,
     "reason": "finished",
     "cost_usd": 0.3211,
@@ -62,7 +56,6 @@
   {
     "task": "pylint-dev__pylint-5859",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 34,
     "reason": "finished",
     "cost_usd": 0.1524,
@@ -72,7 +65,6 @@
   {
     "task": "pytest-dev__pytest-11143",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 21,
     "reason": "finished",
     "cost_usd": 0.1003,
@@ -82,7 +74,6 @@
   {
     "task": "sphinx-doc__sphinx-10325",
     "verdict": "resolved",
-    "source_run": "glm-5.3-parasail",
     "steps": 52,
     "reason": "finished",
     "cost_usd": 0.5598,
@@ -92,7 +83,6 @@
   {
     "task": "sympy__sympy-11400",
     "verdict": "unresolved",
-    "source_run": "retry-parasail",
     "steps": 25,
     "reason": "finished",
     "cost_usd": 0.1263,

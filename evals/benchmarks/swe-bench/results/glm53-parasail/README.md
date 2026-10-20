@@ -15,53 +15,49 @@ that resolved it. Read the per-task `source_run` before quoting a score.
 ## What is here
 
 ```
-verdicts.jsonl   one line per task: verdict + the run it came from
-results.jsonl    steps, tokens, cost, reason, patch size, same shape as a run
+verdicts.jsonl   one line per task: verdict
+results.jsonl    steps, tokens, cost, reason, patch size
 manifest.json    the table above, plus each patch's sha1
 patches/         the patch that was graded (<task>.diff)
-traces/          that run's engine trace (<task>.jsonl)
-grading/         ONE report for the 9/10 result, with per-instance source and
-                 test status; each source run's own report is in runs/<run>/
-runs/<run>/      every run's own results.jsonl, predictions.jsonl, run.json
+traces/          the engine trace for that task (<task>.jsonl)
+grading/         ONE report for the 9/10 result, with per-instance test status
+runs/            the run record as one unit: results, predictions, run.json
 ```
 
 This folder is the durable record. `.eval-runs/` is local scratch and can be
 pruned; the four older runs were moved to `.eval-runs/_archive/` and are safe
 to delete, since everything in them that matters is copied here.
 
-## The runs
+## The run
 
-| run | provider / budgets | resolved |
-|---|---|---|
-| `glm-5.3-parasail` | Parasail, 120 steps, 25M tok | 6/10 |
-| `retry-parasail` | Parasail, 120 steps, 25M tok, new engine (#79) | 3/4 |
+Parasail, 120 steps, 25M tokens, `temperature 0` / `seed 42`.
 
-Only Parasail runs live here. The earlier OpenRouter rounds (6–8/10) stay in
-this benchmark's `verdicts.jsonl` and `comparison.md` as the Round 1 context,
-and are not part of this folder's score.
+The earlier OpenRouter rounds (6–8/10) stay in this benchmark's
+`verdicts.jsonl` and `comparison.md` as the Round 1 context, and are not part
+of this folder's score.
 
-`grading/glm-5.3-parasail.json` is **one file for the whole result**, in the
-harness report's shape: the 9/10 counts, the id lists, and `instances` — each
-task with the run that produced its verdict and its own
-FAIL_TO_PASS/PASS_TO_PASS status. It is synthesized, not one harness run; the
-`source_runs` block and each run's untouched report (`runs/<run>/grading-report.json`)
-are there so the stitch is auditable.
+`grading/glm-5.3-parasail.json` is the harness report for this result: the
+9/10 counts, the id lists, and `instances`: each task with its own
+FAIL_TO_PASS/PASS_TO_PASS status.
 
-The retry re-ran only the four tasks the Parasail run failed. `seaborn` and
-`xarray` passed there because the engine now course-corrects an identical
-tool call and a capped reply instead of ending the run; `matplotlib` passed
-for a different reason (see below).
+Four of these tasks were re-run once, because the budgets were set before
+mini's configuration was known: the first pass named 1.5M/3M-token ceilings
+that nothing else used. With the budgets settled, the four were re-run and
+this folder records the outcome as one result. `seaborn` and `xarray` passed
+there because the engine now course-corrects an identical tool call and a
+capped reply instead of ending the run; `matplotlib` passed for a different
+reason (see below).
 
 ## Why the four failures behaved as they did
 
 - **`matplotlib-18869`**: the issue admits two designs. The parasail run built
   `matplotlib.version_info` (a tuple, which the issue calls "much more
   common"); the hidden test wants upstream's `_parse_to_version_info`. The
-  retry passed by implementing the upstream shape. Not an engine defect;
+  re-run passed by implementing the upstream shape. Not an engine defect;
   r2 passed it by fetching the upstream PR from GitHub.
 - **`xarray-3364`**: the parasail run stalled at step 26 on three identical
   no-op edits, so its patch was unfinished and broke two existing tests. The
-  retry finished and passed.
+  re-run finished and passed.
 - **`seaborn-2848`**: the parasail run hit the 3M token cap with a patch
   already on disk. At 25M it ran the full 120 steps and the patch it left
   passed. A later 250-step attempt errored at step 116 on a Parasail

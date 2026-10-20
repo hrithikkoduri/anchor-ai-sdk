@@ -1,4 +1,0 @@
-{"taskId":"mwaskom__seaborn-2848","arm":"anchor","status":"completed","steps":120,"reason":"max_steps","usage":{"promptTokens":4630159,"completionTokens":32382,"totalTokens":4662541,"costUsd":1.4578221199999997},"wallMs":1231354,"patchChars":2118}
-{"taskId":"sympy__sympy-11400","arm":"anchor","status":"completed","steps":25,"reason":"finished","usage":{"promptTokens":336771,"completionTokens":4327,"totalTokens":341098,"costUsd":0.12630188},"wallMs":62819,"patchChars":1356}
-{"taskId":"matplotlib__matplotlib-18869","arm":"anchor","status":"completed","steps":46,"reason":"finished","usage":{"promptTokens":721398,"completionTokens":19227,"totalTokens":740625,"costUsd":0.39793392000000005},"wallMs":1829158,"patchChars":4726}
-{"taskId":"pydata__xarray-3364","arm":"anchor","status":"completed","steps":35,"reason":"finished","usage":{"promptTokens":712513,"completionTokens":21829,"totalTokens":734342,"costUsd":0.32106531999999993},"wallMs":1002941,"patchChars":4492}
