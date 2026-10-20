@@ -116,3 +116,21 @@ test("existing documentation and benchmark routes still load", async ({
     await expect(page.locator("body")).toContainText("Anchor");
   }
 });
+
+test("landing page connects primitive composition and new runtime features to the docs", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  const build = page.locator("#build");
+  await expect(build.getByRole("heading")).toContainText("A harness of your own");
+  await expect(build.locator("pre")).toContainText("export const phases");
+  await expect(build.locator("pre")).toContainText("name: \"reviewer\", strategy");
+  await build.getByRole("button", { name: "Copy agent.mjs", exact: true }).click();
+  const source = await page.evaluate(() => navigator.clipboard.readText());
+  expect(source).toContain("tools: [searchTool, readFileTool]");
+  expect(source).not.toContain("codingAgent");
+  const path = build.getByRole("list", { name: "Build from primitives" });
+  await expect(path.getByRole("link", { name: /Phases → strategy/ })).toHaveAttribute("href", "/docs.html#phases");
+  await expect(path.getByRole("link", { name: /complete harness/ })).toHaveAttribute("href", "/docs.html#assembled");
+  await expect(page.locator(".secondary-features").getByRole("link", { name: /Queue or interject/ })).toHaveAttribute("href", "/docs.html#messages");
+  await expect(page.locator(".secondary-features").getByRole("link", { name: /Background commands/ })).toHaveAttribute("href", "/docs.html#background");
+});

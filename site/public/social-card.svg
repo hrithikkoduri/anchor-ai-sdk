@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#fff"/>
+  <rect x="64" y="64" width="1072" height="502" fill="#fff" stroke="#111114" stroke-width="2"/>
+  <path d="M96 112h38m-19-16v57m-17-17c0 26 34 26 34 0" fill="none" stroke="#ed511d" stroke-width="5"/>
+  <text x="153" y="144" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="#111114">anchor<tspan fill="#ed511d">.</tspan></text>
+  <text x="100" y="245" font-family="Arial,sans-serif" font-size="22" letter-spacing="4" fill="#a93810">TYPESCRIPT AI AGENT HARNESS</text>
+  <text x="96" y="330" font-family="Arial,sans-serif" font-size="70" font-weight="700" fill="#111114">Build the agent.</text>
+  <text x="96" y="412" font-family="Arial,sans-serif" font-size="70" font-weight="700" fill="#111114">Not the plumbing.</text>
+  <text x="100" y="512" font-family="Arial,sans-serif" font-size="25" fill="#45474f">Open source · Your model. Your tools. Your machine.</text>
+  <text x="1100" y="144" text-anchor="end" font-family="Arial,sans-serif" font-size="23" fill="#45474f">anchor-sdk.dev</text>
+</svg>

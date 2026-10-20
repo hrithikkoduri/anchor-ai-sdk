@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createRoot } from "react-dom/client";
+import { mountPage } from "./client.jsx";
 import * as Tabs from "@animate-ui/react/primitives/radix-ui/tabs";
 import * as Accordion from "@animate-ui/react/primitives/radix-ui/accordion";
 import {
@@ -205,7 +205,7 @@ function Ledger({ full }) {
   );
 }
 
-function Benchmarks() {
+export default function Benchmarks() {
   const [metric, setMetric] = useState("resolution");
   return (
     <PageShell page="benchmarks">
@@ -544,4 +544,4 @@ npm run eval --prefix evals -- \\
     </PageShell>
   );
 }
-createRoot(document.getElementById("root")).render(<Benchmarks />);
+mountPage(Benchmarks);

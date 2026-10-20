@@ -215,6 +215,53 @@ body,
   background: #fff;
   border-color: #b7bcc7;
 }
+#root .secondary-features > a:hover {
+  color: var(--signal-ink);
+}
+#root .build-example {
+  min-width: 0;
+}
+#root .build-example .code-window {
+  margin: 0;
+  border-radius: 2px 2px 0 0;
+}
+#root .build-example .code-footer {
+  background: #1d2028;
+  color: #f5b69c;
+  border: 1px solid #454853;
+  border-top: 0;
+}
+#root .build-example .code-footer:hover {
+  color: #fff;
+}
+#root .build-learning-path {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  max-width: 360px;
+}
+#root .build-learning-path li + li {
+  border-top: 1px solid #454853;
+}
+#root .build-learning-path a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: #f4f4f6;
+  font-size: 14px;
+}
+#root .build-learning-path a > span {
+  color: #f5b69c;
+  font: 12px var(--mono);
+}
+#root .build-learning-path a > svg {
+  margin-left: auto;
+  flex: none;
+}
+#root .build-learning-path a:hover {
+  color: #f5b69c;
+}
 #root .capability-tabs {
   background: #eceef2;
 }

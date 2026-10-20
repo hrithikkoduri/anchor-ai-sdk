@@ -82,6 +82,7 @@ export function SiteFooter() {
         <p>Keep the agent grounded.</p>
         <div>
           <a href="/docs.html">Docs</a>
+          <a href="/llms.txt">For AI agents</a>
           <a href={repo}>GitHub ↗</a>
           <a href="https://www.npmjs.com/package/anchor-ai-sdk">npm ↗</a>
         </div>

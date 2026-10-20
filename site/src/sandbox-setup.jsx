@@ -24,6 +24,14 @@ export function SandboxSetup() {
         <code>runAgent</code> call. Your toolchain, credentials, and provider
         account are still yours to supply.
       </p>
+      <p className="doc-small">
+        This is another dependency, not another loop: the host starts a machine,
+        passes it as <code>options.sandbox</code>, and machine tools use
+        <code>ctx.sandbox</code>. The examples below reuse <code>codingAgent</code>
+        to isolate provider setup. The <a href="#assembled">final recipe</a>
+        replaces that bundle with an agent assembled from your own phases,
+        strategy, and tools.
+      </p>
       <Tabs.Root
         value={provider}
         onValueChange={setProvider}
@@ -211,6 +219,9 @@ export function SandboxSetup() {
           </Accordion.Content>
         </Accordion.Item>
       </Accordion.Root>
+      <a className="doc-inline-link" href="#engine">
+        Next: connect the loop and bound its work
+      </a>
     </>
   );
 }

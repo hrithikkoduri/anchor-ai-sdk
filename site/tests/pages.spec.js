@@ -153,3 +153,25 @@ test("sidebar labels align with padded active rows", async ({ page }) => {
   expect(Math.abs(spacing.textLeft - spacing.headingLeft)).toBeLessThan(1);
   expect(spacing.marginLeft).toBe("0px");
 });
+
+for (const height of [600, 900]) {
+  test(`sidebar keeps the active section visible without moving the article at ${height}px height`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/docs.html");
+    for (const id of ["background", "status", "phases", "install"]) {
+      const scrollY = await page.locator("#" + id).evaluate(section => {
+        section.scrollIntoView({ block: "start", behavior: "instant" });
+        return window.scrollY;
+      });
+      const link = page.locator(`.doc-sidebar a[href="#${id}"]`);
+      await expect(link).toHaveAttribute("aria-current", "location");
+      await expect.poll(() => link.evaluate(row => {
+        const bounds = row.closest(".doc-sidebar").getBoundingClientRect();
+        const rect = row.getBoundingClientRect();
+        return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+      })).toBe(true);
+      expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    }
+  });
+}

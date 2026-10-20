@@ -1,0 +1,22 @@
+# Anchor SDK
+
+> Anchor (npm: anchor-ai-sdk) is an open-source TypeScript AI agent harness. Compose phase data, a strategy and tools into an agent, then supply a model client and optional sandbox to runAgent. Documentation targets SDK 0.1.7.
+
+## Documentation
+
+- [Documentation in Markdown](https://anchor-sdk.dev/docs.md): Quickstart, primitive composition, full repository harness, provider setup, memory, compaction, budgets, inbox delivery, background execution, recovery and traces. Generated from the same page as the HTML docs. Default tab examples are included; downloadable modules provide complete examples.
+- [All page text](https://anchor-sdk.dev/llms-full.txt): Generated overview, docs and benchmark text in one file.
+- [Overview](https://anchor-sdk.dev/index.md): Product scope and starting points.
+- [Benchmark records](https://anchor-sdk.dev/benchmarks.md): Completed 9/10 per-arm Lite-10 results, different budgets and missing mini usage. Not a cost comparison.
+
+## Runnable examples and package
+
+- [Policy agent](https://anchor-sdk.dev/examples/policy-agent.mjs): Phases, strategy, custom tool and agent bundle; no sandbox required.
+- [Repository harness](https://anchor-sdk.dev/examples/repository-harness.mjs): Custom agent, Heyo boot, model, stores, budgets, compaction, traces and cleanup.
+- [Background tool](https://anchor-sdk.dev/examples/background-tool.mjs): Public 0.1.7 opt-in contract for a sandbox-exec tool.
+- [Source repository](https://github.com/hrithikkoduri/anchor-ai-sdk): SDK implementation, tests, architecture decisions and license.
+- [npm package](https://www.npmjs.com/package/anchor-ai-sdk): Published package and public exports.
+
+## Scope
+
+Phases guide the approach; they are not enforced workflow gates. Model clients, sandbox providers and storage are supplied by the host. Memory stores are not crash-durable. Heyo currently supports the documented background polling path. Credentials, authorization, worker ownership, durable resume, funding and publish policy remain application responsibilities. Running model or cloud examples may incur cost. execPolicy is internal, not a public root export in 0.1.7.

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { mountPage } from "./client.jsx";
 import * as Collapsible from "@animate-ui/react/primitives/radix-ui/collapsible";
 import {
   ArrowRight,
@@ -28,6 +28,12 @@ import { StreamingGuide, ToolsGuide } from "./integration-guides.jsx";
 import { ProviderBrand } from "./provider-brand.jsx";
 import { MessageDeliveryGuide } from "./message-delivery.jsx";
 import { BackgroundGuide } from "./background-guide.jsx";
+import {
+  PrimitivesGuide,
+  PhasesGuide,
+  LoopCompositionGuide,
+  AssembledHarnessGuide,
+} from "./composition-guide.jsx";
 import "./styles.css";
 import "./pages.css";
 import "./typography.css";
@@ -40,14 +46,27 @@ const groups = [
     [
       ["install", "Install"],
       ["quickstart", "Your first agent"],
+    ],
+  ],
+  [
+    "BUILD AN AGENT",
+    [
+      ["primitives", "How the pieces fit"],
+      ["phases", "Phases → strategy"],
       ["custom-agents", "Custom agents"],
       ["machine", "Give it a machine"],
     ],
   ],
   [
-    "THE HARNESS",
+    "RUN & ASSEMBLE",
     [
       ["engine", "Loop & budgets"],
+      ["assembled", "End-to-end harness"],
+    ],
+  ],
+  [
+    "EXTEND THE HARNESS",
+    [
       ["messages", "Messages & inbox"],
       ["correction", "Course correction"],
       ["memory", "Filesystem memory"],
@@ -59,7 +78,7 @@ const groups = [
     ],
   ],
   [
-    "BUILD ON IT",
+    "REFERENCE & EXTENSION",
     [
       ["providers", "Sandbox providers"],
       ["contract", "The contract"],
@@ -113,11 +132,34 @@ function Callout({ children, icon: Icon = Command }) {
   );
 }
 
-function Docs() {
+export default function Docs() {
   const [active, setActive] = useState("install");
   const [open, setOpen] = useState(false);
   const [pendingSection, setPendingSection] = useState(null);
   const mobileContents = useRef(null);
+  const sidebar = useRef(null);
+  useEffect(() => {
+    function revealActiveLink() {
+      const container = sidebar.current;
+      if (!container?.clientHeight) return; // The desktop sidebar is hidden on mobile.
+      const link = container.querySelector('a[aria-current="location"]');
+      if (!link) return;
+      const bounds = container.getBoundingClientRect();
+      const row = link.getBoundingClientRect();
+      const inset = 16;
+      // Scroll only this container, not the document as scrollIntoView can do.
+      // Leave a manually browsed sidebar alone until the active section changes.
+      if (row.top < bounds.top + inset) {
+        container.scrollTop += row.top - bounds.top - inset;
+      } else if (row.bottom > bounds.bottom - inset) {
+        container.scrollTop += row.bottom - bounds.bottom + inset;
+      }
+    }
+    revealActiveLink();
+    const observer = new ResizeObserver(revealActiveLink);
+    if (sidebar.current) observer.observe(sidebar.current);
+    return () => observer.disconnect();
+  }, [active]);
   useEffect(() => {
     if (!pendingSection || !mobileContents.current) return;
     // Anchor only after the animated contents has left the layout. Otherwise
@@ -148,12 +190,24 @@ function Docs() {
     return () => observer.disconnect();
   }, [pendingSection]);
   useEffect(() => {
+    const sections = [...document.querySelectorAll(".doc-section")];
+    let scrollFrame = null;
     function update() {
-      const sections = [...document.querySelectorAll(".doc-section")];
-      const current = sections
+      // The final short section may never reach the activation line before the
+      // document hits its scroll limit, especially on a tall desktop viewport.
+      const atBottom = window.scrollY > 0 &&
+        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+      const current = atBottom ? sections.at(-1) : sections
         .filter((section) => section.getBoundingClientRect().top <= 160)
         .at(-1);
       setActive(current?.id ?? "install");
+    }
+    function scheduleUpdate() {
+      if (scrollFrame !== null) return;
+      scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = null;
+        update();
+      });
     }
     const frame = requestAnimationFrame(() => {
       const target = document.getElementById(
@@ -162,10 +216,13 @@ function Docs() {
       if (target) target.scrollIntoView({ behavior: "instant" });
       update();
     });
-    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", update);
+      if (scrollFrame !== null) cancelAnimationFrame(scrollFrame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
     };
   }, []);
   function contents(mobile = false) {
@@ -201,7 +258,7 @@ function Docs() {
   return (
     <PageShell page="docs">
       <div className="container docs-layout">
-        <aside className="doc-sidebar">
+        <aside className="doc-sidebar" ref={sidebar}>
           <div className="doc-sidebar-label">
             <BookOpen size={14} /> DOCUMENTATION
           </div>
@@ -232,8 +289,8 @@ function Docs() {
           <header className="doc-intro">
             <h1>Quickstart</h1>
             <p>
-              Install Anchor and run your first agent. Customize its behavior
-              and tools in the sections below.
+              Run your first agent, then learn the pieces. Build from phases,
+              strategies, and tools to a complete harness you can own and extend.
             </p>
             <div className="doc-meta">
               <span>Node 20+</span>
@@ -290,53 +347,52 @@ function Docs() {
               <code>compaction</code> configuration into the engine, as above.
               Metadata failures fall back rather than breaking the run.
             </p>
+            <a className="doc-inline-link" href="#primitives">
+              Next: unpack the bundle and build from primitives <ArrowRight size={14} />
+            </a>
+          </DocSection>
+
+          <DocSection id="primitives" number="03" title="How the pieces fit">
+            <PrimitivesGuide />
+          </DocSection>
+
+          <DocSection id="phases" number="04" title="Phases become a strategy">
+            <PhasesGuide />
           </DocSection>
 
           <DocSection
             id="custom-agents"
-            number="03"
+            number="05"
             title="Build your own agent"
           >
             <CustomAgentExample />
           </DocSection>
 
-          <DocSection id="machine" number="04" title="Give it a machine">
+          <DocSection id="machine" number="06" title="Give it a machine">
             <SandboxSetup />
           </DocSection>
 
-          <DocSection id="engine" number="05" title="Loop & budgets">
-            <p>
-              Model → tools → observations → model. Phases describe the
-              approach, not permissions. The agent can skip, revisit, or finish
-              from any phase.
-            </p>
-            <div className="phase-strip" aria-label="Default coding phases">
-              {["understand", "plan", "act", "validate", "respond"].map(
-                (phase, i) => (
-                  <React.Fragment key={phase}>
-                    <span>{phase}</span>
-                    {i < 4 && <ArrowRight size={11} />}
-                  </React.Fragment>
-                ),
-              )}
-            </div>
+          <DocSection id="engine" number="07" title="Loop & budgets">
+            <LoopCompositionGuide />
+            <h3>Bound the work, not the reusable agent</h3>
             <div className="budget-strip">
               <div>
                 <strong>40</strong>
-                <span>STEPS / RUN</span>
+                <span>STEPS / CALL</span>
               </div>
               <div>
                 <strong>3M</strong>
-                <span>TOKENS / RUN</span>
+                <span>TOKENS / CALL</span>
               </div>
               <div>
                 <strong>$5</strong>
-                <span>KNOWN COST / RUN</span>
+                <span>KNOWN COST / CALL</span>
               </div>
             </div>
             <p className="doc-small">
               These are defaults, not hard-coded policy. Override{" "}
-              <code>budgets</code> per run. Dollar checks require usable
+              <code>budgets</code> per call (one run, or a shared inbox chain).
+              Dollar checks require usable
               pricing; step and token limits still apply without it. Usage is
               checked between model turns, so a call can overshoot a run budget.
               The output cap is a separate per-call request limit.
@@ -351,13 +407,20 @@ function Docs() {
               <code>pauseAfterPhase</code> and <code>startPhase</code> for
               controlled pauses and resume.
             </p>
+            <a className="doc-inline-link" href="#assembled">
+              Next: assemble the complete harness <ArrowRight size={14} />
+            </a>
           </DocSection>
 
-          <DocSection id="messages" number="06" title="Messages, context & inbox">
+          <DocSection id="assembled" number="08" title="Assemble the end-to-end harness">
+            <AssembledHarnessGuide />
+          </DocSection>
+
+          <DocSection id="messages" number="09" title="Messages, context & inbox">
             <MessageDeliveryGuide />
           </DocSection>
 
-          <DocSection id="correction" number="07" title="Course correction">
+          <DocSection id="correction" number="10" title="Course correction">
             <p>
               A bad turn needn’t waste a good run. The engine can redirect
               repeated calls, empty turns, nudge-triggered status replies, and a
@@ -382,7 +445,7 @@ function Docs() {
             <CourseCorrectionGuide />
           </DocSection>
 
-          <DocSection id="memory" number="08" title="Filesystem memory">
+          <DocSection id="memory" number="11" title="Filesystem memory">
             <p>
               Three layers keep a long-running agent oriented without replaying
               everything it has ever seen.
@@ -436,11 +499,11 @@ function Docs() {
             </Callout>
           </DocSection>
 
-          <DocSection id="compaction" number="09" title="Context compaction">
+          <DocSection id="compaction" number="12" title="Context compaction">
             <CompactionGuide />
           </DocSection>
 
-          <DocSection id="revival" number="10" title="Revival & resume">
+          <DocSection id="revival" number="13" title="Revival & resume">
             <p>
               When budget runs low, preserve the handoff — not just the failure.
               Revival is opt-in, and funding stays in your app.
@@ -472,7 +535,7 @@ function Docs() {
             </Callout>
           </DocSection>
 
-          <DocSection id="evidence" number="11" title="Test evidence">
+          <DocSection id="evidence" number="14" title="Test evidence">
             <p>
               <code>AgentResult.ok</code> is a runtime outcome, not permission
               to ship. <code>result.evidence</code> records tool names, status,
@@ -510,15 +573,15 @@ function Docs() {
             </Callout>
           </DocSection>
 
-          <DocSection id="traces" number="12" title="Streaming & traces">
+          <DocSection id="traces" number="15" title="Streaming & traces">
             <StreamingGuide />
           </DocSection>
 
-          <DocSection id="background" number="13" title="Background tools & results">
+          <DocSection id="background" number="16" title="Background tools & results">
             <BackgroundGuide />
           </DocSection>
 
-          <DocSection id="providers" number="14" title="Sandbox providers">
+          <DocSection id="providers" number="17" title="Sandbox providers">
             <p>
               The sandbox layer can be used with agents or directly through{" "}
               <code>SandboxProvider</code> and <code>Sandbox</code>. Provider
@@ -572,7 +635,7 @@ function Docs() {
             </p>
           </DocSection>
 
-          <DocSection id="contract" number="15" title="One machine contract">
+          <DocSection id="contract" number="18" title="One machine contract">
             <p>
               <code>SandboxProvider</code> owns create, adopt, release, and
               probe. <code>create</code> constructs a sandbox;{" "}
@@ -614,7 +677,7 @@ function Docs() {
             </p>
           </DocSection>
 
-          <DocSection id="conformance" number="16" title="Provider conformance">
+          <DocSection id="conformance" number="19" title="Provider conformance">
             <p>
               The SDK includes one executable conformance suite for the shared
               contract: exec results, command deadlines, env/cwd handling, Git
@@ -643,7 +706,7 @@ function Docs() {
             </p>
           </DocSection>
 
-          <DocSection id="tools" number="17" title="Tools & strategies">
+          <DocSection id="tools" number="20" title="Tools & strategies">
             <ToolsGuide />
             <p>
               <code>chatAgent</code> and <code>codingAgent</code> are bundles,
@@ -676,7 +739,7 @@ function Docs() {
             </p>
           </DocSection>
 
-          <DocSection id="testing" number="18" title="Testing">
+          <DocSection id="testing" number="21" title="Testing">
             <p>
               The SDK includes engine, tool, and trace tests against fakes and
               fixtures, provider conformance suites, and genericity guards.
@@ -688,7 +751,7 @@ function Docs() {
             </a>
           </DocSection>
 
-          <DocSection id="status" number="19" title="Status & versioning">
+          <DocSection id="status" number="22" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams,
@@ -715,4 +778,4 @@ function Docs() {
 function FileIcon() {
   return <BookOpen size={19} />;
 }
-createRoot(document.getElementById("root")).render(<Docs />);
+mountPage(Docs);

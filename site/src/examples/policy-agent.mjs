@@ -40,7 +40,7 @@ export const lookupPolicy = defineTool(
 );
 
 // 02 / STRATEGY
-const phases = [
+export const policyPhases = [
   { id: "lookup", goal: "Find the relevant policy with lookup_policy." },
   {
     id: "answer",
@@ -48,18 +48,20 @@ const phases = [
   },
 ];
 
+// Strategy consumes the phase data; it does not execute a list of steps.
 export const policyStrategy = {
   name: "policy",
-  phases,
+  phases: policyPhases,
   requiredTools: ["lookup_policy"],
   requiresSandbox: false,
-  systemPrompt({ summary }) {
+  systemPrompt({ context, summary }) {
     return [
       "You are a store policy assistant working with demo data.",
       "Use lookup_policy before making a claim about store policy.",
       "If the policy is unknown, say so. Never invent terms or exceptions.",
       "Keep the answer short and cite the topic you looked up.",
-      ...phases.map((phase) => `${phase.id}: ${phase.goal}`),
+      ...policyPhases.map((phase) => `${phase.id}: ${phase.goal}`),
+      context ? `Authorized application context: ${context}` : "",
       summary ? `Earlier thread context: ${summary}` : "",
     ]
       .filter(Boolean)

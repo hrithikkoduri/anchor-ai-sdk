@@ -21,9 +21,10 @@ export function CustomAgentExample() {
   return (
     <>
       <p>
-        A custom agent is a plain object. Define its behavior and tools in your
-        own module, then pass it to the same runtime as the built-ins. This
-        policy assistant uses demo data and needs no sandbox.
+        You now have <code>policyPhases</code> inside <code>policyStrategy</code>.
+        Give that strategy a real capability, then export the pair as a plain
+        agent object. This continues the same policy assistant in the same file;
+        it uses demo data and needs no sandbox.
       </p>
       <dl className="agent-definitions">
         {[
@@ -41,6 +42,27 @@ export function CustomAgentExample() {
           </div>
         ))}
       </dl>
+      <h3>3. Implement the capability</h3>
+      <p>
+        The strategy refers to <code>lookup_policy</code>; a tool gives that name
+        an input schema and executable handler. Its <code>content</code> becomes
+        the model's observation. Here it reads demo policies; in your app it
+        could call an authorized service.
+      </p>
+      <CodeBlock code={parts.tool} filename="policy-agent.mjs · tool" language="JAVASCRIPT" />
+      <p className="doc-small">
+        The <code>defineTool</code> and <code>requireString</code> helpers are
+        root exports from <code>anchor-ai-sdk</code>. For stricter schema
+        validation, service tools, and sandbox-backed handlers, see the
+        <a href="#tools"> tool reference</a>.
+      </p>
+      <h3>4. Bundle it, then supply the runtime</h3>
+      <p>
+        <code>agent.strategy</code> holds the behavior; <code>agent.tools</code>
+        holds the capabilities. Neither boots a sandbox nor calls a model. Your
+        host supplies <code>llm</code>, a task, and per-call options to
+        <code>runAgent</code>. Read Agent → Run below to see the connection.
+      </p>
       <Tabs.Root defaultValue="agent" className="custom-agent-tabs">
         <Tabs.List aria-label="Custom agent example">
           {[
@@ -190,6 +212,9 @@ export function CustomAgentExample() {
         and decisions such as funding revival. Anchor supplies the run loop,
         tool dispatch, intrinsic control tools, and runtime guardrails.
       </p>
+      <a className="doc-inline-link" href="#machine">
+        Next: give tools a shared execution environment
+      </a>
     </>
   );
 }

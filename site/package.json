@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173 --strictPort",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "test:browser": "playwright test",
+    "test:production": "npm run build && playwright test --config playwright.production.config.js",
     "test:example": "node --test checks/example-smoke.mjs",
     "test:sandbox-examples": "node --test checks/sandbox-smoke.mjs",
     "test:eval-records": "node checks/eval-records.mjs",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
+    "turndown": "^7.2.2",
     "vite": "^6.0.0"
   }
 }

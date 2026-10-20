@@ -3,5 +3,12 @@
   "framework": "vite",
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/build.html", "destination": "/docs.html#custom-agents", "permanent": true }
+  ],
+  "headers": [
+    { "source": "/(.*).md", "headers": [{ "key": "Content-Type", "value": "text/markdown; charset=utf-8" }] }
+  ]
 }

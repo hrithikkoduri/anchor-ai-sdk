@@ -111,3 +111,35 @@ test("reading text and code retain usable sizes on mobile", async ({
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
   ).toBeGreaterThanOrEqual(12);
 });
+
+test("learning path teaches phase-to-strategy composition before agent assembly", async ({ page }) => {
+  await page.goto("/docs.html#primitives");
+  await expect(page.getByRole("heading", { name: "How the pieces fit" })).toBeInViewport();
+  await expect(page.getByRole("list", { name: "Agent composition learning path" })).toContainText("Phases → strategy");
+  await expect(page.locator("#primitives")).toContainText("strategy + tools → agent");
+  const order = await page.locator(".doc-section").evaluateAll(sections => sections.map(section => section.id));
+  expect(order.indexOf("phases")).toBeLessThan(order.indexOf("custom-agents"));
+  expect(order.indexOf("assembled")).toBeLessThan(order.indexOf("messages"));
+  await page.locator("#primitives").getByRole("link", { name: "Phases → strategy" }).click();
+  await expect(page.locator("#phases pre").first()).toContainText("export const policyPhases");
+  await expect(page.locator("#phases pre").nth(1)).toContainText("phases: policyPhases");
+  await expect(page.locator("#phases pre").nth(1)).toContainText("...policyPhases.map");
+  await expect(page.locator("#phases")).toContainText("not a fixed pipeline");
+  await page.locator("#phases").getByRole("link", { name: /Next: give this strategy/ }).click();
+  await expect(page.locator("#custom-agents > .doc-code")).toContainText("lookup_policy");
+  await expect(page.locator("#custom-agents [role=tabpanel][data-state=active]")).toContainText("strategy: policyStrategy");
+});
+
+test("end-to-end harness is downloadable with all primitive definitions and real boot wiring", async ({ page }) => {
+  await page.goto("/docs.html#assembled");
+  const section = page.locator("#assembled");
+  await expect(page.getByRole("heading", { name: "Assemble the end-to-end harness" })).toBeInViewport();
+  await expect(section.locator("pre").first()).toContainText("agent: reviewAgent");
+  await expect(section.locator("pre").first()).toContainText("inbox: { store: inboxStore, channel: threadId }");
+  const href = await section.getByRole("link", { name: "Download harness" }).getAttribute("href");
+  const source = decodeURIComponent(href.slice(href.indexOf(",") + 1));
+  for (const expected of ["reviewPhases", "phases: reviewPhases", "strategy: reviewStrategy", "sandbox.start()", "sandbox.destroy()", "const provider = heyo(", "new JsonlTrace"]) expect(source).toContain(expected);
+  await section.getByRole("button", { name: "Complete repository harness: primitives through boot" }).click();
+  await expect(section.getByRole("region").locator("pre")).toContainText("export const reviewAgent");
+  await expect(section).toContainText("not a read-only security boundary");
+});

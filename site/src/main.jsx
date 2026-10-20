@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { createRoot } from "react-dom/client";
+import { mountPage } from "./client.jsx";
 import * as Tabs from "@animate-ui/react/primitives/radix-ui/tabs";
 import * as Accordion from "@animate-ui/react/primitives/radix-ui/accordion";
 import * as Tooltip from "@animate-ui/react/primitives/radix-ui/tooltip";
 import { CodeBlock, CopyButton, SiteHeader, SiteFooter } from "./ui.jsx";
 import { sandboxExamples } from "./sandbox-examples.js";
 import { ProviderBrand } from "./provider-brand.jsx";
+import compositionExample from "./examples/landing-agent.mjs?raw";
 import { motion, MotionConfig } from "motion/react";
 import logo from "../assets/logo.svg";
 import {
@@ -25,6 +26,7 @@ import {
   Command,
   Play,
   Pause,
+  MessageSquare,
 } from "lucide-react";
 import "./styles.css";
 import "./typography.css";
@@ -99,7 +101,7 @@ const capabilities = [
   },
 ];
 
-function App() {
+export default function App() {
   const [playing, setPlaying] = useState(true);
   const [selected, setSelected] = useState("memory");
   return (
@@ -129,9 +131,9 @@ function App() {
                 .
               </h1>
               <p>
-                The infrastructure between <span>“do this”</span> and{" "}
-                <span>actually done.</span> Memory, recovery, and sandboxed
-                tools — in one agent harness SDK.
+                Your strategy. Your tools. Anchor SDK handles the infrastructure
+                between <span>“do this”</span> and <span>actually done.</span>{" "}
+                Context, recovery, and sandboxed work in one TypeScript harness.
               </p>
               <div className="hero-actions">
                 <a className="button primary" href="/docs.html#quickstart">
@@ -369,27 +371,27 @@ function App() {
                 ))}
               </Tabs.Root>
               <div className="secondary-features">
-                <div>
+                <a href="/docs.html#messages">
+                  <MessageSquare size={17} />
+                  <span>
+                    Queue or interject
+                    <small>Keep working, or switch at a safe turn boundary.</small>
+                  </span>
+                </a>
+                <a href="/docs.html#background">
                   <Terminal size={17} />
                   <span>
-                    Sandbox-first execution
-                    <small>Provider adapters with command deadlines.</small>
+                    Background commands
+                    <small>Opt-in Heyo jobs. Engine-delivered results.</small>
                   </span>
-                </div>
-                <div>
-                  <GitBranch size={17} />
-                  <span>
-                    Checkpoints & resume
-                    <small>Save the workspace, not just the chat.</small>
-                  </span>
-                </div>
-                <div>
+                </a>
+                <a href="/docs.html#traces">
                   <Workflow size={17} />
                   <span>
                     Events and trace sinks
                     <small>Attach live events or a stored journal.</small>
                   </span>
-                </div>
+                </a>
               </div>
             </div>
           </section>
@@ -535,58 +537,31 @@ function App() {
                   OPINIONS.
                 </span>
                 <h2>
-                  Bring the ambition.
+                  Small pieces.
                   <br />
-                  We brought the plumbing.
+                  A harness of your own.
                 </h2>
                 <p>
-                  A model, a machine, and a task.
-                  <br />
-                  Shared runtime and machine interfaces.
+                  Phases shape the approach. Tools do the work. Compose them
+                  into an agent; bring the model and runtime. No custom agent
+                  loop to maintain.
                 </p>
-                <a className="button primary" href="/docs.html#quickstart">
-                  Start building <ArrowUpRight size={17} />
+                <ol className="build-learning-path" aria-label="Build from primitives">
+                  <li><a href="/docs.html#phases"><span>01</span> Phases → strategy <ArrowUpRight size={13} /></a></li>
+                  <li><a href="/docs.html#custom-agents"><span>02</span> Tools → agent <ArrowUpRight size={13} /></a></li>
+                  <li><a href="/docs.html#assembled"><span>03</span> Agent → complete harness <ArrowUpRight size={13} /></a></li>
+                </ol>
+                <a className="button primary" href="/docs.html#primitives">
+                  Build from primitives <ArrowUpRight size={17} />
                 </a>
                 <div className="build-footnote">
                   MODEL AND SANDBOX CONFIGURATION STAY IN YOUR APP.
                 </div>
               </div>
-              <div className="code-window">
-                <div className="code-header">
-                  <span>
-                    <span className="status-dot" /> agent.ts
-                  </span>
-                  <CopyButton text={code} label="Copy code example" />
-                </div>
-                <pre>
-                  <code>
-                    <span className="syntax-muted">
-                      // Your model. Your sandbox. One run.
-                    </span>
-                    {"\n"}
-                    <span className="syntax-orange">import</span>
-                    {" { codingAgent, runAgent }\n  "}
-                    <span className="syntax-orange">from</span>{" "}
-                    <span className="syntax-green">"anchor-ai-sdk"</span>
-                    {";\n\n"}
-                    <span className="syntax-muted">
-                      // llm and sandbox configured by your app
-                    </span>
-                    {"\n"}
-                    <span className="syntax-orange">const</span>
-                    {" result = "}
-                    <span className="syntax-orange">await</span>
-                    {" runAgent(\n  { task: "}
-                    <span className="syntax-green">"Fix the failing test"</span>
-                    {" },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
-                    <span className="syntax-muted">
-                      // The answer, and recorded tool metadata.
-                    </span>
-                    {"\nconsole.log(result.summary, result.evidence);"}
-                  </code>
-                </pre>
-                <a href="/docs.html#machine" className="code-footer">
-                  See the complete setup <ArrowRight size={14} />
+              <div className="build-example">
+                <CodeBlock code={compositionExample} filename="agent.mjs" language="JAVASCRIPT" />
+                <a href="/docs.html#assembled" className="code-footer">
+                  Add state, controls, and traces <ArrowRight size={14} />
                 </a>
               </div>
             </div>
@@ -607,6 +582,10 @@ function App() {
                 [
                   "Is this only for coding agents?",
                   "No. The engine is strategy-agnostic. Use the chat bundle, the coding bundle, or compose your own prompts and tools. A sandbox is optional for agents that don’t need a machine.",
+                ],
+                [
+                  "Are phases a fixed workflow?",
+                  "No. Phases name kinds of work inside a strategy. They guide the model’s approach; they do not execute in a fixed order, enforce permissions, or gate completion. Your host owns approval and release policy.",
                 ],
                 [
                   "What do I still control?",
@@ -642,15 +621,4 @@ function App() {
   );
 }
 
-const code = `import { codingAgent, runAgent } from "anchor-ai-sdk";
-
-// llm and sandbox configured by your app.
-// Complete setup: /docs.html#machine
-const result = await runAgent(
-  { task: "Fix the failing test" },
-  { llm, sandbox, agent: codingAgent },
-);
-
-console.log(result.summary, result.evidence);`;
-
-createRoot(document.getElementById("root")).render(<App />);
+mountPage(App);

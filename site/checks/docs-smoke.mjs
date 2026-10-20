@@ -12,7 +12,7 @@ const entry =
 const sdkUrl = pathToFileURL(entry).href;
 const sdk = await import(sdkUrl);
 const sources = await Promise.all(
-  ["runtime-configuration.jsx", "integration-guides.jsx", "message-delivery.jsx", "background-guide.jsx"].map((name) =>
+  ["runtime-configuration.jsx", "integration-guides.jsx", "message-delivery.jsx", "background-guide.jsx", "composition-guide.jsx"].map((name) =>
     readFile(new URL("../src/" + name, import.meta.url), "utf8"),
   ),
 );
@@ -28,7 +28,9 @@ function namedCode(name) {
   return literalValue(match[1]);
 }
 async function loadCode(code) {
-  const linked = code.replaceAll('"anchor-ai-sdk"', JSON.stringify(sdkUrl));
+  const linked = code
+    .replaceAll('"anchor-ai-sdk"', JSON.stringify(sdkUrl))
+    .replaceAll('"anchor-ai-sdk/sandbox/heyo"', JSON.stringify(new URL("./sandbox/heyo/index.js", sdkUrl).href));
   return import(
     `data:text/javascript;base64,${Buffer.from(linked).toString("base64")}`
   );
@@ -228,6 +230,110 @@ test("native inbox batches in documented order and deduplicates stable IDs", asy
   assert.equal((await inbox.claimAll("ordering")).length, 4);
   await inbox.complete(batch.map(message => message.id));
   assert.equal(await inbox.hasPending("ordering"), false);
+});
+
+const harnessSource = await readFile(
+  new URL("../src/examples/repository-harness.mjs", import.meta.url), "utf8",
+);
+
+test("phase data connects to the strategy, agent and live phase control", async () => {
+  const source = await readFile(new URL("../src/examples/policy-agent.mjs", import.meta.url), "utf8");
+  const { policyPhases, policyStrategy, policyAgent } = await loadCode(source);
+  assert.equal(policyStrategy.phases, policyPhases);
+  assert.equal(policyAgent.strategy, policyStrategy);
+  const prompt = policyStrategy.systemPrompt({ task: "policy", context: "region=eu", summary: "Earlier lookup" });
+  for (const phase of policyPhases) assert.ok(prompt.includes(phase.goal));
+  assert.ok(prompt.includes("region=eu"));
+  assert.ok(prompt.includes("Earlier lookup"));
+  const events = [];
+  let calls = 0;
+  const result = await sdk.runAgent({ task: "Answer a policy question" }, {
+    llm: scriptedModel(() => ++calls === 1
+      ? [{ id: "phase", name: "set_phase", arguments: '{"phase":"answer"}' }]
+      : finishCall()),
+    agent: policyAgent, onEvent: event => events.push(event),
+  });
+  assert.deepEqual(events.filter(event => event.type === "phase_started").map(event => event.phase), ["lookup", "answer"]);
+  assert.equal(result.phase, "answer");
+  assert.equal(result.reason, "finished");
+  assert.ok(!result.evidence.some(item => item.tool === "lookup_policy"), "A phase/required tool does not enforce its execution");
+  const skipped = await sdk.runAgent({ task: "Finish directly" }, {
+    llm: scriptedModel(finishCall), agent: policyAgent,
+  });
+  assert.equal(skipped.phase, "lookup");
+  assert.equal(skipped.reason, "finished", "Finishing does not require visiting the final phase");
+});
+
+test("assembled repository harness runs composed phases and tools with state, traces and cleanup", async () => {
+  new vm.SourceTextModule(harnessSource);
+  const { reviewPhases, reviewStrategy, reviewAgent, reviewRepository } = await loadCode(harnessSource);
+  assert.equal(reviewStrategy.phases, reviewPhases);
+  assert.equal(reviewAgent.strategy, reviewStrategy);
+  assert.deepEqual(reviewAgent.tools.map(tool => tool.definition.name), ["read_file", "search", "bash", "run_tests"]);
+  let starts = 0, destroys = 0, step = 0;
+  const commands = [], rows = [], requests = [];
+  const sandbox = {
+    id: "fixture", backend: "fixture", workspace: "/repo", scratch: "/scratch",
+    async start() { starts++; },
+    async destroy() { destroys++; },
+    async hasChangesFrom() { return false; },
+    async exec(command, options) {
+      commands.push({ command, options });
+      return execResult(command.includes("git write-tree") ? "a".repeat(40) : "fixture checks passed");
+    },
+  };
+  const calls = [
+    { name: "set_phase", arguments: '{"phase":"inspect"}' },
+    { name: "bash", arguments: '{"command":"pwd"}' },
+    { name: "set_phase", arguments: '{"phase":"validate"}' },
+    { name: "run_tests", arguments: '{"command":"npm test"}' },
+    { name: "finish", arguments: '{"summary":"Reviewed with observed checks"}' },
+  ];
+  const threadStore = new sdk.MemoryThreadStore();
+  const inboxStore = new sdk.MemoryInboxStore();
+  const outcome = await reviewRepository({
+    llm: scriptedModel(request => { requests.push(structuredClone(request)); return [{ id: "call-" + step, ...calls[step++] }]; }),
+    compaction: false, provider: { create: spec => { assert.equal(spec.repoUrl, "https://example.invalid/repo"); return sandbox; } },
+    repoUrl: "https://example.invalid/repo", task: "Review execution", context: "Authorized context",
+    threadId: "assembled", threadStore, inboxStore,
+    traceSinks: [{ name: "fixture", record: row => rows.push(row) }],
+  });
+  assert.equal(starts, 1);
+  assert.equal(destroys, 1);
+  assert.equal(outcome.result.reason, "finished");
+  assert.equal(outcome.result.usage.totalTokens, 100);
+  assert.equal(outcome.observedChecks.length, 1);
+  assert.equal(outcome.observedChecks[0].meta.ran, true);
+  assert.equal(outcome.observedChecks[0].meta.treeHash, "a".repeat(40));
+  assert.equal(outcome.result.runs.length, 1);
+  assert.ok((await threadStore.load("assembled")).messages.length > 0);
+  assert.deepEqual(rows.filter(row => row.event.type === "phase_started").map(row => row.event.phase), ["understand", "inspect", "validate"]);
+  assert.ok(rows.some(row => row.event.type === "run_finished"));
+  assert.ok(requests[0].messages[0].content.includes("Authorized context"));
+  assert.ok(commands.every(({ options }) => options?.backgroundAfterSecs === undefined));
+});
+
+test("assembled harness destroys the workspace if startup fails", async () => {
+  const { reviewRepository } = await loadCode(harnessSource);
+  let destroys = 0;
+  await assert.rejects(reviewRepository({
+    provider: { create: () => ({ start: async () => { throw new Error("fixture boot failure"); }, destroy: async () => { destroys++; } }) },
+  }), /fixture boot failure/);
+  assert.equal(destroys, 1);
+});
+
+test("homepage composition code uses real primitives and runs with host dependencies", async () => {
+  const source = await readFile(new URL("../src/examples/landing-agent.mjs", import.meta.url), "utf8");
+  new vm.SourceTextModule(source);
+  const [definitions, call] = source.split("// Supply your llm");
+  const module = await loadCode(definitions + "\nexport async function demo(llm, sandbox) {\n// Supply your llm" + call + "\nreturn result;\n}");
+  assert.equal(module.strategy.phases, module.phases);
+  assert.equal(module.agent.strategy, module.strategy);
+  assert.deepEqual(module.agent.tools.map(tool => tool.definition.name), ["search", "read_file"]);
+  const result = await module.demo(scriptedModel(finishCall), {
+    id: "fixture", backend: "fixture", hasChangesFrom: async () => false,
+  });
+  assert.equal(result.reason, "finished");
 });
 
 test("documented compaction helper settings match actual output", () => {

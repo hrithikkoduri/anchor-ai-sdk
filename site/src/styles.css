@@ -787,7 +787,7 @@
     grid-template-columns: repeat(3, 1fr);
     margin-top: 31px;
   }
-  .secondary-features > div {
+  .secondary-features > :is(div, a) {
     display: flex;
     align-items: center;
     gap: 13px;
@@ -796,10 +796,10 @@
     color: #68735a;
     font-size: 10px;
   }
-  .secondary-features > div:first-child {
+  .secondary-features > :is(div, a):first-child {
     padding-left: 0;
   }
-  .secondary-features > div:last-child {
+  .secondary-features > :is(div, a):last-child {
     border: 0;
   }
   .secondary-features small {
@@ -1321,7 +1321,7 @@
     .demo-caption {
       font-size: 7px;
     }
-    .secondary-features > div {
+    .secondary-features > :is(div, a) {
       padding-right: 10px;
       padding-left: 15px;
       font-size: 9px;
@@ -1563,8 +1563,8 @@
       margin-top: 12px;
       padding-bottom: 16px;
     }
-    .secondary-features > div,
-    .secondary-features > div:first-child {
+    .secondary-features > :is(div, a),
+    .secondary-features > :is(div, a):first-child {
       border: 0;
       padding: 13px 0;
       gap: 13px;

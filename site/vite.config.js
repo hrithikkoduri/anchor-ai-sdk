@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   build: {
+    manifest: true,
+    assetsInlineLimit: 0,
     rollupOptions: {
       // These directives are meaningful to RSC frameworks, not this static app.
       onwarn(warning, warn) {

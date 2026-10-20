@@ -280,6 +280,7 @@
     top: 112px;
     max-height: calc(100dvh - 140px);
     overflow-y: auto;
+    overscroll-behavior-y: contain;
     padding-right: 12px;
     scrollbar-width: thin;
     scrollbar-color: #d7dccf transparent;

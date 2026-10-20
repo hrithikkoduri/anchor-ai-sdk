@@ -15,6 +15,7 @@ blanket statement that every supported service and workload was exercised.
 | Surface / claim | Implementation examined | Supported statement and limits |
 | --- | --- | --- |
 | Agent runtime | `src/engine/loop.ts`, `strategy.ts`, `types.ts`, `src/agents/types.ts` | The engine dispatches model tool calls, records results, and returns an outcome. `Agent` is a strategy/tool bundle. Phases describe approach; they are not authorization, a workflow graph, or test gates. |
+| Primitive composition | `strategy.ts`, `src/agents/types.ts`, `loop.ts`; `site/src/examples/policy-agent.mjs`, `repository-harness.mjs` | Phase IDs/goals live in strategy data; examples render goals in systemPrompt. A multi-phase strategy gets set_phase by default; it changes a label and emits an event, not a phase function. requiredTools/requiresSandbox validate dependencies, not behavior. Agent bundles omit live model/machine/run state. Run options independently add sandbox, stores, controls and sinks. The final repository recipe is synchronous/disposable, not a retained background-worker implementation. Its no-edit prompt is not a read-only capability boundary. |
 | Execution evidence | `src/tools/run-tests.ts`, `src/engine/evidence.ts`, `src/engine/loop.ts` | `AgentResult.evidence` holds tool name, `ok`, and metadata. Test commands record exit/timeout/timing and optional **post-run** Git tree hashes. Full text is in tool-result events, not each evidence record. |
 | Freshness | `latestEvidenceForTree` | It stages the current tree, compares it to the latest executed `run_tests` event, and uses that event's `ok`. It does not check test assertions, require `defaultCommand`, cover ignored/external inputs, attest trust, or create an immutable execution snapshot. Missing/uninspectable Git state is not a pass. |
 | Budget and course correction | `src/engine/budgets.ts`, `loop.ts`, `types.ts` | Defaults: 40 turns / 3M tokens / $5 known cost; usage is checked between calls, so overspend is possible. Per-call output limit is requested from the provider (16k); verbose nudge is 8k **visible** output tokens after subtracting reported reasoning. Repeated/empty/capped/nudge-related cases have bounded recovery logic, not a guarantee of progress. Only the documented public controls can be tuned; empty-turn retries and advisory wording are not separate options. |
@@ -36,6 +37,7 @@ blanket statement that every supported service and workload was exercised.
 | Conformance | `src/testing.ts`, integration test entries, `.github/workflows/ci.yml` | One public-contract scenario suite, gated by capabilities, fixtures, credentials, and skip configuration. Local/Docker jobs are configured in CI. Live Heyo/E2B runs require explicit opt-in. Do not infer live passes from the existence of test files or describe this as a security audit. |
 | Benchmarks | `results/glm53-parasail/*`, `results/glm53-mini/*` under `evals/benchmarks/swe-bench/` | The completed records show 9/10 each. Anchor's sympy patch is unresolved; mini's matplotlib patch extraction failed with index.lock and its recorded patch is empty, not a hidden-test model failure. Both name direct Parasail GLM 5.3, temperature 0, seed 42 and Docker tasks, but budget policies differ. Anchor records 11,363,962 tokens / $4.31618636; mini omits per-task usage. Its run-level 0 USD must not be interpreted as free. No relative cost/token or general superiority claim is supported. The older 7/10 OpenRouter baseline is separately labeled historical. |
 | Planned vs implemented | `package.json`, provider factories, `ROADMAP.md` | E2B is implemented and exported, not planned. Daytona is not exported. Agent teams and consumer skill bundles remain roadmap work in the reviewed source. Version availability must be checked separately. |
+| Search and agent discoverability | `site/scripts/prerender.mjs`, HTML metadata, `site/public/`, production browser tests | Build-time HTML contains actual page content; React hydrates it. Canonical URLs, sitemap, robots, schema and preview metadata identify Anchor SDK / anchor-ai-sdk. Markdown and llms files expose the same default-tab content plus downloadable examples. These are discoverability aids, not a guarantee of indexing, ranking, agent-tool adoption, training updates or recommendations. Search Console ownership/index inclusion is not verified by local tests. |
 
 ## Checks performed
 
@@ -67,6 +69,11 @@ blanket statement that every supported service and workload was exercised.
   interject job carry, persisted runtime facts, pending-job resume, batch order,
   deduplication, cumulative/per-run usage, and chain-aware trace keys. All model
   and sandbox results in these checks are scripted, not live cloud executions.
+- Composition checks execute the actual downloaded examples against 0.1.7:
+  phases/strategy/agent references, model-visible phase goals/context/summary,
+  set_phase events, finishing without visiting every phase or executing every
+  required tool, plus the repository harness's start/exec/check evidence,
+  thread persistence, trace records and cleanup, including a failed boot.
 - Completed eval records are checked by task against results, verdicts,
   manifests, grading summaries and saved patch digests. Missing mini usage is
   kept missing; wall time is summed task time rather than batch duration.
