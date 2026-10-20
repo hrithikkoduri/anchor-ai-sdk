@@ -1,0 +1,152 @@
+diff --git a/django/conf/global_settings.py b/django/conf/global_settings.py
+index acee9887d2..bdeec80610 100755
+--- a/django/conf/global_settings.py
++++ b/django/conf/global_settings.py
+@@ -304,7 +304,7 @@ FILE_UPLOAD_TEMP_DIR = None
+ 
+ # The numeric mode to set newly-uploaded files to. The value should be a mode
+ # you'd pass directly to os.chmod; see https://docs.python.org/library/os.html#files-and-directories.
+-FILE_UPLOAD_PERMISSIONS = None
++FILE_UPLOAD_PERMISSIONS = 0o644
+ 
+ # The numeric mode to assign to newly-created directories, when uploading files.
+ # The value should be a mode as you'd pass to os.chmod;
+diff --git a/docs/howto/deployment/checklist.txt b/docs/howto/deployment/checklist.txt
+index c31bcac62a..b307076b62 100755
+--- a/docs/howto/deployment/checklist.txt
++++ b/docs/howto/deployment/checklist.txt
+@@ -154,16 +154,6 @@ server never attempts to interpret them. For instance, if a user uploads a
+ 
+ Now is a good time to check your backup strategy for these files.
+ 
+-:setting:`FILE_UPLOAD_PERMISSIONS`
+-----------------------------------
+-
+-With the default file upload settings, files smaller than
+-:setting:`FILE_UPLOAD_MAX_MEMORY_SIZE` may be stored with a different mode
+-than larger files as described in :setting:`FILE_UPLOAD_PERMISSIONS`.
+-
+-Setting :setting:`FILE_UPLOAD_PERMISSIONS` ensures all files are uploaded with
+-the same permissions.
+-
+ HTTPS
+ =====
+ 
+diff --git a/docs/ref/settings.txt b/docs/ref/settings.txt
+index 46e99af993..de6c94250d 100755
+--- a/docs/ref/settings.txt
++++ b/docs/ref/settings.txt
+@@ -1484,16 +1484,15 @@ This value mirrors the functionality and caveats of the
+ ``FILE_UPLOAD_PERMISSIONS``
+ ---------------------------
+ 
+-Default: ``None``
++Default: ``0o644``
+ 
+ The numeric mode (i.e. ``0o644``) to set newly uploaded files to. For
+ more information about what these modes mean, see the documentation for
+ :func:`os.chmod`.
+ 
+-If this isn't given or is ``None``, you'll get operating-system
+-dependent behavior. On most platforms, temporary files will have a mode
+-of ``0o600``, and files saved from memory will be saved using the
+-system's standard umask.
++If ``None``, you'll get operating-system dependent behavior. On most
++platforms, temporary files will have a mode of ``0o600``, and files
++saved from memory will be saved using the system's standard umask.
+ 
+ For security reasons, these permissions aren't applied to the temporary files
+ that are stored in :setting:`FILE_UPLOAD_TEMP_DIR`.
+diff --git a/docs/releases/3.0.txt b/docs/releases/3.0.txt
+index 5d9bff086e..d16be3e03c 100755
+--- a/docs/releases/3.0.txt
++++ b/docs/releases/3.0.txt
+@@ -290,6 +290,9 @@ Miscellaneous
+ * ``ContentType.__str__()`` now includes the model's ``app_label`` to
+   disambiguate model's with the same name in different apps.
+ 
++* The default value of the :setting:`FILE_UPLOAD_PERMISSIONS` setting changes
++  from ``None`` to ``0o644``.
++
+ .. _deprecated-features-3.0:
+ 
+ Features deprecated in 3.0
+diff --git a/patch.txt b/patch.txt
+new file mode 100644
+index 0000000000..e4068ecacd
+--- /dev/null
++++ b/patch.txt
+@@ -0,0 +1,73 @@
++diff --git a/django/conf/global_settings.py b/django/conf/global_settings.py
++index acee9887d2..bdeec80610 100755
++--- a/django/conf/global_settings.py
+++++ b/django/conf/global_settings.py
++@@ -304,7 +304,7 @@ FILE_UPLOAD_TEMP_DIR = None
++ 
++ # The numeric mode to set newly-uploaded files to. The value should be a mode
++ # you'd pass directly to os.chmod; see https://docs.python.org/library/os.html#files-and-directories.
++-FILE_UPLOAD_PERMISSIONS = None
+++FILE_UPLOAD_PERMISSIONS = 0o644
++ 
++ # The numeric mode to assign to newly-created directories, when uploading files.
++ # The value should be a mode as you'd pass to os.chmod;
++diff --git a/docs/howto/deployment/checklist.txt b/docs/howto/deployment/checklist.txt
++index c31bcac62a..b307076b62 100755
++--- a/docs/howto/deployment/checklist.txt
+++++ b/docs/howto/deployment/checklist.txt
++@@ -154,16 +154,6 @@ server never attempts to interpret them. For instance, if a user uploads a
++ 
++ Now is a good time to check your backup strategy for these files.
++ 
++-:setting:`FILE_UPLOAD_PERMISSIONS`
++-----------------------------------
++-
++-With the default file upload settings, files smaller than
++-:setting:`FILE_UPLOAD_MAX_MEMORY_SIZE` may be stored with a different mode
++-than larger files as described in :setting:`FILE_UPLOAD_PERMISSIONS`.
++-
++-Setting :setting:`FILE_UPLOAD_PERMISSIONS` ensures all files are uploaded with
++-the same permissions.
++-
++ HTTPS
++ =====
++ 
++diff --git a/docs/ref/settings.txt b/docs/ref/settings.txt
++index 46e99af993..de6c94250d 100755
++--- a/docs/ref/settings.txt
+++++ b/docs/ref/settings.txt
++@@ -1484,16 +1484,15 @@ This value mirrors the functionality and caveats of the
++ ``FILE_UPLOAD_PERMISSIONS``
++ ---------------------------
++ 
++-Default: ``None``
+++Default: ``0o644``
++ 
++ The numeric mode (i.e. ``0o644``) to set newly uploaded files to. For
++ more information about what these modes mean, see the documentation for
++ :func:`os.chmod`.
++ 
++-If this isn't given or is ``None``, you'll get operating-system
++-dependent behavior. On most platforms, temporary files will have a mode
++-of ``0o600``, and files saved from memory will be saved using the
++-system's standard umask.
+++If ``None``, you'll get operating-system dependent behavior. On most
+++platforms, temporary files will have a mode of ``0o600``, and files
+++saved from memory will be saved using the system's standard umask.
++ 
++ For security reasons, these permissions aren't applied to the temporary files
++ that are stored in :setting:`FILE_UPLOAD_TEMP_DIR`.
++diff --git a/docs/releases/3.0.txt b/docs/releases/3.0.txt
++index 5d9bff086e..d16be3e03c 100755
++--- a/docs/releases/3.0.txt
+++++ b/docs/releases/3.0.txt
++@@ -290,6 +290,9 @@ Miscellaneous
++ * ``ContentType.__str__()`` now includes the model's ``app_label`` to
++   disambiguate model's with the same name in different apps.
++ 
+++* The default value of the :setting:`FILE_UPLOAD_PERMISSIONS` setting changes
+++  from ``None`` to ``0o644``.
+++
++ .. _deprecated-features-3.0:
++ 
++ Features deprecated in 3.0

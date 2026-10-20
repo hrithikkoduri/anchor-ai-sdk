@@ -1,0 +1,98 @@
+diff --git a/ChangeLog b/ChangeLog
+index b6ba4bec..fc5d1848 100755
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -9,6 +9,10 @@ Release date: TBA
+ ..
+   Put new features here and also in 'doc/whatsnew/2.13.rst'
+ 
++* Fix matching ``--notes`` options that end in a non-word character.
++
++  Closes #5840
++
+ * ``using-f-string-in-unsupported-version`` and ``using-final-decorator-in-unsupported-version`` msgids
+     were renamed from ``W1601`` and ``W1602`` to ``W2601`` and ``W2602``. Disabling using these msgids will break.
+     This is done in order to restore consistency with the already existing msgids for ``apply-builtin`` and
+diff --git a/doc/whatsnew/2.13.rst b/doc/whatsnew/2.13.rst
+index 21f13c00..4954cada 100755
+--- a/doc/whatsnew/2.13.rst
++++ b/doc/whatsnew/2.13.rst
+@@ -92,6 +92,10 @@ Extensions
+ Other Changes
+ =============
+ 
++* Fix matching ``--notes`` options that end in a non-word character.
++
++  Closes #5840
++
+ * ``using-f-string-in-unsupported-version`` and ``using-final-decorator-in-unsupported-version`` msgids
+     were renamed from ``W1601`` and ``W1602`` to ``W2601`` and ``W2602``. Disables using these msgids will break.
+     This is done in order to restore consistency with the already existing msgids for ``apply-builtin`` and
+diff --git a/patch.txt b/patch.txt
+new file mode 100644
+index 00000000..f102ff28
+--- /dev/null
++++ b/patch.txt
+@@ -0,0 +1,46 @@
++diff --git a/ChangeLog b/ChangeLog
++index b6ba4bec..fc5d1848 100755
++--- a/ChangeLog
+++++ b/ChangeLog
++@@ -9,6 +9,10 @@ Release date: TBA
++ ..
++   Put new features here and also in 'doc/whatsnew/2.13.rst'
++ 
+++* Fix matching ``--notes`` options that end in a non-word character.
+++
+++  Closes #5840
+++
++ * ``using-f-string-in-unsupported-version`` and ``using-final-decorator-in-unsupported-version`` msgids
++     were renamed from ``W1601`` and ``W1602`` to ``W2601`` and ``W2602``. Disabling using these msgids will break.
++     This is done in order to restore consistency with the already existing msgids for ``apply-builtin`` and
++diff --git a/doc/whatsnew/2.13.rst b/doc/whatsnew/2.13.rst
++index 21f13c00..4954cada 100755
++--- a/doc/whatsnew/2.13.rst
+++++ b/doc/whatsnew/2.13.rst
++@@ -92,6 +92,10 @@ Extensions
++ Other Changes
++ =============
++ 
+++* Fix matching ``--notes`` options that end in a non-word character.
+++
+++  Closes #5840
+++
++ * ``using-f-string-in-unsupported-version`` and ``using-final-decorator-in-unsupported-version`` msgids
++     were renamed from ``W1601`` and ``W1602`` to ``W2601`` and ``W2602``. Disables using these msgids will break.
++     This is done in order to restore consistency with the already existing msgids for ``apply-builtin`` and
++diff --git a/pylint/checkers/misc.py b/pylint/checkers/misc.py
++index 69149e61..baec58fb 100755
++--- a/pylint/checkers/misc.py
+++++ b/pylint/checkers/misc.py
++@@ -121,9 +121,9 @@ class EncodingChecker(BaseChecker):
++ 
++         notes = "|".join(re.escape(note) for note in self.config.notes)
++         if self.config.notes_rgx:
++-            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})\b"
+++            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})(?=(:|\s|\Z))"
++         else:
++-            regex_string = rf"#\s*({notes})\b"
+++            regex_string = rf"#\s*({notes})(?=(:|\s|\Z))"
++ 
++         self._fixme_pattern = re.compile(regex_string, re.I)
++ 
+diff --git a/pylint/checkers/misc.py b/pylint/checkers/misc.py
+index 69149e61..baec58fb 100755
+--- a/pylint/checkers/misc.py
++++ b/pylint/checkers/misc.py
+@@ -121,9 +121,9 @@ class EncodingChecker(BaseChecker):
+ 
+         notes = "|".join(re.escape(note) for note in self.config.notes)
+         if self.config.notes_rgx:
+-            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})\b"
++            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})(?=(:|\s|\Z))"
+         else:
+-            regex_string = rf"#\s*({notes})\b"
++            regex_string = rf"#\s*({notes})(?=(:|\s|\Z))"
+ 
+         self._fixme_pattern = re.compile(regex_string, re.I)
+ 

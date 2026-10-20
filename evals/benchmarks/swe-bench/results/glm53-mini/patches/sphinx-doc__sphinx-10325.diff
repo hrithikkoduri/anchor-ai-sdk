@@ -1,0 +1,166 @@
+diff --git a/CHANGES b/CHANGES
+index d0b6bc4f4..e1bc96a45 100755
+--- a/CHANGES
++++ b/CHANGES
+@@ -61,6 +61,9 @@ Features added
+ * #10028: Removed internal usages of JavaScript frameworks (jQuery and
+   underscore.js) and modernised ``doctools.js`` and ``searchtools.js`` to
+   EMCAScript 2018.
++* #8417: autodoc: ``:inherited-members:`` option now takes multiple classes.  It
++  allows to suppress inherited members of several classes on the module at once
++  by specifying the option to :rst:dir:`automodule` directive
+ 
+ Bugs fixed
+ ----------
+diff --git a/doc/usage/extensions/autodoc.rst b/doc/usage/extensions/autodoc.rst
+index e3d551dd4..aa83f77d9 100755
+--- a/doc/usage/extensions/autodoc.rst
++++ b/doc/usage/extensions/autodoc.rst
+@@ -266,6 +266,10 @@ inserting them into the page source under a suitable :rst:dir:`py:module`,
+      ``__str__`` will be documented as in the past, but other special method
+      that are not implemented in your class ``Foo``.
+ 
++     Since v5.0, it can take a comma separated list of ancestor classes.  It
++     allows to suppress inherited members of several classes on the module at
++     once by specifying the option to :rst:dir:`automodule` directive.
++
+      Note: this will lead to markup errors if the inherited members come from a
+      module whose docstrings are not reST formatted.
+ 
+@@ -275,6 +279,10 @@ inserting them into the page source under a suitable :rst:dir:`py:module`,
+ 
+         It takes an ancestor class name as an argument.
+ 
++     .. versionchanged:: 5.0
++
++        It takes a comma separated list of ancestor class names.
++
+    * It's possible to override the signature for explicitly documented callable
+      objects (functions, methods, classes) with the regular syntax that will
+      override the signature gained from introspection::
+diff --git a/patch.txt b/patch.txt
+new file mode 100644
+index 000000000..18127714c
+--- /dev/null
++++ b/patch.txt
+@@ -0,0 +1,80 @@
++diff --git a/CHANGES b/CHANGES
++index d0b6bc4f4..e1bc96a45 100755
++--- a/CHANGES
+++++ b/CHANGES
++@@ -61,6 +61,9 @@ Features added
++ * #10028: Removed internal usages of JavaScript frameworks (jQuery and
++   underscore.js) and modernised ``doctools.js`` and ``searchtools.js`` to
++   EMCAScript 2018.
+++* #8417: autodoc: ``:inherited-members:`` option now takes multiple classes.  It
+++  allows to suppress inherited members of several classes on the module at once
+++  by specifying the option to :rst:dir:`automodule` directive
++ 
++ Bugs fixed
++ ----------
++diff --git a/doc/usage/extensions/autodoc.rst b/doc/usage/extensions/autodoc.rst
++index e3d551dd4..aa83f77d9 100755
++--- a/doc/usage/extensions/autodoc.rst
+++++ b/doc/usage/extensions/autodoc.rst
++@@ -266,6 +266,10 @@ inserting them into the page source under a suitable :rst:dir:`py:module`,
++      ``__str__`` will be documented as in the past, but other special method
++      that are not implemented in your class ``Foo``.
++ 
+++     Since v5.0, it can take a comma separated list of ancestor classes.  It
+++     allows to suppress inherited members of several classes on the module at
+++     once by specifying the option to :rst:dir:`automodule` directive.
+++
++      Note: this will lead to markup errors if the inherited members come from a
++      module whose docstrings are not reST formatted.
++ 
++@@ -275,6 +279,10 @@ inserting them into the page source under a suitable :rst:dir:`py:module`,
++ 
++         It takes an ancestor class name as an argument.
++ 
+++     .. versionchanged:: 5.0
+++
+++        It takes a comma separated list of ancestor class names.
+++
++    * It's possible to override the signature for explicitly documented callable
++      objects (functions, methods, classes) with the regular syntax that will
++      override the signature gained from introspection::
++diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
++index 62631f7ff..df8ae0074 100755
++--- a/sphinx/ext/autodoc/__init__.py
+++++ b/sphinx/ext/autodoc/__init__.py
++@@ -109,12 +109,18 @@ def exclude_members_option(arg: Any) -> Union[object, Set[str]]:
++     return {x.strip() for x in arg.split(',') if x.strip()}
++ 
++ 
++-def inherited_members_option(arg: Any) -> Union[object, Set[str]]:
++-    """Used to convert the :members: option to auto directives."""
+++def inherited_members_option(arg: Any) -> Set[str]:
+++    """Used to convert the :inherited-members: option to auto directives.
+++
+++    It takes a comma separated list of ancestor class names not to document
+++    inherited members of the classes.
+++    """
++     if arg in (None, True):
++-        return 'object'
+++        return {'object'}
+++    elif arg:
+++        return {x.strip() for x in arg.split(',') if x.strip()}
++     else:
++-        return arg
+++        return set()
++ 
++ 
++ def member_order_option(arg: Any) -> Optional[str]:
++@@ -680,9 +686,11 @@ class Documenter:
++         ``autodoc-skip-member`` event.
++         """
++         def is_filtered_inherited_member(name: str, obj: Any) -> bool:
+++            inherited_members = self.options.inherited_members or set()
+++
++             if inspect.isclass(self.object):
++                 for cls in self.object.__mro__:
++-                    if cls.__name__ == self.options.inherited_members and cls != self.object:
+++                    if cls.__name__ in inherited_members and cls != self.object:
++                         # given member is a member of specified *super class*
++                         return True
++                     elif name in cls.__dict__:
+diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
+index 62631f7ff..df8ae0074 100755
+--- a/sphinx/ext/autodoc/__init__.py
++++ b/sphinx/ext/autodoc/__init__.py
+@@ -109,12 +109,18 @@ def exclude_members_option(arg: Any) -> Union[object, Set[str]]:
+     return {x.strip() for x in arg.split(',') if x.strip()}
+ 
+ 
+-def inherited_members_option(arg: Any) -> Union[object, Set[str]]:
+-    """Used to convert the :members: option to auto directives."""
++def inherited_members_option(arg: Any) -> Set[str]:
++    """Used to convert the :inherited-members: option to auto directives.
++
++    It takes a comma separated list of ancestor class names not to document
++    inherited members of the classes.
++    """
+     if arg in (None, True):
+-        return 'object'
++        return {'object'}
++    elif arg:
++        return {x.strip() for x in arg.split(',') if x.strip()}
+     else:
+-        return arg
++        return set()
+ 
+ 
+ def member_order_option(arg: Any) -> Optional[str]:
+@@ -680,9 +686,11 @@ class Documenter:
+         ``autodoc-skip-member`` event.
+         """
+         def is_filtered_inherited_member(name: str, obj: Any) -> bool:
++            inherited_members = self.options.inherited_members or set()
++
+             if inspect.isclass(self.object):
+                 for cls in self.object.__mro__:
+-                    if cls.__name__ == self.options.inherited_members and cls != self.object:
++                    if cls.__name__ in inherited_members and cls != self.object:
+                         # given member is a member of specified *super class*
+                         return True
+                     elif name in cls.__dict__:

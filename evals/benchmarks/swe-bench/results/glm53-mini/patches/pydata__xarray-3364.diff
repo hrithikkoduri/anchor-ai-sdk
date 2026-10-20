@@ -1,0 +1,76 @@
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index e97e2d73..1d5e584d 100755
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -89,6 +89,8 @@ Bug fixes
+ - Line plots with the ``x`` or ``y`` argument set to a 1D non-dimensional coord
+   now plot the correct data for 2D DataArrays
+   (:issue:`3334`). By `Tom Nicholas <http://github.com/TomNicholas>`_.
++- Make :py:func:`~xarray.concat` more robust when merging variables present in some datasets but
++  not others (:issue:`508`). By `Deepak Cherian <http://github.com/dcherian>`_.
+ - The default behaviour of reducing across all dimensions for
+   :py:class:`~xarray.core.groupby.DataArrayGroupBy` objects has now been properly removed
+   as was done for :py:class:`~xarray.core.groupby.DatasetGroupBy` in 0.13.0 (:issue:`3337`).
+diff --git a/patch.txt b/patch.txt
+new file mode 100644
+index 00000000..00e6aeda
+--- /dev/null
++++ b/patch.txt
+@@ -0,0 +1,35 @@
++diff --git a/doc/whats-new.rst b/doc/whats-new.rst
++index e97e2d73..1d5e584d 100755
++--- a/doc/whats-new.rst
+++++ b/doc/whats-new.rst
++@@ -89,6 +89,8 @@ Bug fixes
++ - Line plots with the ``x`` or ``y`` argument set to a 1D non-dimensional coord
++   now plot the correct data for 2D DataArrays
++   (:issue:`3334`). By `Tom Nicholas <http://github.com/TomNicholas>`_.
+++- Make :py:func:`~xarray.concat` more robust when merging variables present in some datasets but
+++  not others (:issue:`508`). By `Deepak Cherian <http://github.com/dcherian>`_.
++ - The default behaviour of reducing across all dimensions for
++   :py:class:`~xarray.core.groupby.DataArrayGroupBy` objects has now been properly removed
++   as was done for :py:class:`~xarray.core.groupby.DatasetGroupBy` in 0.13.0 (:issue:`3337`).
++diff --git a/xarray/core/concat.py b/xarray/core/concat.py
++index ecae2566..e98e8a72 100755
++--- a/xarray/core/concat.py
+++++ b/xarray/core/concat.py
++@@ -312,15 +312,9 @@ def _dataset_concat(
++         to_merge = {var: [] for var in variables_to_merge}
++ 
++         for ds in datasets:
++-            absent_merge_vars = variables_to_merge - set(ds.variables)
++-            if absent_merge_vars:
++-                raise ValueError(
++-                    "variables %r are present in some datasets but not others. "
++-                    % absent_merge_vars
++-                )
++-
++             for var in variables_to_merge:
++-                to_merge[var].append(ds.variables[var])
+++                if var in ds:
+++                    to_merge[var].append(ds.variables[var])
++ 
++         for var in variables_to_merge:
++             result_vars[var] = unique_variable(
+diff --git a/xarray/core/concat.py b/xarray/core/concat.py
+index ecae2566..e98e8a72 100755
+--- a/xarray/core/concat.py
++++ b/xarray/core/concat.py
+@@ -312,15 +312,9 @@ def _dataset_concat(
+         to_merge = {var: [] for var in variables_to_merge}
+ 
+         for ds in datasets:
+-            absent_merge_vars = variables_to_merge - set(ds.variables)
+-            if absent_merge_vars:
+-                raise ValueError(
+-                    "variables %r are present in some datasets but not others. "
+-                    % absent_merge_vars
+-                )
+-
+             for var in variables_to_merge:
+-                to_merge[var].append(ds.variables[var])
++                if var in ds:
++                    to_merge[var].append(ds.variables[var])
+ 
+         for var in variables_to_merge:
+             result_vars[var] = unique_variable(

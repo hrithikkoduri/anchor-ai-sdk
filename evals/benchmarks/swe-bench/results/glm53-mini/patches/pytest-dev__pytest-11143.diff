@@ -1,0 +1,46 @@
+diff --git a/changelog/11143.bugfix.rst b/changelog/11143.bugfix.rst
+new file mode 100644
+index 000000000..a047c29a1
+--- /dev/null
++++ b/changelog/11143.bugfix.rst
+@@ -0,0 +1,2 @@
++Fixed a ``TypeError`` when using ``pytest -k`` and the first expression in a test
++file is a number.
+diff --git a/patch.txt b/patch.txt
+new file mode 100644
+index 000000000..bfcb833a7
+--- /dev/null
++++ b/patch.txt
+@@ -0,0 +1,20 @@
++diff --git a/changelog/11143.bugfix.rst b/changelog/11143.bugfix.rst
++new file mode 100644
++index 000000000..a047c29a1
++--- /dev/null
+++++ b/changelog/11143.bugfix.rst
++@@ -0,0 +1,2 @@
+++Fixed a ``TypeError`` when using ``pytest -k`` and the first expression in a test
+++file is a number.
++diff --git a/src/_pytest/assertion/rewrite.py b/src/_pytest/assertion/rewrite.py
++index 157903faf..9bf79f1e1 100755
++--- a/src/_pytest/assertion/rewrite.py
+++++ b/src/_pytest/assertion/rewrite.py
++@@ -676,6 +676,7 @@ class AssertionRewriter(ast.NodeVisitor):
++                 expect_docstring
++                 and isinstance(item, ast.Expr)
++                 and isinstance(item.value, ast.Constant)
+++                and isinstance(item.value.value, str)
++             ):
++                 doc = item.value.value
++                 if self.is_rewrite_disabled(doc):
+diff --git a/src/_pytest/assertion/rewrite.py b/src/_pytest/assertion/rewrite.py
+index 157903faf..9bf79f1e1 100755
+--- a/src/_pytest/assertion/rewrite.py
++++ b/src/_pytest/assertion/rewrite.py
+@@ -676,6 +676,7 @@ class AssertionRewriter(ast.NodeVisitor):
+                 expect_docstring
+                 and isinstance(item, ast.Expr)
+                 and isinstance(item.value, ast.Constant)
++                and isinstance(item.value.value, str)
+             ):
+                 doc = item.value.value
+                 if self.is_rewrite_disabled(doc):

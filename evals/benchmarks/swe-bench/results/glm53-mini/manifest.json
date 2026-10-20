@@ -1,0 +1,92 @@
+[
+  {
+    "task": "django__django-10914",
+    "verdict": "resolved",
+    "steps": 100,
+    "status": "completed",
+    "patch_chars": 6131,
+    "wall_ms": 3286276,
+    "patch_sha1_12": "bf25487b7f99"
+  },
+  {
+    "task": "matplotlib__matplotlib-18869",
+    "verdict": "empty_patch",
+    "steps": null,
+    "status": "failed",
+    "patch_chars": 0,
+    "wall_ms": 408754,
+    "patch_sha1_12": "da39a3ee5e6b"
+  },
+  {
+    "task": "mwaskom__seaborn-2848",
+    "verdict": "resolved",
+    "steps": 49,
+    "status": "completed",
+    "patch_chars": 3233,
+    "wall_ms": 562648,
+    "patch_sha1_12": "23af9cddd8a3"
+  },
+  {
+    "task": "pallets__flask-4045",
+    "verdict": "resolved",
+    "steps": 35,
+    "status": "completed",
+    "patch_chars": 4258,
+    "wall_ms": 132106,
+    "patch_sha1_12": "3f2a70fdb6ee"
+  },
+  {
+    "task": "psf__requests-1963",
+    "verdict": "resolved",
+    "steps": 34,
+    "status": "completed",
+    "patch_chars": 1273,
+    "wall_ms": 281554,
+    "patch_sha1_12": "87a8e725a6c8"
+  },
+  {
+    "task": "pydata__xarray-3364",
+    "verdict": "resolved",
+    "steps": 61,
+    "status": "completed",
+    "patch_chars": 3435,
+    "wall_ms": 1297641,
+    "patch_sha1_12": "23a797652b88"
+  },
+  {
+    "task": "pylint-dev__pylint-5859",
+    "verdict": "resolved",
+    "steps": 74,
+    "status": "completed",
+    "patch_chars": 4000,
+    "wall_ms": 408701,
+    "patch_sha1_12": "cfcc5f867829"
+  },
+  {
+    "task": "pytest-dev__pytest-11143",
+    "verdict": "resolved",
+    "steps": 20,
+    "status": "completed",
+    "patch_chars": 1828,
+    "wall_ms": 182838,
+    "patch_sha1_12": "40ce396a35e4"
+  },
+  {
+    "task": "sphinx-doc__sphinx-10325",
+    "verdict": "resolved",
+    "steps": 43,
+    "status": "completed",
+    "patch_chars": 7176,
+    "wall_ms": 159585,
+    "patch_sha1_12": "fababdf0b32d"
+  },
+  {
+    "task": "sympy__sympy-11400",
+    "verdict": "resolved",
+    "steps": 38,
+    "status": "completed",
+    "patch_chars": 2019,
+    "wall_ms": 201381,
+    "patch_sha1_12": "85f61053b336"
+  }
+]

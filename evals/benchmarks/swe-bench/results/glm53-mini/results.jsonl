@@ -1,0 +1,10 @@
+{"taskId": "django__django-10914", "arm": "mini-swe-agent", "status": "completed", "steps": 100, "wallMs": 3286276, "patchChars": 6131}
+{"taskId": "matplotlib__matplotlib-18869", "arm": "mini-swe-agent", "status": "failed", "error": "patch extraction failed (git diff exited 128, 128): fatal: Unable to create '/testbed/.git/index.lock': File exists.\n\nAnother git process seems to be running in this repository, e.g.\nan editor opened by 'git commit'. Please make sure all processes\nare terminated then try again. If it still fails, a git process\nmay have crashed in this repository earl", "wallMs": 408754, "patchChars": 0}
+{"taskId": "mwaskom__seaborn-2848", "arm": "mini-swe-agent", "status": "completed", "steps": 49, "wallMs": 562648, "patchChars": 3233}
+{"taskId": "pallets__flask-4045", "arm": "mini-swe-agent", "status": "completed", "steps": 35, "wallMs": 132106, "patchChars": 4258}
+{"taskId": "psf__requests-1963", "arm": "mini-swe-agent", "status": "completed", "steps": 34, "wallMs": 281554, "patchChars": 1273}
+{"taskId": "pydata__xarray-3364", "arm": "mini-swe-agent", "status": "completed", "steps": 61, "wallMs": 1297641, "patchChars": 3435}
+{"taskId": "pylint-dev__pylint-5859", "arm": "mini-swe-agent", "status": "completed", "steps": 74, "wallMs": 408701, "patchChars": 4000}
+{"taskId": "pytest-dev__pytest-11143", "arm": "mini-swe-agent", "status": "completed", "steps": 20, "wallMs": 182838, "patchChars": 1828}
+{"taskId": "sphinx-doc__sphinx-10325", "arm": "mini-swe-agent", "status": "completed", "steps": 43, "wallMs": 159585, "patchChars": 7176}
+{"taskId": "sympy__sympy-11400", "arm": "mini-swe-agent", "status": "completed", "steps": 38, "wallMs": 201381, "patchChars": 2019}
