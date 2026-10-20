@@ -20,7 +20,8 @@ results.jsonl    steps, tokens, cost, reason, patch size, same shape as a run
 manifest.json    the table above, plus each patch's sha1
 patches/         the patch that was graded (<task>.diff)
 traces/          that run's engine trace (<task>.jsonl)
-grading/         the harness report per source run (Parasail only)
+grading/         ONE report for the 9/10 result, with per-instance source and
+                 test status; each source run's own report is in runs/<run>/
 runs/<run>/      every run's own results.jsonl, predictions.jsonl, run.json
 ```
 
@@ -38,6 +39,13 @@ to delete, since everything in them that matters is copied here.
 Only Parasail runs live here. The earlier OpenRouter rounds (6–8/10) stay in
 this benchmark's `verdicts.jsonl` and `comparison.md` as the Round 1 context,
 and are not part of this folder's score.
+
+`grading/glm-5.3-parasail.json` is **one file for the whole result**, in the
+harness report's shape: the 9/10 counts, the id lists, and `instances` — each
+task with the run that produced its verdict and its own
+FAIL_TO_PASS/PASS_TO_PASS status. It is synthesized, not one harness run; the
+`source_runs` block and each run's untouched report (`runs/<run>/grading-report.json`)
+are there so the stitch is auditable.
 
 The retry re-ran only the four tasks the Parasail run failed. `seaborn` and
 `xarray` passed there because the engine now course-corrects an identical
