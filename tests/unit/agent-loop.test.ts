@@ -253,7 +253,66 @@ describe("natural agent loop", () => {
     ).toHaveLength(2);
   });
 
-  it("stops repeated identical calls instead of forcing a new reasoning workaround", async () => {
+  it("course-corrects one empty turn, then stalls on a second", async () => {
+    const events: AgentEvent[] = [];
+    const continued = await runAgent(
+      { task: "inspect" },
+      {
+        llm: model([{}, { text: "Done." }, { text: "Done." }]),
+        strategy: chatStrategy,
+        onEvent: (event) => events.push(event),
+      },
+    );
+    expect(continued.reason).toBe("finished");
+    expect(
+      events.some((event) => event.type === "advisory" && event.kind === "empty_turn"),
+    ).toBe(true);
+
+    const stalled = await runAgent(
+      { task: "inspect" },
+      { llm: model([{}, {}]), strategy: chatStrategy },
+    );
+    expect(stalled.reason).toBe("stalled");
+    expect(stalled.error).toContain("neither text nor tool calls");
+  });
+
+  it("course-corrects the first identical-call loop instead of ending", async () => {
+    let executed = 0;
+    const inspect = defineTool(
+      { name: "inspect", description: "Inspect", parameters: {} },
+      async () => {
+        executed++;
+        return { ok: false, content: "unavailable" };
+      },
+    );
+    const events: AgentEvent[] = [];
+    const llm = model([
+      ...Array.from({ length: 3 }, () => ({ calls: [{ name: "inspect" }] })),
+      { text: "Done a different way." },
+      { text: "Done a different way." },
+    ]);
+    const result = await runAgent(
+      { task: "inspect" },
+      {
+        llm,
+        strategy: chatStrategy,
+        tools: [inspect],
+        onEvent: (event) => events.push(event),
+      },
+    );
+    expect(result.reason).toBe("finished");
+    expect(executed).toBe(2);
+    expect(
+      events.some((event) => event.type === "advisory" && event.kind === "repeated_call"),
+    ).toBe(true);
+    expect(
+      llm.seen.some((request) =>
+        request.messages.some((message) => message.content?.includes("was not executed")),
+      ),
+    ).toBe(true);
+  });
+
+  it("stops if the same identical-call loop happens again", async () => {
     let executed = 0;
     const inspect = defineTool(
       { name: "inspect", description: "Inspect", parameters: {} },
@@ -263,18 +322,18 @@ describe("natural agent loop", () => {
       },
     );
     const llm = model(
-      Array.from({ length: 3 }, () => ({ calls: [{ name: "inspect" }] })),
+      Array.from({ length: 6 }, () => ({ calls: [{ name: "inspect" }] })),
     );
     const result = await runAgent(
       { task: "inspect" },
       { llm, strategy: chatStrategy, tools: [inspect] },
     );
     expect(result.reason).toBe("stalled");
-    expect(result.error).toContain("loop limit");
-    expect(executed).toBe(2);
+    expect(result.error).toContain("second time");
+    expect(executed).toBe(4);
   });
 
-  it("advises a visible reply after consecutive tool-only turns — advisory, never gating", async () => {
+  it("advises a visible reply after consecutive tool-only turns", async () => {
     sandbox = new LocalSandbox({}, { quiet: true });
     await sandbox.start();
     const store = new MemoryThreadStore();
@@ -283,6 +342,9 @@ describe("natural agent loop", () => {
       ...Array.from({ length: 8 }, (_, index) => ({
         calls: [{ name: "bash", args: { command: `echo state ${index + 1}` } }],
       })),
+      { text: "Here is the status you asked for." },
+      // #78: the prose answered the nudge, so it is checked once. The model
+      // repeats itself and the run ends on its own terms.
       { text: "Here is the status you asked for." },
     ]);
     const result = await runAgent(
@@ -295,7 +357,7 @@ describe("natural agent loop", () => {
         onEvent: (event) => events.push(event),
       },
     );
-    expect(result).toMatchObject({ reason: "finished", steps: 9 });
+    expect(result).toMatchObject({ reason: "finished", steps: 10 });
     const ninth = llm.seen[8]!;
     expect(
       ninth.messages.some(
@@ -325,6 +387,7 @@ describe("natural agent loop", () => {
         calls: [{ name: "bash", args: { command: `echo x ${index + 1}` } }],
       })),
       { text: "Done." },
+      { text: "Done." },
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
@@ -337,7 +400,14 @@ describe("natural agent loop", () => {
         onEvent: (event) => events.push(event),
       },
     );
-    expect(events.filter((event) => event.type === "advisory")).toHaveLength(2);
+    const advisories = events.filter((event) => event.type === "advisory");
+    expect(
+      advisories.filter((event) => event.kind === "materialization_nudge"),
+    ).toHaveLength(2);
+    // #78: the prose that answered the last nudge is checked once.
+    expect(
+      advisories.filter((event) => event.kind === "prose_checkpoint"),
+    ).toHaveLength(1);
 
     const off = model([
       { calls: [{ name: "bash", args: { command: "echo 1" } }] },

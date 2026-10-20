@@ -1,0 +1,23 @@
+{
+  "arm": "anchor",
+  "model": "zai-org/GLM-5.3",
+  "llm": "parasail",
+  "baseUrl": "https://api.parasail.io/v1",
+  "sampling": {
+    "temperature": 0,
+    "seed": 42
+  },
+  "provider": "docker",
+  "tasks": 10,
+  "completed": 10,
+  "failed": 0,
+  "totalUsd": 3.72266612,
+  "wallMsP50": 287814,
+  "wallMsP95": 617039,
+  "startedAt": "2026-10-19T22:07:18.865Z",
+  "finishedAt": "2026-10-19T22:55:13.074Z",
+  "budgets": {
+    "maxSteps": 120
+  },
+  "contextWindow": null
+}

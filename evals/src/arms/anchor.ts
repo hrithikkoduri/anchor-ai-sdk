@@ -99,6 +99,7 @@ export function anchorArm(): EvalArm {
           agent,
           ...(ctx.budgets ? { budgets: ctx.budgets } : {}),
           ...(ctx.compaction ? { compaction: ctx.compaction } : {}),
+          ...(ctx.sampling ? { sampling: ctx.sampling } : {}),
           ...(ctx.onEvent ? { onEvent: ctx.onEvent } : {}),
           ...(ctx.signal ? { signal: ctx.signal } : {}),
         },

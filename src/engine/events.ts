@@ -40,6 +40,10 @@ export type AgentEvent =
       toolCallsCount: number;
       usage: LLMUsage;
       latencyMs: number;
+      /** Model id the provider said it served, when the response carried one. */
+      model?: string;
+      /** Upstream name, when a gateway reported one. */
+      provider?: string;
     }
   | {
       type: "tool_call";
@@ -64,6 +68,18 @@ export type AgentEvent =
       meta?: Record<string, unknown>;
     }
   | {
+      /** A command outlived `backgroundAfterSecs` and is still running. The
+       * consumer persists this handle and delivers the result later; the
+       * engine itself neither polls nor waits. */
+      type: "background_started";
+      jobId: string;
+      tool: string;
+      callId?: string;
+      command?: string;
+      /** The job's hard lifetime — the consumer's lost-receipt deadline. */
+      timeoutSecs?: number;
+    }
+  | {
       type: "guardrail";
       kind:
         | "loop_detected"
@@ -77,7 +93,17 @@ export type AgentEvent =
       /** Non-blocking runtime guidance (e.g. the materialization advisory).
        * Advisory events never gate actions or end runs. */
       type: "advisory";
-      kind: "materialization_nudge" | "budget_warning" | "snapshot_failed";
+      kind:
+        | "materialization_nudge"
+        | "budget_warning"
+        | "snapshot_failed"
+        | "output_truncated"
+        | "output_cap_continue"
+        | "verbose_turn"
+        | "assistant_text_elided"
+        | "prose_checkpoint"
+        | "repeated_call"
+        | "empty_turn";
       detail: string;
     }
   | {

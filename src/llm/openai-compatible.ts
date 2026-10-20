@@ -66,6 +66,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** One SSE chunk's shape — loosely typed; providers differ at the edges. */
 interface ChatChunk {
   model?: string;
+  /** OpenRouter reports the upstream; a direct API usually omits this. */
+  provider?: string | { name?: string };
   choices?: Array<{
     delta?: {
       content?: unknown;
@@ -101,6 +103,7 @@ interface StreamState {
   toolCalls: Map<number, { id: string; name: string; arguments: string }>;
   usage?: NonNullable<ChatChunk["usage"]>;
   model?: string;
+  provider?: string;
   finishReason?: string;
 }
 
@@ -193,6 +196,7 @@ export class OpenAICompatibleClient implements LLMClient {
     if (this.opts.includeUsageCost) body.usage = { include: true };
     if (req.tools && req.tools.length > 0) body.tools = req.tools;
     if (req.temperature !== undefined) body.temperature = req.temperature;
+    if (req.seed !== undefined) body.seed = req.seed;
     if (req.maxTokens !== undefined) body.max_tokens = req.maxTokens;
 
     // --- establish the call (this part is retried) --------------------------
@@ -286,6 +290,11 @@ export class OpenAICompatibleClient implements LLMClient {
     onReasoning?: (delta: string) => void,
   ): void {
     if (chunk.model) state.model = chunk.model;
+    const provider =
+      typeof chunk.provider === "string"
+        ? chunk.provider
+        : chunk.provider?.name;
+    if (provider) state.provider = provider;
     const choice = chunk.choices?.[0];
     if (choice) {
       const delta = choice.delta ?? {};
@@ -376,6 +385,7 @@ export class OpenAICompatibleClient implements LLMClient {
       toolCalls,
       usage,
       model: state.model ?? this.opts.model,
+      ...(state.provider ? { provider: state.provider } : {}),
       finishReason: state.finishReason,
       latencyMs: Date.now() - started,
     };

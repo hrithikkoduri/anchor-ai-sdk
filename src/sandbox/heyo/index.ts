@@ -335,6 +335,19 @@ export class HeyoSandbox implements Sandbox {
     return this.guest(command, { ...opts, cwd: opts.cwd ?? this.workspace });
   }
 
+  async pollJob(
+    jobId: string,
+    meta?: { startedAt?: number; timeoutSecs?: number },
+  ): Promise<ExecResult | undefined> {
+    this.assertUsable();
+    return this.executor.poll(jobId, meta);
+  }
+
+  async killJob(jobId: string): Promise<boolean> {
+    this.assertUsable();
+    return this.executor.kill(jobId);
+  }
+
   async checkpoint(
     message: string,
     opts?: { push?: string },
@@ -361,6 +374,15 @@ export class HeyoSandbox implements Sandbox {
 
   async destroy(): Promise<void> {
     if (this.destroyed) return;
+    // Parking scales the VM to zero, which kills live processes. Wait for
+    // background jobs to finish — the consumer parks the sandbox after its
+    // last poll.
+    if (this.executor.hasJobs()) {
+      process.stderr.write(
+        `deferring sandbox park: background job still running on ${this.id} (namespace ${this.cfg.namespace})\n`,
+      );
+      return;
+    }
     this.destroyed = true;
     if (this.spec.keep || this.spec.retain) {
       // Stop burning compute; keep the /workspace disk so a later run can
@@ -425,10 +447,24 @@ export class HeyoSandbox implements Sandbox {
     // Our own `cd` is the source of truth (see buildGuestCommand); the exec
     // options carry env only.
     const wrapped = buildGuestCommand(command, timeoutSecs, cwd);
-    return this.executor.run(wrapped, timeoutSecs, {
-      ...this.spec.env,
-      ...opts.env,
-    });
+    const result = await this.executor.run(
+      wrapped,
+      timeoutSecs,
+      {
+        ...this.spec.env,
+        ...opts.env,
+      },
+      {
+        concurrent: opts.concurrent,
+        ...(opts.backgroundAfterSecs !== undefined
+          ? { backgroundAfterSecs: opts.backgroundAfterSecs }
+          : {}),
+      },
+    );
+    // A detached job only survives if the VM does. Make retention a property
+    // of the result, not a caller convention nobody can remember.
+    if (result.background) this.spec.retain = true;
+    return result;
   }
 
   /** heyo/bun has git; other images may not. The guest job handles a long

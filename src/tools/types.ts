@@ -27,6 +27,13 @@ export interface ToolContext {
    * with a clear message instead of crashing the run.
    */
   sandbox?: Sandbox;
+  /**
+   * The consumer's background threshold. When set, tools that can detach a
+   * long command (bash) return control at this point and hand the job to the
+   * harness, which delivers the completion as a later turn. Unset = stay
+   * synchronous (the default).
+   */
+  backgroundAfterSecs?: number;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
 }
@@ -56,6 +63,11 @@ export interface Tool {
   definition: ToolDefinition;
   /** Presentation metadata, never added to the provider's function schema. */
   verb?: string | ((input: Record<string, unknown>) => string);
+  /**
+   * The tool only reads the workspace. The engine may execute several
+   * read-only calls from one model turn concurrently; mutations stay serial.
+   */
+  readOnly?: boolean;
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -66,7 +78,7 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb"> = {},
+  options: Pick<Tool, "verb" | "readOnly"> = {},
 ): Tool {
   return {
     definition,

@@ -23,6 +23,34 @@ export interface EngineOptions {
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean };
   budgets?: Partial<BudgetLimits>;
+  /**
+   * Per-call cap on one model response (reasoning + text + tool calls).
+   * Default `DEFAULT_MAX_OUTPUT_TOKENS` (16k); pass `false` to leave output
+   * unbounded. Explicit option wins over the agent bundle's suggestion.
+   *
+   * This is a hard stop, not a nudge: a response that hits it ends with
+   * finishReason "length", and the engine emits an `output_truncated`
+   * advisory so a chopped reply (or a lost tool call) is never silent.
+   */
+  maxOutputTokens?: number | false;
+  /**
+   * Replay budget for the assistant's OWN text, in chars (default 20_000;
+   * `false` disables). Oversized replies keep a head and a tail with the full
+   * text spilled to scratch and pointed at; a reply cut off by
+   * `maxOutputTokens` keeps only its head, because its tail is mid-token.
+   *
+   * This bounds what is SENT to the provider. The stored transcript
+   * (`AgentResult.messages`) and the event stream keep the full text.
+   */
+  maxAssistantChars?: number | false;
+  /**
+   * Tighter replay budget (chars) for a turn that hit `maxOutputTokens`, since
+   * its text stops mid-token and only the head is worth replaying. Default
+   * `DEFAULT_TRUNCATED_REPLY_CHARS` (12_000); `false` drops the stricter rule and
+   * treats a capped turn like any other. Never raises the effective budget
+   * above `maxAssistantChars`.
+   */
+  truncatedReplyChars?: number | false;
   compaction?: CompactionConfig | false;
   guardrails?: GuardrailConfig;
   /** Caller-controlled pause when the agent leaves a named phase. */
@@ -58,6 +86,14 @@ export interface EngineOptions {
     threadPhase?: (handoff: Record<string, unknown>) => string | undefined;
   };
   startPhase?: string;
+  /**
+   * Let long-running shell commands outlive the turn. When set, `bash` asks
+   * the sandbox to detach at this many seconds and returns control with a job
+   * handle; the engine emits `background_started` and the consumer delivers
+   * the completion later (typically as a new inbox turn). Unset = today's
+   * fully synchronous behavior. Requires a sandbox with `pollJob` (heyo).
+   */
+  backgroundAfterSecs?: number;
   onEvent?: EventSink;
   /**
    * Durable sinks. The engine owns their sequence number (one fanout per run)
@@ -78,6 +114,12 @@ export interface EngineOptions {
    * remains the fast in-process path; this is the cross-process one.
    */
   cancel?: { everyMs?: number; isCancelled: () => boolean | Promise<boolean> };
+  /**
+   * Sampling pin for this run. Absent fields are left unset, so the provider
+   * default applies. Set both for a benchmark that must not drift between
+   * upstreams.
+   */
+  sampling?: { temperature?: number; seed?: number };
   /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
@@ -114,6 +156,23 @@ export interface GuardrailConfig {
    * 8; false disables). Advisory only — it never blocks or ends the run.
    */
   toolOnlyNudgeLimit?: number | false;
+  /**
+   * The mirror of `toolOnlyNudgeLimit`: when one turn's output exceeds this
+   * many tokens (reasoning + text + tool calls, as the provider reports it),
+   * inject one runtime-only advisory — a status line now, act next (default
+   * 8_000; false disables). Keep it below `maxOutputTokens` so it can
+   * course-correct before the hard stop. Advisory only.
+   */
+  verboseTurnLimit?: number | false;
+  /**
+   * A prose-only turn is read as the model's final answer. After tool work it
+   * can just as easily be a mid-task status report, and the loop cannot tell
+   * the two apart from shape alone. When the agent has a declared-completion
+   * tool (`finish`), ask once before accepting prose as the result: call
+   * `finish`, take another action, or repeat the reply (default true; false
+   * disables). One-shot — it never turns into a loop.
+   */
+  proseCheckpoint?: boolean;
 }
 
 export type FinishReason =

@@ -1,0 +1,101 @@
+diff --git a/requests/sessions.py b/requests/sessions.py
+index 425db22..15533ee 100755
+--- a/requests/sessions.py
++++ b/requests/sessions.py
+@@ -180,6 +180,14 @@ class SessionRedirectMixin(object):
+ 
+             extract_cookies_to_jar(self.cookies, prepared_request, resp.raw)
+ 
++            # Update the request we're copying from, so that the next
++            # redirect is resolved against the request that was actually
++            # sent, not the original one. This preserves any method
++            # rewriting done for earlier responses in the chain (e.g. a
++            # 303 See Other turning a POST into a GET must not be undone
++            # by a subsequent 307 Temporary Redirect).
++            req = prepared_request
++
+             i += 1
+             yield resp
+ 
+diff --git a/test_requests.py b/test_requests.py
+index 17de849..6586dbe 100755
+--- a/test_requests.py
++++ b/test_requests.py
+@@ -4,6 +4,7 @@
+ """Tests for Requests."""
+ 
+ from __future__ import division
++import collections
+ import json
+ import os
+ import pickle
+@@ -17,6 +18,7 @@ from requests.compat import (
+     Morsel, cookielib, getproxies, str, urljoin, urlparse)
+ from requests.cookies import cookiejar_from_dict, morsel_to_cookie
+ from requests.exceptions import InvalidURL, MissingSchema
++from requests.sessions import SessionRedirectMixin
+ from requests.structures import CaseInsensitiveDict
+ 
+ try:
+@@ -1187,5 +1189,61 @@ class TestTimeout:
+             assert 'Read timed out' in e.args[0].args[0]
+ 
+ 
++SendCall = collections.namedtuple('SendCall', ('args', 'kwargs'))
++
++
++class RedirectSession(SessionRedirectMixin):
++    def __init__(self, order_of_redirects):
++        self.redirects = order_of_redirects
++        self.calls = []
++        self.max_redirects = 30
++        self.cookies = {}
++        self.trust_env = False
++
++    def send(self, *args, **kwargs):
++        self.calls.append(SendCall(args, kwargs))
++        return self.build_response()
++
++    def build_response(self):
++        request = self.calls[-1].args[0]
++        r = requests.Response()
++
++        try:
++            r.status_code = int(self.redirects.pop(0))
++        except IndexError:
++            r.status_code = 200
++
++        r.headers = CaseInsensitiveDict({'Location': '/'})
++        r.raw = self._build_raw()
++        r.request = request
++        return r
++
++    def _build_raw(self):
++        string = StringIO.StringIO('')
++        setattr(string, 'release_conn', lambda *args: args)
++        return string
++
++
++def test_requests_are_updated_each_time():
++    session = RedirectSession([303, 307])
++    prep = requests.Request('POST', 'http://example.com/post').prepare()
++    r0 = session.send(prep)
++    assert r0.request.method == 'POST'
++    assert session.calls[-1] == SendCall((r0.request,), {})
++    redirect_generator = session.resolve_redirects(r0, prep)
++    default_keyword_args = {
++        'stream': False,
++        'verify': True,
++        'cert': None,
++        'timeout': None,
++        'allow_redirects': False,
++        'proxies': None,
++    }
++    for response in redirect_generator:
++        assert response.request.method == 'GET'
++        send_call = SendCall((response.request,), default_keyword_args)
++        assert session.calls[-1] == send_call
++
++
+ if __name__ == '__main__':
+     unittest.main()

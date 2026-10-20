@@ -129,6 +129,30 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.tools).toBeUndefined();
   });
 
+  it("sends a sampling pin and records the upstream the gateway names", async () => {
+    let capturedBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      capturedBody = JSON.parse(String(init?.body));
+      return sseResponse([
+        {
+          model: "zai-org/GLM-5.3",
+          provider: "Parasail",
+          choices: [{ delta: { content: "ok" }, finish_reason: "stop" }],
+        },
+        "[DONE]",
+      ]);
+    };
+    const r = await make(fetchImpl).complete({
+      messages: [{ role: "user", content: "ping" }],
+      temperature: 0,
+      seed: 42,
+    });
+    expect(capturedBody.temperature).toBe(0);
+    expect(capturedBody.seed).toBe(42);
+    expect(r.model).toBe("zai-org/GLM-5.3");
+    expect(r.provider).toBe("Parasail");
+  });
+
   it("emits deltas incrementally through stream()", async () => {
     const fetchImpl: typeof fetch = async () => sseResponse(TEXT_FRAMES);
     const deltas: string[] = [];

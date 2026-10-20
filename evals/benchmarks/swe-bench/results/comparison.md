@@ -1,4 +1,4 @@
-# anchor vs mini — SWE-bench Lite (10 tasks, z-ai/glm-5.3)
+# anchor vs mini: SWE-bench Lite (10 tasks, z-ai/glm-5.3)
 
 | task | anchor | steps | time | tokens | $ | mini | steps | time | tokens≈ | $≈ |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -14,4 +14,4 @@
 | pydata__xarray-3364 | resolved | 56 | 1315s | 1,210,218 | $0.1296 | resolved | 34 | 359s | ≈2,195,362 | ≈$0.2560 |
 | **total** | **7/10** | 360 | 4137s | 5,284,937 | $0.6036 | **7/10** | 316 | 2182s | ≈16,994,719 | ≈$1.9871 |
 
-_anchor tokens/cost: exact (provider usage, GLM 5.3 rates). mini tokens: estimate (serialized history ÷ 4); cost priced from it — mini's own accounting is disabled because litellm has no GLM 5.3 entry._
+_anchor tokens/cost: exact (provider usage, GLM 5.3 rates). mini tokens: estimate (serialized history ÷ 4); cost priced from it; mini's own accounting is disabled because litellm has no GLM 5.3 entry._

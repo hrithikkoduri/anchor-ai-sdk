@@ -124,6 +124,8 @@ describe("agent runtime", () => {
     const llm = scripted([
       call("bash", { command: "echo hi" }),
       call("bash", { command: "echo hi" }),
+      { text: "Done." },
+      { text: "Done." },
     ]);
     const result = await runAgent(
       { task: "Inspect" },
@@ -135,12 +137,17 @@ describe("agent runtime", () => {
         onEvent: (event) => events.push(event),
       },
     );
-    expect(result.reason).toBe("stalled");
+    expect(result.reason).toBe("finished");
+    expect(
+      events.some(
+        (event) => event.type === "advisory" && event.kind === "repeated_call",
+      ),
+    ).toBe(true);
     expect(
       events.some(
         (event) => event.type === "guardrail" && event.kind === "loop_detected",
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("can disable the identical-call limit while retaining the global budget", async () => {

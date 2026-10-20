@@ -1,4 +1,4 @@
-# anchor-sdk.dev — the site
+# anchor-sdk.dev: the site
 
 React + Vite multipage site, using Animate UI's Radix-based animated primitives
 for tabs, tooltips, accordions, and collapsible navigation. The SDK has no
@@ -69,10 +69,10 @@ startup requirements with a scripted model. It does not measure live model behav
 
 Content is kept in sync by hand with:
 
-- `README.md` — positioning, features, quickstart copy
-- `evals/benchmarks/swe-bench/results/comparison.md` — the published baseline;
+- `README.md`: positioning, features, quickstart copy
+- `evals/benchmarks/swe-bench/results/comparison.md`: the published baseline;
   new rounds are not results until their artifacts are available
-- `DECISIONS.md` — anything architectural the pages assert
+- `DECISIONS.md`: anything architectural the pages assert
 
-If the code and the site disagree, the code is right — fix the site in the
+If the code and the site disagree, the code is right, so fix the site in the
 same PR that changed the code.

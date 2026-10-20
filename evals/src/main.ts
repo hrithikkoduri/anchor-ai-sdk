@@ -20,6 +20,7 @@ import { llmFromCatalog, type BudgetLimits } from "anchor-ai-sdk";
 import { local } from "anchor-ai-sdk/sandbox/local";
 import { heyo } from "anchor-ai-sdk/sandbox/heyo";
 import { docker } from "anchor-ai-sdk/sandbox/docker";
+import { e2b } from "anchor-ai-sdk/sandbox/e2b";
 import { anchorArm } from "./arms/anchor.js";
 import { evalsConfig, loadDotEnv } from "./config.js";
 import { miniSweArm } from "./arms/mini-swe.js";
@@ -27,12 +28,18 @@ import { loadTasks, type EvalTask } from "./tasks.js";
 import { runEvalSuite, type EvalTaskResult } from "./runner.js";
 
 const USAGE = `usage: eval --tasks <file.jsonl> [options]
-  --provider local|heyo|docker  sandbox backend (default local; docker = the
-                          benchmark environment from task images; heyo = VMs)
+  --provider local|heyo|docker|e2b  sandbox backend (default local; docker = the
+                          benchmark environment from task images; heyo/e2b = VMs)
+  --e2b-template <name>   override E2B_TEMPLATE for repo-clone tasks
   --arm anchor|mini       system under test (default anchor)
   --limit <n>             run only the first n tasks
   --task <instance_id>    run a single task
   --model <id>            model override (default: configured LLM)
+  --llm openrouter|parasail
+                          which API to call (default openrouter). parasail
+                          reads PARASAIL_API_KEY and pins temperature 0, seed 42
+  --temperature <n>       sampling temperature (parasail default 0)
+  --seed <n>              sampling seed (parasail default 42)
   --max-steps <n>         budget: steps per task (engine default 40)
   --max-usd <n>           budget: dollars per task (engine default 5)
   --image-tag <tag>       boot task images as <repo>:<tag> (prewarmed)
@@ -77,15 +84,56 @@ const providerName = String(args.get("provider") ?? "local");
 if (
   providerName !== "local" &&
   providerName !== "heyo" &&
-  providerName !== "docker"
+  providerName !== "docker" &&
+  providerName !== "e2b"
 ) {
-  say(`unknown provider "${providerName}" — local, heyo, or docker`);
+  say(`unknown provider "${providerName}" — local, heyo, docker, or e2b`);
   process.exit(1);
 }
 
 loadDotEnv();
 const cfg = evalsConfig();
-const model = String(args.get("model") ?? cfg.llm.model);
+const llmName = String(args.get("llm") ?? "openrouter");
+if (llmName !== "openrouter" && llmName !== "parasail") {
+  say(`unknown llm "${llmName}" — openrouter or parasail`);
+  process.exit(1);
+}
+const parasail = llmName === "parasail";
+const model = String(
+  args.get("model") ?? (parasail ? "zai-org/GLM-5.3" : cfg.llm.model),
+);
+const baseUrl = parasail ? "https://api.parasail.io/v1" : cfg.llm.baseUrl;
+const apiKey = parasail
+  ? process.env.PARASAIL_API_KEY || undefined
+  : cfg.llm.apiKey;
+if (parasail && !apiKey) {
+  say("PARASAIL_API_KEY is not set — add it to .env (do not commit it)");
+  process.exit(1);
+}
+const temperature = args.has("temperature")
+  ? Number(args.get("temperature"))
+  : parasail
+    ? 0
+    : undefined;
+const seed = args.has("seed")
+  ? Number(args.get("seed"))
+  : parasail
+    ? 42
+    : undefined;
+if (
+  (temperature !== undefined && !Number.isFinite(temperature)) ||
+  (seed !== undefined && !Number.isInteger(seed))
+) {
+  say("--temperature must be a number and --seed an integer");
+  process.exit(1);
+}
+const sampling =
+  temperature !== undefined || seed !== undefined
+    ? {
+        ...(temperature !== undefined ? { temperature } : {}),
+        ...(seed !== undefined ? { seed } : {}),
+      }
+    : undefined;
 
 // The model's real catalog entry prices the run and sizes compaction, exactly
 // as the product does — the eval must not run a differently-configured engine.
@@ -94,18 +142,40 @@ const model = String(args.get("model") ?? cfg.llm.model);
 // (2026-10-18: 2x/10x off for GLM 5.3). Catalog unreachable → cost reads as
 // unknown rather than wrong.
 const { llm, catalog, compaction } = await llmFromCatalog({
-  baseUrl: cfg.llm.baseUrl,
-  apiKey: cfg.llm.apiKey,
+  baseUrl,
+  apiKey,
   model,
+  // Published Parasail rates. Their catalog may not match the OpenRouter
+  // price shape, and an unpriced run hides a bad trajectory. OpenRouter
+  // keeps its live catalog prices.
+  ...(parasail
+    ? {
+        priceInPerMTok: 1.4,
+        priceOutPerMTok: 4.4,
+        priceCacheReadPerMTok: 0.26,
+      }
+    : {}),
 });
+const e2bTemplate = args.has("e2b-template")
+  ? String(args.get("e2b-template"))
+  : cfg.e2b.template;
 const provider =
   providerName === "heyo"
     ? heyo(cfg.heyo)
     : providerName === "docker"
       ? docker({ dockerBin: process.env.DOCKER_BIN ?? "docker" })
-      : local();
+      : providerName === "e2b"
+        ? e2b({
+            apiKey: cfg.e2b.apiKey,
+            template: e2bTemplate,
+            user: cfg.e2b.user,
+            timeoutMs: cfg.e2b.timeoutMs,
+          })
+        : local();
 
-const budgets: Partial<BudgetLimits> = {};
+// Mini has no token cap (250 steps, $3). 50M is this eval's fair ceiling,
+// not the package default. A flag still wins.
+const budgets: Partial<BudgetLimits> = { maxTokens: 50_000_000 };
 if (args.has("max-steps")) budgets.maxSteps = Number(args.get("max-steps"));
 if (args.has("max-usd")) budgets.maxUsd = Number(args.get("max-usd"));
 if (args.has("max-tokens")) budgets.maxTokens = Number(args.get("max-tokens"));
@@ -124,6 +194,28 @@ if (args.has("image-tag")) {
       : task,
   );
 }
+if (providerName === "e2b") {
+  // The task's `image` is a Docker image from the SWE-bench dataset. E2B boots
+  // templates instead, so each image task needs an explicit mapping (built
+  // with `Template().fromImage(...)`), while repo-clone tasks use the default
+  // template.
+  const templateFor = (task: EvalTask): string => {
+    const mapped =
+      cfg.e2b.templateMap[task.id] ??
+      (task.image ? cfg.e2b.templateMap[task.image] : undefined);
+    if (mapped) return mapped;
+    if (!task.image) return e2bTemplate;
+    throw new Error(
+      `E2B has no template for ${task.id} (${task.image}). ` +
+        `Build one from the image and add it to E2B_TEMPLATE_MAP ` +
+        `(keyed by instance id or image).`,
+    );
+  };
+  tasks = tasks.map((task) =>
+    task.image ? { ...task, image: templateFor(task) } : task,
+  );
+}
+
 if (tasks.length === 0) {
   say(`no tasks matched in ${tasksFile}`);
   process.exit(1);
@@ -140,8 +232,22 @@ const modelLabel = `${armName}@${model.replaceAll("/", "-")}`;
 const startedAt = Date.now();
 
 say(
-  `anchor eval · ${armName}@${model} · ${provider.name} · ${tasks.length} task(s)`,
+  `anchor eval · ${armName}@${model} · ${llmName} · ${provider.name} · ${tasks.length} task(s)`,
 );
+// The anchor arm pins sampling through the engine. Mini brings its own loop
+// and its own sampling defaults, so this line must not claim otherwise.
+if (sampling && armName === "anchor") {
+  say(
+    `sampling: temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`,
+  );
+}
+if (armName === "mini") {
+  say(
+    sampling
+      ? `sampling: pinned through litellm — temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`
+      : "sampling: mini's own defaults",
+  );
+}
 say(
   `model: ${catalog ? `${catalog.contextLength ?? "?"}-token window` : "catalog unreachable"}`,
 );
@@ -179,15 +285,25 @@ const report = (result: EvalTaskResult, index: number): void => {
   );
 };
 
-const modelRef = model.startsWith("openrouter/")
-  ? model
-  : `openrouter/${model}`;
+// Mini reaches the model through litellm: `openrouter/x` for the gateway,
+// `openai/x` plus a base URL for a direct OpenAI-compatible endpoint.
+const modelRef =
+  parasail
+    ? `openai/${model}`
+    : model.startsWith("openrouter/")
+      ? model
+      : `openrouter/${model}`;
 const arm =
   armName === "mini"
     ? miniSweArm({
         model: modelRef,
         dockerBin: process.env.DOCKER_BIN ?? "docker",
-        ...(cfg.llm.apiKey ? { apiKey: cfg.llm.apiKey } : {}),
+        ...(parasail
+          ? { baseUrl, ...(apiKey ? { apiKey } : {}) }
+          : cfg.llm.apiKey
+            ? { apiKey: cfg.llm.apiKey }
+            : {}),
+        ...(sampling ? { sampling } : {}),
         ...(args.has("max-usd")
           ? { costLimitUsd: Number(args.get("max-usd")) }
           : {}),
@@ -203,6 +319,7 @@ const results = await runEvalSuite({
   llm,
   ...(Object.keys(budgets).length > 0 ? { budgets } : {}),
   ...(compaction ? { compaction } : {}),
+  ...(sampling ? { sampling } : {}),
   artifactsDir,
   onEvent: (task, event) => {
     const chunks = traces.get(task.id) ?? [];
@@ -257,7 +374,19 @@ await writeFile(
     {
       arm: armName,
       model,
+      llm: llmName,
+      baseUrl,
+      ...(sampling ? { sampling } : {}),
       provider: provider.name,
+      ...(providerName === "e2b"
+        ? {
+            e2b: {
+              template: e2bTemplate,
+              user: cfg.e2b.user ?? null,
+              templateMap: cfg.e2b.templateMap,
+            },
+          }
+        : {}),
       tasks: tasks.length,
       completed,
       failed: tasks.length - completed,

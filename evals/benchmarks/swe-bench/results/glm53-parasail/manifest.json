@@ -1,0 +1,102 @@
+[
+  {
+    "task": "django__django-10914",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 37,
+    "reason": "finished",
+    "cost_usd": 0.2579,
+    "patch_chars": 3080,
+    "patch_sha1_12": "4aef61a47e8b"
+  },
+  {
+    "task": "matplotlib__matplotlib-18869",
+    "verdict": "resolved",
+    "source_run": "retry-parasail",
+    "steps": 46,
+    "reason": "finished",
+    "cost_usd": 0.3979,
+    "patch_chars": 4726,
+    "patch_sha1_12": "a837c6b0f4e5"
+  },
+  {
+    "task": "mwaskom__seaborn-2848",
+    "verdict": "resolved",
+    "source_run": "retry-parasail",
+    "steps": 120,
+    "reason": "max_steps",
+    "cost_usd": 1.4578,
+    "patch_chars": 2118,
+    "patch_sha1_12": "6b7ef3c7082a"
+  },
+  {
+    "task": "pallets__flask-4045",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 56,
+    "reason": "finished",
+    "cost_usd": 0.4817,
+    "patch_chars": 2041,
+    "patch_sha1_12": "c0b18bc8b43a"
+  },
+  {
+    "task": "psf__requests-1963",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 71,
+    "reason": "finished",
+    "cost_usd": 0.461,
+    "patch_chars": 3304,
+    "patch_sha1_12": "b36ace79eeee"
+  },
+  {
+    "task": "pydata__xarray-3364",
+    "verdict": "resolved",
+    "source_run": "retry-parasail",
+    "steps": 35,
+    "reason": "finished",
+    "cost_usd": 0.3211,
+    "patch_chars": 4492,
+    "patch_sha1_12": "7811d60ff4c0"
+  },
+  {
+    "task": "pylint-dev__pylint-5859",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 34,
+    "reason": "finished",
+    "cost_usd": 0.1524,
+    "patch_chars": 1929,
+    "patch_sha1_12": "295b993181b5"
+  },
+  {
+    "task": "pytest-dev__pytest-11143",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 21,
+    "reason": "finished",
+    "cost_usd": 0.1003,
+    "patch_chars": 2005,
+    "patch_sha1_12": "70f896689b31"
+  },
+  {
+    "task": "sphinx-doc__sphinx-10325",
+    "verdict": "resolved",
+    "source_run": "glm-5.3-parasail",
+    "steps": 52,
+    "reason": "finished",
+    "cost_usd": 0.5598,
+    "patch_chars": 6162,
+    "patch_sha1_12": "807a825f806b"
+  },
+  {
+    "task": "sympy__sympy-11400",
+    "verdict": "unresolved",
+    "source_run": "retry-parasail",
+    "steps": 25,
+    "reason": "finished",
+    "cost_usd": 0.1263,
+    "patch_chars": 1356,
+    "patch_sha1_12": "7ac715c49681"
+  }
+]

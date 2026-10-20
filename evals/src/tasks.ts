@@ -74,7 +74,16 @@ export function taskFromRow(row: Record<string, unknown>): EvalTask {
       ? {
           image,
           workspacePath: "/testbed",
-          env: { BASH_ENV: "/root/.bashrc" },
+          // PYTHONPATH: the repo at /testbed is NOT installed editable in these
+          // images — `site-packages/<pkg>` is a separate, stale copy (verified
+          // against psf__requests-1963: a /tmp script imported the installed
+          // 2.3.0 package while /testbed held the agent's edits). `python -c`
+          // sees the repo because the cwd is sys.path[0], but a script
+          // elsewhere does not, so the agent reads its own edits as having no
+          // effect. PYTHONPATH is searched before site-packages: the repo wins
+          // from any directory. Grading is unaffected — the official harness
+          // boots its own container and never reads this env.
+          env: { BASH_ENV: "/root/.bashrc", PYTHONPATH: "/testbed" },
         }
       : {}),
   };

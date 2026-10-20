@@ -79,7 +79,10 @@ export const searchTool = defineTool(
       `fi`,
     ].join("\n");
 
-    const r = await requireSandbox(ctx).exec(cmd, { timeoutSecs: 120 });
+    const r = await requireSandbox(ctx).exec(cmd, {
+      timeoutSecs: 120,
+      concurrent: true,
+    });
 
     // Split off the rc marker to learn the real exit code behind the pipe.
     const lines = r.output.split("\n");
@@ -130,4 +133,5 @@ export const searchTool = defineTool(
       meta: { pattern, path, matches: shown.length, truncated },
     };
   },
+  { readOnly: true },
 );

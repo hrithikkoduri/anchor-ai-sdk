@@ -8,7 +8,13 @@ import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
-import { BudgetTracker } from "./budgets.js";
+import { BudgetTracker, DEFAULT_MAX_OUTPUT_TOKENS } from "./budgets.js";
+import {
+  DEFAULT_TRUNCATED_REPLY_CHARS,
+  DEFAULT_MAX_ASSISTANT_CHARS,
+  elideReply,
+  spillReply,
+} from "./elision.js";
 import {
   compactConversation,
   DEFAULT_COMPACTION,
@@ -29,7 +35,8 @@ import {
   revivalBlock,
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
-import type { EventSink, RevivalRequest } from "./events.js";
+import { phaseDisciplineBlock } from "./phase-discipline.js";
+import type { AgentEvent, EventSink, RevivalRequest } from "./events.js";
 import type {
   RunTask,
   EngineOptions,
@@ -90,6 +97,38 @@ export async function runAgent(
   };
   const tools = opts.tools ?? opts.agent?.tools ?? [];
   const available = new Map(tools.map((tool) => [tool.definition.name, tool]));
+  /** The context every tool gets — including the host's background policy. */
+  const toolContext = {
+    sandbox: opts.sandbox,
+    ...(opts.backgroundAfterSecs !== undefined
+      ? { backgroundAfterSecs: opts.backgroundAfterSecs }
+      : {}),
+  };
+  /** Surface a detached command to the consumer that owns delivery. */
+  const emitBackground = (
+    name: string,
+    callId: string | undefined,
+    result: ToolResult,
+  ) => {
+    const meta = result.meta;
+    const job =
+      meta && typeof meta.background === "object" && meta.background !== null
+        ? (meta.background as { jobId?: unknown })
+        : undefined;
+    if (!job || typeof job.jobId !== "string") return;
+    emit({
+      type: "background_started",
+      jobId: job.jobId,
+      tool: name,
+      ...(callId ? { callId } : {}),
+      ...(meta && typeof meta.command === "string"
+        ? { command: meta.command }
+        : {}),
+      ...(meta && typeof meta.timeoutSecs === "number"
+        ? { timeoutSecs: meta.timeoutSecs }
+        : {}),
+    });
+  };
   // Terminal intrinsic — with the consumer's handoff shape when configured
   // (EngineOptions.handoff). Never required to stop.
   const finish = createFinishTool(
@@ -133,10 +172,13 @@ export async function runAgent(
   );
   let revivalWarned = false;
   let revivalRequest: RevivalRequest | undefined;
+  const phaseOn =
+    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
   const system = () => ({
     role: "system" as const,
     content:
       strategy.systemPrompt({ task: task.task, context, summary }) +
+      (phaseOn ? `\n\n${phaseDisciplineBlock(strategy.phases)}` : "") +
       (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : ""),
   });
   const messages: LLMMessage[] = [
@@ -149,22 +191,98 @@ export async function runAgent(
     opts.compaction === false
       ? null
       : { ...DEFAULT_COMPACTION, ...opts.compaction };
+  // The model's view of the transcript, bounded by assistant-text elision
+  // (#77). `messages` stays whole — this only changes what is SENT.
+  const elidedByMessage = new WeakMap<LLMMessage, LLMMessage>();
+  const forModel = (): LLMMessage[] =>
+    messages.map((m) => elidedByMessage.get(m) ?? m);
   const evidence: ToolResultRecord[] = [];
   const signatures: string[] = [];
-  const repeatLimit = opts.guardrails?.repeatedToolCallLimit ?? 3;
-  const toolOnlyNudge = opts.guardrails?.toolOnlyNudgeLimit ?? 8;
+  // Thresholds that double as switches (`number | false`) must be positive
+  // when numeric. 0 is not "off" — `false` is — and left alone it would mean
+  // "immediately" for the nudges while meaning "uncapped" for the caps.
+  const positiveNumber = (name: string, value: number): number => {
+    if (!Number.isFinite(value) || value <= 0)
+      throw new Error(
+        `anchor: ${name} must be a positive number or false (got ${value})`,
+      );
+    return value;
+  };
+  const threshold = (name: string, value: number | false): number | false =>
+    value === false ? false : positiveNumber(name, value);
+  const repeatLimit = threshold(
+    "guardrails.repeatedToolCallLimit",
+    opts.guardrails?.repeatedToolCallLimit ?? 3,
+  );
+  const toolOnlyNudge = threshold(
+    "guardrails.toolOnlyNudgeLimit",
+    opts.guardrails?.toolOnlyNudgeLimit ?? 8,
+  );
+  const verboseTurnLimit = threshold(
+    "guardrails.verboseTurnLimit",
+    opts.guardrails?.verboseTurnLimit ?? 8_000,
+  );
+  let verboseNudged = false;
+  // Per-call output cap. The agent bundle may suggest one; an explicit engine
+  // option wins, exactly like `strategy` and `tools` resolution.
+  const outputTokenCap =
+    opts.maxOutputTokens ?? opts.agent?.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+  const maxOutputTokens =
+    outputTokenCap === false
+      ? undefined
+      : positiveNumber("maxOutputTokens", outputTokenCap);
+  const maxAssistantChars = threshold(
+    "maxAssistantChars",
+    opts.maxAssistantChars ?? DEFAULT_MAX_ASSISTANT_CHARS,
+  );
+  const truncatedReplyChars = threshold(
+    "truncatedReplyChars",
+    opts.truncatedReplyChars ?? DEFAULT_TRUNCATED_REPLY_CHARS,
+  );
   let silentToolTurns = 0;
   let steps = 0;
+  // #78: the engine asked the model for something visible and the model
+  // answered in prose and stopped. That is a checkpoint, not a result. Scoped
+  // to nudges on purpose: an ordinary prose ending after tool work is the
+  // normal way runs finish, and gating it would cost every run an extra call.
+  let pendingProseCheck = false;
+  let proseChecked = false;
+  // A capped prose turn is incomplete, not an answer. Continue once (#79);
+  // a second cap in the same run stalls, so a runaway essay cannot loop.
+  let outputCapContinued = false;
+  // The first identical-call loop is a course-correction. The second stalls,
+  // so a no-op edit cannot burn the token budget.
+  let loopNudged = false;
+  // An empty turn (no text, no tool call) gets one correction. The flag is
+  // how the next empty turn is recognized as "after the advisory."
+  let emptyNudged = false;
+  const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
+  /**
+   * The shared course-correction mechanic. Callers own the policy — when this
+   * fires, the message, and whether a repeat ends the run. This only records
+   * the advisory, puts that message in front of the model, and marks a
+   * following prose reply as a checkpoint rather than an answer.
+   */
+  const courseCorrect = async (args: {
+    kind: Extract<AgentEvent, { type: "advisory" }>["kind"];
+    detail: string;
+    content: string;
+  }): Promise<void> => {
+    pendingProseCheck = true;
+    emit({ type: "advisory", kind: args.kind, detail: args.detail });
+    messages.push({ role: "user", origin: "engine", content: args.content });
+    await persist();
+  };
   let checkpointRef: string | undefined;
   let pauseRequested = false;
-  if (strategy.phases.length > 1 && opts.intrinsics?.phase !== false) {
+  if (phaseOn) {
     available.set(
       "set_phase",
       defineTool(
         {
           name: "set_phase",
           description:
-            "Describe the current phase of your approach. You may skip phases or revisit an earlier one. This records progress; it does not authorize actions or require tests. You can finish a response from any phase without calling this tool.",
+            "Record the phase of work you are in — it keeps you focused and the thread's timeline honest. Update it when the kind of work changes; pick the phase that fits, and you may skip or revisit one.",
           parameters: {
             type: "object",
             properties: {
@@ -189,7 +307,7 @@ export async function runAgent(
           if (!target)
             return {
               ok: false,
-              content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}. This is a progress label, not a completion requirement.`,
+              content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}.`,
             };
           const previous = phase;
           phase = target.id;
@@ -460,7 +578,7 @@ export async function runAgent(
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
         const folded = await compactConversation({
           llm: opts.llm,
-          messages,
+          messages: forModel(),
           runningSummary: summary,
           keepRecentTokens: compact.keepRecentTokens,
           signal,
@@ -510,11 +628,18 @@ export async function runAgent(
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(
         {
-          messages,
+          messages: forModel(),
           tools: [...available.values()].map((tool) => ({
             type: "function",
             function: tool.definition,
           })),
+          ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
+          ...(opts.sampling?.temperature !== undefined
+            ? { temperature: opts.sampling.temperature }
+            : {}),
+          ...(opts.sampling?.seed !== undefined
+            ? { seed: opts.sampling.seed }
+            : {}),
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {
@@ -534,20 +659,141 @@ export async function runAgent(
         toolCallsCount: response.toolCalls.length,
         usage: response.usage,
         latencyMs: response.latencyMs,
+        model: response.model,
+        ...(response.provider ? { provider: response.provider } : {}),
       });
-      messages.push(assistantMessage(response));
+      // A capped response is a real event, not a curiosity: the model may have
+      // been mid-thought, or about to emit the tool call it never reached.
+      const outputCapped =
+        maxOutputTokens !== undefined && response.finishReason === "length";
+      if (outputCapped) {
+        emit({
+          type: "advisory",
+          kind: "output_truncated",
+          detail:
+            `step ${steps} hit the ${maxOutputTokens}-token output cap ` +
+            `(finishReason "length") — the reply, including any tool call it ` +
+            `was still writing, is incomplete`,
+        });
+      }
+      const assistantTurn = assistantMessage(response);
+      messages.push(assistantTurn);
+      // The model's own words get a boundary too (#77). A runaway reply is
+      // replayed bounded while the transcript and the event stream keep it
+      // whole; a capped turn keeps its head only, since its tail is mid-token.
+      if (maxAssistantChars !== false) {
+        const truncatedRule = outputCapped && truncatedReplyChars !== false;
+        const replyBudget = truncatedRule
+          ? Math.min(maxAssistantChars, truncatedReplyChars)
+          : maxAssistantChars;
+        if (response.text.length > replyBudget) {
+          const pointer = await spillReply(opts.sandbox, response.text);
+          const elided = elideReply(response.text, replyBudget, {
+            tail: !truncatedRule,
+            ...(pointer
+              ? {
+                  note: `full reply saved at ${pointer} — read_file it if you need the earlier text`,
+                }
+              : {}),
+          });
+          elidedByMessage.set(assistantTurn, {
+            ...assistantTurn,
+            content: elided.text,
+          });
+          emit({
+            type: "advisory",
+            kind: "assistant_text_elided",
+            detail:
+              `step ${steps}: ${response.text.length} chars of assistant text replayed as ${replyBudget}` +
+              `${truncatedRule ? " (truncated turn — head only)" : ""}; ${elided.omittedChars} omitted` +
+              `${pointer ? `; full text at ${pointer}` : ""}`,
+          });
+        }
+      }
       if (!response.toolCalls.length) {
-        if (!response.text.trim())
+        if (!response.text.trim()) {
+          // Flag, not a message scan: the advisory is already in the
+          // conversation, but the stop decision is this boolean.
+          if (!emptyNudged) {
+            emptyNudged = true;
+            await courseCorrect({
+              kind: "empty_turn",
+              detail: `step ${steps} returned neither text nor a tool call — asked for a real action`,
+              content:
+                "Your last turn had no visible text and no tool call, so it was not accepted. " +
+                "A reasoning-only turn does not count. Your next turn must include a tool call" +
+                (available.has("finish")
+                  ? ", or call `finish` if the work is already done."
+                  : "."),
+            });
+            continue;
+          }
           return conclude("stalled", {
             ok: false,
             error: "model returned neither text nor tool calls",
           });
+        }
+        // An unfinished sentence is not an answer. A reply cut off by the cap
+        // must never be accepted as the run's result. It also must not end a
+        // run that was still working (#79): same shape as a nudge — inject
+        // one runtime message and take the next turn. Once per run; a second
+        // capped prose turn stalls, so this cannot loop.
+        if (outputCapped) {
+          if (!outputCapContinued && proseCheckpoint) {
+            outputCapContinued = true;
+            await courseCorrect({
+              kind: "output_cap_continue",
+              detail:
+                `step ${steps} hit the ${maxOutputTokens}-token output cap with no tool call — ` +
+                `asked to continue instead of ending`,
+              content:
+                `Your last reply was cut off by the ${maxOutputTokens}-token output cap and had no tool call, so it was not accepted. ` +
+                `Do not rewrite it. Continue the work — your next turn must include a tool call.` +
+                (available.has("finish")
+                  ? " If the work is already complete, call `finish`."
+                  : ""),
+            });
+            continue;
+          }
+          return conclude("stalled", {
+            ok: false,
+            error:
+              `model output hit the ${maxOutputTokens}-token cap mid-reply ` +
+              `and returned no tool call — the reply is incomplete`,
+          });
+        }
+        // The engine just asked for something visible, and the model answered
+        // in prose and stopped. That is exactly the shape that cut a run off
+        // mid-task (#78). Ask once whether the run is really over; the model
+        // decides: call `finish`, take another action, or repeat the reply
+        // (which ends the run). One-shot, so this can never become a loop.
+        if (
+          proseCheckpoint &&
+          pendingProseCheck &&
+          !proseChecked &&
+          available.has("finish")
+        ) {
+          proseChecked = true;
+          await courseCorrect({
+            kind: "prose_checkpoint",
+            detail:
+              `step ${steps} replied with text and no tool call after tool work — ` +
+              `asked whether the run is finished or continuing`,
+            content:
+              "You wrote a reply but did not call `finish`. If the work is complete, " +
+              "call `finish` with your outcome. If it is not complete, continue " +
+              "working — your next turn must include a tool call. If you are done " +
+              "and have nothing to add, repeat your reply and the run will end.",
+          });
+          continue;
+        }
         return conclude("finished", {
           ok: true,
           summary: response.text.trim(),
           completion: "response",
         });
       }
+      pendingProseCheck = false;
 
       let declared:
         | {
@@ -557,94 +803,188 @@ export async function runAgent(
           }
         | undefined;
       let runaway = false;
-      for (const call of response.toolCalls) {
-        const tool = available.get(call.name);
-        let input: Record<string, unknown> = {};
-        let invalid: string | undefined;
-        try {
-          const parsed: unknown = call.arguments.trim()
-            ? JSON.parse(call.arguments)
-            : {};
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-            throw new Error("expected a JSON object");
-          input = parsed as Record<string, unknown>;
-        } catch (err) {
-          invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-        }
-        const verb = toolVerb(call.name, input, tool?.verb);
-        emit({
-          type: "tool_call",
-          name: call.name,
-          callId: call.id,
-          input,
-          verb,
-          phase,
-          step: steps,
-        });
-        const signature = `${call.name}:${call.arguments}`;
-        if (repeatLimit !== false) {
-          signatures.push(signature);
-          if (signatures.length > repeatLimit) signatures.shift();
-          runaway ||=
-            signatures.length === repeatLimit &&
-            signatures.every((value) => value === signature);
-        }
-        let result: ToolResult;
-        if (declared || pauseRequested || signal.aborted || runaway) {
-          result = {
-            ok: false,
-            content: declared
-              ? "Not executed: the turn was already concluded."
-              : pauseRequested
-                ? "Not executed: the caller requested a pause at this phase boundary."
-                : signal.aborted
-                  ? "Not executed: cancelled by signal."
-                  : "Not executed: repeated identical calls reached the loop limit.",
-          };
-        } else if (invalid || !tool) {
-          result = {
-            ok: false,
-            content:
-              invalid ??
-              `unknown tool "${call.name}" — available: ${[...available.keys()].join(", ")}`,
-          };
-        } else {
+      const calls = response.toolCalls;
+      // Read-only calls are independent: several file reads / searches in one
+      // model turn should cost one round trip, not N. A mixed turn keeps the
+      // model's order — only an all-read-only turn takes the parallel path.
+      const parallelReads =
+        calls.length > 1 &&
+        calls.every((call) => available.get(call.name)?.readOnly === true) &&
+        !declared &&
+        !pauseRequested &&
+        !signal.aborted;
+      if (parallelReads) {
+        const prepared = calls.map((call) => {
+          const tool = available.get(call.name);
+          let input: Record<string, unknown> = {};
+          let invalid: string | undefined;
           try {
-            result = await tool.run(input, { sandbox: opts.sandbox });
+            const parsed: unknown = call.arguments.trim()
+              ? JSON.parse(call.arguments)
+              : {};
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+              throw new Error("expected a JSON object");
+            input = parsed as Record<string, unknown>;
           } catch (err) {
+            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+          }
+          const verb = toolVerb(call.name, input, tool?.verb);
+          emit({
+            type: "tool_call",
+            name: call.name,
+            callId: call.id,
+            input,
+            verb,
+            phase,
+            step: steps,
+          });
+          const signature = `${call.name}:${call.arguments}`;
+          if (repeatLimit !== false) {
+            signatures.push(signature);
+            if (signatures.length > repeatLimit) signatures.shift();
+            runaway ||=
+              signatures.length === repeatLimit &&
+              signatures.every((value) => value === signature);
+          }
+          return { call, tool, input, invalid, verb, skipped: runaway };
+        });
+        const results = await Promise.all(
+          prepared.map(
+            async ({ tool, input, invalid, skipped }): Promise<ToolResult> => {
+              if (skipped)
+                return {
+                  ok: false,
+                  content:
+                    "Not executed: repeated identical calls reached the loop limit.",
+                };
+              if (invalid || !tool)
+                return {
+                  ok: false,
+                  content:
+                    invalid ??
+                    `unknown tool — available: ${[...available.keys()].join(", ")}`,
+                };
+              try {
+                return await tool.run(input, toolContext);
+              } catch (err) {
+                return {
+                  ok: false,
+                  content: `error: ${err instanceof Error ? err.message : String(err)}`,
+                };
+              }
+            },
+          ),
+        );
+        for (let i = 0; i < prepared.length; i++) {
+          const { call, verb } = prepared[i]!;
+          const result = results[i]!;
+          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
+          emit({
+            type: "tool_result",
+            name: call.name,
+            callId: call.id,
+            verb: result.verb ?? verb,
+            phase,
+            step: steps,
+            ok: result.ok,
+            content: result.content,
+            contentChars: result.content.length,
+            meta: result.meta,
+          });
+          messages.push(toolResultMessage(call.id, result.content));
+          emitBackground(call.name, call.id, result);
+        }
+      } else {
+        for (const call of response.toolCalls) {
+          const tool = available.get(call.name);
+          let input: Record<string, unknown> = {};
+          let invalid: string | undefined;
+          try {
+            const parsed: unknown = call.arguments.trim()
+              ? JSON.parse(call.arguments)
+              : {};
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+              throw new Error("expected a JSON object");
+            input = parsed as Record<string, unknown>;
+          } catch (err) {
+            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+          }
+          const verb = toolVerb(call.name, input, tool?.verb);
+          emit({
+            type: "tool_call",
+            name: call.name,
+            callId: call.id,
+            input,
+            verb,
+            phase,
+            step: steps,
+          });
+          const signature = `${call.name}:${call.arguments}`;
+          if (repeatLimit !== false) {
+            signatures.push(signature);
+            if (signatures.length > repeatLimit) signatures.shift();
+            runaway ||=
+              signatures.length === repeatLimit &&
+              signatures.every((value) => value === signature);
+          }
+          let result: ToolResult;
+          if (declared || pauseRequested || signal.aborted || runaway) {
             result = {
               ok: false,
-              content: `error: ${err instanceof Error ? err.message : String(err)}`,
+              content: declared
+                ? "Not executed: the turn was already concluded."
+                : pauseRequested
+                  ? "Not executed: the caller requested a pause at this phase boundary."
+                  : signal.aborted
+                    ? "Not executed: cancelled by signal."
+                    : "Not executed: repeated identical calls reached the loop limit.",
             };
-          }
-          if (call.name === "finish" && tool === finish && result.ok) {
-            const meta = result.meta ?? {};
-            const handoff = meta.handoff;
-            declared = {
-              ok: meta.success !== false,
-              summary: String(meta.summary ?? ""),
-              ...(handoff !== undefined &&
-              typeof handoff === "object" &&
-              handoff !== null
-                ? { handoff: handoff as Record<string, unknown> }
-                : {}),
+          } else if (invalid || !tool) {
+            result = {
+              ok: false,
+              content:
+                invalid ??
+                `unknown tool "${call.name}" — available: ${[...available.keys()].join(", ")}`,
             };
+          } else {
+            try {
+              result = await tool.run(input, toolContext);
+            } catch (err) {
+              result = {
+                ok: false,
+                content: `error: ${err instanceof Error ? err.message : String(err)}`,
+              };
+            }
+            if (call.name === "finish" && tool === finish && result.ok) {
+              const meta = result.meta ?? {};
+              const handoff = meta.handoff;
+              declared = {
+                ok: meta.success !== false,
+                summary: String(meta.summary ?? ""),
+                ...(handoff !== undefined &&
+                typeof handoff === "object" &&
+                handoff !== null
+                  ? { handoff: handoff as Record<string, unknown> }
+                  : {}),
+              };
+            }
           }
+          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
+          emit({
+            type: "tool_result",
+            name: call.name,
+            callId: call.id,
+            verb: result.verb ?? verb,
+            phase,
+            step: steps,
+            ok: result.ok,
+            content: result.content,
+            contentChars: result.content.length,
+            meta: result.meta,
+          });
+          messages.push(toolResultMessage(call.id, result.content));
+          emitBackground(call.name, call.id, result);
         }
-        evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
-        emit({
-          type: "tool_result",
-          name: call.name,
-          callId: call.id,
-          verb: result.verb ?? verb,
-          phase,
-          step: steps,
-          ok: result.ok,
-          content: result.content,
-          contentChars: result.content.length,
-          meta: result.meta,
-        });
-        messages.push(toolResultMessage(call.id, result.content));
       }
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
@@ -655,18 +995,37 @@ export async function runAgent(
         if (response.text.trim() !== "") silentToolTurns = 0;
         else if (++silentToolTurns >= toolOnlyNudge) {
           silentToolTurns = 0;
-          const detail = `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`;
-          emit({ type: "advisory", kind: "materialization_nudge", detail });
-          messages.push({
-            role: "user",
-            origin: "engine",
+          await courseCorrect({
+            kind: "materialization_nudge",
+            detail: `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`,
             content:
               `You have taken ${toolOnlyNudge} tool steps without writing anything visible — ` +
-              `the user cannot see your reasoning. If this request expects an answer, answer now in text. ` +
-              `If you are mid-work, state briefly what you found and what remains: ` +
+              `the user cannot see your reasoning. State in one line what you found and what remains, ` +
+              `then keep moving in the same turn with your next tool call: ` +
               `visible notes survive context folding, silent reasoning does not.`,
           });
         }
+      }
+      // Verbosity advisory — the mirror of the one above. That one answers a
+      // model that only acts; this one answers a model that only writes. One
+      // turn past `verboseTurnLimit` tokens means it is deliberating in prose
+      // instead of moving, which is where a runaway generation starts. Fires
+      // at most once per run: after that the output cap is the backstop.
+      if (
+        verboseTurnLimit !== false &&
+        !verboseNudged &&
+        response.usage.completionTokens > verboseTurnLimit
+      ) {
+        verboseNudged = true;
+        await courseCorrect({
+          kind: "verbose_turn",
+          detail: `step ${steps} produced ${response.usage.completionTokens} output tokens in one turn (limit ${verboseTurnLimit}) — advised a status line and an action`,
+          content:
+            `Your last turn produced ${response.usage.completionTokens} tokens of output without moving the work forward. ` +
+            `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
+            `a command or an edit. If you are stuck, say what you tried in one line and try a different approach; ` +
+            `do not re-derive what you have already established. Do not end this turn without a tool call.`,
+        });
       }
       await persist();
       if (signal.aborted)
@@ -682,8 +1041,26 @@ export async function runAgent(
           summary: `Paused at the ${phase} phase by caller policy.`,
         });
       if (runaway) {
+        if (!loopNudged && repeatLimit !== false) {
+          loopNudged = true;
+          signatures.length = 0;
+          await courseCorrect({
+            kind: "repeated_call",
+            detail:
+              `step ${steps}: identical tool call repeated ${repeatLimit} times — the repeat was not executed`,
+            content:
+              `This tool call was byte-for-byte the same as the previous ${repeatLimit - 1}, so it was not executed. ` +
+              `The last one already ran, and its result is in the conversation above. Running the same arguments again cannot produce a new result. ` +
+              `Use that result. If it was an edit that changed nothing, the text you tried to replace is not in the file — read the file and copy the exact text. ` +
+              `Your next action must be a different call` +
+              (available.has("finish")
+                ? ", or `finish` if the work is already done."
+                : "."),
+          });
+          continue;
+        }
         const error =
-          "Repeated identical tool calls reached the loop limit; execution stopped.";
+          "Repeated identical tool calls reached the loop limit a second time; execution stopped.";
         emit({ type: "guardrail", kind: "loop_detected", detail: error });
         return conclude("stalled", { ok: false, error });
       }
