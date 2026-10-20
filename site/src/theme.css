@@ -654,3 +654,22 @@ body,
     box-shadow: 4px 4px 0 #e8ebf1;
   }
 }
+/* Provider examples use the same restrained controls as the rest of the site. */
+#root .sandbox-intro > p {
+  color: #45474f;
+}
+#root .sandbox-intro .sandbox-scope {
+  color: #626671;
+}
+#root .sandbox-contract-strip {
+  color: var(--signal-ink);
+}
+#root .sandbox-home-tabs [role="tablist"] {
+  background: #eff1f5;
+}
+#root .sandbox-home-tabs [role="tab"][data-state="active"] {
+  background: #111114;
+  color: #fff;
+  border-color: #111114;
+  box-shadow: inset 0 -2px 0 var(--signal-bright);
+}

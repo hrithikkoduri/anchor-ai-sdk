@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 import * as Tabs from "@animate-ui/react/primitives/radix-ui/tabs";
 import * as Accordion from "@animate-ui/react/primitives/radix-ui/accordion";
 import * as Tooltip from "@animate-ui/react/primitives/radix-ui/tooltip";
-import { CopyButton, SiteHeader, SiteFooter } from "./ui.jsx";
+import { CodeBlock, CopyButton, SiteHeader, SiteFooter } from "./ui.jsx";
+import { sandboxExamples } from "./sandbox-examples.js";
+import { ProviderBrand } from "./provider-brand.jsx";
 import { motion, MotionConfig } from "motion/react";
 import logo from "../assets/logo.svg";
 import {
@@ -26,6 +28,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import "./typography.css";
+import "./sandbox.css";
 import "./theme.css";
 
 const repo = "https://github.com/hrithikkoduri/anchor-ai-sdk";
@@ -35,7 +38,7 @@ const capabilities = [
     label: "Filesystem memory",
     icon: Folder,
     title: "A context window is not a memory.",
-    text: "Notes survive the fold. Oversized output stays on disk. Your agent picks up the thread, not the pieces.",
+    text: "Agents can keep notes on disk while older conversation is summarized. Built-in tools attempt to spill oversized output to sandbox files for later reads.",
     tags: ["Durable notes", "Context compaction", "Recoverable spill"],
     file: ".anchor/notes.md",
     rows: [
@@ -44,7 +47,7 @@ const capabilities = [
       ["## Next move", "Patch the deadline. Test the slow path."],
     ],
     event: "context compacted → notes preserved",
-    metric: "State survives. Context stays small.",
+    metric: "Persistence primitives, with storage you control.",
   },
   {
     id: "correction",
@@ -80,19 +83,19 @@ const capabilities = [
   },
   {
     id: "evidence",
-    label: "Verifiable work",
+    label: "Execution evidence",
     icon: ShieldCheck,
-    title: "“Done” should come with a receipt.",
-    text: "Test results carry the exact tree hash they ran against. Know whether green still means green after the next edit.",
-    tags: ["Structured evidence", "Tree-hash freshness", "Your release policy"],
+    title: "Execution records, not just an answer.",
+    text: "Record command outcomes and an optional post-run Git hash. Compare the recorded snapshot with the current tree. Your app decides what counts as verified.",
+    tags: ["Tool metadata", "Git-aware freshness", "Your verification policy"],
     file: "runtime / evidence",
     rows: [
-      ["run_tests", "✓ 42 passed · 0 failed"],
-      ["tested tree", "a83f2d1 — exact workspace bytes"],
-      ["current tree", "a83f2d1 — evidence is fresh"],
+      ["run_tests", "exitCode: 0 · timedOut: false"],
+      ["post-run tree", "a83f2d1 recorded after the command"],
+      ["freshness check", "current Git tree matches recorded hash"],
     ],
     event: "latestEvidenceForTree → passed",
-    metric: "Evidence in the engine. Policy in your app.",
+    metric: "A freshness helper, not a correctness certificate.",
   },
 ];
 
@@ -158,7 +161,7 @@ function App() {
               </div>
               <div className="runtime-task">
                 <span className="tiny-label">TASK IN</span>
-                <p>Fix the retry logic. Prove it works.</p>
+                <p>Fix the retry logic. Report the test results.</p>
                 <span className="task-tag">
                   <GitBranch size={11} /> workspace / main
                 </span>
@@ -237,7 +240,7 @@ function App() {
                   <span className="trace-time">00:05</span>
                   <span className="trace-key">run_tests</span>
                   <span>42 passed</span>
-                  <span className="trace-receipt">tree a83f2d1</span>
+                  <span className="trace-receipt">post-run a83f2d1</span>
                 </div>
               </div>
               <div className="runtime-bottom">
@@ -259,9 +262,18 @@ function App() {
             </span>
             <div>OpenAI-compatible models</div>
             <span className="compat-plus">+</span>
-            <div>Heyo microVMs</div>
-            <div>Docker</div>
-            <div>Local</div>
+            <div>
+              <ProviderBrand id="heyo">Heyo Computer</ProviderBrand>
+            </div>
+            <div>
+              <ProviderBrand id="e2b" />
+            </div>
+            <div>
+              <ProviderBrand id="docker" />
+            </div>
+            <div>
+              <ProviderBrand id="local" />
+            </div>
             <a href="/docs.html#contract">
               Bring your own <ArrowUpRight size={13} />
             </a>
@@ -323,10 +335,7 @@ function App() {
                           </span>
                         ))}
                       </div>
-                      <a
-                        className="text-link"
-                        href={`/docs.html#${c.id}`}
-                      >
+                      <a className="text-link" href={`/docs.html#${c.id}`}>
                         Under the hood <ArrowUpRight size={14} />
                       </a>
                     </div>
@@ -364,7 +373,7 @@ function App() {
                   <Terminal size={17} />
                   <span>
                     Sandbox-first execution
-                    <small>Real machines. Real kill deadlines.</small>
+                    <small>Provider adapters with command deadlines.</small>
                   </span>
                 </div>
                 <div>
@@ -377,30 +386,87 @@ function App() {
                 <div>
                   <Workflow size={17} />
                   <span>
-                    One replayable trace
-                    <small>Stream it live. Inspect it later.</small>
+                    Events and trace sinks
+                    <small>Attach live events or a stored journal.</small>
                   </span>
                 </div>
               </div>
             </div>
           </section>
 
+          <section className="sandbox-section container" id="sandboxes">
+            <div className="sandbox-intro">
+              <span className="eyebrow">
+                <span className="cross">+</span> ONE MACHINE INTERFACE
+              </span>
+              <h2>
+                Your sandbox.
+                <br />
+                Not another integration to rebuild.
+              </h2>
+              <p>
+                Configure an E2B template, a Heyo image, or a Docker image.
+                Anchor adapts the machine lifecycle and execution surface so the
+                agent and its built-in tools use the same <code>Sandbox</code>{" "}
+                interface.
+              </p>
+              <div className="sandbox-contract-strip">
+                <span>create</span>
+                <ArrowRight size={11} />
+                <span>start</span>
+                <ArrowRight size={11} />
+                <span>exec</span>
+                <ArrowRight size={11} />
+                <span>checkpoint</span>
+              </div>
+              <p className="sandbox-scope">
+                A shared conformance suite tests the contract. Provider
+                accounts, toolchains, and optional capabilities still differ.
+                The layer can also be used without an agent.
+              </p>
+              <a className="text-link" href="/docs.html#machine">
+                Configure your sandbox <ArrowUpRight size={15} />
+              </a>
+            </div>
+            <Tabs.Root defaultValue="heyo" className="sandbox-home-tabs">
+              <Tabs.List aria-label="Sandbox adapter examples">
+                {sandboxExamples
+                  .filter((example) => example.id !== "local")
+                  .map((example) => (
+                    <Tabs.Trigger key={example.id} value={example.id}>
+                      <ProviderBrand id={example.id} />
+                    </Tabs.Trigger>
+                  ))}
+              </Tabs.List>
+              {sandboxExamples
+                .filter((example) => example.id !== "local")
+                .map((example) => (
+                  <Tabs.Content value={example.id} key={example.id}>
+                    <CodeBlock
+                      code={`${example.imports}\n\n// Configuration fragment. requiredEnv validates host configuration.\n// Complete runnable setup is in the docs.\nconst provider = ${example.factory};\n\nconst sandbox = provider.create({ repoUrl, ref: "main" });\n// Start it, then pass sandbox to runAgent.`}
+                      filename={`${example.id}-provider.mjs`}
+                      language="JAVASCRIPT"
+                    />
+                  </Tabs.Content>
+                ))}
+            </Tabs.Root>
+          </section>
+
           <section className="proof-section container" id="proof">
             <div className="proof-intro">
               <span className="eyebrow">
-                <span className="cross">+</span> 02 / LESS OVERHEAD. SAME WORK.
+                <span className="cross">+</span> 02 / COMPLETED EVAL RECORDS
               </span>
               <h2>
-                The score is equal.
+                Nine of ten.
                 <br />
-                The bill isn’t.
+                The record is open.
               </h2>
               <p>
                 Anchor vs. mini-swe-agent.
                 <br />
-                10 SWE-bench Lite tasks. Same model.
-                <br />
-                Official grader. No hand-picked wins.
+                10 SWE-bench Lite tasks. Parasail GLM 5.3.
+                <br />9 resolved for each arm. Different failure paths.
               </p>
               <a className="text-link" href="/benchmarks.html">
                 Inspect the benchmark <ArrowUpRight size={15} />
@@ -410,25 +476,26 @@ function App() {
               <div className="resolution">
                 <span>RESOLVED</span>
                 <strong>
-                  7<span>/10</span>
+                  9<span>/10</span>
                 </strong>
                 <span>both harnesses</span>
               </div>
               <div className="cost-comparison">
                 <div className="cost-label">
-                  <span>TOTAL RUN COST</span>
-                  <span>GLM 5.3 · ROUND 1</span>
+                  <span>RESOLVED / 10 TASKS</span>
+                  <span>COMPLETED PARASAIL RECORDS</span>
                 </div>
                 <div className="cost-row">
                   <span>
                     <img src={logo} alt="" />
                     Anchor
                   </span>
-                  <strong>$0.60</strong>
+                  <strong>9/10</strong>
                 </div>
                 <div className="bar">
                   <motion.div
                     className="anchor-bar"
+                    style={{ width: "90%" }}
                     initial={{ opacity: 0.7 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -437,11 +504,12 @@ function App() {
                 </div>
                 <div className="cost-row mini">
                   <span>mini-swe-agent</span>
-                  <strong>≈$1.99</strong>
+                  <strong>9/10</strong>
                 </div>
                 <div className="bar">
                   <motion.div
                     className="mini-bar"
+                    style={{ width: "90%" }}
                     initial={{ opacity: 0.7 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -449,10 +517,11 @@ function App() {
                   />
                 </div>
                 <p className="benchmark-note">
-                  Small-sample baseline, not a general performance claim.
+                  A selected sample, with different budgets. Mini’s remaining
+                  task has a recorded patch-extraction failure.
                   <br />
-                  Mini’s tokens and cost are estimates; Anchor’s are
-                  provider-reported.
+                  Anchor records $4.3162; mini usage is not reported. No cost
+                  comparison is claimed for this round.
                 </p>
               </div>
             </div>
@@ -473,13 +542,13 @@ function App() {
                 <p>
                   A model, a machine, and a task.
                   <br />
-                  The rest is already wired.
+                  Shared runtime and machine interfaces.
                 </p>
                 <a className="button primary" href="/docs.html#quickstart">
                   Start building <ArrowUpRight size={17} />
                 </a>
                 <div className="build-footnote">
-                  NO PLATFORM LOCK-IN. NO HIDDEN ORCHESTRATOR.
+                  MODEL AND SANDBOX CONFIGURATION STAY IN YOUR APP.
                 </div>
               </div>
               <div className="code-window">
@@ -511,7 +580,7 @@ function App() {
                     <span className="syntax-green">"Fix the failing test"</span>
                     {" },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
                     <span className="syntax-muted">
-                      // The answer, and the receipts.
+                      // The answer, and recorded tool metadata.
                     </span>
                     {"\nconsole.log(result.summary, result.evidence);"}
                   </code>
@@ -549,7 +618,7 @@ function App() {
                 ],
                 [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. The API can change before 1.0, so pin an exact version and test your integration. E2B, Daytona, and agent teams are not shipped features.",
+                  "Anchor is early alpha. Pin an exact version and test your integration. E2B, Heyo, Docker, and local adapters are implemented; live provider behavior depends on your setup. Daytona and agent teams remain roadmap work.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>

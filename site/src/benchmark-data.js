@@ -1,73 +1,87 @@
-// Published Round 1 baseline; do not mix in newer or ungraded local runs.
-// Source: evals/benchmarks/swe-bench/results/comparison.md (2026-10-18).
-// Each arm: resolved, steps, seconds, tokens, USD. Mini tokens/cost are estimates.
+// Completed published artifacts, reviewed at SDK source 5d6901d.
+// Source directories: results/glm53-parasail and results/glm53-mini.
+// Arm tuple: resolved, reported steps (nullable), task seconds, tokens, USD.
+// Mini has no usage records. run.json totalUsd: 0 is NOT a measured free run.
 export const tasks = [
   {
-    id: "psf__requests-1963",
-    anchor: [true, 23, 108, 177957, 0.0206],
-    mini: [true, 39, 501, 2820846, 0.3279],
-  },
-  {
-    id: "pytest-dev__pytest-11143",
-    anchor: [true, 28, 113, 292486, 0.0309],
-    mini: [true, 41, 214, 3828068, 0.4533],
-  },
-  {
-    id: "pallets__flask-4045",
-    anchor: [false, 38, 185, 508940, 0.0584],
-    mini: [false, 22, 51, 323709, 0.0485],
-  },
-  {
-    id: "pylint-dev__pylint-5859",
-    anchor: [true, 47, 950, 817682, 0.0985],
-    mini: [true, 23, 72, 401857, 0.0585],
-  },
-  {
-    id: "mwaskom__seaborn-2848",
-    anchor: [false, 27, 576, 257551, 0.0295],
-    mini: [true, 51, 353, 2614432, 0.271],
-  },
-  {
-    id: "sphinx-doc__sphinx-10325",
-    anchor: [true, 52, 220, 773988, 0.0834],
-    mini: [true, 47, 325, 3819953, 0.4268],
-  },
-  {
     id: "django__django-10914",
-    anchor: [true, 25, 73, 180043, 0.0176],
-    mini: [true, 23, 143, 461678, 0.0627],
-  },
-  {
-    id: "sympy__sympy-11400",
-    anchor: [false, 20, 59, 135264, 0.0146],
-    mini: [false, 21, 102, 303459, 0.0409],
+    anchor: [true, 37, 243.826, 563852, 0.25785376],
+    mini: [true, 100, 3286.276, null, null],
   },
   {
     id: "matplotlib__matplotlib-18869",
-    anchor: [true, 44, 539, 930808, 0.1206],
-    mini: [false, 15, 62, 225355, 0.0414],
+    anchor: [true, 46, 1829.158, 740625, 0.39793392000000005],
+    mini: [false, null, 408.754, null, null],
+    miniOutcome: "empty_patch",
+  },
+  {
+    id: "mwaskom__seaborn-2848",
+    anchor: [true, 120, 1231.354, 4662541, 1.4578221199999997],
+    mini: [true, 49, 562.648, null, null],
+    anchorReason: "max_steps",
+  },
+  {
+    id: "pallets__flask-4045",
+    anchor: [true, 56, 248.738, 1283498, 0.48171087999999995],
+    mini: [true, 35, 132.106, null, null],
+  },
+  {
+    id: "psf__requests-1963",
+    anchor: [true, 71, 287.814, 1180429, 0.46095380000000014],
+    mini: [true, 34, 281.554, null, null],
   },
   {
     id: "pydata__xarray-3364",
-    anchor: [true, 56, 1315, 1210218, 0.1296],
-    mini: [true, 34, 359, 2195362, 0.256],
+    anchor: [true, 35, 1002.941, 734342, 0.32106531999999993],
+    mini: [true, 61, 1297.641, null, null],
+  },
+  {
+    id: "pylint-dev__pylint-5859",
+    anchor: [true, 34, 139.501, 413279, 0.15242092],
+    mini: [true, 74, 408.701, null, null],
+  },
+  {
+    id: "pytest-dev__pytest-11143",
+    anchor: [true, 21, 372.669, 235388, 0.10029736],
+    mini: [true, 20, 182.838, null, null],
+  },
+  {
+    id: "sphinx-doc__sphinx-10325",
+    anchor: [true, 52, 617.039, 1208910, 0.5598264000000002],
+    mini: [true, 43, 159.585, null, null],
+  },
+  {
+    id: "sympy__sympy-11400",
+    anchor: [false, 25, 62.819, 341098, 0.12630188],
+    mini: [true, 38, 201.381, null, null],
   },
 ];
 
-// Source totals use unrounded run values; displayed row sums may differ slightly.
 export const totals = {
   anchor: {
-    resolved: 7,
-    steps: 360,
-    seconds: 4137,
-    tokens: 5284937,
-    usd: 0.6036,
+    resolved: 9,
+    steps: 497,
+    seconds: 6035.859,
+    tokens: 11363962,
+    usd: 4.31618636,
   },
   mini: {
-    resolved: 7,
-    steps: 316,
-    seconds: 2182,
-    tokens: 16994719,
-    usd: 1.9871,
+    resolved: 9,
+    steps: null,
+    reportedSteps: 454,
+    seconds: 6921.484,
+    tokens: null,
+    usd: null,
   },
+};
+
+export const round = {
+  model: "zai-org/GLM-5.3",
+  provider: "Parasail",
+  temperature: 0,
+  seed: 42,
+  anchorPath: "glm53-parasail",
+  miniPath: "glm53-mini",
+  anchorLimits: "120 steps / 25M tokens",
+  miniLimits: "mini's own loop: 250 steps / $3",
 };

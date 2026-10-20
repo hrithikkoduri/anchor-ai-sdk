@@ -32,11 +32,15 @@ test("custom agent example and reference are available inline", async ({
   const tabs = page.getByRole("tablist", { name: "Custom agent example" });
   await tabs.getByRole("tab", { name: "Strategy", exact: true }).click();
   await expect(
-    page.locator(".custom-agent-tabs [role=tabpanel][data-state=active]"),
+    page.locator(
+      "#custom-agents .custom-agent-tabs [role=tabpanel][data-state=active]",
+    ),
   ).toContainText("systemPrompt");
   await tabs.getByRole("tab", { name: "Tool", exact: true }).click();
   await expect(
-    page.locator(".custom-agent-tabs [role=tabpanel][data-state=active]"),
+    page.locator(
+      "#custom-agents .custom-agent-tabs [role=tabpanel][data-state=active]",
+    ),
   ).toContainText("defineTool");
   await page
     .getByRole("button", { name: "Strategy and phase interfaces" })

@@ -29,11 +29,12 @@ test("docs supports deep links, code copy and guardrail disclosure", async ({
     "llmFromCatalog",
   );
   await page
-    .getByRole("button", { name: "Repetition, silence, and verbosity" })
+    .getByRole("tablist", { name: "Course correction configuration" })
+    .getByRole("tab", { name: "Tuned example" })
     .click();
   await expect(
-    page.getByText("Repeated identical tool calls trigger", { exact: false }),
-  ).toBeVisible();
+    page.locator(".correction-config [role=tabpanel][data-state=active]"),
+  ).toContainText("toolOnlyNudgeLimit: 5");
   expect(errors).toEqual([]);
 });
 
@@ -55,22 +56,22 @@ test("mobile documentation contents closes after choosing a topic", async ({
   ).toHaveAttribute("aria-expanded", "false");
 });
 
-test("benchmark metric views and ledger expose the original results", async ({
+test("benchmark metric views and ledger expose the completed records", async ({
   page,
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/benchmarks.html");
-  await page.getByRole("tab", { name: "Wall time" }).click();
+  await page.getByRole("tab", { name: "Task wall time" }).click();
   await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "4,137s",
+    "6,036s",
   );
   await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "1.9×",
+    "6,921s",
   );
-  await page.getByRole("tab", { name: "Tokens", exact: true }).click();
+  await page.getByRole("tab", { name: "Usage", exact: true }).click();
   await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "5.28M",
+    "11.36M",
   );
   await page.getByRole("tab", { name: "Full ledger" }).click();
   const ledger = page.getByRole("region", {
@@ -78,11 +79,12 @@ test("benchmark metric views and ledger expose the original results", async ({
   });
   await expect(ledger).toBeVisible();
   await expect(ledger.locator("tbody tr")).toHaveCount(10);
-  await expect(ledger.locator("tfoot")).toContainText("5,284,937");
-  await expect(ledger.locator("tfoot")).toContainText("16,994,719");
+  await expect(ledger.locator("tfoot")).toContainText("11,363,962");
+  await expect(ledger.locator("tfoot")).toContainText("Not reported");
+  await expect(ledger.locator("tbody")).toContainText("No patch");
   await page.getByRole("button", { name: "The accounting caveat" }).click();
   await expect(
-    page.getByText("Mini tokens were estimated", { exact: false }),
+    page.getByText("Mini per-task results omit usage", { exact: false }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

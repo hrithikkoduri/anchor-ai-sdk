@@ -1,0 +1,187 @@
+.sandbox-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 56px;
+  padding-top: 64px;
+  padding-bottom: 64px;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.sandbox-intro > p {
+  font-size: var(--text-body);
+  line-height: 1.85;
+  margin-top: 20px;
+}
+.sandbox-intro code {
+  font: var(--text-code) var(--mono);
+}
+.sandbox-intro .sandbox-scope {
+  font-size: var(--text-small);
+}
+.sandbox-intro .text-link {
+  margin-top: 24px;
+}
+.sandbox-contract-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 23px;
+  font: var(--text-meta) var(--mono);
+}
+.sandbox-home-tabs {
+  min-width: 0;
+}
+.sandbox-home-tabs [role="tablist"] {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--line);
+}
+.sandbox-home-tabs [role="tab"] {
+  flex: 1;
+  border: 1px solid transparent;
+  padding: 10px 12px;
+  font-size: var(--text-small);
+  background: none;
+}
+.sandbox-home-tabs [role="tabpanel"] {
+  min-height: 350px;
+}
+.sandbox-home-tabs .doc-code {
+  margin: 14px 0 0;
+}
+.sandbox-home-tabs .code-header {
+  gap: 8px;
+}
+.sandbox-home-tabs .code-language {
+  margin-left: auto;
+  font: var(--text-label) var(--mono);
+}
+.sandbox-home-tabs .copy-button {
+  margin-left: 0;
+}
+.sandbox-home-tabs pre {
+  max-height: 480px;
+}
+.sandbox-config [role="tabpanel"] > p {
+  margin: 18px 0;
+}
+.sandbox-config [role="tabpanel"] > .provider-env {
+  font-size: var(--text-meta);
+}
+.sandbox-config pre {
+  max-height: 480px;
+}
+@media (max-width: 800px) {
+  .sandbox-section {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-top: 45px;
+    padding-bottom: 45px;
+  }
+  .sandbox-home-tabs [role="tabpanel"] {
+    min-height: 0;
+  }
+}
+@media (max-width: 480px) {
+  .sandbox-section {
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+  .sandbox-intro h2 {
+    font-size: 29px;
+  }
+  .sandbox-contract-strip {
+    gap: 7px;
+  }
+  .sandbox-home-tabs .code-language {
+    display: none;
+  }
+}
+#root .provider-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+}
+#root .provider-logo-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 3px;
+}
+#root .provider-logo-frame > .provider-logo {
+  display: block;
+  width: 24px;
+  height: 24px;
+  max-width: none;
+  object-fit: contain;
+  padding: 0;
+}
+#root .provider-brand[data-provider="e2b"] .provider-logo {
+  /* Official small symbol has large native margins; normalize the visible mark. */
+  width: 48px;
+  height: 45px;
+}
+#root .provider-brand[data-provider="docker"] .provider-logo {
+  width: 28px;
+  height: 24px;
+}
+#root .provider-brand[data-provider="local"] .provider-logo {
+  width: 28px;
+  height: 28px;
+}
+#root .provider-description {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #45474f;
+}
+#root .doc-section .doc-code pre {
+  max-height: 480px;
+  overflow: auto;
+}
+@media (max-width: 480px) {
+  #root :is(.sandbox-home-tabs, .sandbox-config) [role="tab"] .provider-brand {
+    flex-direction: column;
+    gap: 5px;
+  }
+  #root
+    :is(.sandbox-home-tabs, .sandbox-config)
+    [role="tab"]
+    .provider-brand
+    > span {
+    font-size: 12px;
+  }
+}
+#root .agent-interface-fields p {
+  font-size: var(--text-small);
+  line-height: 1.85;
+  margin-top: 10px;
+}
+#root
+  :is(
+    .compaction-config,
+    .correction-config,
+    .revival-config,
+    .trace-config,
+    .tools-config
+  )
+  .doc-code {
+  margin-top: 16px;
+}
+@media (max-width: 480px) {
+  #root :is(.trace-config, .message-config, .background-config) [role="tablist"] {
+    flex-wrap: wrap;
+  }
+  #root :is(.trace-config, .message-config, .background-config) [role="tab"] {
+    flex-basis: 40%;
+  }
+}

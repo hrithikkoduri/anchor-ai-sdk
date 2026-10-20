@@ -10,12 +10,15 @@ test("capability tabs and FAQ expose the right content", async ({ page }) => {
   for (const [tab, heading] of [
     ["Course correction", "Off course is not the end of the run."],
     ["Budget revival", "Out of budget. Not out of context."],
-    ["Verifiable work", "“Done” should come with a receipt."],
+    ["Execution evidence", "Execution records, not just an answer."],
     ["Filesystem memory", "A context window is not a memory."],
   ]) {
     await page.getByRole("tab", { name: tab }).click();
     await expect(
-      page.getByRole("tabpanel").filter({ visible: true }),
+      page
+        .locator(".capabilities")
+        .getByRole("tabpanel")
+        .filter({ visible: true }),
     ).toHaveCount(1);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   }

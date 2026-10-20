@@ -8,6 +8,9 @@
     "build": "vite build",
     "test:browser": "playwright test",
     "test:example": "node --test checks/example-smoke.mjs",
+    "test:sandbox-examples": "node --test checks/sandbox-smoke.mjs",
+    "test:eval-records": "node checks/eval-records.mjs",
+    "test:docs-examples": "node --experimental-vm-modules --test checks/docs-smoke.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173"
   },
   "dependencies": {
