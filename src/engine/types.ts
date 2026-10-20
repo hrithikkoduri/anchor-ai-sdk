@@ -157,11 +157,13 @@ export interface GuardrailConfig {
    */
   toolOnlyNudgeLimit?: number | false;
   /**
-   * The mirror of `toolOnlyNudgeLimit`: when one turn's output exceeds this
-   * many tokens (reasoning + text + tool calls, as the provider reports it),
-   * inject one runtime-only advisory — a status line now, act next (default
-   * 8_000; false disables). Keep it below `maxOutputTokens` so it can
-   * course-correct before the hard stop. Advisory only.
+   * The mirror of `toolOnlyNudgeLimit`: when one turn's VISIBLE output (text
+   * and tool-call arguments) exceeds this many tokens, inject one
+   * runtime-only advisory — a status line now, act next (default 8_000;
+   * false disables). Reasoning tokens are excluded: they are hidden and a
+   * thinking model must not be told to stop thinking. Keep it below
+   * `maxOutputTokens` so it can course-correct before the hard stop.
+   * Advisory only.
    */
   verboseTurnLimit?: number | false;
   /**

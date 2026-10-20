@@ -682,6 +682,14 @@ tombstone, not a warning. Both nudges are advisory; they never block an action
 or end a run, and both take `false`. Regressions:
 `tests/unit/verbose-turn-nudge.test.ts`.
 
+**Amendment (2026-10-20): reasoning is not verbosity.** The first version
+compared `completionTokens`, and providers report reasoning inside that number,
+so a model thinking hard was told to "stop deliberating in prose" without
+having written any. The dial now measures VISIBLE output
+(`completionTokens - reasoningTokens`): text and tool-call arguments. A
+12k-token turn with 11.5k of reasoning is 500 visible tokens and does not
+fire; hidden thinking is legitimate and must never be nudged away.
+
 ## Decision #77: The model's own text gets the same boundary as tool output
 
 Tool output has had a size boundary since the spill work: `truncate.ts` keeps a

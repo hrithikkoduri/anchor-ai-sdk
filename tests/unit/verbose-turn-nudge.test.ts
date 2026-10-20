@@ -54,8 +54,63 @@ describe("verbose turn nudge", () => {
       (m) => m.origin === "engine" && m.content?.includes("Stop deliberating in prose"),
     );
     expect(advisory).toBeDefined();
-    expect(advisory!.content).toContain("9000 tokens of output");
+    expect(advisory!.content).toContain("9000 tokens of visible output");
     expect(result.completion).toBe("response");
+  });
+
+  it("does not nudge for a turn that is mostly reasoning", async () => {
+    // 12k completion of which 11.5k is hidden reasoning: 500 visible tokens.
+    // Nudging here would tell a thinking model to stop thinking.
+    const events: AgentEvent[] = [];
+    const llm = scripted([
+      {
+        text: "Checked the call sites.",
+        tools: [readTool],
+        usage: {
+          promptTokens: 100,
+          completionTokens: 12_000,
+          totalTokens: 12_100,
+          reasoningTokens: 11_500,
+        },
+      },
+      { text: "Done.", usage: small },
+    ]);
+    const result = await runAgent(
+      { task: "Explain the code" },
+      { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
+    );
+    expect(
+      events.filter((e) => e.type === "advisory" && e.kind === "verbose_turn"),
+    ).toHaveLength(0);
+    expect(result.completion).toBe("response");
+  });
+
+  it("still nudges when visible output crosses the limit despite reasoning", async () => {
+    const events: AgentEvent[] = [];
+    const llm = scripted([
+      {
+        text: "A long visible answer.",
+        tools: [readTool],
+        usage: {
+          promptTokens: 100,
+          completionTokens: 12_000,
+          totalTokens: 12_100,
+          reasoningTokens: 1_000,
+        },
+      },
+      { text: "Done.", usage: small },
+      { text: "Done.", usage: small },
+    ]);
+    await runAgent(
+      { task: "Explain the code" },
+      { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
+    );
+    const nudges = events.filter(
+      (e) => e.type === "advisory" && e.kind === "verbose_turn",
+    );
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0]!.detail).toContain("11000 visible output tokens");
+    expect(nudges[0]!.detail).toContain("1000 reasoning excluded");
   });
 
   it("fires at most once in a run", async () => {

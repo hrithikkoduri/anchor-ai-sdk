@@ -1008,20 +1008,30 @@ export async function runAgent(
       }
       // Verbosity advisory — the mirror of the one above. That one answers a
       // model that only acts; this one answers a model that only writes. One
-      // turn past `verboseTurnLimit` tokens means it is deliberating in prose
-      // instead of moving, which is where a runaway generation starts. Fires
-      // at most once per run: after that the output cap is the backstop.
+      // turn past `verboseTurnLimit` VISIBLE tokens means it is deliberating in
+      // prose instead of moving, which is where a runaway generation starts.
+      // Reasoning is excluded: it is hidden, legitimately long, and nudging it
+      // tells a thinking model to stop thinking. Fires at most once per run:
+      // after that the output cap is the backstop.
+      const reasoningTokens = response.usage.reasoningTokens ?? 0;
+      const visibleOutputTokens = Math.max(
+        0,
+        response.usage.completionTokens - reasoningTokens,
+      );
       if (
         verboseTurnLimit !== false &&
         !verboseNudged &&
-        response.usage.completionTokens > verboseTurnLimit
+        visibleOutputTokens > verboseTurnLimit
       ) {
         verboseNudged = true;
         await courseCorrect({
           kind: "verbose_turn",
-          detail: `step ${steps} produced ${response.usage.completionTokens} output tokens in one turn (limit ${verboseTurnLimit}) — advised a status line and an action`,
+          detail:
+            `step ${steps} produced ${visibleOutputTokens} visible output tokens in one turn ` +
+            `(limit ${verboseTurnLimit}${reasoningTokens > 0 ? `, ${reasoningTokens} reasoning excluded` : ""}) — ` +
+            `advised a status line and an action`,
           content:
-            `Your last turn produced ${response.usage.completionTokens} tokens of output without moving the work forward. ` +
+            `Your last turn produced ${visibleOutputTokens} tokens of visible output without moving the work forward. ` +
             `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
             `a command or an edit. If you are stuck, say what you tried in one line and try a different approach; ` +
             `do not re-derive what you have already established. Do not end this turn without a tool call.`,

@@ -10,7 +10,13 @@ export type Turn = {
   /** e.g. "length" — a response the provider cut off at the output cap. */
   finishReason?: string;
   /** Override the default tiny usage (10/5/15) — e.g. to simulate a huge turn. */
-  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    /** Provider-reported reasoning, already included in completionTokens. */
+    reasoningTokens?: number;
+  };
 };
 export function scripted(queue: Turn[]): LLMClient & { seen: LLMRequest[] } {
   const seen: LLMRequest[] = [];
