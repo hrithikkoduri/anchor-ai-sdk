@@ -8,7 +8,11 @@ import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
-import { BudgetTracker, DEFAULT_MAX_OUTPUT_TOKENS } from "./budgets.js";
+import {
+  BudgetTracker,
+  DEFAULT_BUDGET_LIMITS,
+  DEFAULT_MAX_OUTPUT_TOKENS,
+} from "./budgets.js";
 import {
   DEFAULT_TRUNCATED_REPLY_CHARS,
   DEFAULT_MAX_ASSISTANT_CHARS,
@@ -27,6 +31,11 @@ import {
   userMessage,
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
+import {
+  renderInboxTask,
+  type InboxMessage,
+  type RunSummary,
+} from "./inbox.js";
 import { defineTool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
 import { TraceFanout } from "../trace/sink.js";
@@ -73,9 +82,28 @@ export type {
   GuardrailConfig,
 } from "./types.js";
 
-export async function runAgent(
+/**
+ * What a chained call carries from one run into the next. Absent for a
+ * standalone run, which is why every field is optional and every default
+ * reproduces today's behavior exactly.
+ */
+interface ChainRun {
+  /** Seeded with the chain's spend so budgets bind across runs, not per run. */
+  budget?: BudgetTracker;
+  /** Steps already taken earlier in the chain, for the step ceiling. */
+  stepsBefore?: number;
+  /** Jobs still running when the previous run ended. */
+  jobs?: BackgroundJob[];
+  /** The batch this run was started with, surfaced as one event. */
+  delivered?: InboxMessage[];
+  /** Pending interjection ids, sampled at each turn boundary. */
+  interrupt?: () => Promise<boolean>;
+}
+
+async function runOne(
   task: RunTask,
   opts: EngineOptions,
+  chain: ChainRun = {},
 ): Promise<AgentResult> {
   const strategy = opts.strategy ?? opts.agent?.strategy;
   if (!strategy)
@@ -207,7 +235,7 @@ export async function runAgent(
     ...conversationHistory(prior?.messages ?? []),
     currentRequest,
   ];
-  const budget = new BudgetTracker(opts.budgets);
+  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
   const compact =
     opts.compaction === false
       ? null
@@ -220,7 +248,10 @@ export async function runAgent(
   const evidence: ToolResultRecord[] = [];
   // Commands the provider detached. The engine owns their results: it polls at
   // every turn boundary and, before a normal finish, waits for what is left.
-  let outstanding: BackgroundJob[] = [...(opts.resumeJobs ?? [])];
+  let outstanding: BackgroundJob[] = [
+    ...(opts.resumeJobs ?? []),
+    ...(chain.jobs ?? []),
+  ];
   // Thresholds that double as switches (`number | false`) must be positive
   // when numeric. 0 is not "off" — `false` is — and left alone it would mean
   // "immediately" for the nudges while meaning "uncapped" for the caps.
@@ -265,6 +296,7 @@ export async function runAgent(
   );
   let silentToolTurns = 0;
   let steps = 0;
+  const stepsBefore = chain.stepsBefore ?? 0;
   // #78: the engine asked the model for something visible and the model
   // answered in prose and stopped. That is a checkpoint, not a result. Scoped
   // to nudges on purpose: an ordinary prose ending after tool work is the
@@ -576,6 +608,14 @@ export async function runAgent(
     task: task.task,
     phases: strategy.phases.map((item) => item.id),
   });
+  if (chain.delivered?.length)
+    emit({
+      type: "inbox_delivered",
+      messages: chain.delivered.map((message) => ({
+        id: message.id,
+        delivery: message.delivery,
+      })),
+    });
   emit({ type: "phase_started", phase });
   try {
     for (;;) {
@@ -584,7 +624,20 @@ export async function runAgent(
           ok: false,
           error: "cancelled by signal",
         });
-      const over = budget.exceeded(steps);
+      // A pending interjection outranks the next model call. Sampled at the
+      // boundary — never mid-turn, where the transcript would be invalid — so
+      // the run stops with the turn it already completed intact.
+      if (chain.interrupt) {
+        const pending = await chain.interrupt().catch(() => false);
+        if (pending) {
+          emit({ type: "inbox_interject" });
+          return conclude("interrupted", {
+            ok: false,
+            error: "interrupted by a pending message",
+          });
+        }
+      }
+      const over = budget.exceeded(stepsBefore + steps);
       if (over) {
         emit({
           type: "guardrail",
@@ -608,7 +661,8 @@ export async function runAgent(
           tokensUsed >= budget.limits.maxTokens * (revivalWarnAt / 100);
         const stepsHit =
           budget.limits.maxSteps > 0 &&
-          steps >= budget.limits.maxSteps * (revivalWarnAt / 100);
+          stepsBefore + steps >=
+            budget.limits.maxSteps * (revivalWarnAt / 100);
         const usdHit =
           budget.costsKnown &&
           budget.limits.maxUsd > 0 &&
@@ -682,7 +736,7 @@ export async function runAgent(
             usage: folded.usage,
           });
           // Compaction itself consumes budget; check again before inference.
-          const after = budget.exceeded(steps);
+          const after = budget.exceeded(stepsBefore + steps);
           if (after)
             return conclude("budget_exceeded", {
               ok: false,
@@ -959,4 +1013,153 @@ export async function runAgent(
     emit({ type: "error", message: error });
     return conclude("error", { ok: false, error });
   }
+}
+
+/** The chain's spend so far, replayed into each run's tracker. */
+interface ChainSpend {
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  costsKnown: boolean;
+  reasoningTokens?: number;
+}
+
+function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
+  const budget = new BudgetTracker(opts.budgets);
+  budget.promptTokens = spend.promptTokens;
+  budget.completionTokens = spend.completionTokens;
+  budget.costUsd = spend.costUsd;
+  budget.costsKnown = spend.costsKnown;
+  if (spend.reasoningTokens !== undefined)
+    budget.reasoningTokens = spend.reasoningTokens;
+  return budget;
+}
+
+function summarizeRun(result: AgentResult): RunSummary {
+  return {
+    reason: result.reason,
+    ok: result.ok,
+    steps: result.steps,
+    usage: result.usage,
+    ...(result.phase !== undefined ? { phase: result.phase } : {}),
+    ...(result.summary !== undefined ? { summary: result.summary } : {}),
+  };
+}
+
+/**
+ * A run chain (decision #82): one run at a time, with the consumer's inbox as
+ * the source of what comes next. The chain shares one budget and carries
+ * outstanding background jobs forward, so an interjection costs neither a
+ * fresh allowance nor a lost command result.
+ *
+ * It stops on anything that is not a normal ending — a stall, an error,
+ * cancellation, a caller-requested pause, or an exhausted budget — and returns
+ * the last run's result with every run summarized on `.runs`.
+ */
+async function runChain(
+  task: RunTask,
+  opts: EngineOptions,
+): Promise<AgentResult> {
+  const inbox = opts.inbox!;
+  const { store, channel } = inbox;
+  if (!channel) throw new Error("anchor: inbox.channel is required");
+  // A run normally spends at least one step, so the budget bounds the chain.
+  // This counter only stops the one shape that spends nothing: an interjection
+  // arriving before every single model call. No new public dial.
+  const maxZeroProgressRuns = Math.max(
+    1,
+    opts.budgets?.maxSteps ?? DEFAULT_BUDGET_LIMITS.maxSteps,
+  );
+  let zeroProgressRuns = 0;
+  const runs: RunSummary[] = [];
+  let spend: ChainSpend = {
+    promptTokens: 0,
+    completionTokens: 0,
+    costUsd: 0,
+    costsKnown: true,
+  };
+  let stepsBefore = 0;
+  let jobs: BackgroundJob[] | undefined;
+  let current: RunTask = task;
+  let delivered: InboxMessage[] | undefined;
+  let claimed: string[] = [];
+  let result: AgentResult | undefined;
+
+  for (;;) {
+    const budget = seededBudget(opts, spend);
+    result = await runOne(current, opts, {
+      budget,
+      stepsBefore,
+      jobs,
+      delivered,
+      interrupt: () => store.hasInterject(channel),
+    });
+
+    // The batch is settled only after the run that consumed it: a run that
+    // died of an error releases it, so a retry can claim it again.
+    if (claimed.length > 0) {
+      const settle =
+        result.reason === "error" || result.reason === "cancelled"
+          ? store.release(claimed)
+          : store.complete(claimed);
+      await settle.catch(() => undefined);
+      claimed = [];
+    }
+
+    runs.push(summarizeRun(result));
+    const usage = result.usage;
+    spend = {
+      promptTokens: spend.promptTokens + usage.promptTokens,
+      completionTokens: spend.completionTokens + usage.completionTokens,
+      costUsd: spend.costUsd + (usage.costUsd ?? 0),
+      costsKnown: spend.costsKnown && usage.costUsd !== undefined,
+      ...(usage.reasoningTokens !== undefined
+        ? {
+            reasoningTokens:
+              (spend.reasoningTokens ?? 0) + usage.reasoningTokens,
+          }
+        : spend.reasoningTokens !== undefined
+          ? { reasoningTokens: spend.reasoningTokens }
+          : {}),
+    };
+    stepsBefore += result.steps;
+    zeroProgressRuns = result.steps === 0 ? zeroProgressRuns + 1 : 0;
+    jobs = result.pendingJobs;
+
+    const continues =
+      result.reason === "finished" ||
+      result.reason === "interrupted" ||
+      result.reason === "stalled";
+    // A budget ending, a pause, a cancel, and an error are the caller's to
+    // interpret: claiming more work would spend money or override a pause.
+    if (!continues) return { ...result, runs };
+    // The chain may end on `interrupted` with no allowance left. Claiming now
+    // would hand a batch to a run that can only fail at its first boundary,
+    // and the batch would be completed unused — leave it pending instead.
+    if (budget.exceeded(stepsBefore)) return { ...result, runs };
+    if (zeroProgressRuns >= maxZeroProgressRuns) return { ...result, runs };
+
+    let batch: InboxMessage[];
+    try {
+      batch = await store.claimAll(channel);
+    } catch {
+      return { ...result, runs };
+    }
+    if (batch.length === 0) return { ...result, runs };
+
+    claimed = batch.map((message) => message.id);
+    delivered = batch;
+    current = inbox.render ? inbox.render(batch) : renderInboxTask(batch);
+  }
+
+  // The zero-progress guard fired. Report the last run as it stands; `.runs`
+  // shows how many interruptions it took to get here.
+  return { ...result!, runs };
+}
+
+export async function runAgent(
+  task: RunTask,
+  opts: EngineOptions,
+): Promise<AgentResult> {
+  return opts.inbox ? runChain(task, opts) : runOne(task, opts);
 }

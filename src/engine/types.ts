@@ -8,6 +8,7 @@ import type { CompactionConfig } from "./compaction.js";
 import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
+import type { InboxMessage, InboxStore, RunSummary } from "./inbox.js";
 
 export interface RunTask {
   task: string;
@@ -145,6 +146,23 @@ export interface EngineOptions {
   /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
+  /**
+   * Deliver messages that arrive while this run works (decision #82). The
+   * engine probes for interjections at every turn boundary and, when the run
+   * ends, claims the pending batch and starts the next run with it — same
+   * thread, sandbox, and budget. Absent: today's behavior exactly, one run.
+   *
+   * The store is the consumer's; `MemoryInboxStore` ships for tests and
+   * single-process apps. Ordering and claim semantics are the store's
+   * contract (see `InboxStore`).
+   */
+  inbox?: {
+    store: InboxStore;
+    /** Work-stream key — usually the thread id. */
+    channel: string;
+    /** Build the next run's task from a claimed batch. Default joins text. */
+    render?: (messages: InboxMessage[]) => { task: string; context?: string };
+  };
 }
 
 /** What a snapshot produced — the engine reports it, never interprets it. */
@@ -206,7 +224,13 @@ export type FinishReason =
   | "stalled"
   | "error"
   | "paused"
-  | "cancelled";
+  | "cancelled"
+  /**
+   * A pending inbox interjection ended the run at a turn boundary. The chain
+   * continues with the message it claimed; a standalone run (no inbox) never
+   * reports this.
+   */
+  | "interrupted";
 
 export interface AgentResult {
   /** Runtime outcome only: not a verification certificate or permission to publish. */
@@ -222,6 +246,11 @@ export interface AgentResult {
   checkpointRef?: string;
   /** Present when the run ended out of budget and revival is enabled. */
   revival?: RevivalRequest;
+  /**
+   * Every run a chained `runAgent` call performed, oldest first, including
+   * this final one. Absent when no `inbox` was configured (a single run).
+   */
+  runs?: RunSummary[];
   /**
    * Commands still running when the run ended. Pass them back as
    * `resumeJobs` to keep polling them; otherwise their results are lost.

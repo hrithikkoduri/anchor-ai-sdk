@@ -88,6 +88,18 @@ export type AgentEvent =
       timedOut: boolean;
     }
   | {
+      /** A claimed inbox batch became this run's task (decision #82). */
+      type: "inbox_delivered";
+      messages: Array<{ id: string; delivery: "queue" | "interject" }>;
+    }
+  | {
+      /**
+       * A pending interjection ended the previous run at its turn boundary.
+       * Which messages caused it is reported by the next `inbox_delivered`.
+       */
+      type: "inbox_interject";
+    }
+  | {
       type: "guardrail";
       kind:
         | "loop_detected"
@@ -153,7 +165,8 @@ export type AgentEvent =
         | "stalled"
         | "error"
         | "paused"
-        | "cancelled";
+        | "cancelled"
+        | "interrupted";
       /** Set when the run concluded via finish() with a consumer-shaped handoff. */
       handoff?: Record<string, unknown>;
     }

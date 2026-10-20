@@ -720,6 +720,68 @@ responsibility — the clock after the run ends — because only it has a queue.
 Docker and E2B do not detach (no `pollJob`), so nothing changes there.
 Regressions: `tests/unit/background-exec.test.ts`.
 
+## Decision #82: The inbox is a store; the chain is the engine's
+
+Every consumer that accepts messages while a run is working writes the same
+worker: an abort controller, a wait for the run to settle, a persisted queue, a
+dedupe key, a phase to resume at, and a lock so two runs never share a
+workspace. Sailor's inbox is that worker. #81 deliberately left the post-run
+clock with the consumer "because only it has a queue" — which is true while the
+queue is opaque, and false the moment the queue is an interface.
+
+So the queue becomes a store, like `ThreadStore` and `SandboxStore`:
+
+- **`InboxStore`** — `push`, `hasInterject`, `claimAll`, `complete`, `release`.
+  `MemoryInboxStore` ships for tests and single-process apps; a product brings
+  Postgres.
+- **`EngineOptions.inbox`** — `{ store, channel, render? }`. Absent, `runAgent`
+  is exactly the single run it always was; nothing in this decision changes an
+  existing caller.
+- **The chain** — `runAgent` runs one run at a time. When it ends with a normal
+  outcome, the engine claims the pending batch and starts the next run with it:
+  same thread, same sandbox, same budget. `AgentResult.runs` reports every run.
+
+The delivery split is the whole point:
+
+| delivery | what the engine does |
+|---|---|
+| `queue` | Leaves the running run untouched. The message becomes part of the next run's task. |
+| `interject` | Probes `hasInterject` at each turn boundary and ends the run `interrupted` there — after the completed turn's tool results, never mid-turn where the transcript would be invalid — then claims and starts the next run. |
+
+Consequences and limits, stated so they cannot drift:
+
+- **Ordering is a store contract, not a hint.** A claim returns pending
+  interjections newest-first (the latest correction supersedes older ones),
+  then queued messages oldest-first. A store that cannot express it cannot
+  implement the interface.
+- **The batch settles after the run that consumed it.** `complete` on a normal
+  ending, `release` on `error`/`cancelled`, so a retry can claim it again. A
+  crash between claim and completion is the store's lease problem, not the
+  engine's — which is why the interface has `release` at all.
+- **One budget for the chain.** An interjection costs time, not a fresh
+  allowance. A stream of zero-step interjections is bounded by `maxSteps` runs;
+  there is no new public dial.
+- **Never claim when the allowance is spent.** The batch stays pending for the
+  consumer instead of being completed by a run that can only fail at its first
+  boundary.
+- **Stop on anything that is not normal** — a pause, a cancel, an error, or an
+  exhausted budget — rather than claiming work the caller did not ask for.
+- **Two provenances, on purpose.** Background results (#81) are
+  `origin: "engine"`: runtime-only, never persisted. Inbox messages are real
+  user turns: persisted, displayable, part of `messages`. Do not unify them.
+- **No visibility flag.** A message the model sees is a message the trace sees.
+  Context is application input, not a secrecy boundary.
+- **The consumer keeps the clock only when the chain ends** — per-thread
+  locking, classification (which sender may interject), leases, and what to do
+  with a batch still pending after a cancel or a spent budget.
+
+`hasInterject` is sampled every turn; an error there is treated as "none", so a
+store outage degrades to "no interruption" instead of killing the work. Trace
+sinks stay per run, as they always were — a chain is a sequence of runs, not one
+fanout with a moving sequence.
+
+Regressions: `tests/unit/inbox.test.ts`.
+
 ## Decision #77: The model's own text gets the same boundary as tool output
 
 Tool output has had a size boundary since the spill work: `truncate.ts` keeps a
