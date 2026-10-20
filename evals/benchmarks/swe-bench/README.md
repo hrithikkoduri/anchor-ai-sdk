@@ -60,6 +60,42 @@ node scripts/fetch-tasks.mjs --dataset SWE-bench/SWE-bench_Verified \
 # dev smoke stays cheap: same command with --provider local
 ```
 
+### Run the same tasks on E2B
+
+E2B boots **templates**, not arbitrary Docker images, so each image-backed
+task needs a template built from its SWE-bench image. Repo-clone tasks use the
+default `E2B_TEMPLATE`.
+
+```bash
+# build one template (a few minutes; ~1 GB image)
+E2B_API_KEY=... node scripts/build-e2b-templates.mjs \
+  --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
+  --task psf__requests-1963
+
+# it prints E2B_TEMPLATE_MAP; use it for the run
+E2B_API_KEY=... E2B_USER=root \
+E2B_TEMPLATE_MAP='{"psf__requests-1963":"anchor-swebench-psf-requests-1963:latest"}' \
+  npm run eval --prefix evals -- \
+  --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
+  --provider e2b --task psf__requests-1963 --model z-ai/glm-5.3 --max-steps 60
+```
+
+`E2B_TIMEOUT_MS` controls the sandbox lifetime (default 1 hour; Hobby caps
+there). E2B's image tasks run as `root`, matching the SWE-bench images.
+Unlike Docker, E2B is remote — `DOCKER_BIN` is irrelevant, and the grader
+still runs locally in Docker exactly as before.
+
+For a fast, E2B-native sanity check (not a replacement for the official
+grader), apply the dataset's test patch and the prediction inside the task's
+own E2B template and run the official FAIL_TO_PASS + PASS_TO_PASS ids:
+
+```bash
+E2B_API_KEY=... node scripts/verify-e2b-prediction.mjs \
+  --prediction .eval-runs/<out>/predictions.jsonl \
+  --instance pallets__flask-4045 \
+  --template anchor-swebench-pallets-flask-4045:latest
+```
+
 Outputs land in `.eval-runs/<out>`: `predictions.jsonl` is the official
 grader's input, `results.jsonl` keeps status/steps/usage/cost, `traces/`
 holds every engine event per task.
