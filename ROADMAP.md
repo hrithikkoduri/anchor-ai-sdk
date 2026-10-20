@@ -49,14 +49,11 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 - **Artifact→git image fallback chain** — try the primary image source; on
   job failure, destroy and recreate from the secondary. Widen the
   build-secret refresh condition to "git anywhere in the chain". _Where:_
-  `src/sandbox/heyo/index.ts` `start()`. _Trigger:_ artifact kind primary in
-  production **and** store flakiness on pulls. _Size:_ S–M.
-- **Publish the ext4 + flip `HEYO_IMAGE_KIND=artifact`** — blocked
-  externally: Heyo's namespace artifact store rejects uploads (`Broken pipe`
-  at 1 GiB, `502` at 64 MiB, `setRepo` 502). The rootfs is built and verified
-  locally (the Sailor repo's `image/`). _Trigger:_ the store heals → one
-  `heyctl artifact push rootfs.ext4 --tag <your-namespace>/toolchain:latest`
-  plus the env flip. _Size:_ S (blocked externally).
+  `src/sandbox/heyo/index.ts` `start()`. _Trigger:_ a store outage in
+  production. Not triggered by a broken store: a 4 GiB ext4 pushed and booted
+  on 2026-10-20 (`harness/sailor-toolchain:latest`, public) and the reference
+  deployment runs `HEYO_IMAGE_KIND=artifact`, boot 125.6s vs 207s for git.
+  _Size:_ S–M.
 - **`fork()` (checkpoint → new VM)** — start a second sandbox from a
   checkpoint for best-of-N races; `local` already implements it (the
   conformance suite caught the capability lie once). _Where:_ `src/sandbox/`.

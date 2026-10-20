@@ -131,10 +131,10 @@ The Heyo adapter resolves the rootfs from `imageKind`:
 Prefer `artifact`. The build kinds pay clone-and-build on a cold start, and the
 `git` kind reads a build secret while building — that is what
 `prepare({ gitToken })` exists for (it refreshes that secret so a build never
-clones with a stale token). The reference deployment defaults to `artifact` but
-currently runs `git` because the namespace artifact store rejects uploads; that
-is tracked in `ROADMAP.md` ("Publish the ext4 + flip `HEYO_IMAGE_KIND=artifact`"),
-not an adapter defect.
+clones with a stale token). The reference deployment runs `artifact`
+(`harness/sailor-toolchain:latest`): its boot measured 125.6s against 207s for
+the git build. Point `imageStore` at the store that holds the tag — it defaults
+to the public hub, not a namespace's own store.
 
 **Boot dominates short runs.** Measured 2026-10-19 on the reference setup: a
 13-step run took 260s wall-clock — **207s inside `start()`** (pull/build, ready

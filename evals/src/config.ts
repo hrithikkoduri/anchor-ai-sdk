@@ -110,6 +110,7 @@ export function evalsConfig(env: NodeJS.ProcessEnv = process.env): EvalsConfig {
       token: env.HEYO_TOKEN ?? "",
       server: env.HEYO_SERVER ?? "https://admin.us5.heyo.work",
       namespace: env.HEYO_NAMESPACE ?? "sailor",
+      imageStore: env.HEYO_IMAGE_STORE || undefined,
       image: env.HEYO_IMAGE ?? "heyo/bun:latest",
       imageKind:
         env.HEYO_IMAGE_KIND === "git"

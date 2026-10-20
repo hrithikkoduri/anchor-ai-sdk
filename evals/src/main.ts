@@ -160,9 +160,9 @@ const provider =
       ? docker({ dockerBin: process.env.DOCKER_BIN ?? "docker" })
       : local();
 
-// Mini has no token cap (250 steps, $3). 25M is this eval's fair ceiling,
+// Mini has no token cap (250 steps, $3). 50M is this eval's fair ceiling,
 // not the package default. A flag still wins.
-const budgets: Partial<BudgetLimits> = { maxTokens: 25_000_000 };
+const budgets: Partial<BudgetLimits> = { maxTokens: 50_000_000 };
 if (args.has("max-steps")) budgets.maxSteps = Number(args.get("max-steps"));
 if (args.has("max-usd")) budgets.maxUsd = Number(args.get("max-usd"));
 if (args.has("max-tokens")) budgets.maxTokens = Number(args.get("max-tokens"));
