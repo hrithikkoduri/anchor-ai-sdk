@@ -1,0 +1,53 @@
+diff --git a/ChangeLog b/ChangeLog
+index b6ba4bec..61257e36 100755
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -33,6 +33,11 @@ Release date: TBA
+ 
+   closes #5722
+ 
++* Fix a false negative for ``fixme`` when a note tag made only of punctuation
++  characters (e.g. ``???``) was supplied to ``--notes``.
++
++  Closes #5801
++
+ * Fixed crash from ``arguments-differ`` and ``arguments-renamed`` when methods were
+   defined outside the top level of a class.
+ 
+diff --git a/pylint/checkers/misc.py b/pylint/checkers/misc.py
+index 69149e61..a9e9912b 100755
+--- a/pylint/checkers/misc.py
++++ b/pylint/checkers/misc.py
+@@ -121,9 +121,9 @@ class EncodingChecker(BaseChecker):
+ 
+         notes = "|".join(re.escape(note) for note in self.config.notes)
+         if self.config.notes_rgx:
+-            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})\b"
++            regex_string = rf"#\s*({notes}|{self.config.notes_rgx})(?!\w)"
+         else:
+-            regex_string = rf"#\s*({notes})\b"
++            regex_string = rf"#\s*({notes})(?!\w)"
+ 
+         self._fixme_pattern = re.compile(regex_string, re.I)
+ 
+diff --git a/tests/checkers/unittest_misc.py b/tests/checkers/unittest_misc.py
+index 23e19a9d..131e0aae 100755
+--- a/tests/checkers/unittest_misc.py
++++ b/tests/checkers/unittest_misc.py
+@@ -89,6 +89,16 @@ class TestFixme(CheckerTestCase):
+         ):
+             self.checker.process_tokens(_tokenize_str(code))
+ 
++    @set_config(notes=["???"])
++    def test_punctuation_only_codetag(self) -> None:
++        code = """a = 1
++                # ???: no
++                """
++        with self.assertAddsMessages(
++            MessageTest(msg_id="fixme", line=2, args="???: no", col_offset=17)
++        ):
++            self.checker.process_tokens(_tokenize_str(code))
++
+     def test_issue_2321_should_not_trigger(self) -> None:
+         code = 'print("# TODO this should not trigger a fixme")'
+         with self.assertNoMessages():

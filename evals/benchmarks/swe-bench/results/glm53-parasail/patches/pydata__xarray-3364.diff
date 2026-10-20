@@ -1,0 +1,96 @@
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index e97e2d73..1c7f70fb 100755
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -89,6 +89,9 @@ Bug fixes
+ - Line plots with the ``x`` or ``y`` argument set to a 1D non-dimensional coord
+   now plot the correct data for 2D DataArrays
+   (:issue:`3334`). By `Tom Nicholas <http://github.com/TomNicholas>`_.
++- Make :py:func:`~xarray.concat` more robust when merging variables present in
++  some datasets but not others (:issue:`508`). By
++  `Deepak Cherian <http://github.com/dcherian>`_.
+ - The default behaviour of reducing across all dimensions for
+   :py:class:`~xarray.core.groupby.DataArrayGroupBy` objects has now been properly removed
+   as was done for :py:class:`~xarray.core.groupby.DatasetGroupBy` in 0.13.0 (:issue:`3337`).
+diff --git a/xarray/core/concat.py b/xarray/core/concat.py
+index ecae2566..e98e8a72 100755
+--- a/xarray/core/concat.py
++++ b/xarray/core/concat.py
+@@ -312,15 +312,9 @@ def _dataset_concat(
+         to_merge = {var: [] for var in variables_to_merge}
+ 
+         for ds in datasets:
+-            absent_merge_vars = variables_to_merge - set(ds.variables)
+-            if absent_merge_vars:
+-                raise ValueError(
+-                    "variables %r are present in some datasets but not others. "
+-                    % absent_merge_vars
+-                )
+-
+             for var in variables_to_merge:
+-                to_merge[var].append(ds.variables[var])
++                if var in ds:
++                    to_merge[var].append(ds.variables[var])
+ 
+         for var in variables_to_merge:
+             result_vars[var] = unique_variable(
+diff --git a/xarray/tests/test_combine.py b/xarray/tests/test_combine.py
+index 6bd11276..cd26e7fb 100755
+--- a/xarray/tests/test_combine.py
++++ b/xarray/tests/test_combine.py
+@@ -782,12 +782,11 @@ class TestAutoCombineOldAPI:
+         actual = auto_combine(datasets, concat_dim="t")
+         assert_identical(expected, actual)
+ 
+-    def test_auto_combine_still_fails(self):
+-        # concat can't handle new variables (yet):
+-        # https://github.com/pydata/xarray/issues/508
++    def test_auto_combine_with_new_variables(self):
+         datasets = [Dataset({"x": 0}, {"y": 0}), Dataset({"x": 1}, {"y": 1, "z": 1})]
+-        with pytest.raises(ValueError):
+-            auto_combine(datasets, "y")
++        actual = auto_combine(datasets, "y")
++        expected = Dataset({"x": ("y", [0, 1])}, {"y": [0, 1], "z": 1})
++        assert_identical(expected, actual)
+ 
+     def test_auto_combine_no_concat(self):
+         objs = [Dataset({"x": 0}), Dataset({"y": 1})]
+diff --git a/xarray/tests/test_concat.py b/xarray/tests/test_concat.py
+index c7af0fc9..0661ebb7 100755
+--- a/xarray/tests/test_concat.py
++++ b/xarray/tests/test_concat.py
+@@ -68,6 +68,22 @@ class TestConcatDataset:
+         datasets = [g for _, g in data.groupby(dim, squeeze=False)]
+         assert_identical(data, concat(datasets, dim, coords=coords))
+ 
++    def test_concat_merge_variables_present_in_some_datasets(self, data):
++        # coordinates present in some datasets but not others
++        ds1 = Dataset(data_vars={"a": ("y", [0.1])}, coords={"x": 0.1})
++        ds2 = Dataset(data_vars={"a": ("y", [0.2])}, coords={"z": 0.2})
++        actual = concat([ds1, ds2], dim="y", coords="minimal")
++        expected = Dataset({"a": ("y", [0.1, 0.2])}, coords={"x": 0.1, "z": 0.2})
++        assert_identical(expected, actual)
++
++        # data variables present in some datasets but not others
++        split_data = [data.isel(dim1=slice(3)), data.isel(dim1=slice(3, None))]
++        data0, data1 = deepcopy(split_data)
++        data1["foo"] = ("bar", np.random.randn(10))
++        actual = concat([data0, data1], "dim1")
++        expected = data.copy().assign(foo=data1.foo)
++        assert_identical(expected, actual)
++
+     def test_concat_2(self, data):
+         dim = "dim2"
+         datasets = [g for _, g in data.groupby(dim, squeeze=True)]
+@@ -190,11 +206,6 @@ class TestConcatDataset:
+             concat([data0, data1], "dim1", compat="identical")
+         assert_identical(data, concat([data0, data1], "dim1", compat="equals"))
+ 
+-        with raises_regex(ValueError, "present in some datasets"):
+-            data0, data1 = deepcopy(split_data)
+-            data1["foo"] = ("bar", np.random.randn(10))
+-            concat([data0, data1], "dim1")
+-
+         with raises_regex(ValueError, "compat.* invalid"):
+             concat(split_data, "dim1", compat="foobar")
+ 

@@ -1,0 +1,48 @@
+diff --git a/CHANGES.rst b/CHANGES.rst
+index d546dcab..c2a42443 100755
+--- a/CHANGES.rst
++++ b/CHANGES.rst
+@@ -15,6 +15,9 @@ Unreleased
+ -   Fix some types that weren't available in Python 3.6.0. :issue:`4040`
+ -   Improve typing for ``send_file``, ``send_from_directory``, and
+     ``get_send_file_max_age``. :issue:`4044`, :pr:`4026`
++-   Show an error when a blueprint name contains a dot. The ``.`` has
++    special meaning, it is used to separate (nested) blueprint names and
++    the endpoint name. :issue:`4041`
+ 
+ 
+ Version 2.0.0
+diff --git a/src/flask/blueprints.py b/src/flask/blueprints.py
+index 5fb84d86..823995f6 100755
+--- a/src/flask/blueprints.py
++++ b/src/flask/blueprints.py
+@@ -188,6 +188,10 @@ class Blueprint(Scaffold):
+             template_folder=template_folder,
+             root_path=root_path,
+         )
++
++        if "." in name:
++            raise ValueError("'name' may not contain a dot '.' character.")
++
+         self.name = name
+         self.url_prefix = url_prefix
+         self.subdomain = subdomain
+@@ -360,12 +364,12 @@ class Blueprint(Scaffold):
+         """Like :meth:`Flask.add_url_rule` but for a blueprint.  The endpoint for
+         the :func:`url_for` function is prefixed with the name of the blueprint.
+         """
+-        if endpoint:
+-            assert "." not in endpoint, "Blueprint endpoints should not contain dots"
+-        if view_func and hasattr(view_func, "__name__"):
+-            assert (
+-                "." not in view_func.__name__
+-            ), "Blueprint view function name should not contain dots"
++        if endpoint and "." in endpoint:
++            raise ValueError("'endpoint' may not contain a dot '.' character.")
++
++        if view_func and hasattr(view_func, "__name__") and "." in view_func.__name__:
++            raise ValueError("'view_func' name may not contain a dot '.' character.")
++
+         self.record(lambda s: s.add_url_rule(rule, endpoint, view_func, **options))
+ 
+     def app_template_filter(self, name: t.Optional[str] = None) -> t.Callable:

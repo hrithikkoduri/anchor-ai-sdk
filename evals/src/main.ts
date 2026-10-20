@@ -199,9 +199,18 @@ const startedAt = Date.now();
 say(
   `anchor eval · ${armName}@${model} · ${llmName} · ${provider.name} · ${tasks.length} task(s)`,
 );
-if (sampling) {
+// The anchor arm pins sampling through the engine. Mini brings its own loop
+// and its own sampling defaults, so this line must not claim otherwise.
+if (sampling && armName === "anchor") {
   say(
     `sampling: temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`,
+  );
+}
+if (armName === "mini") {
+  say(
+    sampling
+      ? `sampling: pinned through litellm — temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`
+      : "sampling: mini's own defaults",
   );
 }
 say(
@@ -241,15 +250,25 @@ const report = (result: EvalTaskResult, index: number): void => {
   );
 };
 
-const modelRef = model.startsWith("openrouter/")
-  ? model
-  : `openrouter/${model}`;
+// Mini reaches the model through litellm: `openrouter/x` for the gateway,
+// `openai/x` plus a base URL for a direct OpenAI-compatible endpoint.
+const modelRef =
+  parasail
+    ? `openai/${model}`
+    : model.startsWith("openrouter/")
+      ? model
+      : `openrouter/${model}`;
 const arm =
   armName === "mini"
     ? miniSweArm({
         model: modelRef,
         dockerBin: process.env.DOCKER_BIN ?? "docker",
-        ...(cfg.llm.apiKey ? { apiKey: cfg.llm.apiKey } : {}),
+        ...(parasail
+          ? { baseUrl, ...(apiKey ? { apiKey } : {}) }
+          : cfg.llm.apiKey
+            ? { apiKey: cfg.llm.apiKey }
+            : {}),
+        ...(sampling ? { sampling } : {}),
         ...(args.has("max-usd")
           ? { costLimitUsd: Number(args.get("max-usd")) }
           : {}),

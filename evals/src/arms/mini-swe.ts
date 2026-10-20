@@ -20,6 +20,13 @@ export interface MiniSweArmOptions {
   apiKey?: string;
   /** litellm model id including provider, e.g. `openrouter/z-ai/glm-5.3`. */
   model: string;
+  /**
+   * A direct OpenAI-compatible endpoint (Parasail et al.). Set together with
+   * an `openai/...` model: litellm then sends OPENAI_API_BASE and key.
+   */
+  baseUrl?: string;
+  /** Sampling to pin through litellm (temperature/seed), for a matched A/B. */
+  sampling?: { temperature?: number; seed?: number };
   /** mini's own spend cap (USD). Default 2. */
   costLimitUsd?: number;
   /** Docker CLI for carrying the trajectory out (docker backend only). */
@@ -29,7 +36,8 @@ export interface MiniSweArmOptions {
 /** The python driver: run one task in the current directory, print the result.
  * Mirrors mini's own swebench runner: its battle-tested templates come from
  * the packaged swebench.yaml; mode yolo + confirm_exit false = non-interactive. */
-const DRIVER = `import sys
+const DRIVER = `import json
+import sys
 from minisweagent.agents import get_agent
 from minisweagent.config import builtin_config_dir, get_config_from_spec
 from minisweagent.environments.local import LocalEnvironment
@@ -37,6 +45,8 @@ from minisweagent.models import get_model
 from minisweagent.utils.serialize import recursive_merge
 
 task = open(sys.argv[1], encoding="utf-8").read()
+# argv[3] pins model_kwargs (temperature/seed) so both arms are sampled alike.
+kwargs = json.loads(sys.argv[3]) if len(sys.argv) > 3 else {}
 config = recursive_merge(
     get_config_from_spec(str(builtin_config_dir / "benchmarks" / "swebench.yaml")),
     {
@@ -45,7 +55,14 @@ config = recursive_merge(
             "confirm_exit": False,
             "output_path": "/tmp/mini-traj.json",
         },
-        "model": {"model_name": sys.argv[2]},
+        "model": {
+            "model_name": sys.argv[2],
+            "model_kwargs": {
+                "drop_params": True,
+                "parallel_tool_calls": True,
+                **kwargs,
+            },
+        },
     },
 )
 agent = get_agent(
@@ -144,7 +161,7 @@ export function miniSweArm(opts: MiniSweArmOptions): EvalArm {
       let stats: { steps?: number } = {};
       try {
         const run = await ctx.sandbox.exec(
-          `env -u PYTHONPATH /opt/mini-venv/bin/python /tmp/mini-driver.py /tmp/mini-task.md ${shq(opts.model)}`,
+          `env -u PYTHONPATH /opt/mini-venv/bin/python /tmp/mini-driver.py /tmp/mini-task.md ${shq(opts.model)} ${shq(JSON.stringify(opts.sampling ?? {}))}`,
           {
             cwd: ctx.sandbox.workspace,
             timeoutSecs: 3600,
@@ -154,7 +171,15 @@ export function miniSweArm(opts: MiniSweArmOptions): EvalArm {
               // and its cost tracking throws; ignore_errors keeps runs alive
               // (cost then comes from the grader-side accounting, not mini).
               MSWEA_COST_TRACKING: "ignore_errors",
-              ...(opts.apiKey ? { OPENROUTER_API_KEY: opts.apiKey } : {}),
+              ...(opts.baseUrl
+                ? {
+                    // litellm's `openai/` route reads these two.
+                    OPENAI_API_BASE: opts.baseUrl,
+                    ...(opts.apiKey ? { OPENAI_API_KEY: opts.apiKey } : {}),
+                  }
+                : opts.apiKey
+                  ? { OPENROUTER_API_KEY: opts.apiKey }
+                  : {}),
             },
           },
         );

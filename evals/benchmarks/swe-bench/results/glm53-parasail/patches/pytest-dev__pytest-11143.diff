@@ -1,0 +1,47 @@
+diff --git a/changelog/11163.bugfix.rst b/changelog/11163.bugfix.rst
+new file mode 100644
+index 000000000..1cfd937ba
+--- /dev/null
++++ b/changelog/11163.bugfix.rst
+@@ -0,0 +1,5 @@
++Fixed the issue where the assertion-rewrite mode would crash with
++``TypeError: argument of type 'int' is not iterable`` when a module's first
++statement was a non-string constant expression (for example a bare number),
++which was mistakenly treated as a docstring when checking for
++``PYTEST_DONT_REWRITE``.
+diff --git a/src/_pytest/assertion/rewrite.py b/src/_pytest/assertion/rewrite.py
+index 157903faf..9bf79f1e1 100755
+--- a/src/_pytest/assertion/rewrite.py
++++ b/src/_pytest/assertion/rewrite.py
+@@ -676,6 +676,7 @@ class AssertionRewriter(ast.NodeVisitor):
+                 expect_docstring
+                 and isinstance(item, ast.Expr)
+                 and isinstance(item.value, ast.Constant)
++                and isinstance(item.value.value, str)
+             ):
+                 doc = item.value.value
+                 if self.is_rewrite_disabled(doc):
+diff --git a/testing/test_assertrewrite.py b/testing/test_assertrewrite.py
+index d01803204..78cebb385 100755
+--- a/testing/test_assertrewrite.py
++++ b/testing/test_assertrewrite.py
+@@ -141,6 +141,19 @@ class TestAssertionRewrite:
+         assert isinstance(m.body[1], ast.Assert)
+         assert m.body[1].msg is None
+ 
++    def test_dont_rewrite_int_first_statement(self, pytester: Pytester) -> None:
++        """Regression test for #11163: a non-string constant expression as the
++        first statement of a module must not be mistaken for a docstring."""
++        pytester.makepyfile(
++            """
++            123
++            def test():
++                assert 1 + 1 == 2
++            """
++        )
++        result = pytester.runpytest()
++        assert result.ret == ExitCode.OK
++
+     def test_dont_rewrite_plugin(self, pytester: Pytester) -> None:
+         contents = {
+             "conftest.py": "pytest_plugins = 'plugin'; import plugin",
