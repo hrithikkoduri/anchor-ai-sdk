@@ -236,6 +236,11 @@ export class HeyoSandbox implements Sandbox {
         "the heyo backend uses its configured image — per-sandbox image/workspacePath belong to the docker backend",
       );
     }
+    if (this.spec.egress === "none") {
+      throw new Error(
+        "the heyo backend has no egress control — it declares egressControl: false, so `none` would be a promise it cannot keep",
+      );
+    }
 
     if (this.spec.adopt) {
       // Adopt the retained deployment: wake it and verify the workspace is

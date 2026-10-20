@@ -44,7 +44,7 @@ product, and a handle owned by a different provider is skipped, not "gone".
 | member | promise |
 |---|---|
 | `name` | stored verbatim on handles and in consumer databases |
-| `capabilities` | **declared = tested**: the conformance suite gates scenarios on it (`local` once declared `fork: false` while implementing `fork()`; the suite caught it) |
+| `capabilities` | **declared = tested**: the conformance suite gates scenarios on it (`local` once declared `fork: false` while implementing `fork()`; the suite caught it). `egressControl: true` means `spec.egress: "none"` is enforced after `start()`; a provider without it rejects `"none"` instead of running with network. |
 | `create(spec)` | constructs only, with **no I/O**; `start()` does the I/O |
 | `adopt(handle, spec?)` | the workspace comes from the retained disk; `start()` proves it still exists; a failure is *gone*, not *fatal* |
 | `release(handle)` | destroy by handle alone; no spec, no start; already-gone is not an error |

@@ -43,9 +43,12 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   _Size:_ M.
 - **Daytona adapter**: same shape as E2B (`src/sandbox/daytona/`). _Trigger:_
   same. _Size:_ M.
-- **Egress control enforcement**: the capability flag exists; enforcement
-  (per-VM allowlists) waits for a provider that supports it. _Where:_
-  `src/sandbox/`. _Trigger:_ a consumer needs network restriction. _Size:_ M.
+- **Egress allowlists**: Docker now enforces `egress: "none"` (disconnect
+  after setup) and declares the capability; the eval exposes `--egress none`.
+  Missing is the middle setting, allow only a package index or a host list,
+  which needs a proxy or rules inside the container. _Where:_
+  `src/sandbox/docker/index.ts`. _Trigger:_ a task needs `pip install` during
+  the agent phase. _Size:_ M.
 - **Artifact→git image fallback chain**: try the primary image source; on
   job failure, destroy and recreate from the secondary. Widen the
   build-secret refresh condition to "git anywhere in the chain". _Where:_

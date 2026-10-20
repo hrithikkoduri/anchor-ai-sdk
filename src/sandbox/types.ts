@@ -140,6 +140,15 @@ export interface SandboxSpec {
    */
   image?: string;
   /**
+   * Egress for the AGENT phase only. `"none"` cuts the sandbox off after
+   * `start()` completes, so setup (clone, pull, install) still has network but
+   * the agent cannot fetch answers mid-run. Only providers declaring
+   * `capabilities.egressControl` enforce it; the others REJECT `"none"` loudly
+   * rather than run with network while a benchmark believes it is isolated.
+   * Default `"full"`.
+   */
+  egress?: "full" | "none";
+  /**
    * Use a directory that ALREADY EXISTS inside the sandbox as the workspace,
    * skipping clone/init — benchmark images arrive with the repo checked out
    * (e.g. `/testbed`). Distinct from `localPath`, which imports a directory

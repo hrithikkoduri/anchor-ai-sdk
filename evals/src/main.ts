@@ -42,6 +42,8 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
   --max-steps <n>         budget: steps per task (engine default 40)
   --max-usd <n>           budget: dollars per task (engine default 5)
   --image-tag <tag>       boot task images as <repo>:<tag> (prewarmed)
+  --egress none           cut the sandbox network after setup (docker only);
+                          without it the agent can fetch the upstream fix
   --out <dir>             output directory (default .eval-runs/<timestamp>)`;
 
 function parseArgs(argv: string[]): Map<string, string | true> {
@@ -126,6 +128,23 @@ if (
   say("--temperature must be a number and --seed an integer");
   process.exit(1);
 }
+// Egress is a benchmark control, not a product default: it is how a run stops
+// being able to fetch the answer. Only a provider that declares the capability
+// may accept it; the rest would silently run with network.
+const egress = args.has("egress")
+  ? String(args.get("egress"))
+  : undefined;
+if (egress !== undefined && egress !== "none") {
+  say(`--egress takes "none" (the full-network default needs no flag)`);
+  process.exit(1);
+}
+if (egress === "none" && providerName !== "docker") {
+  say(
+    `--egress none needs the docker provider (egressControl); ${providerName} cannot enforce it`,
+  );
+  process.exit(1);
+}
+
 const sampling =
   temperature !== undefined || seed !== undefined
     ? {
@@ -323,6 +342,7 @@ const results = await runEvalSuite({
   ...(Object.keys(budgets).length > 0 ? { budgets } : {}),
   ...(compaction ? { compaction } : {}),
   ...(sampling ? { sampling } : {}),
+  ...(egress ? { egress: egress as "none" } : {}),
   artifactsDir,
   onEvent: (task, event) => {
     const chunks = traces.get(task.id) ?? [];
@@ -380,6 +400,7 @@ await writeFile(
       llm: llmName,
       baseUrl,
       ...(sampling ? { sampling } : {}),
+      ...(egress ? { egress } : {}),
       provider: provider.name,
       ...(providerName === "e2b"
         ? {

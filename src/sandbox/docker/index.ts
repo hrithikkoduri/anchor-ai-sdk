@@ -198,6 +198,9 @@ export class DockerSandbox implements Sandbox {
       // The reserved .anchor dir: git-excluded (status/diff), checkpoint-carried.
       await this.execRaw(reservedScratchPrepCommand(), { timeoutSecs: 60 });
 
+      // Setup is done; from here the agent runs without egress when asked.
+      await this.applyEgress();
+
       this.started = true;
     } catch (error) {
       // A failed start must not leak the container it just created (adopted
@@ -206,6 +209,41 @@ export class DockerSandbox implements Sandbox {
         await this.cli(["rm", "-f", this.id], { timeoutSecs: 120 });
       }
       throw error;
+    }
+  }
+
+  /**
+   * Cut the container off after setup. `docker exec` keeps working; only the
+   * network goes away. Every attached network is disconnected, so a custom
+   * bridge does not silently survive; "already disconnected" (a retained
+   * container) is not an error, anything else is — an isolation the caller
+   * asked for and did not get must be loud.
+   */
+  private async applyEgress(): Promise<void> {
+    if ((this.spec.egress ?? "full") !== "none") return;
+    const listed = await this.cli([
+      "inspect",
+      "-f",
+      "{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}\n{{end}}",
+      this.id,
+    ]);
+    if (listed.exitCode !== 0) {
+      throw new Error(
+        `docker egress: could not inspect ${this.id}: ${listed.output.trim()}`,
+      );
+    }
+    for (const network of listed.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "")) {
+      const off = await this.cli(["network", "disconnect", network, this.id], {
+        timeoutSecs: 60,
+      });
+      if (off.exitCode !== 0 && !/not connected|is not connected/i.test(off.output)) {
+        throw new Error(
+          `docker egress: could not disconnect ${this.id} from ${network}: ${off.output.trim()}`,
+        );
+      }
     }
   }
 
@@ -379,7 +417,7 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       fork: false,
       retain: true,
       remoteCheckpoint: true,
-      egressControl: false,
+      egressControl: true, // `--network none` shape via disconnect after setup
       localPath: false,
     },
     create: (spec) => new DockerSandbox(spec, opts),

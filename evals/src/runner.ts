@@ -67,6 +67,8 @@ export interface EvalRunOptions {
   arm: EvalArm;
   provider: SandboxProvider;
   llm: LLMClient;
+  /** Applied after setup; `"none"` needs a provider with egressControl. */
+  egress?: "full" | "none";
   budgets?: Partial<BudgetLimits>;
   compaction?: CompactionConfig;
   sampling?: { temperature?: number; seed?: number };
@@ -154,12 +156,14 @@ export async function runEvalSuite(
               ? { workspacePath: task.workspacePath }
               : {}),
             ...(task.env ? { env: task.env } : {}),
+            ...(options.egress ? { egress: options.egress } : {}),
             gitIdentity: { name: "anchor-eval", email: "eval@anchor.local" },
           }
         : {
             repoUrl: task.repoUrl,
             ref: task.baseRef,
             ...(task.env ? { env: task.env } : {}),
+            ...(options.egress ? { egress: options.egress } : {}),
             gitIdentity: { name: "anchor-eval", email: "eval@anchor.local" },
           },
     );

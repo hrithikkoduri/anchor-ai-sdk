@@ -147,6 +147,11 @@ export class E2BSandbox implements Sandbox {
         "the e2b backend has no host-path access — pass repoUrl, workspacePath, or use local()",
       );
     }
+    if (this.spec.egress === "none") {
+      throw new Error(
+        "the e2b backend has no egress control yet — it declares egressControl: false",
+      );
+    }
     let created = false;
 
     try {

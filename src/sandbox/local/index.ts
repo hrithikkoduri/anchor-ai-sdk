@@ -79,6 +79,11 @@ export class LocalSandbox implements Sandbox {
         "the local backend has no per-sandbox image/workspacePath — use localPath for host directories, or the docker backend",
       );
     }
+    if (this.spec.egress === "none") {
+      throw new Error(
+        "the local backend has no egress control — it runs commands on the host",
+      );
+    }
     if (!this.opts.quiet) {
       process.stderr.write(
         `\u26a0 running locally — no isolation (${this.id})\n`,
