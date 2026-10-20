@@ -219,6 +219,27 @@ describe("chain boundaries", () => {
     expect(result.reason).toBe("max_steps");
   });
 
+  it("reports per-run usage without double-counting the chain", async () => {
+    const store = new MemoryInboxStore();
+    const llm = model([call("noop"), { text: "one" }, { text: "two" }], async (n) => {
+      if (n === 1) await store.push(message("t", "more", "queue"));
+    });
+    const result = await runAgent(
+      { task: "start" },
+      { ...base, llm, inbox: { store, channel: "t" } },
+    );
+
+    const [first, second] = result.runs!;
+    // Each scripted call is 15 tokens: run one made two calls, run two one.
+    expect(first!.usage.totalTokens).toBe(30);
+    expect(second!.usage.totalTokens).toBe(15);
+    // The result carries the chain total, which the summaries add up to.
+    expect(result.usage.totalTokens).toBe(45);
+    expect(first!.usage.totalTokens + second!.usage.totalTokens).toBe(
+      result.usage.totalTokens,
+    );
+  });
+
   it("stops on cancellation instead of claiming more work", async () => {
     const store = new MemoryInboxStore();
     const controller = new AbortController();
@@ -397,13 +418,14 @@ describe("background jobs with inbox work waiting", () => {
     );
 
     expect(result.runs).toHaveLength(2);
-    // Run one ended without absorbing the job: run two's first call already
-    // carries the queued task as its request.
-    expect(llm.seen[2]!.messages.at(-1)!.content).toBe("queued task");
-    // Its next call carries the job result that run one handed over.
-    expect(
-      llm.seen[3]!.messages.map((m) => m.content ?? "").join("\n"),
-    ).toContain("Background job job-2");
+    // Run one ended without absorbing the job. Run two's FIRST call carries
+    // both the queued task (its request) and the job it inherited, because the
+    // top-of-turn poll runs before that call.
+    const secondRunFirstCall = llm.seen[2]!.messages
+      .map((m) => m.content ?? "")
+      .join("\n");
+    expect(secondRunFirstCall).toContain("queued task");
+    expect(secondRunFirstCall).toContain("Background job job-2");
     expect(polls).toBeGreaterThanOrEqual(2);
   });
 });

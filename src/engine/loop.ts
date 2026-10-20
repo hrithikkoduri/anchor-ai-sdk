@@ -538,12 +538,17 @@ async function runOne(
    * Inject what the poll returned. Runtime-only (`origin: "engine"`): the
    * model sees it, the thread never stores it, the user never reads it.
    */
-  const absorbJobs = (finished: FinishedJob[], lost: LostJob[]): number => {
+  const absorbJobs = async (
+    finished: FinishedJob[],
+    lost: LostJob[],
+  ): Promise<number> => {
     for (const job of finished) {
       messages.push({
         role: "user",
-        origin: "engine",
-        content: renderBackgroundResult(job),
+        // `runtime`, not `engine`: a job result is a fact, so it survives in
+        // the thread for a resumed run. Consumers may hide it in the UI.
+        origin: "runtime",
+        content: await renderBackgroundResult(job, opts.sandbox),
       });
       emit({
         type: "background_completed",
@@ -556,7 +561,7 @@ async function runOne(
     for (const job of lost) {
       messages.push({
         role: "user",
-        origin: "engine",
+        origin: "runtime",
         content: renderLostJob(job),
       });
     }
@@ -568,7 +573,7 @@ async function runOne(
     if (outstanding.length === 0) return;
     const outcome = await pollBackgroundJobs(opts.sandbox, outstanding);
     outstanding = outcome.running;
-    absorbJobs(outcome.finished, outcome.lost);
+    await absorbJobs(outcome.finished, outcome.lost);
   };
 
   /**
@@ -587,7 +592,7 @@ async function runOne(
       ...(signal ? { signal } : {}),
     });
     outstanding = outcome.running;
-    return absorbJobs(outcome.finished, outcome.lost) > 0;
+    return (await absorbJobs(outcome.finished, outcome.lost)) > 0;
   };
 
   if (opts.cancel) {
@@ -755,6 +760,10 @@ async function runOne(
             });
         }
       }
+      // The turn boundary the model actually sees: before this call, after any
+      // fold. A job that finished since the previous turn (including one
+      // carried in from a previous run) rides this call, not the one after.
+      await pollJobs();
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(
@@ -941,7 +950,6 @@ async function runOne(
       runaway = outcome.runaway;
       declared = outcome.declared;
       outstanding.push(...outcome.jobs);
-      await pollJobs();
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
@@ -1046,14 +1054,39 @@ function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
   return budget;
 }
 
-function summarizeRun(result: AgentResult): RunSummary {
+function summarizeRun(
+  result: AgentResult,
+  usage: AgentResult["usage"],
+): RunSummary {
   return {
     reason: result.reason,
     ok: result.ok,
     steps: result.steps,
-    usage: result.usage,
+    usage,
     ...(result.phase !== undefined ? { phase: result.phase } : {}),
     ...(result.summary !== undefined ? { summary: result.summary } : {}),
+  };
+}
+
+/**
+ * One run's own spend. `AgentResult.usage` is CUMULATIVE (the tracker is
+ * seeded with the chain's spend so the ceilings bind across runs), so a
+ * summary must subtract what the chain had already spent.
+ */
+function usageDelta(
+  now: AgentResult["usage"],
+  before: ChainSpend,
+): AgentResult["usage"] {
+  const reasoning =
+    now.reasoningTokens !== undefined
+      ? Math.max(0, now.reasoningTokens - (before.reasoningTokens ?? 0))
+      : undefined;
+  return {
+    promptTokens: Math.max(0, now.promptTokens - before.promptTokens),
+    completionTokens: Math.max(0, now.completionTokens - before.completionTokens),
+    totalTokens: Math.max(0, now.totalTokens - (before.promptTokens + before.completionTokens)),
+    ...(now.costUsd !== undefined ? { costUsd: now.costUsd - before.costUsd } : {}),
+    ...(reasoning !== undefined ? { reasoningTokens: reasoning } : {}),
   };
 }
 
@@ -1120,21 +1153,16 @@ async function runChain(
       claimed = [];
     }
 
-    runs.push(summarizeRun(result));
-    const usage = result.usage;
+    const usage = result.usage; // cumulative for the chain
+    runs.push(summarizeRun(result, usageDelta(usage, spend)));
     spend = {
-      promptTokens: spend.promptTokens + usage.promptTokens,
-      completionTokens: spend.completionTokens + usage.completionTokens,
-      costUsd: spend.costUsd + (usage.costUsd ?? 0),
-      costsKnown: spend.costsKnown && usage.costUsd !== undefined,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costUsd: usage.costUsd ?? spend.costUsd,
+      costsKnown: usage.costUsd !== undefined,
       ...(usage.reasoningTokens !== undefined
-        ? {
-            reasoningTokens:
-              (spend.reasoningTokens ?? 0) + usage.reasoningTokens,
-          }
-        : spend.reasoningTokens !== undefined
-          ? { reasoningTokens: spend.reasoningTokens }
-          : {}),
+        ? { reasoningTokens: usage.reasoningTokens }
+        : {}),
     };
     stepsBefore += result.steps;
     zeroProgressRuns = result.steps === 0 ? zeroProgressRuns + 1 : 0;

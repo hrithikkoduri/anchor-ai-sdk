@@ -113,9 +113,15 @@ sets `spec.retain` on detach and `destroy()` **defers parking** while the
 executor still has jobs.
 
 The engine owns delivery when the provider can poll: it tracks the job ids and,
-at every turn boundary, calls `pollJob` and injects a finished result as a
-runtime-only message (`origin: "engine"`), so the user never sees it and the
-thread never stores it. Before a normal finish it waits for what is left,
+before every model call (and again before a finish), calls `pollJob` and
+injects a finished result as a `runtime` message. `runtime` is persisted in the
+thread (a resumed run still knows the job finished) but is not a nudge, so a
+consumer may hide it in the UI. The body goes through the same truncate-and-
+spill rule as a normal tool result.
+
+`background: true` on a tool is the permission to detach; `execPolicy(ctx)`
+decides whether it may (consumer opted in, sandbox can poll, command outlives
+the threshold). `bash` sets it; other tools opt in the same way. Before a normal finish it waits for what is left,
 bounded by the job's deadline; only a job that outlives that is reported on
 `AgentResult.pendingJobs`, which the consumer can hand back as `resumeJobs` on
 the next run. The model never polls. Heyo's `poll`/`kill` also work from a

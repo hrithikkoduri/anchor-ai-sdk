@@ -720,6 +720,20 @@ responsibility — the clock after the run ends — because only it has a queue.
 Docker and E2B do not detach (no `pollJob`), so nothing changes there.
 Regressions: `tests/unit/background-exec.test.ts`.
 
+**Amendment (2026-10-20):** three follow-ups from review.
+
+- **Any tool may opt in.** `defineTool(..., { background: true })` records the
+  permission; `execPolicy(ctx)` is the single decision (consumer opted in,
+  sandbox can poll, command outlives the threshold). `bash` sets it; `run_tests`
+  or a future tool can without touching the engine.
+- **Polling happens at the turn boundary the model sees.** It runs before every
+  model call, after any context fold, so a job (including one carried from a
+  prior run) rides the next call instead of costing an extra turn.
+- **The result is a fact, not a nudge.** It is stored as `origin: "runtime"`,
+  which `conversationHistory` keeps: a resumed run still knows the job finished,
+  and a UI may filter it. Nudges stay `origin: "engine"` and are never
+  persisted. The body uses the tool truncate-and-spill path, not a private cap.
+
 ## Decision #82: The inbox is a store; the chain is the engine's
 
 Every consumer that accepts messages while a run is working writes the same

@@ -6,6 +6,7 @@
 import { spillOrTruncate } from "./truncate.js";
 import {
   defineTool,
+  execPolicy,
   formatExec,
   optionalNumber,
   requireSandbox,
@@ -38,25 +39,9 @@ export const bashTool = defineTool(
     const command = requireString(input, "command");
     const explicit = optionalNumber(input, "timeout_secs", 0);
     const sandbox = requireSandbox(ctx);
-    const threshold = ctx.backgroundAfterSecs;
-    // Detach only when the consumer opted in AND this backend can hand back a
-    // live job. An explicit short deadline stays a deadline (no detach).
-    const canBackground =
-      threshold !== undefined &&
-      threshold > 0 &&
-      typeof sandbox.pollJob === "function";
-    // With background enabled, an unset timeout means "long-lived job": the
-    // hard lifetime is the tool max, and `backgroundAfterSecs` is when the
-    // model gets control back. Without it, the historical 120s default holds.
-    const timeoutSecs = Math.max(
-      1,
-      Math.min(
-        3600,
-        explicit > 0 ? explicit : canBackground ? 3600 : 120,
-      ),
-    );
-    const backgroundAfterSecs =
-      canBackground && timeoutSecs > threshold ? threshold : undefined;
+    // `background: true` is this tool's permission; execPolicy decides whether
+    // the consumer opted in, the sandbox can poll, and the command outlives it.
+    const { timeoutSecs, backgroundAfterSecs } = execPolicy(ctx, explicit);
     const r = await sandbox.exec(command, {
       timeoutSecs,
       ...(backgroundAfterSecs !== undefined ? { backgroundAfterSecs } : {}),
@@ -93,4 +78,5 @@ export const bashTool = defineTool(
       },
     };
   },
+  { background: true },
 );

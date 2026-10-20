@@ -11,14 +11,14 @@
  * "still running", and a throw means the receipt is gone.
  */
 import type { ExecResult, Sandbox } from "../sandbox/types.js";
+import { formatExec } from "../tools/types.js";
+import { spillOrTruncate } from "../tools/truncate.js";
 import type { BackgroundJob } from "./types.js";
 
 /** How long to sleep between polls while waiting for a run-ending job. */
 export const BACKGROUND_POLL_MS = 500;
 /** Grace past the job's own deadline before we call the receipt lost. */
 const DEADLINE_GRACE_MS = 30_000;
-/** Never inject a wall of output; the model can read the log if it needs it. */
-const MAX_INJECTED_CHARS = 8_000;
 
 export interface FinishedJob {
   job: BackgroundJob;
@@ -118,23 +118,25 @@ export async function waitForBackgroundJobs(
   return { finished, running: remaining, lost };
 }
 
-/** The runtime-only message the model sees. */
-export function renderBackgroundResult(job: FinishedJob): string {
+/**
+ * The runtime message the model sees. The body goes through the SAME
+ * truncate-and-spill path as a normal tool result, so a long test log is
+ * bounded and the full text stays addressable in scratch.
+ */
+export async function renderBackgroundResult(
+  job: FinishedJob,
+  sandbox: Sandbox | undefined,
+): Promise<string> {
   const { result } = job;
   const label = job.job.command ? ` (${job.job.command})` : "";
   const status = result.timedOut
     ? `timed out (exit ${result.exitCode})`
     : `exit ${result.exitCode}`;
-  let output = result.output ?? "";
-  if (output.length > MAX_INJECTED_CHARS) {
-    output =
-      output.slice(0, MAX_INJECTED_CHARS) +
-      `\n… (${output.length - MAX_INJECTED_CHARS} chars omitted — rerun with a narrower command if you need the rest)`;
-  }
-  return (
-    `[runtime] Background job ${job.job.jobId}${label} finished: ${status}.\n` +
-    (output.trim() === "" ? "(no output)" : output)
+  const body = await spillOrTruncate(
+    formatExec(result, job.job.timeoutSecs ?? 120),
+    { sandbox, label: `background ${job.job.tool}` },
   );
+  return `[runtime] Background job ${job.job.jobId}${label} finished: ${status}.\n${body}`;
 }
 
 export function renderLostJob(job: LostJob): string {

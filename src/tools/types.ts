@@ -34,8 +34,47 @@ export interface ToolContext {
    * synchronous (the default).
    */
   backgroundAfterSecs?: number;
+  /**
+   * Set by `defineTool` from the Tool's `background` flag. A tool that may
+   * detach checks this instead of knowing its own metadata; the consumer's
+   * threshold and the sandbox's `pollJob` are checked by `execPolicy`.
+   */
+  backgroundAllowed?: boolean;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
+}
+
+/**
+ * The detach policy every tool shares. `background: true` on the tool say it
+ * CAN detach; this decides whether it may here: the consumer opted in
+ * (`backgroundAfterSecs`), the sandbox can poll (Heyo today), and the command
+ * is allowed to outlive the threshold. An explicit short deadline stays a
+ * deadline. Tools without the flag never detach.
+ */
+export function execPolicy(
+  ctx: ToolContext,
+  explicitTimeoutSecs = 0,
+): { canBackground: boolean; timeoutSecs: number; backgroundAfterSecs?: number } {
+  const threshold = ctx.backgroundAfterSecs;
+  const canBackground =
+    ctx.backgroundAllowed === true &&
+    threshold !== undefined &&
+    threshold > 0 &&
+    typeof ctx.sandbox?.pollJob === "function";
+  const timeoutSecs = Math.max(
+    1,
+    Math.min(
+      3600,
+      explicitTimeoutSecs > 0 ? explicitTimeoutSecs : canBackground ? 3600 : 120,
+    ),
+  );
+  return {
+    canBackground,
+    timeoutSecs,
+    ...(canBackground && timeoutSecs > threshold
+      ? { backgroundAfterSecs: threshold }
+      : {}),
+  };
 }
 
 /** Guard for tools that cannot work without an execution environment. */
@@ -68,6 +107,12 @@ export interface Tool {
    * read-only calls from one model turn concurrently; mutations stay serial.
    */
   readOnly?: boolean;
+  /**
+   * This tool may hand a long command to the background when the consumer
+   * opted in and the sandbox can poll. It is a permission, not a promise:
+   * see `execPolicy` for the decision. `bash` sets it.
+   */
+  background?: boolean;
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -78,14 +123,17 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb" | "readOnly"> = {},
+  options: Pick<Tool, "verb" | "readOnly" | "background"> = {},
 ): Tool {
   return {
     definition,
     ...options,
     run: async (input, ctx) => {
       try {
-        return await run(input, ctx);
+        return await run(input, {
+          ...ctx,
+          backgroundAllowed: options.background === true,
+        });
       } catch (err) {
         return {
           ok: false,
