@@ -1,0 +1,656 @@
+/* Anchor / signal system. Layout and readable sizing live in named layers;
+   this unlayered theme owns the palette, typography, and surface treatment. */
+:root {
+  font-family: "Inter", sans-serif;
+  color: #111114;
+  background: #fff;
+  --paper: #fff;
+  --ink: #111114;
+  --muted: #4b4d55;
+  --line: #d9dce2;
+  --rule: #d9dce2;
+  --orange: #c2410c;
+  --signal: #c2410c;
+  --signal-bright: #f2592c;
+  --signal-soft: #fff2ed;
+  --signal-hover: #fff8f4;
+  --signal-border: #efc0ad;
+  --signal-ink: #9a3412;
+  --signal-on-dark: #ffb195;
+  --mono: "IBM Plex Mono", monospace;
+  --display: "Space Grotesk", sans-serif;
+}
+body,
+#root {
+  background: #fff;
+  color: #111114;
+}
+#root *,
+#root *::before,
+#root *::after {
+  color: inherit;
+  border-color: var(--rule);
+  background: none;
+}
+::selection {
+  background: var(--signal);
+  color: #fff;
+}
+#root :is(h1, h2, h3, .brand, .resolution strong, .scoreboard strong) {
+  font-family: var(--display);
+}
+#root h1 {
+  font-weight: 600;
+  letter-spacing: -0.055em;
+}
+#root h2 {
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+#root :is(.hero h1, .bench-hero h1) {
+  white-space: normal;
+}
+#root .hero h1 {
+  font-size: clamp(44px, 4.8vw, 72px);
+}
+#root
+  :is(
+    .hero-copy > p,
+    .capability-description > p,
+    .proof-intro p,
+    .faq p,
+    .doc-section > p,
+    .doc-section .doc-small,
+    .doc-intro > p,
+    .doc-callout,
+    .memory-layers p,
+    .doc-facts p,
+    .tool-grid span,
+    .agent-definitions dd,
+    .custom-agent-tabs [role="tabpanel"] > p,
+    .takeaway-list p,
+    .reproduce-section > div > p,
+    .bench-hero-copy > p
+  ) {
+  color: #45474f;
+}
+#root
+  :is(
+    .eyebrow,
+    .hero-meta,
+    .runtime-id,
+    .tiny-label,
+    .task-tag,
+    .loop-label,
+    .return-path,
+    .trace-time,
+    .runtime-caption,
+    .compatibility > span:first-child,
+    .demo-file,
+    .line-number,
+    .demo-key,
+    .demo-event,
+    .demo-caption,
+    .feature-tags,
+    .secondary-features small,
+    .resolution > span,
+    .cost-label,
+    .benchmark-note,
+    .doc-meta > span,
+    .doc-sidebar-label,
+    .doc-nav-group > span,
+    .sidebar-source,
+    .doc-result > div,
+    .doc-flow span,
+    .revival-diagram small,
+    .provider-list > div > span,
+    .budget-strip span,
+    .doc-section-title > span,
+    .ledger-footnote,
+    .ledger td,
+    .ledger thead th,
+    .ledger tbody th,
+    .agent-example-download,
+    .benchmark-disclosure,
+    .round-tag,
+    .round-tag > span:last-child,
+    .takeaway-list > div > span
+  ) {
+  color: #626671;
+}
+#root :is(.doc-inline-link, .text-link):hover {
+  color: var(--signal);
+}
+
+/* No warm tints or floating, rounded cards: rules, planes, and precise signals. */
+#root .navigation {
+  background: #fffffff5;
+  border-bottom: 1px solid #111114;
+}
+#root .brand {
+  font-size: 27px;
+  letter-spacing: -1.5px;
+}
+#root .brand-dot {
+  color: var(--signal-bright);
+}
+#root .github-link {
+  border-color: #111114;
+  border-radius: 2px;
+}
+#root .github-link:hover {
+  background: var(--signal-hover);
+}
+#root
+  :is(.desktop-nav a[aria-current="page"], .mobile-nav a[aria-current="page"]) {
+  color: var(--signal);
+}
+#root .mobile-nav {
+  background: #fff;
+}
+#root .release {
+  background: #fff;
+  border-color: #bfc4cf;
+  color: #333640;
+  border-radius: 2px;
+}
+#root .status-dot {
+  background: var(--signal-bright);
+}
+#root .anchor-word svg {
+  display: none;
+}
+#root .anchor-word {
+  border-bottom: 4px solid var(--signal-bright);
+  padding-bottom: 1px;
+}
+#root .button {
+  border-radius: 2px;
+  box-shadow: none;
+}
+#root .primary {
+  background: #111114;
+  color: #fff;
+}
+#root .primary:hover {
+  background: var(--signal);
+  color: #fff;
+}
+#root .hero .primary {
+  background: var(--signal);
+  color: #fff;
+}
+#root .hero .primary:hover {
+  background: var(--signal-ink);
+}
+#root .cross {
+  color: var(--signal);
+}
+#root .install {
+  border-bottom-color: #111114;
+}
+#root .copy-button:hover {
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+}
+#root .compatibility {
+  border-top-color: #111114;
+}
+#root :is(.harness-section, .bench-results-section) {
+  background: #f5f6f8;
+  border-color: #111114;
+}
+#root
+  :is(
+    .capabilities,
+    .feature-demo,
+    .runtime,
+    .code-window,
+    .ledger-tabs,
+    .benchmark-dashboard
+  ) {
+  border-radius: 2px;
+}
+#root .capabilities {
+  background: #fff;
+  border-color: #b7bcc7;
+}
+#root .capability-tabs {
+  background: #eceef2;
+}
+#root .capability-tabs button {
+  border-radius: 1px;
+  box-shadow: none;
+}
+#root .capability-tabs button[data-state="active"] {
+  background: #111114;
+  color: #fff;
+  border-color: #111114;
+  box-shadow: inset 0 -2px 0 var(--signal-bright);
+}
+#root .capability-tabs button[data-state="active"] > svg {
+  color: var(--signal-on-dark);
+}
+#root .feature-symbol {
+  color: var(--signal);
+}
+#root .feature-demo {
+  background: #fff;
+  box-shadow: none;
+}
+#root .demo-file {
+  background: #f2f4f8;
+}
+#root .demo-key {
+  color: var(--signal-ink);
+}
+#root .demo-event {
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+}
+#root .demo-caption {
+  border-top-style: dashed;
+}
+#root .demo-flag {
+  color: #626671;
+}
+
+/* The runtime is an instrument, with terminals and explicit telemetry. */
+#root .runtime {
+  transform: none;
+  background: #fff;
+  border-color: #111114;
+  box-shadow: 6px 6px 0 #e8ebf1;
+}
+#root .runtime::before,
+#root .runtime::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--signal-bright);
+  pointer-events: none;
+}
+#root .runtime::before {
+  top: -5px;
+  left: -5px;
+  border-right: 0;
+  border-bottom: 0;
+}
+#root .runtime::after {
+  right: -5px;
+  bottom: -5px;
+  border-left: 0;
+  border-top: 0;
+}
+#root .runtime-top {
+  border-bottom-color: #111114;
+}
+#root .loop-area {
+  background: radial-gradient(#c8c8c8 0.7px, transparent 0.7px);
+  background-size: 12px 12px;
+}
+#root .loop-label button {
+  background: #fff;
+}
+#root .loop-node {
+  background: #fff;
+  border-color: #aeb5c3;
+  border-radius: 2px;
+}
+#root .loop-node.active {
+  color: var(--signal);
+  border-color: var(--signal);
+  background: var(--signal-soft);
+  box-shadow: 0 0 0 3px #f2592c0b;
+}
+#root .loop-connector {
+  background: #b0bacd;
+}
+#root .loop-connector i {
+  background: var(--signal-bright);
+}
+#root .runtime-foundations {
+  background: #f5f6f8;
+  border-block-color: #b9bfcb;
+}
+#root .runtime .trace {
+  background: #111114;
+  color: #f1f4fa;
+}
+#root .runtime .trace :is(.trace-label, .trace-time) {
+  color: #abb2c1;
+}
+#root .runtime .trace-key {
+  color: var(--signal-on-dark);
+}
+#root .runtime .trace-last {
+  background: #252b39;
+}
+#root .runtime .trace :is(svg, .trace-receipt) {
+  color: var(--signal-on-dark);
+}
+#root .runtime-bottom {
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+  border-color: var(--signal-border);
+  border-radius: 0;
+}
+#root .runtime-bottom .status-dot {
+  background: var(--signal-bright);
+}
+#root .caption-line {
+  background: var(--signal-bright);
+}
+#root .bar {
+  background: #eff1f5;
+}
+#root .anchor-bar {
+  background: var(--signal-bright);
+}
+#root .mini-bar {
+  background: repeating-linear-gradient(
+    120deg,
+    #858b98 0,
+    #858b98 2px,
+    #e0e3ea 2px,
+    #e0e3ea 6px
+  );
+}
+
+/* Black-on-white documentation, with orange for location and meaning. */
+#root .doc-sidebar-label {
+  border-bottom-color: #111114;
+}
+#root .doc-nav-group a {
+  color: #44464e;
+}
+#root .doc-nav-group a:hover {
+  background: var(--signal-hover);
+}
+#root .doc-nav-group a[aria-current="location"] {
+  color: var(--signal-ink);
+  background: var(--signal-soft);
+}
+#root .doc-intro {
+  border-bottom-color: #111114;
+}
+#root .doc-section-title > span {
+  color: var(--signal);
+}
+#root :is(.doc-install, .doc-result) {
+  background: #f3f5f8;
+  border-color: #d5dae4;
+  border-radius: 2px;
+}
+#root :is(.doc-section code, .doc-callout code, .doc-result code) {
+  background: #eef1f6;
+  color: #292d38;
+}
+#root .doc-section .doc-code code {
+  background: none;
+  color: inherit;
+}
+#root .doc-callout {
+  border-left: 2px solid var(--signal);
+  background: var(--signal-soft);
+}
+#root .doc-callout > svg {
+  color: var(--signal);
+}
+#root .phase-strip {
+  background: #f4f6fa;
+}
+#root .phase-strip span:nth-of-type(3) {
+  color: var(--signal);
+}
+#root :is(.budget-strip, .doc-flow, .tool-grid > div, .doc-mobile-contents) {
+  background: #f4f5f8;
+  border-radius: 2px;
+}
+#root .doc-flow strong {
+  color: #111114;
+}
+#root .doc-contents-trigger {
+  color: #111114;
+}
+#root .memory-layers > div > svg {
+  color: var(--signal);
+}
+#root .revival-diagram {
+  background: radial-gradient(#c8c8c8 0.7px, transparent 0.7px);
+  background-size: 9px 9px;
+}
+#root .revival-diagram > div {
+  background: #fff;
+}
+#root .revival-diagram > div > svg {
+  color: var(--signal);
+}
+#root .evidence-receipt {
+  background: var(--signal-soft);
+  border-color: var(--signal-border);
+}
+#root .evidence-receipt > svg {
+  color: var(--signal);
+}
+#root .provider-list code {
+  background: none;
+  color: #44464e;
+}
+#root .custom-agent-tabs [role="tablist"] {
+  background: #eff1f5;
+  border-radius: 2px;
+}
+#root .custom-agent-tabs [role="tab"][data-state="active"] {
+  background: #fff;
+  color: var(--signal-ink);
+  border-color: var(--signal-border);
+}
+#root .agent-interface-fields > div > code {
+  color: var(--signal-ink);
+}
+
+/* Data surfaces stay neutral, so the result and accent carry the hierarchy. */
+#root .benchmark-disclosure {
+  border-top-color: #111114;
+}
+#root .round-tag {
+  color: #111114;
+}
+#root .ledger-tabs {
+  background: #fff;
+}
+#root .ledger-toolbar {
+  background: #e9edf4;
+}
+#root .ledger-toolbar [role="tablist"] {
+  background: #dce3ef;
+  border-radius: 2px;
+}
+#root .ledger-toolbar button[data-state="active"] {
+  background: #fff;
+  color: var(--signal-ink);
+  border-color: var(--signal-border);
+}
+#root .ledger thead th {
+  background: #f5f6f9;
+}
+#root .ledger th.anchor-col {
+  color: var(--signal-ink);
+}
+#root .ledger :is(tbody tr:hover, tbody tr:hover th) {
+  background: #f4f6fa;
+}
+#root .ledger tfoot :is(th, td) {
+  background: var(--signal-soft);
+  color: #111114;
+}
+#root .full-ledger :is(tbody th, thead th:first-child[rowspan]) {
+  background: #fff;
+}
+#root .ledger .outcome {
+  font-family: "Inter", sans-serif;
+}
+#root .outcome.resolved {
+  color: var(--signal-ink);
+}
+#root .outcome.unresolved {
+  color: #555962;
+}
+#root .task-indicator {
+  background: #b9bfcc;
+}
+#root .divergent .task-indicator {
+  background: var(--signal);
+}
+#root .ledger .divergent th {
+  color: var(--signal-ink);
+}
+#root .ledger-footnote i {
+  background: var(--signal);
+}
+#root .takeaway-list > div > span {
+  color: var(--signal);
+}
+
+/* Dark surfaces inherit white foregrounds, not low-contrast brand tints. */
+#root
+  :is(
+    .build-section,
+    .benchmark-method,
+    .benchmark-dashboard,
+    .code-window,
+    .footer
+  ) {
+  background: #111114;
+  color: #fff;
+  --rule: #393c45;
+}
+#root
+  :is(
+    .build-section,
+    .benchmark-method,
+    .benchmark-dashboard,
+    .code-window,
+    .footer
+  )
+  :is(
+    p,
+    small,
+    .eyebrow,
+    .build-footnote,
+    .code-language,
+    .metric-unit,
+    .dashboard-title,
+    .dashboard-status,
+    .metric-panel > p,
+    .dashboard-bottom,
+    .footer-bottom
+  ) {
+  color: #bdc2cd;
+}
+#root :is(.code-header, .dashboard-title) {
+  background: #1c1e25;
+}
+#root .code-header > span:first-child {
+  color: var(--signal-on-dark);
+}
+#root .code-window {
+  background: #0b0c10;
+  border-color: #373b47;
+  box-shadow: none;
+}
+#root .code-header .status-dot {
+  background: var(--signal-on-dark);
+}
+#root .code-footer {
+  background: #151820;
+  color: #f4d8cc;
+}
+#root .syntax-orange {
+  color: var(--signal-on-dark);
+}
+#root .syntax-green {
+  color: #fff0e9;
+}
+#root .syntax-muted {
+  color: #a1aabb;
+}
+#root .code-window .copy-button:hover {
+  color: #fff;
+  background: #443029;
+}
+#root .build-section .primary {
+  background: #fff;
+  color: #111114;
+}
+#root .build-section .primary:hover {
+  background: #ffd4c3;
+}
+#root .artifact-links a {
+  border-color: #65708b;
+  color: #fff;
+}
+#root .artifact-links a:hover {
+  background: #443029;
+}
+#root .metric-tabs {
+  background: #08090e;
+  border-color: #404860;
+}
+#root .metric-tabs button {
+  color: #c5cfe5;
+}
+#root .metric-tabs button[data-state="active"] {
+  color: #fff;
+  background: var(--signal);
+  border-color: var(--signal);
+}
+#root .dashboard-bar-track {
+  background: #282c38;
+}
+#root .dashboard-bar.anchor {
+  background: var(--signal-bright);
+}
+#root .dashboard-bar.mini {
+  background: repeating-linear-gradient(
+    120deg,
+    #a0a9bb 0,
+    #a0a9bb 2px,
+    #333b4c 2px,
+    #333b4c 6px
+  );
+}
+#root .dashboard-bottom {
+  background: #1c2230;
+}
+#root .scoreboard strong > span {
+  color: #a1abbe;
+}
+#root .footer .brand-dot {
+  color: var(--signal-bright);
+}
+#root .footer a:hover {
+  color: var(--signal-on-dark);
+}
+#root .footer-bottom {
+  border-top-color: #3b404a;
+}
+
+@media (max-width: 800px) {
+  #root .hero h1 {
+    font-size: clamp(40px, 8.8vw, 64px);
+  }
+  #root .doc-mobile-contents {
+    background: #f4f6fa;
+  }
+}
+@media (max-width: 480px) {
+  #root .hero h1 {
+    font-size: clamp(36px, 10vw, 46px);
+  }
+  #root .runtime {
+    box-shadow: 4px 4px 0 #e8ebf1;
+  }
+}

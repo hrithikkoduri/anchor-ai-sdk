@@ -8,3 +8,6 @@ dist/
 .eval-runs/
 traces/
 .DS_Store
+site/test-results/
+site/playwright-report/
+.vercel/

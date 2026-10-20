@@ -1,38 +1,77 @@
 # anchor-sdk.dev: the site
 
-Static, zero-build on purpose: three pages, one stylesheet, one small script.
-No dependencies, no framework, no build step, so it can be served from anywhere.
+React + Vite multipage site, using Animate UI's Radix-based animated primitives
+for tabs, tooltips, accordions, and collapsible navigation. The SDK has no
+dependency on this app. All three pages share navigation, footer, copy controls,
+and the orange anchor mark.
+The production build is static and can be served from any static host.
 
 ```
 site/
-  index.html        landing
+  index.html        landing entry
+  src/main.jsx      landing page
+  src/docs.jsx      field-guide documentation
+  src/agent-example.jsx inline custom-agent examples in the docs
+  src/examples/     downloadable, reusable custom-agent example
+  src/benchmarks.jsx benchmark comparisons + full task ledger
+  src/ui.jsx        shared layout, copy, and code components
+  src/styles.css    shared design + homepage styles
+  src/pages.css     documentation + benchmark styles
+  src/typography.css shared readable type scale + responsive reflow
+  src/theme.css     white/black signal identity + contrast palette
+  src/benchmark-data.js published Round 1 figures
   docs.html         documentation (single page, anchored sections)
   benchmarks.html   the eval story + results table
-  styles.css        the whole design (light + dark, system)
-  app.js            copy buttons + current-page nav
-  assets/           the anchor mark (light + dark)
+  build.html        compatibility redirect to docs (not a separate guide)
+  assets/           anchor marks (logo.svg is the current orange mark)
 ```
 
 ## Preview
 
 ```bash
-python3 -m http.server 4173 -d site
+npm ci --prefix site
+npm run dev --prefix site
 # → http://localhost:4173
 ```
 
 ## Deploy (when the domain is pointed)
 
-Any static host works: Cloudflare Pages, GitHub Pages, Netlify, S3. Serve
-the `site/` directory as the root. No redirects, no functions, no headers
-needed.
+Run `npm ci --prefix site && npm run build --prefix site`, then publish
+`site/dist/`. All three pages and the compatibility redirect are included. No server functions are
+needed. Do not serve the source directory with Python: the homepage needs Vite.
+
+## Checks
+
+```bash
+npx --prefix site playwright install chromium
+npm run test:browser --prefix site
+```
+
+If Chrome is already installed, use
+`PLAYWRIGHT_CHANNEL=chrome npm run test:browser --prefix site`.
+Checks cover animated tabs, keyboard navigation, FAQ, clipboard, reduced motion,
+deep links, documentation navigation, benchmark views, and horizontal overflow
+at mobile/desktop widths.
+Sampled body, metadata, code, and ledger text also have 4.5:1 contrast checks.
+
+The custom-agent example also has a no-network smoke check against the actual
+compiled SDK. Build the SDK at the repository root first, then run
+`npm run test:example --prefix site`. To check a different working-tree build:
+
+```bash
+ANCHOR_SDK_ENTRY=/absolute/path/to/dist/index.js npm run test:example --prefix site
+```
+
+This checks tool input handling, bundle and separate-piece integration, and
+startup requirements with a scripted model. It does not measure live model behavior.
 
 ## Keeping it honest
 
 Content is kept in sync by hand with:
 
 - `README.md`: positioning, features, quickstart copy
-- `evals/benchmarks/swe-bench/results/comparison.md`: the benchmarks table (Round 2 on Opus 5.5
-  updates the page when it lands)
+- `evals/benchmarks/swe-bench/results/comparison.md`: the published baseline;
+  new rounds are not results until their artifacts are available
 - `DECISIONS.md`: anything architectural the pages assert
 
 If the code and the site disagree, the code is right, so fix the site in the
