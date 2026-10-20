@@ -80,6 +80,14 @@ export type AgentEvent =
       timeoutSecs?: number;
     }
   | {
+      /** A background job's result was injected into the conversation. */
+      type: "background_completed";
+      jobId: string;
+      tool: string;
+      exitCode: number;
+      timedOut: boolean;
+    }
+  | {
       type: "guardrail";
       kind:
         | "loop_detected"

@@ -53,8 +53,17 @@ import type {
   RunTask,
   EngineOptions,
   AgentResult,
+  BackgroundJob,
   FinishReason,
 } from "./types.js";
+import {
+  pollBackgroundJobs,
+  renderBackgroundResult,
+  renderLostJob,
+  waitForBackgroundJobs,
+  type FinishedJob,
+  type LostJob,
+} from "./background.js";
 
 export type {
   RunTask,
@@ -209,6 +218,9 @@ export async function runAgent(
   const forModel = (): LLMMessage[] =>
     messages.map((m) => elidedByMessage.get(m) ?? m);
   const evidence: ToolResultRecord[] = [];
+  // Commands the provider detached. The engine owns their results: it polls at
+  // every turn boundary and, before a normal finish, waits for what is left.
+  let outstanding: BackgroundJob[] = [...(opts.resumeJobs ?? [])];
   // Thresholds that double as switches (`number | false`) must be positive
   // when numeric. 0 is not "off" — `false` is — and left alone it would mean
   // "immediately" for the nudges while meaning "uncapped" for the caps.
@@ -484,7 +496,55 @@ export async function runAgent(
       (reason === "budget_exceeded" || reason === "max_steps")
         ? { revival: revivalRequest }
         : {}),
+      ...(outstanding.length > 0 ? { pendingJobs: [...outstanding] } : {}),
     };
+  };
+
+  /**
+   * Inject what the poll returned. Runtime-only (`origin: "engine"`): the
+   * model sees it, the thread never stores it, the user never reads it.
+   */
+  const absorbJobs = (finished: FinishedJob[], lost: LostJob[]): number => {
+    for (const job of finished) {
+      messages.push({
+        role: "user",
+        origin: "engine",
+        content: renderBackgroundResult(job),
+      });
+      emit({
+        type: "background_completed",
+        jobId: job.job.jobId,
+        tool: job.job.tool,
+        exitCode: job.result.exitCode,
+        timedOut: job.result.timedOut,
+      });
+    }
+    for (const job of lost) {
+      messages.push({
+        role: "user",
+        origin: "engine",
+        content: renderLostJob(job),
+      });
+    }
+    return finished.length + lost.length;
+  };
+
+  /** One non-blocking round, at the turn boundary. */
+  const pollJobs = async (): Promise<void> => {
+    if (outstanding.length === 0) return;
+    const outcome = await pollBackgroundJobs(opts.sandbox, outstanding);
+    outstanding = outcome.running;
+    absorbJobs(outcome.finished, outcome.lost);
+  };
+
+  /** Before finishing, wait for what is left — ending would lose it. */
+  const settleBeforeFinish = async (): Promise<boolean> => {
+    if (outstanding.length === 0) return false;
+    const outcome = await waitForBackgroundJobs(opts.sandbox, outstanding, {
+      ...(signal ? { signal } : {}),
+    });
+    outstanding = outcome.running;
+    return absorbJobs(outcome.finished, outcome.lost) > 0;
   };
 
   if (opts.cancel) {
@@ -779,6 +839,9 @@ export async function runAgent(
           });
           continue;
         }
+        // A pending background job can still change the answer: wait for it and
+        // give the model the result rather than losing it at the exit.
+        if (await settleBeforeFinish()) continue;
         return conclude("finished", {
           ok: true,
           summary: response.text.trim(),
@@ -812,6 +875,8 @@ export async function runAgent(
       });
       runaway = outcome.runaway;
       declared = outcome.declared;
+      outstanding.push(...outcome.jobs);
+      await pollJobs();
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
@@ -858,8 +923,12 @@ export async function runAgent(
           ok: false,
           error: "cancelled by signal",
         });
-      if (declared)
+      if (declared) {
+        // Declaring done while a job still runs is not done. Deliver it and let
+        // the model confirm; a second finish with nothing outstanding ends.
+        if (await settleBeforeFinish()) continue;
         return conclude("finished", { ...declared, completion: "declared" });
+      }
       if (pauseRequested)
         return conclude("paused", {
           ok: false,

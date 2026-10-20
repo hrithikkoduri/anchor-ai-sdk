@@ -16,6 +16,7 @@ import { toolResultMessage } from "./context.js";
 import type { EventSink } from "./events.js";
 import type { ToolResultRecord } from "./strategy.js";
 import type { RepeatTracker } from "./guardrails.js";
+import type { BackgroundJob } from "./types.js";
 
 /** What `finish` declared, if the turn called it. */
 export interface DeclaredOutcome {
@@ -50,6 +51,8 @@ export interface ToolDispatchOutcome {
   /** The repetition limit was hit; the caller decides whether to nudge. */
   runaway: boolean;
   declared?: DeclaredOutcome;
+  /** Commands this turn detached; the loop polls them from now on. */
+  jobs: BackgroundJob[];
 }
 
 /** Parse a call's arguments; an invalid JSON payload is a tool result, not a throw. */
@@ -124,6 +127,7 @@ export async function dispatchToolCalls(
   } = args;
   let declared: DeclaredOutcome | undefined;
   let runaway = false;
+  const jobs: BackgroundJob[] = [];
 
   const parallelReads =
     calls.length > 1 &&
@@ -152,6 +156,23 @@ export async function dispatchToolCalls(
     });
     messages.push(toolResultMessage(call.id, result.content));
     emitBackground(call.name, call.id, result);
+    // The tool told the model "moved to the background"; the engine now owns
+    // the result and will poll it at every turn boundary.
+    const meta = result.meta as
+      | { background?: { jobId?: unknown }; command?: unknown; timeoutSecs?: unknown }
+      | undefined;
+    const jobId = meta?.background?.jobId;
+    if (typeof jobId === "string" && jobId !== "") {
+      jobs.push({
+        jobId,
+        tool: call.name,
+        ...(typeof meta?.command === "string" ? { command: meta.command } : {}),
+        startedAt: Date.now(),
+        ...(typeof meta?.timeoutSecs === "number"
+          ? { timeoutSecs: meta.timeoutSecs }
+          : {}),
+      });
+    }
   };
 
   if (parallelReads) {
@@ -199,7 +220,7 @@ export async function dispatchToolCalls(
       const { call, verb } = prepared[i]!;
       emitResult(call, verb, results[i]!);
     }
-    return { runaway, ...(declared ? { declared } : {}) };
+    return { runaway, jobs, ...(declared ? { declared } : {}) };
   }
 
   for (const call of calls) {
@@ -255,5 +276,5 @@ export async function dispatchToolCalls(
     emitResult(call, verb, result);
   }
 
-  return { runaway, ...(declared ? { declared } : {}) };
+  return { runaway, jobs, ...(declared ? { declared } : {}) };
 }

@@ -690,6 +690,36 @@ having written any. The dial now measures VISIBLE output
 12k-token turn with 11.5k of reasoning is 500 visible tokens and does not
 fire; hidden thinking is legitimate and must never be nudged away.
 
+## Decision #81: The engine delivers background results; the consumer only wakes
+
+Detaching a command is only half a feature. The tool returns "moved to the
+background (job X)", and the protocol forbids answering that tool call later,
+so the result must arrive as a new runtime input. Consumers had to build that:
+Sailor persists a job row, sweeps it with `pollJob`, and turns completion into
+an inbox event for the next run. Setting `backgroundAfterSecs` on its own
+delivered nothing.
+
+Now the engine owns the ordinary path, for any provider with `pollJob` (Heyo
+today):
+
+- it tracks the job handles from the tool results it already emits,
+- at every turn boundary it polls them (non-blocking; `undefined` means still
+  running) and injects a finished one as `origin: "engine"` — visible to the
+  model, never persisted to the thread, never rendered as a user message,
+- before a NORMAL finish it waits for what is left, bounded by each job's own
+  deadline + grace, because a result that arrives after the run ends is lost
+  for this run,
+- what still outlives the run is reported on `AgentResult.pendingJobs`, and a
+  consumer that woke a new run hands them back as `resumeJobs`.
+
+So "set `backgroundAfterSecs` and nothing else" now works: the agent keeps
+working while the command runs, and a job still running when it tries to finish
+delays the finish instead of vanishing. The consumer keeps exactly one
+responsibility — the clock after the run ends — because only it has a queue.
+
+Docker and E2B do not detach (no `pollJob`), so nothing changes there.
+Regressions: `tests/unit/background-exec.test.ts`.
+
 ## Decision #77: The model's own text gets the same boundary as tool output
 
 Tool output has had a size boundary since the spill work: `truncate.ts` keeps a

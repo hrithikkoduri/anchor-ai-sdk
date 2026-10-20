@@ -105,7 +105,245 @@ describe("bash background detach", () => {
   });
 });
 
-describe("engine background events", () => {
+describe("engine background delivery", () => {
+  it("injects a finished job as a hidden runtime message", async () => {
+    const requests: LLMRequest[] = [];
+    const responses: Array<{ text: string; calls: LLMResponse["toolCalls"] }> = [
+      { text: "", calls: [{ id: "call-1", name: "bg", arguments: "{}" }] },
+      { text: "continuing", calls: [] },
+      { text: "done", calls: [] },
+    ];
+    const llm: LLMClient = {
+      model: "scripted",
+      complete: async () => {
+        throw new Error("unexpected compaction");
+      },
+      stream: async (request: LLMRequest) => {
+        requests.push(structuredClone(request));
+        const turn = responses.shift();
+        if (!turn) throw new Error("out of scripted responses");
+        return {
+          text: turn.text,
+          toolCalls: turn.calls,
+          model: "scripted",
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+          latencyMs: 1,
+        } satisfies LLMResponse;
+      },
+    };
+    const events: AgentEvent[] = [];
+    const bg = defineTool(
+      {
+        name: "bg",
+        description: "starts a long command",
+        parameters: { type: "object", properties: {} },
+      },
+      async () => ({
+        ok: true,
+        content: "moved to the background",
+        meta: {
+          background: { jobId: "job-1" },
+          command: "npm test",
+          timeoutSecs: 60,
+        },
+      }),
+    );
+    const sandbox = fakeSandbox(async () => completed(), async () =>
+      completed(0, "all tests passed\n"),
+    );
+
+    const outcome = await runAgent(
+      { task: "run the suite" },
+      {
+        llm,
+        agent: chatAgent,
+        sandbox,
+        tools: [bg],
+        onEvent: (event) => events.push(event),
+      },
+    );
+
+    expect(outcome.ok).toBe(true);
+    expect(
+      events.find((e) => e.type === "background_completed"),
+    ).toMatchObject({
+      type: "background_completed",
+      jobId: "job-1",
+      tool: "bg",
+      exitCode: 0,
+      timedOut: false,
+    });
+    // The next call carries the result as a runtime-only message.
+    const injected = requests[1]!.messages.find(
+      (m) => m.origin === "engine" && m.content?.includes("job-1"),
+    );
+    expect(injected?.content).toContain("npm test");
+    expect(injected?.content).toContain("all tests passed");
+    expect(outcome.pendingJobs).toBeUndefined();
+  });
+
+  it("waits for a job the model tries to finish behind, then continues", async () => {
+    const requests: LLMRequest[] = [];
+    const responses: Array<{ text: string; calls: LLMResponse["toolCalls"] }> = [
+      { text: "", calls: [{ id: "call-1", name: "bg", arguments: "{}" }] },
+      { text: "I'm done", calls: [] }, // tried to finish; job still running
+      { text: "now I'm done", calls: [] }, // after the injected result
+    ];
+    const llm: LLMClient = {
+      model: "scripted",
+      complete: async () => {
+        throw new Error("unexpected compaction");
+      },
+      stream: async (request: LLMRequest) => {
+        requests.push(structuredClone(request));
+        const turn = responses.shift();
+        if (!turn) throw new Error("out of scripted responses");
+        return {
+          text: turn.text,
+          toolCalls: turn.calls,
+          model: "scripted",
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+          latencyMs: 1,
+        } satisfies LLMResponse;
+      },
+    };
+    let polls = 0;
+    const sandbox = fakeSandbox(
+      async () => completed(),
+      async () => {
+        polls++;
+        return polls >= 2 ? completed(0, "late output\n") : undefined;
+      },
+    );
+    const bg = defineTool(
+      {
+        name: "bg",
+        description: "starts a long command",
+        parameters: { type: "object", properties: {} },
+      },
+      async () => ({
+        ok: true,
+        content: "moved to the background",
+        meta: {
+          background: { jobId: "job-wait" },
+          command: "npm test",
+          timeoutSecs: 5,
+        },
+      }),
+    );
+
+    const outcome = await runAgent(
+      { task: "run the suite" },
+      { llm, agent: chatAgent, sandbox, tools: [bg] },
+    );
+
+    // The run waited (more than the single boundary poll) and did not end at
+    // the first "done".
+    expect(polls).toBeGreaterThanOrEqual(2);
+    expect(requests).toHaveLength(3);
+    expect(requests[2]!.messages.some((m) => m.content?.includes("late output"))).toBe(
+      true,
+    );
+    expect(outcome.pendingJobs).toBeUndefined();
+    expect(outcome.summary).toBe("now I'm done");
+  });
+
+  it("gives up on a job past its deadline instead of hanging the run", async () => {
+    let polls = 0;
+    const requests: LLMRequest[] = [];
+    const responses: Array<{ text: string; calls: LLMResponse["toolCalls"] }> = [
+      { text: "done", calls: [] },
+      { text: "done again", calls: [] },
+    ];
+    const llm: LLMClient = {
+      model: "scripted",
+      complete: async () => {
+        throw new Error("unexpected compaction");
+      },
+      stream: async (request: LLMRequest) => {
+        requests.push(structuredClone(request));
+        const turn = responses.shift();
+        if (!turn) throw new Error("out of scripted responses");
+        return {
+          text: turn.text,
+          toolCalls: turn.calls,
+          model: "scripted",
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+          latencyMs: 1,
+        } satisfies LLMResponse;
+      },
+    };
+    const sandbox = fakeSandbox(
+      async () => completed(),
+      async () => {
+        polls++;
+        return undefined;
+      },
+    );
+
+    const outcome = await runAgent(
+      { task: "resume" },
+      {
+        llm,
+        agent: chatAgent,
+        sandbox,
+        // Started long ago with a 1s lifetime: already past its deadline.
+        resumeJobs: [{ jobId: "job-old", tool: "bash", startedAt: 0, timeoutSecs: 1 }],
+      },
+    );
+
+    // One poll round, then the deadline check drops it — no sleep loop.
+    expect(polls).toBe(1);
+    expect(
+      requests[1]!.messages.some((m) => m.content?.includes("no longer readable")),
+    ).toBe(true);
+    expect(outcome.pendingJobs).toBeUndefined();
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("reports a job it could not settle as pending instead of waiting forever", async () => {
+    const responses: Array<{ text: string; calls: LLMResponse["toolCalls"] }> = [
+      { text: "", calls: [{ id: "call-1", name: "bg", arguments: "{}" }] },
+      { text: "done", calls: [] },
+    ];
+    const llm: LLMClient = {
+      model: "scripted",
+      complete: async () => {
+        throw new Error("unexpected compaction");
+      },
+      stream: async () => {
+        const turn = responses.shift();
+        if (!turn) throw new Error("out of scripted responses");
+        return {
+          text: turn.text,
+          toolCalls: turn.calls,
+          model: "scripted",
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+          latencyMs: 1,
+        } satisfies LLMResponse;
+      },
+    };
+    const bg = defineTool(
+      {
+        name: "bg",
+        description: "starts a long command",
+        parameters: { type: "object", properties: {} },
+      },
+      async () => ({
+        ok: true,
+        content: "moved to the background",
+        meta: { background: { jobId: "job-2" }, command: "sleep 300" },
+      }),
+    );
+    // No sandbox: nothing can poll, so the run must not hang.
+    const outcome = await runAgent(
+      { task: "start it" },
+      { llm, agent: chatAgent, tools: [bg] },
+    );
+    expect(outcome.ok).toBe(true);
+    expect(outcome.pendingJobs?.map((j) => j.jobId)).toEqual(["job-2"]);
+  });
+
   it("emits background_started with the job handle", async () => {
     const responses: Array<{
       text: string;

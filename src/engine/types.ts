@@ -14,6 +14,22 @@ export interface RunTask {
   context?: string;
 }
 
+/**
+ * A command still running in the sandbox after `backgroundAfterSecs`. The
+ * engine tracks these, polls them at turn boundaries, and injects their
+ * results as runtime-only messages. Providers without `pollJob` never produce
+ * one (bash does not detach there).
+ */
+export interface BackgroundJob {
+  jobId: string;
+  tool: string;
+  command?: string;
+  /** Epoch ms at launch; the provider needs it to re-adopt the receipt. */
+  startedAt: number;
+  /** The job's hard lifetime, used to bound the wait. */
+  timeoutSecs?: number;
+}
+
 export interface EngineOptions {
   llm: LLMClient;
   agent?: Agent;
@@ -94,6 +110,12 @@ export interface EngineOptions {
    * fully synchronous behavior. Requires a sandbox with `pollJob` (heyo).
    */
   backgroundAfterSecs?: number;
+  /**
+   * Jobs still running when a previous run ended. The engine polls them from
+   * the first turn boundary, so a consumer that woke this run can hand its
+   * `pendingJobs` straight back.
+   */
+  resumeJobs?: BackgroundJob[];
   onEvent?: EventSink;
   /**
    * Durable sinks. The engine owns their sequence number (one fanout per run)
@@ -200,6 +222,11 @@ export interface AgentResult {
   checkpointRef?: string;
   /** Present when the run ended out of budget and revival is enabled. */
   revival?: RevivalRequest;
+  /**
+   * Commands still running when the run ended. Pass them back as
+   * `resumeJobs` to keep polling them; otherwise their results are lost.
+   */
+  pendingJobs?: BackgroundJob[];
   phase?: string;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
   handoff?: Record<string, unknown>;

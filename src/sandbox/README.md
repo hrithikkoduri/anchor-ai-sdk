@@ -110,10 +110,16 @@ job's hard lifetime, so it must exceed the detach threshold; a detached job no
 longer blocks later mutations (it is intentionally still running). Because the
 job lives in the guest, the sandbox must outlive the turn: the Heyo adapter
 sets `spec.retain` on detach and `destroy()` **defers parking** while the
-executor still has jobs. Polling belongs to the consumer (a worker sweep), not
-the model; see `EngineOptions.backgroundAfterSecs` and the
-`background_started` event. Heyo's `poll`/`kill` also work from a *fresh*
-adopted instance (no in-memory registry), which is what a post-run sweep uses.
+executor still has jobs.
+
+The engine owns delivery when the provider can poll: it tracks the job ids and,
+at every turn boundary, calls `pollJob` and injects a finished result as a
+runtime-only message (`origin: "engine"`), so the user never sees it and the
+thread never stores it. Before a normal finish it waits for what is left,
+bounded by the job's deadline; only a job that outlives that is reported on
+`AgentResult.pendingJobs`, which the consumer can hand back as `resumeJobs` on
+the next run. The model never polls. Heyo's `poll`/`kill` also work from a
+*fresh* adopted instance (no in-memory registry), which is what the wait uses.
 
 **The conformance suite**: `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
