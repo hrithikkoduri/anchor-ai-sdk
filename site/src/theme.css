@@ -221,6 +221,12 @@ body,
 #root .build-example {
   min-width: 0;
 }
+#root .build-philosophy-link {
+  display: inline-flex;
+  margin-top: 22px;
+  color: #ffb195;
+  font-size: 14px;
+}
 #root .build-example .code-window {
   margin: 0;
   border-radius: 2px 2px 0 0;

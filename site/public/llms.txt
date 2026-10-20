@@ -20,3 +20,4 @@
 ## Scope
 
 Phases guide the approach; they are not enforced workflow gates. Model clients, sandbox providers and storage are supplied by the host. Memory stores are not crash-durable. Heyo currently supports the documented background polling path. Credentials, authorization, worker ownership, durable resume, funding and publish policy remain application responsibilities. Running model or cloud examples may incur cost. execPolicy is internal, not a public root export in 0.1.7.
+- [Why Anchor](https://anchor-sdk.dev/philosophy.md): Source-backed design philosophy, visual mental models, and the boundary between SDK mechanics and application judgment. Covers agent-led phases, shared execution environments, layered memory, safe-boundary continuity, evidence and bounded recovery.

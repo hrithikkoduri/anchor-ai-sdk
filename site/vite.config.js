@@ -20,6 +20,7 @@ export default defineConfig({
       input: {
         home: fileURLToPath(new URL("./index.html", import.meta.url)),
         docs: fileURLToPath(new URL("./docs.html", import.meta.url)),
+        philosophy: fileURLToPath(new URL("./philosophy.html", import.meta.url)),
         build: fileURLToPath(new URL("./build.html", import.meta.url)),
         benchmarks: fileURLToPath(
           new URL("./benchmarks.html", import.meta.url),

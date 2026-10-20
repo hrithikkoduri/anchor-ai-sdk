@@ -557,6 +557,9 @@ export default function App() {
                 <div className="build-footnote">
                   MODEL AND SANDBOX CONFIGURATION STAY IN YOUR APP.
                 </div>
+                <a className="text-link build-philosophy-link" href="/philosophy.html">
+                  Why Anchor is built this way <ArrowRight size={15} />
+                </a>
               </div>
               <div className="build-example">
                 <CodeBlock code={compositionExample} filename="agent.mjs" language="JAVASCRIPT" />

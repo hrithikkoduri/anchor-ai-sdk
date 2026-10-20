@@ -2,5 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://anchor-sdk.dev/</loc></url>
   <url><loc>https://anchor-sdk.dev/docs.html</loc></url>
+  <url><loc>https://anchor-sdk.dev/philosophy.html</loc></url>
   <url><loc>https://anchor-sdk.dev/benchmarks.html</loc></url>
 </urlset>

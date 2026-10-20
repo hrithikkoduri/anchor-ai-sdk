@@ -2,7 +2,7 @@
 
 React + Vite multipage site, using Animate UI's Radix-based animated primitives
 for tabs, tooltips, accordions, and collapsible navigation. The SDK has no
-dependency on this app. All three pages share navigation, footer, copy controls,
+dependency on this app. All four pages share navigation, footer, copy controls,
 and the orange anchor mark.
 The production build is static and can be served from any static host.
 Its HTML is prerendered from the React pages, then hydrated for interactivity.
@@ -13,6 +13,9 @@ site/
   index.html        landing entry
   src/main.jsx      landing page
   src/docs.jsx      field-guide documentation
+  src/philosophy.jsx source-backed design philosophy and reading guide
+  src/philosophy-diagrams.jsx conceptual illustrations + phase exploration
+  src/philosophy.css reading/diagram layouts with responsive reflow
   src/agent-example.jsx inline custom-agent examples in the docs
   src/composition-guide.jsx primitives → phases/strategy → runtime → assembled harness
   src/sandbox-setup.jsx provider configuration tabs + template/image guidance
@@ -67,7 +70,7 @@ npm run dev --prefix site
 ## Deploy (when the domain is pointed)
 
 Run `npm ci --prefix site && npm run build --prefix site`, then publish
-`site/dist/`. All three pages and the compatibility redirect are included. No server functions are
+`site/dist/`. All four pages and the compatibility redirect are included. No server functions are
 needed. Do not serve the source directory with Python: the homepage needs Vite.
 
 ## Checks

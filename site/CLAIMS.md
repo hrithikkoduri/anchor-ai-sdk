@@ -41,6 +41,15 @@ blanket statement that every supported service and workload was exercised.
 
 ## Checks performed
 
+The philosophy guide (`/philosophy.html`, also generated as `/philosophy.md`)
+explains the public 0.1.7 contract and decisions #51, #53, #63, #74, #81 and #82.
+Its eight diagrams are conceptual; phase tabs do not execute model calls or
+define legal transitions. It explicitly preserves the distinction between
+agent-led phases and host policy, replay and retention, in-call chaining and
+host-owned wake-up, completion and publication, and revival and re-funding.
+Earlier decision-log claims are treated as superseded where current behavior
+differs. No SDK source, cloud sandbox, or model is changed/run by this guide.
+
 - Direct source reads of the above modules, provider constructors/options,
   declared capabilities, lifecycle paths, test files, and CI configuration.
 - Five isolated evidence reproductions against the current source:

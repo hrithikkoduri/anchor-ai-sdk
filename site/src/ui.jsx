@@ -28,6 +28,7 @@ export function SiteHeader({ page }) {
   const links = [
     ["The harness", "/#harness", "home"],
     ["Docs", "/docs.html", "docs"],
+    ["Philosophy", "/philosophy.html", "philosophy"],
     ["Benchmarks", "/benchmarks.html", "benchmarks"],
   ];
   const items = links.map(([label, href, id]) => (
@@ -82,6 +83,7 @@ export function SiteFooter() {
         <p>Keep the agent grounded.</p>
         <div>
           <a href="/docs.html">Docs</a>
+          <a href="/philosophy.html">Philosophy</a>
           <a href="/llms.txt">For AI agents</a>
           <a href={repo}>GitHub ↗</a>
           <a href="https://www.npmjs.com/package/anchor-ai-sdk">npm ↗</a>

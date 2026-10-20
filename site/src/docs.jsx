@@ -350,6 +350,11 @@ export default function Docs() {
             <a className="doc-inline-link" href="#primitives">
               Next: unpack the bundle and build from primitives <ArrowRight size={14} />
             </a>
+            <p className="doc-small">
+              Want the reasoning behind these APIs? Read the{" "}
+              <a href="/philosophy.html">visual guide to Anchor's philosophy</a>—
+              then return here to assemble the pieces.
+            </p>
           </DocSection>
 
           <DocSection id="primitives" number="03" title="How the pieces fit">

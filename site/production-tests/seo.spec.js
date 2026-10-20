@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 for (const [path, canonical, heading] of [
   ["/", "https://anchor-sdk.dev/", "A loop is easy."],
   ["/docs.html", "https://anchor-sdk.dev/docs.html", "Quickstart"],
+  ["/philosophy.html", "https://anchor-sdk.dev/philosophy.html", "Let the model reason."],
   ["/benchmarks.html", "https://anchor-sdk.dev/benchmarks.html", "Nine of ten"],
 ]) {
   test(`${path} has crawler-readable content and metadata without JavaScript`, async ({ browser, request, baseURL }) => {
@@ -26,7 +27,7 @@ for (const [path, canonical, heading] of [
   });
 }
 
-test("production markup hydrates cleanly and all three pages remain interactive", async ({ page }) => {
+test("production markup hydrates cleanly and all pages remain interactive", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -38,6 +39,9 @@ test("production markup hydrates cleanly and all three pages remain interactive"
   await page.goto("/benchmarks.html");
   await page.getByRole("tab", { name: "Usage", exact: true }).click();
   await expect(page.locator(".metric-panel").filter({ visible: true })).toContainText("Not reported");
+  await page.goto("/philosophy.html#agency");
+  await page.getByRole("tab", { name: "Just answer", exact: true }).click();
+  await expect(page.locator('.ph-example-tabs [role="tabpanel"][data-state="active"] .ph-phase-route')).toHaveText("respond");
   expect(errors).toEqual([]);
 });
 
@@ -50,13 +54,13 @@ test("robots, sitemap and agent entry points expose canonical readable resources
   expect(sitemap.status()).toBe(200);
   const xml = await sitemap.text();
   expect([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1])).toEqual([
-    "https://anchor-sdk.dev/", "https://anchor-sdk.dev/docs.html", "https://anchor-sdk.dev/benchmarks.html",
+    "https://anchor-sdk.dev/", "https://anchor-sdk.dev/docs.html", "https://anchor-sdk.dev/philosophy.html", "https://anchor-sdk.dev/benchmarks.html",
   ]);
   const llms = await request.get("/llms.txt");
   expect(llms.status()).toBe(200);
   expect(await llms.text()).toContain("anchor-ai-sdk");
   expect(await llms.text()).toContain("https://anchor-sdk.dev/docs.md");
-  for (const path of ["/index.md", "/docs.md", "/benchmarks.md", "/llms-full.txt"]) {
+  for (const path of ["/index.md", "/docs.md", "/philosophy.md", "/benchmarks.md", "/llms-full.txt"]) {
     const response = await request.get(path);
     expect(response.status()).toBe(200);
     const text = await response.text();

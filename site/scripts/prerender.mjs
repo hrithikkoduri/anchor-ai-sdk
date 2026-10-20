@@ -22,6 +22,7 @@ const server = await createServer({
 const pages = [
   { html: "index.html", entry: "/src/main.jsx", markdown: "index.md", url: "/" },
   { html: "docs.html", entry: "/src/docs.jsx", markdown: "docs.md", url: "/docs.html" },
+  { html: "philosophy.html", entry: "/src/philosophy.jsx", markdown: "philosophy.md", url: "/philosophy.html" },
   { html: "benchmarks.html", entry: "/src/benchmarks.jsx", markdown: "benchmarks.md", url: "/benchmarks.html" },
 ];
 const markdownPages = [];
