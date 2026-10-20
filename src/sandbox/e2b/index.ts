@@ -118,6 +118,11 @@ export class E2BSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
+    if (this.spec.localPath) {
+      throw new Error(
+        "the e2b backend has no host-path access — pass repoUrl, workspacePath, or use local()",
+      );
+    }
     let created = false;
 
     try {
