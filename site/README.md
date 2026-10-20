@@ -1,7 +1,7 @@
-# anchor-sdk.dev — the site
+# anchor-sdk.dev: the site
 
 Static, zero-build on purpose: three pages, one stylesheet, one small script.
-No dependencies, no framework, no build step — it can be served from anywhere.
+No dependencies, no framework, no build step, so it can be served from anywhere.
 
 ```
 site/
@@ -22,7 +22,7 @@ python3 -m http.server 4173 -d site
 
 ## Deploy (when the domain is pointed)
 
-Any static host works — Cloudflare Pages, GitHub Pages, Netlify, S3. Serve
+Any static host works: Cloudflare Pages, GitHub Pages, Netlify, S3. Serve
 the `site/` directory as the root. No redirects, no functions, no headers
 needed.
 
@@ -30,10 +30,10 @@ needed.
 
 Content is kept in sync by hand with:
 
-- `README.md` — positioning, features, quickstart copy
-- `evals/benchmarks/swe-bench/results/comparison.md` — the benchmarks table (Round 2 on Opus 5.5
+- `README.md`: positioning, features, quickstart copy
+- `evals/benchmarks/swe-bench/results/comparison.md`: the benchmarks table (Round 2 on Opus 5.5
   updates the page when it lands)
-- `DECISIONS.md` — anything architectural the pages assert
+- `DECISIONS.md`: anything architectural the pages assert
 
-If the code and the site disagree, the code is right — fix the site in the
+If the code and the site disagree, the code is right, so fix the site in the
 same PR that changed the code.

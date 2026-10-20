@@ -1,10 +1,10 @@
-# @anchor/evals — the benchmark harness
+# @anchor/evals: the benchmark harness
 
 Scores **Anchor as a harness**, benchmark by benchmark. This is not a product
 feature and not part of the package: it is a repo-level app that imports
-`anchor-ai-sdk` directly — no worker, no queue, no webhook, no database —
+`anchor-ai-sdk` directly: no worker, no queue, no webhook, no database;
 which makes it the framework's second consumer. The app has **zero product
-imports** — its own config reader, the package, and nothing else.
+imports**: its own config reader, the package, and nothing else.
 
 ## Layout
 
@@ -12,11 +12,11 @@ imports** — its own config reader, the package, and nothing else.
 benchmarks/
   swe-bench/       SWE-bench Lite (larger sets on demand) vs mini-swe-agent.
                    Data, results, and the full how-to live in its README.
-  terminal-bench/  planned — terminal-native tasks, per-task containers.
+  terminal-bench/  planned: terminal-native tasks, per-task containers.
   program-bench/   planned.
   metr/            planned.
 src/               the harness engine: the generic runner (tasks → sandbox →
-                   arm → git diff — the future Anchor lift, deliberately one
+                   arm → git diff, the future Anchor lift, deliberately one
                    isolated module), the config reader, the CLI, the arms.
 scripts/           run/build tooling: fetch tasks, prepull/prewarm images,
                    grade with the official harness, watch-and-grade, report.
@@ -26,7 +26,7 @@ scripts/           run/build tooling: fetch tasks, prepull/prewarm images,
 ```
 
 `src/runner.ts` is benchmark-agnostic by design: a benchmark contributes a
-task loader, an arm, and (usually) a grader — never a second runner. Pieces
+task loader, an arm, and (usually) a grader, never a second runner. Pieces
 move into `benchmarks/<name>/` when their seams are proven by a second
 benchmark landing; data and results already live per-benchmark today.
 
