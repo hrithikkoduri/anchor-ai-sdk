@@ -107,8 +107,14 @@ a non-coding agent (its own strategy and tool, no sandbox).
 | --- | --- | --- |
 | `anchor-ai-sdk/sandbox/heyo` | Heyo Cloud microVMs (Firecracker) | production path; conformance + live tests |
 | `anchor-ai-sdk/sandbox/docker` | containers on the local daemon | conformance-tested in CI |
+| `anchor-ai-sdk/sandbox/e2b` | E2B cloud sandboxes (remote) | conformance-tested live (`base` template); opt-in in CI |
 | `anchor-ai-sdk/sandbox/local` | this host, **no isolation** | dev / CI only |
-| — | E2B, Daytona | planned |
+| — | Daytona | planned |
+
+E2B boots a **template**, not an arbitrary Docker image at create time: pass
+`template` (or let `SandboxSpec.image` name one) and build it with the tools
+the task needs. Pause/resume powers retain/adopt, and native sandbox forking
+powers `fork()`.
 
 A backend is "done" when `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` passes — exec fidelity, kill deadlines, env secrets,

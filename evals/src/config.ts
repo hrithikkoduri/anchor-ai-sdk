@@ -83,6 +83,30 @@ function sizeClass(value: string | undefined): HeyoSizeClass {
   return v;
 }
 
+/** Parse E2B_TEMPLATE_MAP: a JSON object keyed by task id or Docker image. */
+function templateMap(value: string | undefined): Record<string, string> {
+  if (!value) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new Error(
+      `E2B_TEMPLATE_MAP must be a JSON object: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("E2B_TEMPLATE_MAP must be a JSON object");
+  }
+  const out: Record<string, string> = {};
+  for (const [key, target] of Object.entries(parsed)) {
+    if (typeof target !== "string" || target.trim() === "") {
+      throw new Error(`E2B_TEMPLATE_MAP["${key}"] must be a non-empty string`);
+    }
+    out[key] = target;
+  }
+  return out;
+}
+
 export interface EvalsConfig {
   llm: {
     baseUrl: string;
@@ -94,6 +118,17 @@ export interface EvalsConfig {
     priceCacheReadPerMTok?: number;
   };
   heyo: HeyoSandboxConfig;
+  e2b: {
+    apiKey?: string;
+    /** Default template for repo-clone tasks (image tasks need a map). */
+    template: string;
+    /** Commands run as this user; SWE-bench images want root. */
+    user?: string;
+    /** Sandbox lifetime in milliseconds. */
+    timeoutMs: number;
+    /** Docker image (or task id) → E2B template name. */
+    templateMap: Record<string, string>;
+  };
 }
 
 export function evalsConfig(env: NodeJS.ProcessEnv = process.env): EvalsConfig {
@@ -132,6 +167,13 @@ export function evalsConfig(env: NodeJS.ProcessEnv = process.env): EvalsConfig {
       imageSizeMb: optionalNumber(env.HEYO_IMAGE_SIZE_MB),
       sizeClass: sizeClass(env.HEYO_SIZE_CLASS),
       diskSizeGb: Number(env.HEYO_DISK_GB ?? "4") || 4,
+    },
+    e2b: {
+      apiKey: env.E2B_API_KEY || undefined,
+      template: env.E2B_TEMPLATE ?? "base",
+      user: env.E2B_USER || undefined,
+      timeoutMs: optionalNumber(env.E2B_TIMEOUT_MS) ?? 60 * 60_000,
+      templateMap: templateMap(env.E2B_TEMPLATE_MAP),
     },
   };
 }

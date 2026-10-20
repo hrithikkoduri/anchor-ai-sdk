@@ -40,3 +40,6 @@ benchmark landing; data and results already live per-benchmark today.
 | **metr** | planned | [`benchmarks/metr/README.md`](benchmarks/metr/README.md) |
 
 Results always live next to their benchmark: `benchmarks/<name>/results/`.
+
+The swe-bench runner also accepts `--provider e2b` (template-backed remote
+sandboxes); see the E2B section in its README.

@@ -11,12 +11,19 @@ subpath (package.json)    implementation              what it is
 sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote)
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
+sandbox/e2b               e2b/ (index, exec)          E2B cloud sandboxes (remote)
 sandbox/local             local/index.ts              the host, NO isolation — dev/CI
 ```
 
-E2B and Daytona are **planned** — stub modules exist in-repo (`e2b/`,
-`daytona/`) so the shape is visible, but they are not exported subpaths and
-their factories throw until they pass the conformance suite.
+Daytona is **planned** — its stub module exists in-repo (`daytona/`) so the
+shape is visible, but it is not an exported subpath and its factory throws
+until it passes the conformance suite.
+
+E2B boots a **template**, not an arbitrary Docker image at create time. Pass
+`template` to `e2b()` (or let `SandboxSpec.image` name one) and build it with
+the tools the task needs — at minimum `bash`, `git`, and coreutils including
+`timeout`. `SandboxSpec.workspacePath` maps to a pre-existing workspace inside
+the template (the SWE-bench `/testbed` shape), exactly like the Docker backend.
 
 Two ways to open one (`index.ts`):
 
@@ -171,9 +178,25 @@ retryable/adoptable, and the boot itself lives in `start()`.
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-E2B and Daytona are planned: the stub modules stay in-repo as signposts but
-are not exported; their factories throw with a pointer here until they pass
-the conformance suite.
+Daytona is planned: its stub module stays in-repo as a signpost but is not
+exported; its factory throws with a pointer here until it passes the
+conformance suite.
+
+### E2B notes
+
+- **Templates, not images.** E2B has no Docker-image-at-create; `spec.image`
+  is a template name. Build the template with `Template().fromImage(...)` or
+  `fromDockerfile(...)`, then pass its name.
+- **Retain = pause.** `destroy()` pauses a retained sandbox (memory and disk
+  survive indefinitely) and `adopt()` connects/resumes it. `keep` leaves it
+  running for debugging.
+- **Fork = native snapshot.** `fork()` snapshots the VM, attaches the fork,
+  then resets it to the requested commit (`checkout -f` + `clean -fd`) so the
+  result matches the contract's clean-checkpoint semantics.
+- **Timeout.** The adapter wraps every command in guest-side `timeout -k`, so
+  E2B's control-plane `timeoutMs` is not trusted as a process kill.
+- **Credentials.** `git.token` is resolved per command into `GIT_TOKEN` and a
+  repo-local credential helper; the token never enters the workspace.
 
 ## Layout
 
@@ -184,6 +207,7 @@ types.ts     Sandbox, SandboxSpec, ExecResult, handles
 git.ts       shared git behavior (checkpoints, diffs, reserved scratch)
 heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
+e2b/         E2B cloud sandboxes: index (provider), exec (command/result)
 local/       the host itself — dev/CI only, no isolation
-e2b/  daytona/   stubs
+daytona/     stub — planned, not exported
 ```
