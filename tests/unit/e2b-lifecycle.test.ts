@@ -1,0 +1,195 @@
+/**
+ * E2B lifecycle without the network. The adapter's create/connect calls are
+ * injectable (`clientFactory`), so start/adopt/destroy/fork can be asserted
+ * offline; the live conformance suite covers the same paths for real.
+ */
+import { describe, expect, it } from "vitest";
+import type { Sandbox as E2BClient } from "e2b";
+import {
+  E2BSandbox,
+  type E2BClientFactory,
+} from "../../src/sandbox/e2b/index.js";
+
+type RunResult = { exitCode?: number; stdout?: string; stderr?: string };
+
+function fakeClient(opts: {
+  sandboxId?: string;
+  metadata?: Record<string, string>;
+  run?: (command: string) => RunResult;
+} = {}) {
+  const calls: string[] = [];
+  const killed: string[] = [];
+  const paused: string[] = [];
+  const client = {
+    sandboxId: opts.sandboxId ?? "sb-fake",
+    commands: {
+      run: async (command: string) => {
+        calls.push(command);
+        const result = opts.run?.(command) ?? {};
+        return {
+          exitCode: result.exitCode ?? 0,
+          stdout: result.stdout ?? "",
+          stderr: result.stderr ?? "",
+        };
+      },
+    },
+    getInfo: async () => ({ metadata: opts.metadata ?? {} }),
+    kill: async () => {
+      killed.push("kill");
+      return true;
+    },
+    pause: async () => {
+      paused.push("pause");
+      return true;
+    },
+    fork: async () => {
+      throw new Error("fork not stubbed on this client");
+    },
+  };
+  return { client: client as unknown as E2BClient, calls, killed, paused };
+}
+
+function factory(client: E2BClient): E2BClientFactory {
+  return {
+    create: async () => client,
+    connect: async () => client,
+  };
+}
+
+describe("e2b lifecycle (fake client)", () => {
+  it("prepares a pre-provisioned workspace and starts", async () => {
+    const fake = fakeClient();
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+
+    // Commands arrive wrapped: `cd … && timeout … bash -c '<command>'`.
+    expect(fake.calls[0]).toContain("test -d");
+    expect(fake.calls[0]).toContain("/testbed");
+    expect(fake.calls[1]).toContain("/testbed/.git");
+    expect(fake.calls.some((c) => c.includes("user.name"))).toBe(true);
+    expect(fake.killed).toHaveLength(0);
+  });
+
+  it("kills the sandbox it created when start fails", async () => {
+    const fake = fakeClient({
+      run: (command) =>
+        command.includes("/.git") ? { exitCode: 1 } : { exitCode: 0 },
+    });
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await expect(sandbox.start()).rejects.toThrow(/not a git repository/);
+    expect(fake.killed).toHaveLength(1);
+  });
+
+  it("never kills an adopted sandbox when start fails", async () => {
+    const fake = fakeClient({
+      sandboxId: "sb-adopted",
+      run: (command) =>
+        command.includes("/.git") ? { exitCode: 1 } : { exitCode: 0 },
+    });
+    const sandbox = new E2BSandbox(
+      { adopt: "sb-adopted" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await expect(sandbox.start()).rejects.toThrow(/no workspace/);
+    expect(fake.killed).toHaveLength(0);
+  });
+
+  it("restores workspace and scratch from the sandbox's metadata on adopt", async () => {
+    const fake = fakeClient({
+      sandboxId: "sb-adopted",
+      metadata: { anchorWorkspace: "/srv/repo", anchorScratch: "/srv/scratch" },
+    });
+    const sandbox = new E2BSandbox(
+      { adopt: "sb-adopted" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+    expect(sandbox.workspace).toBe("/srv/repo");
+    expect(sandbox.scratch).toBe("/srv/scratch");
+    expect(fake.calls[0]).toContain("/srv/repo");
+    expect(fake.calls[0]).toContain(".git");
+  });
+
+  it("explains the template/image mistake when create fails", async () => {
+    const sandbox = new E2BSandbox(
+      { image: "swebench/sweb.eval.x86_64.django:latest" },
+      {
+        quiet: true,
+        clientFactory: {
+          create: async () => {
+            throw new Error("template not found");
+          },
+          connect: async () => {
+            throw new Error("unused");
+          },
+        },
+      },
+    );
+    await expect(sandbox.start()).rejects.toThrow(
+      /E2B boots templates, not Docker images/,
+    );
+  });
+
+  it("pauses a retained sandbox instead of killing it, and is idempotent", async () => {
+    const fake = fakeClient();
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed", retain: true },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+    await sandbox.destroy();
+    await sandbox.destroy();
+    expect(fake.paused).toHaveLength(1);
+    expect(fake.killed).toHaveLength(0);
+  });
+
+  it("mints one git token for many commands", async () => {
+    let minted = 0;
+    const fake = fakeClient();
+    const sandbox = new E2BSandbox(
+      {
+        workspacePath: "/testbed",
+        git: {
+          token: async () => {
+            minted++;
+            return "tok";
+          },
+        },
+      },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+    await sandbox.exec("echo one");
+    await sandbox.exec("echo two");
+    expect(minted).toBe(1);
+  });
+
+  it("forks and resets the child to the requested commit", async () => {
+    const child = fakeClient({ sandboxId: "sb-child" });
+    const parent = fakeClient();
+    const parentClient = parent.client as unknown as {
+      fork: () => Promise<unknown[]>;
+    };
+    parentClient.fork = async () => [child.client];
+
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed" },
+      { quiet: true, clientFactory: factory(parent.client) },
+    );
+    await sandbox.start();
+    const forked = await sandbox.fork("abc123");
+
+    expect(forked.id).toBe("sb-child");
+    const reset = child.calls.find(
+      (c) => c.includes("git checkout") && c.includes("git clean -fd"),
+    );
+    expect(reset).toBeDefined();
+    expect(reset).toContain("abc123");
+  });
+});

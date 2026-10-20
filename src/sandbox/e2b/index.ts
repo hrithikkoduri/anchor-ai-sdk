@@ -20,7 +20,9 @@ import {
   CommandExitError,
   Sandbox as E2BClient,
   SandboxNotFoundError,
+  type SandboxConnectOpts,
   type SandboxInfo,
+  type SandboxOpts,
 } from "e2b";
 import type { ProviderHealth, SandboxProvider } from "../provider.js";
 import {
@@ -50,6 +52,8 @@ const DEFAULT_SCRATCH = "/tmp/anchor";
  * Hobby caps at 1 hour, Pro at 24 hours — raise this with `timeoutMs`.
  */
 const DEFAULT_LIFETIME_MS = 60 * 60_000;
+/** Reuse a minted git token for this long (installation tokens live for hours). */
+const GIT_TOKEN_TTL_MS = 5 * 60_000;
 
 export interface E2BSandboxOptions {
   /** E2B API key. Omit to let the SDK read `E2B_API_KEY`. */
@@ -72,7 +76,23 @@ export interface E2BSandboxOptions {
   user?: string;
   /** Silence lifecycle notes (tests). */
   quiet?: boolean;
+  /**
+   * Test seam: the two network entry points. Defaults to the E2B SDK, so a
+   * unit test can exercise start/fork/adopt without an account.
+   */
+  clientFactory?: E2BClientFactory;
 }
+
+/** The create/connect pair, injectable so the adapter is testable offline. */
+export interface E2BClientFactory {
+  create(template: string, opts: SandboxOpts): Promise<E2BClient>;
+  connect(sandboxId: string, opts: SandboxConnectOpts): Promise<E2BClient>;
+}
+
+const defaultFactory: E2BClientFactory = {
+  create: (template, opts) => E2BClient.create(template, opts),
+  connect: (sandboxId, opts) => E2BClient.connect(sandboxId, opts),
+};
 
 function connectionOpts(opts: E2BSandboxOptions): {
   apiKey?: string;
@@ -89,10 +109,13 @@ export class E2BSandbox implements Sandbox {
 
   private _id: string;
   private _workspace: string;
-  private readonly _scratch: string;
+  private _scratch: string;
   private client?: E2BClient;
   private started = false;
   private destroyed = false;
+  private readonly factory: E2BClientFactory;
+  /** Git tokens are installation tokens (hours); cache one briefly. */
+  private gitToken?: { value: string; at: number };
 
   constructor(
     private readonly spec: SandboxSpec,
@@ -102,6 +125,7 @@ export class E2BSandbox implements Sandbox {
     this._workspace =
       spec.workspacePath ?? opts.cwd ?? DEFAULT_WORKSPACE;
     this._scratch = opts.scratch ?? DEFAULT_SCRATCH;
+    this.factory = opts.clientFactory ?? defaultFactory;
   }
 
   get id(): string {
@@ -129,7 +153,7 @@ export class E2BSandbox implements Sandbox {
       if (this.spec.adopt) {
         // Wake the retained sandbox. `connect` resumes a paused one; the
         // workspace comes from the retained disk, not from the spec.
-        this.client = await E2BClient.connect(this.spec.adopt, {
+        this.client = await this.factory.connect(this.spec.adopt, {
           ...connectionOpts(this.opts),
           timeoutMs: this.lifetimeMs(),
         });
@@ -148,17 +172,28 @@ export class E2BSandbox implements Sandbox {
       } else {
         const template =
           this.spec.image ?? this.opts.template ?? "base";
-        this.client = await E2BClient.create(template, {
-          ...connectionOpts(this.opts),
-          timeoutMs: this.lifetimeMs(),
-          ...(this.spec.env ? { envs: this.spec.env } : {}),
-          // Store the coordinates on the sandbox so an `openSandboxSession`
-          // adoption does not have to guess them from the caller's sources.
-          metadata: {
-            anchorWorkspace: this._workspace,
-            anchorScratch: this._scratch,
-          },
-        });
+        try {
+          this.client = await this.factory.create(template, {
+            ...connectionOpts(this.opts),
+            timeoutMs: this.lifetimeMs(),
+            ...(this.spec.env ? { envs: this.spec.env } : {}),
+            // Store the coordinates on the sandbox so an `openSandboxSession`
+            // adoption does not have to guess them from the caller's sources.
+            metadata: {
+              anchorWorkspace: this._workspace,
+              anchorScratch: this._scratch,
+            },
+          });
+        } catch (error) {
+          // The commonest mistake is passing a Docker image where a template
+          // belongs; E2B's own "not found" does not say that.
+          throw new Error(
+            `could not create an E2B sandbox from "${template}": ` +
+              `${error instanceof Error ? error.message : String(error)} — ` +
+              `E2B boots templates, not Docker images. Build one with ` +
+              `Template().fromImage(...) and pass its name as template or spec.image.`,
+          );
+        }
         created = true;
         this._id = this.client.sandboxId;
         await this.prepareWorkspace();
@@ -302,12 +337,19 @@ export class E2BSandbox implements Sandbox {
     }
   }
 
-  /** Read the coordinates stored at create time; the spec still wins. */
+  /** Read the coordinates stored at create time; an explicit option wins. */
   private applyMetadata(info: SandboxInfo): void {
-    if (this.spec.workspacePath) return;
-    const workspace = info.metadata?.anchorWorkspace;
-    if (typeof workspace === "string" && workspace.trim() !== "") {
-      this._workspace = workspace;
+    if (!this.spec.workspacePath) {
+      const workspace = info.metadata?.anchorWorkspace;
+      if (typeof workspace === "string" && workspace.trim() !== "") {
+        this._workspace = workspace;
+      }
+    }
+    if (this.opts.scratch === undefined) {
+      const scratch = info.metadata?.anchorScratch;
+      if (typeof scratch === "string" && scratch.trim() !== "") {
+        this._scratch = scratch;
+      }
     }
   }
 
@@ -330,6 +372,17 @@ export class E2BSandbox implements Sandbox {
       if (present.exitCode !== 0) {
         throw new Error(
           `workspacePath ${workspace} does not exist in the sandbox`,
+        );
+      }
+      // configureGit() runs in the workspace right after this; fail with the
+      // path named rather than with a bare "git config failed".
+      const git = await this.execRaw(
+        `test -d ${shq(`${workspace}/.git`)}`,
+        { cwd: "/", timeoutSecs: 60 },
+      );
+      if (git.exitCode !== 0) {
+        throw new Error(
+          `workspacePath ${workspace} is not a git repository — the adapter needs .git there for checkpoints and diffs`,
         );
       }
       return;
@@ -411,10 +464,18 @@ export class E2BSandbox implements Sandbox {
     return `!f() { echo username=${username}; printf 'password=%s\\n' "$GIT_TOKEN"; }; f`;
   }
 
-  /** Mint the git token for one command, when the spec supplies one. */
+  /**
+   * The git token for one command. Minted once and reused briefly: a callback
+   * that hits GitHub would otherwise run on every command, including the ones
+   * that never touch the network.
+   */
   private async gitEnv(): Promise<Record<string, string>> {
     if (!this.spec.git) return {};
-    return { GIT_TOKEN: await this.spec.git.token() };
+    const now = Date.now();
+    if (!this.gitToken || now - this.gitToken.at > GIT_TOKEN_TTL_MS) {
+      this.gitToken = { value: await this.spec.git.token(), at: now };
+    }
+    return { GIT_TOKEN: this.gitToken.value };
   }
 
   private gitAccess(): GitAccess {

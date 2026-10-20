@@ -10,7 +10,8 @@
  *   E2B_API_KEY=... node evals/scripts/verify-e2b-prediction.mjs \
  *     --prediction .eval-runs/<run>/predictions.jsonl \
  *     --instance pytest-dev__pytest-11143 \
- *     --template anchor-swebench-pytest-dev-pytest-11143:latest
+ *     --template anchor-swebench-pytest-dev-pytest-11143:latest \
+ *     --tasks evals/benchmarks/swe-bench/data/swebench-lite-10.jsonl
  */
 import { readFileSync } from "node:fs";
 import { Sandbox } from "e2b";
@@ -44,7 +45,21 @@ if (!prediction) {
   process.exit(1);
 }
 
+/** Prefer the local task file: the HF lookup can drift from the run's data. */
+function localRow() {
+  const tasks = arg("tasks");
+  if (!tasks) return undefined;
+  for (const line of readFileSync(tasks, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    const row = JSON.parse(line);
+    if (row.instance_id === instanceId) return row;
+  }
+  throw new Error(`${instanceId} not found in ${tasks}`);
+}
+
 async function datasetRow() {
+  const local = localRow();
+  if (local) return local;
   const base = "https://datasets-server.huggingface.co/rows";
   for (let offset = 0; ; offset += 100) {
     const url =

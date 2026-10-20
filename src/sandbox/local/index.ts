@@ -178,9 +178,13 @@ export class LocalSandbox implements Sandbox {
     );
     await child.start();
     const target = ref ?? "HEAD";
-    const checkout = await child.exec(`git checkout -q -f ${shq(target)}`, {
-      timeoutSecs: 60,
-    });
+    // Untracked files are working-tree state too, and the contract says a fork
+    // carries none of it. `git clean -fd` leaves git-excluded paths (`.anchor`)
+    // alone, which is what the e2b backend does as well.
+    const checkout = await child.exec(
+      `git checkout -q -f ${shq(target)} && git clean -fd`,
+      { timeoutSecs: 60 },
+    );
     if (checkout.exitCode !== 0) {
       await child.destroy();
       throw new Error(

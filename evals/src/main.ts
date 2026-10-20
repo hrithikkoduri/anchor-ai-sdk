@@ -20,7 +20,6 @@ import { llmFromCatalog, type BudgetLimits } from "anchor-ai-sdk";
 import { local } from "anchor-ai-sdk/sandbox/local";
 import { heyo } from "anchor-ai-sdk/sandbox/heyo";
 import { docker } from "anchor-ai-sdk/sandbox/docker";
-import { e2b } from "anchor-ai-sdk/sandbox/e2b";
 import { anchorArm } from "./arms/anchor.js";
 import { evalsConfig, loadDotEnv } from "./config.js";
 import { miniSweArm } from "./arms/mini-swe.js";
@@ -165,12 +164,16 @@ const provider =
     : providerName === "docker"
       ? docker({ dockerBin: process.env.DOCKER_BIN ?? "docker" })
       : providerName === "e2b"
-        ? e2b({
-            apiKey: cfg.e2b.apiKey,
-            template: e2bTemplate,
-            user: cfg.e2b.user,
-            timeoutMs: cfg.e2b.timeoutMs,
-          })
+        ? // Optional provider: imported only when asked for, so a docker or
+          // local run never needs the `e2b` package installed.
+          await import("anchor-ai-sdk/sandbox/e2b").then(({ e2b }) =>
+            e2b({
+              apiKey: cfg.e2b.apiKey,
+              template: e2bTemplate,
+              user: cfg.e2b.user,
+              timeoutMs: cfg.e2b.timeoutMs,
+            }),
+          )
         : local();
 
 // Mini has no token cap (250 steps, $3). 50M is this eval's fair ceiling,

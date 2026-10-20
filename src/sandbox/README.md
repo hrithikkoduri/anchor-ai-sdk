@@ -189,14 +189,18 @@ conformance suite.
   `fromDockerfile(...)`, then pass its name.
 - **Retain = pause.** `destroy()` pauses a retained sandbox (memory and disk
   survive indefinitely) and `adopt()` connects/resumes it. `keep` leaves it
-  running for debugging.
+  running for debugging. `provider.release(handle)` is the FINAL teardown and
+  kills even a retained sandbox: it does not know the run's `retain` flag, so
+  a sweep must not call it on a thread it means to resume.
 - **Fork = native snapshot.** `fork()` snapshots the VM, attaches the fork,
   then resets it to the requested commit (`checkout -f` + `clean -fd`) so the
   result matches the contract's clean-checkpoint semantics.
 - **Timeout.** The adapter wraps every command in guest-side `timeout -k`, so
   E2B's control-plane `timeoutMs` is not trusted as a process kill.
-- **Credentials.** `git.token` is resolved per command into `GIT_TOKEN` and a
-  repo-local credential helper; the token never enters the workspace.
+- **Credentials.** `git.token` is resolved into `GIT_TOKEN` and a repo-local
+  credential helper; the token never enters the workspace. One mint is reused
+  for five minutes, so a callback that hits GitHub does not run on every
+  command.
 
 ## Layout
 
