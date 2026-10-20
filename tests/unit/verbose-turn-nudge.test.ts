@@ -106,7 +106,8 @@ describe("verbose turn nudge", () => {
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     const nudges = events.filter(
-      (e) => e.type === "advisory" && e.kind === "verbose_turn",
+      (e): e is Extract<AgentEvent, { type: "advisory" }> =>
+        e.type === "advisory" && e.kind === "verbose_turn",
     );
     expect(nudges).toHaveLength(1);
     expect(nudges[0]!.detail).toContain("11000 visible output tokens");

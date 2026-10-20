@@ -36,7 +36,19 @@ import {
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
-import type { AgentEvent, EventSink, RevivalRequest } from "./events.js";
+import type { EventSink, RevivalRequest } from "./events.js";
+import { dispatchToolCalls } from "./dispatch.js";
+import {
+  RepeatTracker,
+  cappedReplyNudge,
+  createCourseCorrect,
+  emptyTurnNudge,
+  proseCheckpoint as proseCheckpointMessage,
+  repeatedCallNudge,
+  silentNudge,
+  verboseNudge,
+  visibleOutputTokens,
+} from "./guardrails.js";
 import type {
   RunTask,
   EngineOptions,
@@ -197,7 +209,6 @@ export async function runAgent(
   const forModel = (): LLMMessage[] =>
     messages.map((m) => elidedByMessage.get(m) ?? m);
   const evidence: ToolResultRecord[] = [];
-  const signatures: string[] = [];
   // Thresholds that double as switches (`number | false`) must be positive
   // when numeric. 0 is not "off" — `false` is — and left alone it would mean
   // "immediately" for the nudges while meaning "uncapped" for the caps.
@@ -222,6 +233,7 @@ export async function runAgent(
     "guardrails.verboseTurnLimit",
     opts.guardrails?.verboseTurnLimit ?? 8_000,
   );
+  const repeat = new RepeatTracker(repeatLimit);
   let verboseNudged = false;
   // Per-call output cap. The agent bundle may suggest one; an explicit engine
   // option wins, exactly like `strategy` and `tools` resolution.
@@ -257,22 +269,16 @@ export async function runAgent(
   // how the next empty turn is recognized as "after the advisory."
   let emptyNudged = false;
   const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
-  /**
-   * The shared course-correction mechanic. Callers own the policy — when this
-   * fires, the message, and whether a repeat ends the run. This only records
-   * the advisory, puts that message in front of the model, and marks a
-   * following prose reply as a checkpoint rather than an answer.
-   */
-  const courseCorrect = async (args: {
-    kind: Extract<AgentEvent, { type: "advisory" }>["kind"];
-    detail: string;
-    content: string;
-  }): Promise<void> => {
-    pendingProseCheck = true;
-    emit({ type: "advisory", kind: args.kind, detail: args.detail });
-    messages.push({ role: "user", origin: "engine", content: args.content });
-    await persist();
-  };
+  // The shared mechanic lives in guardrails.ts; the policy (when a correction
+  // fires, and when it stops) stays here.
+  const courseCorrect = createCourseCorrect({
+    emit,
+    messages,
+    persist: () => persist(),
+    markProseCheck: () => {
+      pendingProseCheck = true;
+    },
+  });
   let checkpointRef: string | undefined;
   let pauseRequested = false;
   if (phaseOn) {
@@ -719,12 +725,7 @@ export async function runAgent(
             await courseCorrect({
               kind: "empty_turn",
               detail: `step ${steps} returned neither text nor a tool call — asked for a real action`,
-              content:
-                "Your last turn had no visible text and no tool call, so it was not accepted. " +
-                "A reasoning-only turn does not count. Your next turn must include a tool call" +
-                (available.has("finish")
-                  ? ", or call `finish` if the work is already done."
-                  : "."),
+              content: emptyTurnNudge(available.has("finish")),
             });
             continue;
           }
@@ -746,12 +747,7 @@ export async function runAgent(
               detail:
                 `step ${steps} hit the ${maxOutputTokens}-token output cap with no tool call — ` +
                 `asked to continue instead of ending`,
-              content:
-                `Your last reply was cut off by the ${maxOutputTokens}-token output cap and had no tool call, so it was not accepted. ` +
-                `Do not rewrite it. Continue the work — your next turn must include a tool call.` +
-                (available.has("finish")
-                  ? " If the work is already complete, call `finish`."
-                  : ""),
+              content: cappedReplyNudge(maxOutputTokens ?? 0, available.has("finish")),
             });
             continue;
           }
@@ -779,11 +775,7 @@ export async function runAgent(
             detail:
               `step ${steps} replied with text and no tool call after tool work — ` +
               `asked whether the run is finished or continuing`,
-            content:
-              "You wrote a reply but did not call `finish`. If the work is complete, " +
-              "call `finish` with your outcome. If it is not complete, continue " +
-              "working — your next turn must include a tool call. If you are done " +
-              "and have nothing to add, repeat your reply and the run will end.",
+            content: proseCheckpointMessage(),
           });
           continue;
         }
@@ -803,189 +795,23 @@ export async function runAgent(
           }
         | undefined;
       let runaway = false;
-      const calls = response.toolCalls;
-      // Read-only calls are independent: several file reads / searches in one
-      // model turn should cost one round trip, not N. A mixed turn keeps the
-      // model's order — only an all-read-only turn takes the parallel path.
-      const parallelReads =
-        calls.length > 1 &&
-        calls.every((call) => available.get(call.name)?.readOnly === true) &&
-        !declared &&
-        !pauseRequested &&
-        !signal.aborted;
-      if (parallelReads) {
-        const prepared = calls.map((call) => {
-          const tool = available.get(call.name);
-          let input: Record<string, unknown> = {};
-          let invalid: string | undefined;
-          try {
-            const parsed: unknown = call.arguments.trim()
-              ? JSON.parse(call.arguments)
-              : {};
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-              throw new Error("expected a JSON object");
-            input = parsed as Record<string, unknown>;
-          } catch (err) {
-            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-          }
-          const verb = toolVerb(call.name, input, tool?.verb);
-          emit({
-            type: "tool_call",
-            name: call.name,
-            callId: call.id,
-            input,
-            verb,
-            phase,
-            step: steps,
-          });
-          const signature = `${call.name}:${call.arguments}`;
-          if (repeatLimit !== false) {
-            signatures.push(signature);
-            if (signatures.length > repeatLimit) signatures.shift();
-            runaway ||=
-              signatures.length === repeatLimit &&
-              signatures.every((value) => value === signature);
-          }
-          return { call, tool, input, invalid, verb, skipped: runaway };
-        });
-        const results = await Promise.all(
-          prepared.map(
-            async ({ tool, input, invalid, skipped }): Promise<ToolResult> => {
-              if (skipped)
-                return {
-                  ok: false,
-                  content:
-                    "Not executed: repeated identical calls reached the loop limit.",
-                };
-              if (invalid || !tool)
-                return {
-                  ok: false,
-                  content:
-                    invalid ??
-                    `unknown tool — available: ${[...available.keys()].join(", ")}`,
-                };
-              try {
-                return await tool.run(input, toolContext);
-              } catch (err) {
-                return {
-                  ok: false,
-                  content: `error: ${err instanceof Error ? err.message : String(err)}`,
-                };
-              }
-            },
-          ),
-        );
-        for (let i = 0; i < prepared.length; i++) {
-          const { call, verb } = prepared[i]!;
-          const result = results[i]!;
-          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
-          emit({
-            type: "tool_result",
-            name: call.name,
-            callId: call.id,
-            verb: result.verb ?? verb,
-            phase,
-            step: steps,
-            ok: result.ok,
-            content: result.content,
-            contentChars: result.content.length,
-            meta: result.meta,
-          });
-          messages.push(toolResultMessage(call.id, result.content));
-          emitBackground(call.name, call.id, result);
-        }
-      } else {
-        for (const call of response.toolCalls) {
-          const tool = available.get(call.name);
-          let input: Record<string, unknown> = {};
-          let invalid: string | undefined;
-          try {
-            const parsed: unknown = call.arguments.trim()
-              ? JSON.parse(call.arguments)
-              : {};
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-              throw new Error("expected a JSON object");
-            input = parsed as Record<string, unknown>;
-          } catch (err) {
-            invalid = `tool arguments are not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-          }
-          const verb = toolVerb(call.name, input, tool?.verb);
-          emit({
-            type: "tool_call",
-            name: call.name,
-            callId: call.id,
-            input,
-            verb,
-            phase,
-            step: steps,
-          });
-          const signature = `${call.name}:${call.arguments}`;
-          if (repeatLimit !== false) {
-            signatures.push(signature);
-            if (signatures.length > repeatLimit) signatures.shift();
-            runaway ||=
-              signatures.length === repeatLimit &&
-              signatures.every((value) => value === signature);
-          }
-          let result: ToolResult;
-          if (declared || pauseRequested || signal.aborted || runaway) {
-            result = {
-              ok: false,
-              content: declared
-                ? "Not executed: the turn was already concluded."
-                : pauseRequested
-                  ? "Not executed: the caller requested a pause at this phase boundary."
-                  : signal.aborted
-                    ? "Not executed: cancelled by signal."
-                    : "Not executed: repeated identical calls reached the loop limit.",
-            };
-          } else if (invalid || !tool) {
-            result = {
-              ok: false,
-              content:
-                invalid ??
-                `unknown tool "${call.name}" — available: ${[...available.keys()].join(", ")}`,
-            };
-          } else {
-            try {
-              result = await tool.run(input, toolContext);
-            } catch (err) {
-              result = {
-                ok: false,
-                content: `error: ${err instanceof Error ? err.message : String(err)}`,
-              };
-            }
-            if (call.name === "finish" && tool === finish && result.ok) {
-              const meta = result.meta ?? {};
-              const handoff = meta.handoff;
-              declared = {
-                ok: meta.success !== false,
-                summary: String(meta.summary ?? ""),
-                ...(handoff !== undefined &&
-                typeof handoff === "object" &&
-                handoff !== null
-                  ? { handoff: handoff as Record<string, unknown> }
-                  : {}),
-              };
-            }
-          }
-          evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
-          emit({
-            type: "tool_result",
-            name: call.name,
-            callId: call.id,
-            verb: result.verb ?? verb,
-            phase,
-            step: steps,
-            ok: result.ok,
-            content: result.content,
-            contentChars: result.content.length,
-            meta: result.meta,
-          });
-          messages.push(toolResultMessage(call.id, result.content));
-          emitBackground(call.name, call.id, result);
-        }
-      }
+      const outcome = await dispatchToolCalls({
+        calls: response.toolCalls,
+        available,
+        steps,
+        phase,
+        toolContext,
+        finish,
+        repeat,
+        messages,
+        evidence,
+        emit,
+        emitBackground,
+        signal,
+        pauseRequested: () => pauseRequested,
+      });
+      runaway = outcome.runaway;
+      declared = outcome.declared;
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
@@ -998,11 +824,7 @@ export async function runAgent(
           await courseCorrect({
             kind: "materialization_nudge",
             detail: `${toolOnlyNudge} consecutive tool turns with no visible text — advised a reply or a visible status`,
-            content:
-              `You have taken ${toolOnlyNudge} tool steps without writing anything visible — ` +
-              `the user cannot see your reasoning. State in one line what you found and what remains, ` +
-              `then keep moving in the same turn with your next tool call: ` +
-              `visible notes survive context folding, silent reasoning does not.`,
+            content: silentNudge(toolOnlyNudge),
           });
         }
       }
@@ -1014,27 +836,20 @@ export async function runAgent(
       // tells a thinking model to stop thinking. Fires at most once per run:
       // after that the output cap is the backstop.
       const reasoningTokens = response.usage.reasoningTokens ?? 0;
-      const visibleOutputTokens = Math.max(
-        0,
-        response.usage.completionTokens - reasoningTokens,
-      );
+      const visibleTokens = visibleOutputTokens(response.usage);
       if (
         verboseTurnLimit !== false &&
         !verboseNudged &&
-        visibleOutputTokens > verboseTurnLimit
+        visibleTokens > verboseTurnLimit
       ) {
         verboseNudged = true;
         await courseCorrect({
           kind: "verbose_turn",
           detail:
-            `step ${steps} produced ${visibleOutputTokens} visible output tokens in one turn ` +
+            `step ${steps} produced ${visibleTokens} visible output tokens in one turn ` +
             `(limit ${verboseTurnLimit}${reasoningTokens > 0 ? `, ${reasoningTokens} reasoning excluded` : ""}) — ` +
             `advised a status line and an action`,
-          content:
-            `Your last turn produced ${visibleOutputTokens} tokens of visible output without moving the work forward. ` +
-            `Stop deliberating in prose. State what you know in one line, then take the next concrete step — ` +
-            `a command or an edit. If you are stuck, say what you tried in one line and try a different approach; ` +
-            `do not re-derive what you have already established. Do not end this turn without a tool call.`,
+          content: verboseNudge(visibleTokens),
         });
       }
       await persist();
@@ -1053,19 +868,12 @@ export async function runAgent(
       if (runaway) {
         if (!loopNudged && repeatLimit !== false) {
           loopNudged = true;
-          signatures.length = 0;
+          repeat.reset();
           await courseCorrect({
             kind: "repeated_call",
             detail:
               `step ${steps}: identical tool call repeated ${repeatLimit} times — the repeat was not executed`,
-            content:
-              `This tool call was byte-for-byte the same as the previous ${repeatLimit - 1}, so it was not executed. ` +
-              `The last one already ran, and its result is in the conversation above. Running the same arguments again cannot produce a new result. ` +
-              `Use that result. If it was an edit that changed nothing, the text you tried to replace is not in the file — read the file and copy the exact text. ` +
-              `Your next action must be a different call` +
-              (available.has("finish")
-                ? ", or `finish` if the work is already done."
-                : "."),
+            content: repeatedCallNudge(repeatLimit, available.has("finish")),
           });
           continue;
         }
