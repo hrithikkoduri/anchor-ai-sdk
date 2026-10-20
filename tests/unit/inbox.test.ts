@@ -10,6 +10,8 @@ import type { AgentEvent } from "../../src/engine/events.js";
 import type { EngineOptions } from "../../src/engine/types.js";
 import { chatAgent } from "../../src/agents/chat/index.js";
 import { defineTool } from "../../src/tools/types.js";
+import { bashTool } from "../../src/tools/bash.js";
+import type { ExecResult, Sandbox } from "../../src/sandbox/types.js";
 import type { LLMClient, LLMRequest } from "../../src/llm/types.js";
 import { call, scripted, type Turn } from "../helpers/scripted.js";
 
@@ -252,6 +254,157 @@ describe("chain boundaries", () => {
 
     expect(result.reason).toBe("error");
     expect(store.pendingCount("t")).toBe(1);
+  });
+});
+
+describe("background jobs across a chain", () => {
+  const completed = (stdout = "job output\n"): ExecResult => ({
+    exitCode: 0,
+    stdout,
+    stderr: "",
+    output: stdout,
+    timedOut: false,
+    durationMs: 10,
+  });
+  const backgrounded: ExecResult = {
+    exitCode: -1,
+    stdout: "",
+    stderr: "",
+    output: "still running",
+    timedOut: false,
+    durationMs: 5_000,
+    background: { jobId: "job-1" },
+  };
+
+  it("carries a still-running job into the run an interjection starts", async () => {
+    const store = new MemoryInboxStore();
+    let polls = 0;
+    const sandbox: Sandbox = {
+      id: "sb-test",
+      backend: "fake",
+      workspace: "/workspace/repo",
+      scratch: "/workspace/.anchor",
+      start: async () => undefined,
+      exec: async (_command, opts) => (opts?.backgroundAfterSecs ? backgrounded : completed()),
+      pollJob: async () => (++polls >= 2 ? completed() : undefined),
+      killJob: async () => true,
+      checkpoint: async () => ({ sha: "0".repeat(40), message: "", at: 0 }),
+      hasChangesFrom: async () => false,
+      fork: async () => {
+        throw new Error("not supported");
+      },
+      destroy: async () => undefined,
+    };
+    const llm = model(
+      [
+        call("bash", { command: "sleep 300" }),
+        { text: "after the interjection" },
+        // The injected job result is a turn of its own: the model answers it.
+        { text: "job acknowledged" },
+      ],
+      async (n) => {
+        if (n === 1)
+          await store.push(message("t", "switch tasks", "interject"));
+      },
+    );
+
+    const result = await runAgent(
+      { task: "start" },
+      {
+        agent: chatAgent,
+        tools: [bashTool],
+        snapshot: false,
+        llm,
+        sandbox,
+        backgroundAfterSecs: 120,
+        inbox: { store, channel: "t" },
+      },
+    );
+
+    expect(result.runs?.map((run) => run.reason)).toEqual([
+      "interrupted",
+      "finished",
+    ]);
+    // The job detached in run one was polled again in run two and delivered
+    // there, without the consumer touching pendingJobs/resumeJobs.
+    expect(polls).toBeGreaterThanOrEqual(2);
+    expect(llm.seen.at(-1)!.messages.map((m) => m.content ?? "").join("\n")).toContain(
+      "Background job job-1",
+    );
+  });
+});
+
+describe("background jobs with inbox work waiting", () => {
+  it("finishes immediately and carries the job into the next run", async () => {
+    const store = new MemoryInboxStore();
+    let polls = 0;
+    const completed = (stdout = "job output\\n"): ExecResult => ({
+      exitCode: 0,
+      stdout,
+      stderr: "",
+      output: stdout,
+      timedOut: false,
+      durationMs: 10,
+    });
+    const sandbox: Sandbox = {
+      id: "sb-test",
+      backend: "fake",
+      workspace: "/workspace/repo",
+      scratch: "/workspace/.anchor",
+      start: async () => undefined,
+      exec: async (_command, opts) =>
+        opts?.backgroundAfterSecs
+          ? {
+              exitCode: -1,
+              stdout: "",
+              stderr: "",
+              output: "still running",
+              timedOut: false,
+              durationMs: 5_000,
+              background: { jobId: "job-2" },
+            }
+          : completed(),
+      pollJob: async () => (++polls >= 2 ? completed() : undefined),
+      killJob: async () => true,
+      checkpoint: async () => ({ sha: "0".repeat(40), message: "", at: 0 }),
+      hasChangesFrom: async () => false,
+      fork: async () => {
+        throw new Error("not supported");
+      },
+      destroy: async () => undefined,
+    };
+    // A queued message is waiting from the start; the run must not wait for
+    // the job before finishing.
+    await store.push(message("t", "queued task", "queue"));
+    const llm = model([
+      call("bash", { command: "sleep 300" }), // run one, turn one
+      { text: "queued answered" }, // run one ends; the job is carried
+      { text: "job acknowledged" }, // run two, which absorbs the job
+      { text: "done" },
+    ]);
+
+    const result = await runAgent(
+      { task: "start" },
+      {
+        agent: chatAgent,
+        tools: [bashTool],
+        snapshot: false,
+        llm,
+        sandbox,
+        backgroundAfterSecs: 120,
+        inbox: { store, channel: "t" },
+      },
+    );
+
+    expect(result.runs).toHaveLength(2);
+    // Run one ended without absorbing the job: run two's first call already
+    // carries the queued task as its request.
+    expect(llm.seen[2]!.messages.at(-1)!.content).toBe("queued task");
+    // Its next call carries the job result that run one handed over.
+    expect(
+      llm.seen[3]!.messages.map((m) => m.content ?? "").join("\n"),
+    ).toContain("Background job job-2");
+    expect(polls).toBeGreaterThanOrEqual(2);
   });
 });
 

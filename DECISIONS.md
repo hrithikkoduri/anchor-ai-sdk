@@ -766,6 +766,13 @@ Consequences and limits, stated so they cannot drift:
   boundary.
 - **Stop on anything that is not normal** — a pause, a cancel, an error, or an
   exhausted budget — rather than claiming work the caller did not ask for.
+- **Background work rides the chain.** A job still running when a run ends is
+  carried into the next run as `resumeJobs` automatically, so an interjection
+  neither orphans a command nor needs the consumer to hand it back. And when
+  inbox work is waiting, a finishing run does not block on its jobs at all: it
+  ends, and the next run polls them. That is what the optional
+  `InboxStore.hasPending` is for — without it the engine keeps #81's
+  wait-before-finish, because ending would lose the result.
 - **Two provenances, on purpose.** Background results (#81) are
   `origin: "engine"`: runtime-only, never persisted. Inbox messages are real
   user turns: persisted, displayable, part of `messages`. Do not unify them.

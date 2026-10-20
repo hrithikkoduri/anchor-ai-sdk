@@ -98,6 +98,8 @@ interface ChainRun {
   delivered?: InboxMessage[];
   /** Pending interjection ids, sampled at each turn boundary. */
   interrupt?: () => Promise<boolean>;
+  /** Is any inbox work pending? Lets a finishing run carry its jobs forward. */
+  hasPending?: () => Promise<boolean>;
 }
 
 async function runOne(
@@ -569,9 +571,18 @@ async function runOne(
     absorbJobs(outcome.finished, outcome.lost);
   };
 
-  /** Before finishing, wait for what is left — ending would lose it. */
+  /**
+   * Before finishing, wait for what is left — ending would lose it. Unless the
+   * inbox already guarantees another run: then the job is carried forward and
+   * the interjection is not held hostage by a long command.
+   */
   const settleBeforeFinish = async (): Promise<boolean> => {
     if (outstanding.length === 0) return false;
+    if (
+      chain.hasPending &&
+      (await chain.hasPending().catch(() => false))
+    )
+      return false;
     const outcome = await waitForBackgroundJobs(opts.sandbox, outstanding, {
       ...(signal ? { signal } : {}),
     });
@@ -1093,6 +1104,9 @@ async function runChain(
       jobs,
       delivered,
       interrupt: () => store.hasInterject(channel),
+      ...(store.hasPending
+        ? { hasPending: () => store.hasPending!(channel) }
+        : {}),
     });
 
     // The batch is settled only after the run that consumed it: a run that

@@ -59,6 +59,13 @@ export interface InboxStore {
   /** Queue one message. Duplicates are reported, not thrown. */
   push(message: InboxMessage): Promise<"queued" | "duplicate">;
   /**
+   * Is anything waiting at all? Optional: when a run is about to finish with a
+   * background job still running, the engine asks this before waiting for the
+   * job. A pending message means the chain will continue anyway, so the job can
+   * be carried into the next run instead of delaying this one.
+   */
+  hasPending?(channel: string): Promise<boolean>;
+  /**
    * Is there a pending interjection for this channel? Called at every turn
    * boundary of a run, so it must be cheap (an indexed existence check, not a
    * full scan of the inbox).
@@ -104,6 +111,10 @@ export class MemoryInboxStore implements InboxStore {
       seq: this.seq++,
     });
     return "queued";
+  }
+
+  async hasPending(channel: string): Promise<boolean> {
+    return this.pendingCount(channel) > 0;
   }
 
   async hasInterject(channel: string): Promise<boolean> {
