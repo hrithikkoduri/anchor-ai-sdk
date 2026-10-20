@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none" role="img" aria-label="Anchor">
   <title>Anchor</title>
-  <g stroke="#0F1115" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#F2592C" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="48" cy="15" r="7.5" />
     <path d="M48 22.5V78" />
     <path d="M33 35h30" />

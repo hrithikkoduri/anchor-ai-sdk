@@ -1,0 +1,594 @@
+@layer foundation, pages, readability;
+@layer readability {
+  /* Final shared type scale. Keep reading sizes independent of compact layouts:
+   mobile may reflow or scroll, but it must not shrink code and prose to fit. */
+  :root {
+    --text-body: 16px;
+    --text-small: 14px;
+    --text-meta: 12px;
+    --text-label: 11px;
+    --text-code: 13px;
+  }
+
+  /* Root-scoped so the same scale wins over page-specific breakpoint rules. */
+  #root
+    :is(
+      .hero-copy > p,
+      .capability-description > p,
+      .proof-intro p,
+      .build-section p,
+      .faq p,
+      .doc-intro > p,
+      .doc-section > p,
+      .bench-hero-copy > p,
+      .author-hero > p,
+      .author-concepts > div > p,
+      .author-next > div > p,
+      .step-explanation > p,
+      .author-section-intro
+    ) {
+    font-size: var(--text-body);
+    line-height: 1.85;
+  }
+
+  #root
+    :is(
+      .desktop-nav,
+      .github-link,
+      .button,
+      .text-link,
+      .hero-actions .text-link,
+      .capability-description .text-link,
+      .doc-inline-link,
+      .bench-results-section .doc-inline-link,
+      .author-hero-actions .text-link,
+      .author-final .doc-inline-link,
+      .capability-tabs button,
+      .secondary-features > div,
+      .secondary-features > div:first-child,
+      .cost-row,
+      .faq button,
+      .method-faq button,
+      .doc-accordion button,
+      .doc-build-link,
+      .doc-nav-group a,
+      .doc-mobile-contents .doc-nav-group a,
+      .doc-start-paths strong,
+      .doc-author-card strong,
+      .doc-contents-trigger,
+      .metric-tabs button,
+      .ledger-toolbar button,
+      .guide-waypoints,
+      .author-steps [role="tab"],
+      .loop-walkthrough [role="tab"],
+      .integration-tabs [role="tab"],
+      .complete-example button,
+      .contract-faq button,
+      .example-download a
+    ) {
+    font-size: var(--text-small);
+    line-height: 1.6;
+  }
+
+  #root
+    :is(
+      .section-heading > p,
+      .secondary-features small,
+      .doc-section .doc-small,
+      .doc-callout,
+      .doc-result > div,
+      .doc-accordion p,
+      .memory-layers p,
+      .doc-facts p,
+      .tool-grid span,
+      .doc-author-card small,
+      .doc-start-paths small,
+      .takeaway-list p,
+      .method-grid > div > p,
+      .method-faq p,
+      .reproduce-section > div > p,
+      .benchmark-cta > span,
+      .concept-list dd,
+      .loop-walkthrough p,
+      .phase-explanation p,
+      .step-explanation li,
+      .example-download > span,
+      .example-setup > p,
+      .integration-note,
+      .adapter-guide > p,
+      .adapter-guide span,
+      .adapter-guide strong,
+      .next-links span,
+      .author-final p,
+      .implementation-checklist > p,
+      .contract-faq .contract-fields p,
+      .contract-faq p
+    ) {
+    font-size: var(--text-small);
+    line-height: 1.85;
+  }
+
+  #root
+    :is(
+      .memory-layers h3,
+      .provider-list strong,
+      .doc-facts strong,
+      .evidence-receipt strong,
+      .concept-list strong,
+      .concept-list dt strong,
+      .phase-explanation strong,
+      .next-links strong
+    ) {
+    font-size: var(--text-body);
+    line-height: 1.6;
+  }
+
+  #root
+    :is(
+      .hero-meta,
+      .task-tag,
+      .loop-node,
+      .runtime-foundations > span,
+      .trace,
+      .runtime-bottom,
+      .compatibility,
+      .compatibility a,
+      .feature-tags span,
+      .demo-file,
+      .demo-key,
+      .demo-rows p,
+      .demo-event,
+      .demo-caption,
+      .benchmark-note,
+      .footer-top p,
+      .footer-top > div,
+      .footer-bottom,
+      .sidebar-source,
+      .doc-meta > span,
+      .phase-strip span,
+      .doc-flow strong,
+      .revival-diagram span,
+      .revival-diagram small,
+      .evidence-receipt span,
+      .provider-list > div > span,
+      .doc-next small,
+      .scoreboard > div > span,
+      .dashboard-bar-row > div:first-child,
+      .metric-panel > p,
+      .dashboard-bottom,
+      .benchmark-disclosure,
+      .benchmark-disclosure > p,
+      .ledger-footnote,
+      .ledger-footnote > span,
+      .ledger-footnote p,
+      .artifact-links a,
+      .agent-equation small,
+      .concept-list code,
+      .implementation-checklist > small,
+      .contract-fields code,
+      .contract-faq p > code,
+      .adapter-guide > p > code,
+      .phase-explanation code,
+      .integration-note code,
+      .tooltip
+    ) {
+    font-size: var(--text-meta);
+    line-height: 1.8;
+  }
+
+  #root
+    :is(
+      .release,
+      .runtime-top,
+      .tiny-label,
+      .loop-label,
+      .return-path,
+      .trace-label,
+      .trace-receipt,
+      .runtime-caption,
+      .eyebrow,
+      .compatibility > span:first-child,
+      .demo-flag,
+      .line-number,
+      .resolution > span,
+      .cost-label,
+      .cost-label > span:last-child,
+      .build-section .eyebrow,
+      .build-footnote,
+      .code-language,
+      .doc-intro .eyebrow,
+      .doc-sidebar-label,
+      .doc-nav-group > span,
+      .doc-section-title > span,
+      .doc-result .eyebrow,
+      .budget-strip span,
+      .doc-flow span,
+      .bench-hero .eyebrow,
+      .round-tag,
+      .round-tag > span:last-child,
+      .dashboard-title,
+      .dashboard-status,
+      .metric-unit,
+      .benchmark-disclosure > span,
+      .ledger-toolbar > div,
+      .ledger-toolbar > div > span:last-child,
+      .takeaway-list > div > span,
+      .guide-back,
+      .agent-equation > div > span,
+      .guide-waypoints span,
+      .loop-walkthrough [role="tab"] > span,
+      .example-badge,
+      .author-steps [role="tab"] > span,
+      .implementation-checklist > span,
+      .contract-fields span,
+      .doc-start-paths > a > span
+    ) {
+    font-size: var(--text-label);
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+  }
+
+  #root
+    :is(
+      .install,
+      .doc-install code,
+      .code-window pre,
+      .doc-code pre,
+      .reproduce-section .doc-code pre,
+      .author-steps .doc-code pre,
+      .loop-walkthrough pre,
+      .doc-section code,
+      .doc-callout code,
+      .doc-result code,
+      .evidence-receipt code,
+      .doc-facts code,
+      .provider-list code,
+      .tool-grid code
+    ) {
+    font-size: var(--text-code);
+    line-height: 1.9;
+  }
+  #root .code-window pre code {
+    font: inherit;
+  }
+  #root :is(.code-header, .code-footer) {
+    font-size: var(--text-meta);
+    line-height: 1.8;
+  }
+
+  #root
+    :is(
+      .ledger,
+      .ledger th,
+      .ledger td,
+      .ledger tbody th,
+      .ledger thead th,
+      .ledger tfoot th,
+      .ledger tfoot td,
+      .full-ledger thead tr:nth-child(2) th,
+      .ledger .outcome
+    ) {
+    font-size: var(--text-meta);
+    line-height: 1.7;
+  }
+  #root .ledger {
+    min-width: 950px;
+  }
+  #root .full-ledger {
+    min-width: 1550px;
+  }
+
+  /* Better contrast for text people need to read, not just decoration. */
+  #root
+    :is(
+      .hero-copy > p,
+      .capability-description > p,
+      .doc-section > p,
+      .doc-section .doc-small,
+      .memory-layers p,
+      .concept-list dd,
+      .step-explanation > p,
+      .author-section-intro,
+      .takeaway-list p,
+      .faq p,
+      .phase-explanation p,
+      .adapter-guide > p,
+      .next-links span,
+      .contract-faq .contract-fields p
+    ) {
+    color: #626d58;
+  }
+  #root
+    :is(
+      .benchmark-note,
+      .benchmark-disclosure,
+      .ledger-footnote,
+      .ledger tbody th,
+      .ledger td,
+      .implementation-checklist > p,
+      .implementation-checklist > small,
+      .example-setup > p
+    ) {
+    color: #68785b;
+  }
+  #root .outcome.unresolved {
+    color: #7a806e;
+  }
+  #root :is(.build-section p, .method-faq p, .method-grid > div > p) {
+    color: #bac6af;
+  }
+  #root :is(.metric-panel > p, .dashboard-bottom) {
+    color: #afc29b;
+  }
+  #root .syntax-muted {
+    color: #9ba990;
+  }
+
+  /* Let the enlarged text reflow instead of squeezing it back down. */
+  #root
+    :is(.hero-actions, .hero-meta, .feature-tags, .footer-bottom, .footer-top) {
+    flex-wrap: wrap;
+  }
+  #root :is(.cost-label, .trace-label, .runtime-top) {
+    gap: 10px;
+    flex-wrap: wrap;
+    height: auto;
+  }
+  #root .runtime-top {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  #root .runtime-task p {
+    font-size: var(--text-small);
+    line-height: 1.7;
+  }
+  #root .runtime-caption {
+    max-width: 100%;
+    text-align: right;
+  }
+  #root .trace > div:not(:first-child) {
+    flex-wrap: wrap;
+    gap: 8px;
+    line-height: 1.9;
+  }
+  #root .trace-key {
+    width: auto;
+    min-width: 65px;
+  }
+  #root .compatibility {
+    flex-wrap: wrap;
+    gap: 22px;
+  }
+  #root .capability-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  #root .demo-file {
+    flex-wrap: wrap;
+  }
+  #root .doc-start-paths > a {
+    min-width: 0;
+  }
+  #root .doc-flow strong {
+    max-width: none;
+  }
+  #root .budget-strip span {
+    overflow-wrap: anywhere;
+  }
+  #root .revival-diagram > div {
+    min-width: 0;
+  }
+  #root .dashboard-title {
+    flex-wrap: wrap;
+  }
+  #root .metric-panel {
+    min-height: 270px;
+  }
+  #root .ledger-toolbar {
+    flex-wrap: wrap;
+  }
+  #root .example-download {
+    flex-wrap: wrap;
+  }
+  #root .agent-equation small {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 1100px) {
+    #root .capability-tabs button {
+      gap: 7px;
+      font-size: 13px;
+    }
+    #root .secondary-features {
+      gap: 15px;
+    }
+  }
+  @media (max-width: 800px) {
+    #root :is(.desktop-nav, .github-link) {
+      display: none;
+    }
+    #root .mobile-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 9px 12px;
+      font: 13px var(--mono);
+    }
+    #root .mobile-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 0 32px 22px;
+      font-size: 15px;
+    }
+    #root .capability-panel {
+      grid-template-columns: 1fr;
+      gap: 26px;
+    }
+    #root .capability-description > p {
+      max-width: 100%;
+    }
+    #root .secondary-features {
+      grid-template-columns: 1fr;
+    }
+    #root .secondary-features > div {
+      border: 0;
+      padding: 14px 0;
+    }
+    #root .loop-walkthrough [role="tab"] {
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+    #root .loop-walkthrough [role="tab"] > svg {
+      display: none;
+    }
+    #root .author-steps [role="tab"] {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+  @media (max-width: 600px) {
+    :root {
+      --text-body: 15px;
+      --text-code: 12px;
+    }
+    #root .capability-tabs {
+      grid-template-columns: 1fr 1fr;
+    }
+    #root .capability-tabs button {
+      flex-direction: row;
+      padding: 13px 8px;
+    }
+    #root .runtime-caption {
+      position: static;
+      margin: 12px 12px 0;
+      padding-bottom: 12px;
+      justify-content: flex-end;
+    }
+    #root .hero-meta {
+      gap: 8px 12px;
+    }
+    #root .install {
+      max-width: 100%;
+    }
+    #root .compatibility {
+      gap: 15px;
+    }
+    #root .compatibility > div:first-of-type {
+      width: auto;
+    }
+    #root .proof-numbers {
+      grid-template-columns: 1fr;
+      gap: 25px;
+    }
+    #root .resolution {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0 0 20px;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #root .cost-label {
+      flex-direction: row;
+    }
+    #root .doc-flow {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 20px;
+    }
+    #root .doc-flow > svg {
+      transform: rotate(90deg);
+      align-self: center;
+    }
+    #root .doc-flow strong {
+      font-size: var(--text-small);
+    }
+    #root .doc-flow span {
+      font-size: var(--text-label);
+    }
+    #root .revival-diagram {
+      flex-direction: column;
+      gap: 12px;
+    }
+    #root .revival-diagram > div {
+      width: 100%;
+      padding: 16px;
+    }
+    #root .revival-diagram > svg {
+      transform: rotate(90deg);
+    }
+    #root .phase-strip {
+      justify-content: flex-start;
+      gap: 12px;
+    }
+    #root .phase-strip span {
+      font-size: var(--text-meta);
+    }
+    #root .doc-facts {
+      grid-template-columns: 1fr;
+    }
+    #root .doc-result > div {
+      grid-template-columns: 90px minmax(0, 1fr);
+    }
+    #root .doc-next strong {
+      font-size: var(--text-small);
+    }
+    #root .loop-walkthrough [role="tab"] {
+      font-size: var(--text-meta);
+    }
+    #root .author-steps [role="tab"] {
+      font-size: var(--text-meta);
+    }
+    #root .agent-equation {
+      flex-direction: column;
+    }
+    #root .agent-equation > svg {
+      transform: rotate(90deg);
+    }
+    #root .adapter-guide > div > div {
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+    #root .adapter-guide > div > div > svg {
+      transform: rotate(90deg);
+    }
+    #root .example-badge {
+      max-width: none;
+    }
+    #root .author-final {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  /* Documentation is a workspace, not a second marketing landing page. */
+  #root .doc-intro h1 {
+    font-size: 36px;
+    letter-spacing: -1px;
+    line-height: 1.2;
+    margin: 0 0 14px;
+  }
+  #root .doc-intro > p {
+    max-width: 620px;
+  }
+  #root .doc-meta {
+    margin-top: 15px;
+    gap: 8px 18px;
+  }
+  #root .doc-meta > span {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: #68785b;
+  }
+  @media (max-width: 480px) {
+    #root .doc-intro h1 {
+      font-size: 30px;
+    }
+  }
+}
