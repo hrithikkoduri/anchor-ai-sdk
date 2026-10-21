@@ -36,7 +36,7 @@ import {
   type InboxMessage,
   type RunSummary,
 } from "./inbox.js";
-import { defineTool } from "../tools/types.js";
+import { defineTool, type Tool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
@@ -46,7 +46,17 @@ import {
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
 import type { EventSink, RevivalRequest } from "./events.js";
-import { dispatchToolCalls } from "./dispatch.js";
+import {
+  dispatchToolCalls,
+  type OperationRuntime,
+} from "./dispatch.js";
+import {
+  mintOperationId,
+  reconcilePendingOperations,
+  settleFromResult,
+  type PendingOperation,
+  type ReconcileOutcome,
+} from "./operations.js";
 import {
   RepeatTracker,
   cappedReplyNudge,
@@ -254,6 +264,12 @@ async function runOne(
     ...(opts.resumeJobs ?? []),
     ...(chain.jobs ?? []),
   ];
+  /**
+   * External operations recovery could not resolve. When non-empty, the run
+   * never reaches a model call: replaying an ambiguous write is worse than
+   * stopping. Reported as `reason: "recovery_required"`.
+   */
+  const unresolvedOperations: PendingOperation[] = [];
   // Thresholds that double as switches (`number | false`) must be positive
   // when numeric. 0 is not "off" — `false` is — and left alone it would mean
   // "immediately" for the nudges while meaning "uncapped" for the caps.
@@ -299,6 +315,92 @@ async function runOne(
   let silentToolTurns = 0;
   let steps = 0;
   const stepsBefore = chain.stepsBefore ?? 0;
+  // Recovery for tools that declare an external effect. Scope defaults to the
+  // thread; a store without either is a wiring bug, not a silent no-op.
+  const operations = opts.operations;
+  const operationScope = operations
+    ? (operations.scope ?? opts.thread?.id)
+    : undefined;
+  if (operations && operationScope === undefined)
+    throw new Error(
+      "anchor: operations.scope is required when the run has no thread id",
+    );
+  const operationCalls = new Map<string, { name: string; callId?: string }>();
+  const missingJournal = new Set<string>();
+  const onMissingJournal = (tool: Tool): void => {
+    const name = tool.definition.name;
+    if (missingJournal.has(name)) return;
+    missingJournal.add(name);
+    emit({
+      type: "advisory",
+      kind: "effect_without_journal",
+      detail:
+        `tool "${name}" declares an external effect, but no operations store is configured — ` +
+        "a crash between the write and its result can repeat it. Pass EngineOptions.operations.",
+    });
+  };
+  const operationRuntime: OperationRuntime | undefined =
+    operations && operationScope !== undefined
+      ? (() => {
+          const { store } = operations;
+          return {
+            async begin(call, input, tool) {
+              const keyed = tool.effect?.key?.(input);
+              const operationId =
+                keyed !== undefined && keyed.trim() !== ""
+                  ? keyed
+                  : mintOperationId();
+              const started = await store.begin({
+                operationId,
+                scope: operationScope,
+                tool: call.name,
+                input,
+                status: "intent",
+                startedAt: Date.now(),
+              });
+              operationCalls.set(operationId, {
+                name: call.name,
+                ...(call.id ? { callId: call.id } : {}),
+              });
+              return { operationId, started };
+            },
+            async acknowledge(operationId, ack) {
+              try {
+                await store.acknowledge(operationId, ack);
+              } catch {
+                /* acceptance is a fact even when the journal is unavailable */
+              }
+              const recordedCall = operationCalls.get(operationId);
+              emit({
+                type: "tool_ack",
+                name: recordedCall?.name ?? "unknown",
+                ...(recordedCall?.callId
+                  ? { callId: recordedCall.callId }
+                  : {}),
+                operationId,
+                phase,
+                step: steps,
+                ack,
+              });
+            },
+            async settle(operationId, result) {
+              try {
+                await store.settle(operationId, settleFromResult(result));
+                return true;
+              } catch (err) {
+                emit({
+                  type: "advisory",
+                  kind: "operation_settle_failed",
+                  detail:
+                    `could not record the result of operation ${operationId}: ` +
+                    (err instanceof Error ? err.message : String(err)),
+                });
+                return false;
+              }
+            },
+          };
+        })()
+      : undefined;
   // #78: the engine asked the model for something visible and the model
   // answered in prose and stopped. That is a checkpoint, not a result. Scoped
   // to nudges on purpose: an ordinary prose ending after tool work is the
@@ -320,7 +422,9 @@ async function runOne(
   const courseCorrect = createCourseCorrect({
     emit,
     messages,
-    persist: () => persist(),
+    persist: async () => {
+      await persist();
+    },
     markProseCheck: () => {
       pendingProseCheck = true;
     },
@@ -436,15 +540,37 @@ async function runOne(
     );
   }
 
-  const persist = async (done = false, resumePhase?: string) => {
+  /**
+   * Settle operations only AFTER the conversation that contains their results
+   * is durable. The opposite order opens the window this whole layer exists to
+   * close: a settled journal entry with no result in the thread, which the next
+   * run would have to replay. A failed save leaves them pending instead.
+   */
+  const pendingSettlements: Array<{
+    operationId: string;
+    result: ToolResult;
+  }> = [];
+  const settleRecorded = async (persisted: boolean): Promise<void> => {
+    if (!operationRuntime || !persisted) return;
+    while (pendingSettlements.length > 0) {
+      const settled = pendingSettlements.shift()!;
+      await operationRuntime.settle(settled.operationId, settled.result);
+    }
+  };
+  const persist = async (
+    done = false,
+    resumePhase?: string,
+  ): Promise<boolean> => {
     try {
       await opts.thread?.store.save(opts.thread.id, {
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
       });
+      return true;
     } catch {
       /* a storage outage must not corrupt the model/tool protocol */
+      return false;
     }
   };
   const conclude = async (
@@ -507,12 +633,13 @@ async function runOne(
       reason,
       ...(extra.handoff !== undefined ? { handoff: extra.handoff } : {}),
     });
-    await persist(
+    const persisted = await persist(
       reason !== "paused",
       extra.handoff !== undefined
         ? opts.handoff?.threadPhase?.(extra.handoff)
         : undefined,
     );
+    await settleRecorded(persisted);
     // Every exit passes through here: stop beating, unlink the caller's
     // signal, and make sure the sinks hold the complete journal — including
     // this run_finished — before the caller sees the result.
@@ -531,6 +658,9 @@ async function runOne(
         ? { revival: revivalRequest }
         : {}),
       ...(outstanding.length > 0 ? { pendingJobs: [...outstanding] } : {}),
+      ...(unresolvedOperations.length > 0
+        ? { pendingOperations: [...unresolvedOperations] }
+        : {}),
     };
   };
 
@@ -633,6 +763,66 @@ async function runOne(
       })),
     });
   emit({ type: "phase_started", phase });
+  // Resume recovery runs BEFORE the first model call: an effect that may have
+  // landed must never be replayed, and one that did land must be visible to the
+  // model. An unknowable outcome stops the run instead of guessing.
+  if (operations && operationScope !== undefined) {
+    let outcomes: ReconcileOutcome[];
+    try {
+      outcomes = await reconcilePendingOperations({
+        store: operations.store,
+        scope: operationScope,
+        tools: [...available.values()],
+        context: toolContext,
+      });
+    } catch (err) {
+      return conclude("error", {
+        ok: false,
+        error:
+          "anchor: could not read pending operations — refusing to start " +
+          `(${err instanceof Error ? err.message : String(err)})`,
+      });
+    }
+    for (const outcome of outcomes) {
+      emit({
+        type: "reconciled",
+        operationId: outcome.operation.operationId,
+        tool: outcome.operation.tool,
+        status: outcome.status,
+        ...(outcome.detail ? { detail: outcome.detail } : {}),
+      });
+      if (outcome.status === "applied") {
+        messages.push({
+          role: "user",
+          origin: "runtime",
+          content:
+            `[runtime] Operation ${outcome.operation.operationId} ` +
+            `(${outcome.operation.tool}) was already applied before this run resumed.` +
+            (outcome.result?.content ? `\n${outcome.result.content}` : ""),
+        });
+      } else if (outcome.status === "not_applied") {
+        messages.push({
+          role: "user",
+          origin: "runtime",
+          content:
+            `[runtime] Operation ${outcome.operation.operationId} ` +
+            `(${outcome.operation.tool}) was NOT applied. It is safe to perform ` +
+            "the action again if it is still needed.",
+        });
+      } else {
+        unresolvedOperations.push(outcome.operation);
+      }
+    }
+    if (unresolvedOperations.length > 0) {
+      return conclude("recovery_required", {
+        ok: false,
+        error:
+          `anchor: ${unresolvedOperations.length} external operation(s) have an unknown outcome ` +
+          `(${unresolvedOperations.map((operation) => operation.operationId).join(", ")}). ` +
+          "They were not replayed. Reconcile them, then run again.",
+      });
+    }
+  }
   try {
     for (;;) {
       if (signal.aborted)
@@ -944,12 +1134,15 @@ async function runOne(
         evidence,
         emit,
         emitBackground,
+        ...(operationRuntime ? { operations: operationRuntime } : {}),
+        onMissingJournal,
         signal,
         pauseRequested: () => pauseRequested,
       });
       runaway = outcome.runaway;
       declared = outcome.declared;
       outstanding.push(...outcome.jobs);
+      pendingSettlements.push(...outcome.settlements);
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
@@ -990,7 +1183,8 @@ async function runOne(
           content: verboseNudge(visibleTokens),
         });
       }
-      await persist();
+      const persisted = await persist();
+      await settleRecorded(persisted);
       if (signal.aborted)
         return conclude("cancelled", {
           ok: false,

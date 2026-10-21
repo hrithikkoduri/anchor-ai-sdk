@@ -919,3 +919,60 @@ named, and `provider` when a gateway sends one, so the next run can prove
 what served it instead of inferring from the bill.
 
 Regressions: `tests/unit/llm.test.ts`.
+
+## Decision #83: External effects get a write-ahead operation journal
+
+A run persisted the conversation only after a whole tool batch finished, so a
+worker that died between an external write and that save left no trace of the
+write in the thread. Recovery read the missing result as "not done" and could
+repeat it (a second issue, refund, or message). The trace had intent
+(`tool_call`) and observed result (`tool_result`) adjacent, but no record the
+harness could read back, and no stable identity the target could use to
+recognize a retry.
+
+Tools that change something outside the workspace now declare
+`Tool.effect`. The engine then:
+
+1. mints an `operationId` (or uses `effect.key(input)` for a domain key),
+2. calls `OperationStore.begin()` — durable — BEFORE the tool runs,
+3. passes `context.operationId` to the tool, which forwards it as the target's
+   idempotency key, and offers `context.acknowledge()` for acceptance facts,
+4. calls `settle()` with the observed outcome — but only AFTER the conversation
+   containing that result is durable. A failed thread save leaves the operation
+   pending for the next run, rather than settled with no result the model can
+   see.
+
+`OperationStore` is the consumer's storage, like `ThreadStore` and
+`InboxStore`; `MemoryOperationStore` ships for tests. `EngineOptions.operations`
+is opt-in. Without it, effectful tools still run and emit one
+`effect_without_journal` advisory — no breaking change, no crash protection.
+`MemoryOperationStore` is not crash-durable; production consumers bring a
+database (a unique `operation_id` column and an idempotent insert).
+
+On resume, pending operations are reconciled BEFORE the first model call. The
+tool's `effect.reconcile()` answers applied / not applied / unknown:
+
+- **applied** → settle as completed and tell the model (runtime message);
+- **not applied** → settle as failed; redoing the action is safe;
+- **unknown** → stop with `reason: "recovery_required"`, report
+  `AgentResult.pendingOperations`, and make NO model call. An ambiguous write
+  is never replayed silently.
+
+`ToolResult.completion: "unknown"` marks a result whose effect may have landed
+(a lost response, or a failed settle). The trace now records intent
+(`tool_call` + `operationId`), acknowledgement (`tool_ack`), observed result
+(`tool_result` + `outcome`), and recovery (`reconciled`). Trace sinks remain
+best-effort; the operation store is the authoritative record.
+
+The honest guarantee is **effectively-once within the target's idempotency
+window**. A target with a unique constraint or idempotency key gets dedupe for
+free; a target with a status lookup gets reconciliation; a target with neither
+gets a detected unknown, not a duplicate. "Not found" is not treated as "not
+applied" unless the tool says so — eventual consistency is the tool's call.
+
+A journal write failure fails closed: a mutating call does not run if its
+intent cannot be recorded, and a failed settle marks the result unknown. A
+repeated domain key (`effect.key`) is not executed twice: `begin()` returns
+false and the call reports that the operation is already recorded.
+
+Regressions: `tests/unit/operation-recovery.test.ts`.

@@ -50,4 +50,10 @@ export {
   requireSandbox,
   requireString,
 } from "./types.js";
-export type { Tool, ToolContext, ToolDefinition, ToolResult } from "./types.js";
+export type {
+  Tool,
+  ToolContext,
+  ToolDefinition,
+  ToolEffect,
+  ToolResult,
+} from "./types.js";

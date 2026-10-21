@@ -283,6 +283,7 @@ Validate inputs and enforce permissions in your implementation.
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |
 | **Streaming and traces** | Raw `onEvent` updates; sequenced, pattern-redacted `traceSinks`; NDJSON files, custom sinks, live projection, and replay. |
 | **Execution evidence** | Tool names/status/metadata plus recorded test-command outcomes and optional post-run Git freshness checks. Your app defines verification and release gates. |
+| **External effects** | Declared effects, a write-ahead operation journal, stable operation ids, reconciliation on resume, and a stop on unknown outcomes. |
 
 <details>
 <summary><strong>Example: limits, nudges, compaction, and a recorded trace</strong></summary>
@@ -330,6 +331,45 @@ are not redacted. Use distinct trace files/IDs per run in your application.
 > command outcome and, when available, a Git hash captured **after** the command.
 > `latestEvidenceForTree` can compare it with the current tree, but does not prove
 > an immutable tested snapshot, require a full suite, or inspect assertions.
+
+## Recovering external writes
+
+A crash between "the target accepted the write" and "the thread saved the
+result" must not become a duplicate write. A tool that changes something outside
+the workspace declares an effect; the engine then records the intent before the
+call and settles it after:
+
+```js
+const createIssue = defineTool({ name: "create_issue", /* ... */ }, async (input, ctx) => {
+  const issue = await github.createIssue(input, {
+    idempotencyKey: ctx.operationId, // stable across retries
+  });
+  await ctx.acknowledge?.({ issue: issue.number });
+  return { ok: true, content: `Created #${issue.number}` };
+}, {
+  effect: {
+    async reconcile({ operationId }) {
+      const found = await github.findByKey(operationId);
+      return found
+        ? { status: "applied", result: { ok: true, content: found.url } }
+        : { status: "unknown" };
+    },
+  },
+});
+
+await runAgent(task, {
+  llm, agent, sandbox,
+  operations: { store }, // a durable table in production
+});
+```
+
+On resume, a pending operation is reconciled, never replayed. An unknowable
+outcome ends the run with `reason: "recovery_required"` and
+`AgentResult.pendingOperations`. `MemoryOperationStore` is for tests; production
+needs a durable table with a unique `operation_id`. The target's participation
+(an idempotency key or a status lookup) is what turns this into
+effectively-once; without it, the harness surfaces the ambiguity instead of
+guessing.
 
 ## Test the machine contract
 

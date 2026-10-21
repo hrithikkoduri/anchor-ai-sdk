@@ -25,6 +25,28 @@ export interface DeclaredOutcome {
   handoff?: Record<string, unknown>;
 }
 
+/**
+ * The engine's write-ahead hook for tools that declare an `effect`. Dispatch
+ * owns the ordering (begin → run → settle); the loop owns ids, storage, and
+ * events. Kept as an interface so dispatch never learns about the store.
+ */
+export interface OperationRuntime {
+  /**
+   * Record the intent and return its operation id. Must be durable. `started`
+   * is false when the id already existed (a repeated domain key): the effect
+   * must not run a second time.
+   */
+  begin(
+    call: LLMToolCall,
+    input: Record<string, unknown>,
+    tool: Tool,
+  ): Promise<{ operationId: string; started: boolean }>;
+  /** Record that the target accepted the request. */
+  acknowledge(operationId: string, ack: Record<string, unknown>): Promise<void>;
+  /** Close the operation. False when the journal write failed. */
+  settle(operationId: string, result: ToolResult): Promise<boolean>;
+}
+
 export interface ToolDispatchArgs {
   calls: LLMToolCall[];
   available: Map<string, Tool>;
@@ -42,6 +64,10 @@ export interface ToolDispatchArgs {
     callId: string | undefined,
     result: ToolResult,
   ) => void;
+  /** Present when the run has an operation store; absent keeps today's path. */
+  operations?: OperationRuntime;
+  /** Called once per effectful tool when no store is configured. */
+  onMissingJournal?: (tool: Tool) => void;
   signal?: AbortSignal;
   /** Read live: a `pause` tool sets it during this very dispatch. */
   pauseRequested: () => boolean;
@@ -53,6 +79,12 @@ export interface ToolDispatchOutcome {
   declared?: DeclaredOutcome;
   /** Commands this turn detached; the loop polls them from now on. */
   jobs: BackgroundJob[];
+  /**
+   * Completed effectful calls. The loop settles them AFTER the conversation is
+   * durable, so a crash can never leave a settled journal entry whose result
+   * the next run cannot see.
+   */
+  settlements: Array<{ operationId: string; result: ToolResult }>;
 }
 
 /** Parse a call's arguments; an invalid JSON payload is a tool result, not a throw. */
@@ -128,10 +160,15 @@ export async function dispatchToolCalls(
   let declared: DeclaredOutcome | undefined;
   let runaway = false;
   const jobs: BackgroundJob[] = [];
+  const settlements: Array<{ operationId: string; result: ToolResult }> = [];
 
   const parallelReads =
     calls.length > 1 &&
-    calls.every((call) => available.get(call.name)?.readOnly === true) &&
+    calls.every((call) => {
+      const tool = available.get(call.name);
+      // An effectful call journals before it runs; keep that serial and ordered.
+      return tool?.readOnly === true && tool.effect === undefined;
+    }) &&
     !declared &&
     !args.pauseRequested() &&
     !signal?.aborted;
@@ -140,16 +177,24 @@ export async function dispatchToolCalls(
     call: LLMToolCall,
     verb: string | undefined,
     result: ToolResult,
+    operationId?: string,
   ): void => {
     evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
     emit({
       type: "tool_result",
       name: call.name,
       callId: call.id,
+      ...(operationId ? { operationId } : {}),
       verb: result.verb ?? verb,
       phase,
       step: steps,
       ok: result.ok,
+      outcome:
+        result.completion === "unknown"
+          ? "unknown"
+          : result.ok
+            ? "completed"
+            : "failed",
       content: result.content,
       contentChars: result.content.length,
       meta: result.meta,
@@ -220,26 +265,58 @@ export async function dispatchToolCalls(
       const { call, verb } = prepared[i]!;
       emitResult(call, verb, results[i]!);
     }
-    return { runaway, jobs, ...(declared ? { declared } : {}) };
+    return { runaway, jobs, settlements, ...(declared ? { declared } : {}) };
   }
 
   for (const call of calls) {
     const tool = available.get(call.name);
     const { input, invalid } = parseInput(call);
     const verb = toolVerb(call.name, input, tool?.verb);
+    if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
+    const skipped =
+      declared !== undefined ||
+      args.pauseRequested() ||
+      signal?.aborted === true ||
+      runaway;
+
+    // Write-ahead: an effectful call records its intent BEFORE it runs, so a
+    // crash between the target's write and our result leaves a pending record
+    // instead of a silent replay. A journal failure fails closed.
+    let operationId: string | undefined;
+    let operationStarted = false;
+    let operationError: string | undefined;
+    if (!skipped && invalid === undefined && tool?.effect) {
+      if (args.operations) {
+        try {
+          const begun = await args.operations.begin(call, input, tool);
+          operationId = begun.operationId;
+          operationStarted = begun.started;
+          if (!begun.started)
+            operationError =
+              `Not executed: operation ${begun.operationId} is already recorded — ` +
+              "reconcile or resolve it instead of repeating the effect.";
+        } catch (err) {
+          operationError =
+            `Not executed: could not record the operation before running it (${err instanceof Error ? err.message : String(err)}).`;
+        }
+      } else {
+        args.onMissingJournal?.(tool);
+      }
+    }
+
     emit({
       type: "tool_call",
       name: call.name,
       callId: call.id,
+      ...(operationId ? { operationId } : {}),
       input,
       verb,
       phase,
       step: steps,
     });
-    if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
 
     let result: ToolResult;
-    if (declared || args.pauseRequested() || signal?.aborted || runaway) {
+    if (skipped) {
       result = {
         ok: false,
         content: declared
@@ -250,10 +327,21 @@ export async function dispatchToolCalls(
               ? "Not executed: cancelled by signal."
               : "Not executed: repeated identical calls reached the loop limit.",
       };
+    } else if (operationError) {
+      result = { ok: false, content: operationError };
     } else if (invalid) {
       result = { ok: false, content: invalid };
     } else {
-      const outcome = await invoke(tool, call.name, input, toolContext, available);
+      const callContext: ToolContext =
+        operationId && args.operations
+          ? {
+              ...toolContext,
+              operationId,
+              acknowledge: (ack) =>
+                args.operations!.acknowledge(operationId!, ack),
+            }
+          : toolContext;
+      const outcome = await invoke(tool, call.name, input, callContext, available);
       if ("invalid" in outcome) {
         result = { ok: false, content: outcome.invalid };
       } else {
@@ -273,8 +361,17 @@ export async function dispatchToolCalls(
         }
       }
     }
-    emitResult(call, verb, result);
+    // Close the operation. A journal failure here is the same ambiguity as a
+    // crash: the effect may have landed, the record did not. Say so.
+    if (operationId && operationStarted && args.operations)
+      settlements.push({ operationId, result });
+    emitResult(call, verb, result, operationId);
   }
 
-  return { runaway, jobs, ...(declared ? { declared } : {}) };
+  return {
+    runaway,
+    jobs,
+    settlements,
+    ...(declared ? { declared } : {}),
+  };
 }

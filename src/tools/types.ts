@@ -28,6 +28,19 @@ export interface ToolContext {
    */
   sandbox?: Sandbox;
   /**
+   * Stable identity for THIS effect, minted before the call and preserved
+   * across crashes/retries. Forward it to the target as its idempotency key
+   * (an `Idempotency-Key` header, a unique column, a metadata field). Absent
+   * when the tool declares no `effect` or the run has no operation store.
+   */
+  operationId?: string;
+  /**
+   * Record that the target ACCEPTED the request, before the observed result is
+   * known (a 202, a job id, a message id). Best-effort: a store outage must not
+   * turn an accepted write into a failed one.
+   */
+  acknowledge?: (ack: Record<string, unknown>) => Promise<void>;
+  /**
    * The consumer's background threshold. When set, tools that can detach a
    * long command (bash) return control at this point and hand the job to the
    * harness, which delivers the completion as a later turn. Unset = stay
@@ -92,10 +105,43 @@ export interface ToolResult {
   ok: boolean;
   /** Text that goes back to the model — already truncated. */
   content: string;
+  /**
+   * `"unknown"` means the effect MAY or MAY NOT have landed (the request was
+   * sent and the response was lost). It is not a failure and must never be
+   * retried automatically. Default: `"observed"`.
+   */
+  completion?: "observed" | "unknown";
   /** Structured data for the trace; never sent to the model. */
   meta?: Record<string, unknown>;
   /** Human-readable activity label for traces and chat, e.g. "Reading README.md". */
   verb?: string;
+}
+
+/** What a target needs in order to survive a crash between effect and result. */
+export interface ToolEffect {
+  /**
+   * A stable key for the intended effect, derived from the input (e.g.
+   * `refund:order_123`). Default: a fresh UUID per call. Use a derived key
+   * when the same business action can be attempted from another run.
+   */
+  key?: (input: Record<string, unknown>) => string;
+  /** Retrying with the same `operationId` is safe: the target dedupes it. */
+  idempotent?: boolean;
+  /**
+   * Ask the target whether a pending operation from a crashed run landed.
+   * Called on resume, before the first model turn. Returning `"unknown"` is
+   * always correct when the target cannot answer definitively — the engine
+   * then stops instead of replaying the write.
+   */
+  reconcile?: (args: {
+    operationId: string;
+    input: Record<string, unknown>;
+    ctx: ToolContext;
+  }) => Promise<
+    | { status: "applied"; result?: ToolResult }
+    | { status: "not_applied" }
+    | { status: "unknown"; detail?: string }
+  >;
 }
 
 export interface Tool {
@@ -113,6 +159,13 @@ export interface Tool {
    * see `execPolicy` for the decision. `bash` sets it.
    */
   background?: boolean;
+  /**
+   * Declares an EXTERNAL effect (a write outside the workspace). The engine
+   * then journals the intent before running the tool and settles it after, when
+   * an `OperationStore` is configured. Tools without `effect` keep today's
+   * behavior exactly: no journal, no operation id.
+   */
+  effect?: ToolEffect;
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -123,7 +176,7 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb" | "readOnly" | "background"> = {},
+  options: Pick<Tool, "verb" | "readOnly" | "background" | "effect"> = {},
 ): Tool {
   return {
     definition,

@@ -9,6 +9,7 @@ import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
 import type { InboxMessage, InboxStore, RunSummary } from "./inbox.js";
+import type { OperationStore, PendingOperation } from "./operations.js";
 
 export interface RunTask {
   task: string;
@@ -163,6 +164,23 @@ export interface EngineOptions {
     /** Build the next run's task from a claimed batch. Default joins text. */
     render?: (messages: InboxMessage[]) => { task: string; context?: string };
   };
+  /**
+   * Durable recovery for tools that declare an `effect` (external writes).
+   * The engine records the intent BEFORE the tool runs, mints an
+   * `operationId` the tool forwards as an idempotency key, and settles the
+   * record after. On resume, pending operations are reconciled; an ambiguous
+   * outcome stops the run with `reason: "recovery_required"` instead of being
+   * replayed. Absent: effectful tools still run, with an advisory (today's
+   * behavior, no crash protection).
+   *
+   * The store is the consumer's. `scope` defaults to the thread id; one of the
+   * two is required when a store is supplied.
+   */
+  operations?: {
+    store: OperationStore;
+    /** Recovery scope — usually the thread id. Default: `thread.id`. */
+    scope?: string;
+  };
 }
 
 /** What a snapshot produced — the engine reports it, never interprets it. */
@@ -230,7 +248,14 @@ export type FinishReason =
    * continues with the message it claimed; a standalone run (no inbox) never
    * reports this.
    */
-  | "interrupted";
+  | "interrupted"
+  /**
+   * Recovery found an operation whose outcome is unknown (a crash between the
+   * external write and its result). The run stops BEFORE the next model turn,
+   * so the write cannot be replayed silently. Resolve it (the tool's
+   * `effect.reconcile` or a human) and run again.
+   */
+  | "recovery_required";
 
 export interface AgentResult {
   /** Runtime outcome only: not a verification certificate or permission to publish. */
@@ -256,6 +281,11 @@ export interface AgentResult {
    * `resumeJobs` to keep polling them; otherwise their results are lost.
    */
   pendingJobs?: BackgroundJob[];
+  /**
+   * External operations with an UNKNOWN outcome. Present when the run ended
+   * with `reason: "recovery_required"`; never retried automatically.
+   */
+  pendingOperations?: PendingOperation[];
   phase?: string;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
   handoff?: Record<string, unknown>;

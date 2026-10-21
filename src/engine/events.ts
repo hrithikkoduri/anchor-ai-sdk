@@ -52,7 +52,19 @@ export type AgentEvent =
       name: string;
       input: Record<string, unknown>;
       callId?: string;
+      /** The idempotency identity minted before an effectful call. */
+      operationId?: string;
       verb?: string;
+    }
+  | {
+      /** The target ACCEPTED an effectful request; its result is not known yet. */
+      type: "tool_ack";
+      phase: string;
+      step: number;
+      name: string;
+      callId?: string;
+      operationId: string;
+      ack: Record<string, unknown>;
     }
   | {
       type: "tool_result";
@@ -60,12 +72,26 @@ export type AgentEvent =
       step: number;
       name: string;
       callId?: string;
+      operationId?: string;
       verb?: string;
       ok: boolean;
+      /**
+       * `"unknown"` means the effect may or may not have landed. It is not a
+       * failure and must not be retried automatically.
+       */
+      outcome?: "completed" | "failed" | "unknown";
       /** The actual result text (already truncated by the tool) — journal material. */
       content: string;
       contentChars: number;
       meta?: Record<string, unknown>;
+    }
+  | {
+      /** A pending operation from a crashed run was resolved during recovery. */
+      type: "reconciled";
+      operationId: string;
+      tool: string;
+      status: "applied" | "not_applied" | "unknown";
+      detail?: string;
     }
   | {
       /** A command outlived `backgroundAfterSecs` and is still running. The
@@ -123,7 +149,9 @@ export type AgentEvent =
         | "assistant_text_elided"
         | "prose_checkpoint"
         | "repeated_call"
-        | "empty_turn";
+        | "empty_turn"
+        | "effect_without_journal"
+        | "operation_settle_failed";
       detail: string;
     }
   | {
@@ -166,7 +194,8 @@ export type AgentEvent =
         | "error"
         | "paused"
         | "cancelled"
-        | "interrupted";
+        | "interrupted"
+        | "recovery_required";
       /** Set when the run concluded via finish() with a consumer-shaped handoff. */
       handoff?: Record<string, unknown>;
     }
