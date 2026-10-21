@@ -37,7 +37,7 @@ release policy.** There is no requirement to turn an agent into a workflow graph
 | Build around | What Anchor supplies |
 | --- | --- |
 | **Your agent** | Chat and coding bundles, or your own strategy and toolset. Phases label the approach; they are not permissions. |
-| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Docker, and local development. |
+| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Daytona, Docker, and local development. |
 | **Longer tasks** | Conversation compaction, thread-store interfaces, working notes, checkpoints, and opt-in revival planning. |
 | **Observable execution** | Streaming events, tool-result metadata, NDJSON/custom trace sinks, and replay helpers. |
 
@@ -87,6 +87,7 @@ The same layer works with the built-in coding tools, custom agents, or direct
 | --- | --- | --- |
 | **Heyo Computer** | `anchor-ai-sdk/sandbox/heyo` | Image artifact/store on the provider; host-built image kinds are also supported. |
 | **E2B** | `anchor-ai-sdk/sandbox/e2b` | A prepared template name or ID, **not** an arbitrary Docker image at create time. |
+| **Daytona** | `anchor-ai-sdk/sandbox/daytona` | Any registry Docker image with bash, git, and coreutils — Daytona builds a snapshot from it at create time. |
 | **Docker** | `anchor-ai-sdk/sandbox/docker` | An explicit container image, Docker CLI, and running daemon. |
 | **Local** | `anchor-ai-sdk/sandbox/local` | Host processes and a working directory. **No isolation; trusted dev/CI only.** |
 
@@ -369,7 +370,7 @@ claim. The older 7/10 OpenRouter cost comparison is separate historical context.
 
 **Early alpha, 0.x.** Pin exact versions and test your integration. Provider and
 runtime features are version-specific; the current source may be ahead of the
-installed package. Daytona, agent teams, and consumer skill bundles remain
+installed package. Agent teams and consumer skill bundles remain
 roadmap work in the reviewed source.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in

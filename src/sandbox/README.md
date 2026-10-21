@@ -12,12 +12,15 @@ sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
 sandbox/e2b               e2b/ (index, exec)          E2B cloud sandboxes (remote)
+sandbox/daytona           daytona/ (index, exec)     Daytona cloud sandboxes (remote)
 sandbox/local             local/index.ts              the host, NO isolation: dev/CI
 ```
 
-Daytona is **planned**: its stub module exists in-repo (`daytona/`) so the
-shape is visible, but it is not an exported subpath and its factory throws
-until it passes the conformance suite.
+Daytona boots a **registry Docker image** — unlike E2B, it builds a snapshot
+from the image at create time, so any image with `bash`, `git`, and coreutils
+(including `timeout`) works. The adapter disables Daytona's auto-lifecycle
+timers at create (retention is explicit: pause at destroy, start at adopt), so
+a retained sandbox can never be reaped between a thread's runs.
 
 E2B boots a **template**, not an arbitrary Docker image at create time. Pass
 `template` to `e2b()` (or let `SandboxSpec.image` name one) and build it with
@@ -190,11 +193,49 @@ retryable/adoptable, and the boot itself lives in `start()`.
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-Daytona is planned: its stub module stays in-repo as a signpost but is not
-exported; its factory throws with a pointer here until it passes the
-conformance suite.
+Daytona shipped as an adapter behind `./sandbox/daytona`; live conformance is
+opt-in (`RUN_LIVE_DAYTONA_TESTS=1` with a `DAYTONA_API_KEY`) until it has run
+green against a real account.
 
 ### E2B notes
+
+- **Templates, not images.** E2B has no Docker-image-at-create; `spec.image`
+  is a template name. Build the template with `Template().fromImage(...)` or
+  `fromDockerfile(...)`, then pass its name.
+- **Retain = pause.** `destroy()` pauses a retained sandbox (memory and disk
+  survive indefinitely) and `adopt()` connects/resumes it. `keep` leaves it
+  running for debugging. `provider.release(handle)` is the FINAL teardown and
+  kills even a retained sandbox: it does not know the run's `retain` flag, so
+  a sweep must not call it on a thread it means to resume.
+- **Fork = native snapshot.** `fork()` snapshots the VM, attaches the fork,
+  then resets it to the requested commit (`checkout -f` + `clean -fd`) so the
+  result matches the contract's clean-checkpoint semantics.
+- **Timeout.** The adapter wraps every command in guest-side `timeout -k`, so
+  E2B's control-plane `timeoutMs` is not trusted as a process kill.
+- **Credentials.** `git.token` is resolved into `GIT_TOKEN` and a repo-local
+  credential helper; the token never enters the workspace. One mint is reused
+  for five minutes, so a callback that hits GitHub does not run on every
+  command.
+
+### Daytona notes
+
+- **Images, not templates.** `create({ image })` builds a snapshot from any
+  registry image at create time; `spec.image` is a plain Docker reference.
+  There is no "base" default — a missing image fails loudly at start().
+- **Retain = pause.** Same shape as E2B: `destroy()` pauses a retained
+  sandbox, `adopt()` is `get()` + `start()` (start on a running sandbox is a
+  no-op). `keep` leaves it running. `release(handle)` deletes unconditionally.
+- **Auto-lifecycle disabled.** `autoStop`/`autoPause`/`autoArchive` are 0 and
+  `autoDeleteInterval: -1` at create, so Daytona's idle reapers can never
+  destroy a retained sandbox between runs; lifecycle is Anchor's alone.
+- **Fork = copy-on-write clone.** `sandbox.fork()` copies the filesystem;
+  the child is reset to the requested commit like E2B's.
+- **One output stream.** Daytona's `executeCommand` returns a single combined
+  `result` — no stdout/stderr split. `ExecResult.output` carries it verbatim
+  and `stderr` stays empty rather than fabricating a split.
+- **Coordinates via labels.** Workspace/scratch paths are stored base64 in
+  sandbox labels at create (label validators are unknown; b64 is safe) and
+  read back on adopt.
 
 - **Templates, not images.** E2B has no Docker-image-at-create; `spec.image`
   is a template name. Build the template with `Template().fromImage(...)` or
@@ -225,5 +266,5 @@ heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
 e2b/         E2B cloud sandboxes: index (provider), exec (command/result)
 local/       the host itself: dev/CI only, no isolation
-daytona/     stub: planned, not exported
+daytona/     Daytona cloud sandboxes: index (provider), exec (command/result)
 ```

@@ -43,6 +43,10 @@
       "types": "./dist/sandbox/e2b/index.d.ts",
       "default": "./dist/sandbox/e2b/index.js"
     },
+    "./sandbox/daytona": {
+      "types": "./dist/sandbox/daytona/index.d.ts",
+      "default": "./dist/sandbox/daytona/index.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
@@ -63,7 +67,8 @@
   "peerDependencies": {
     "@heyocomputer/hws": ">=0.4",
     "e2b": "^2.56",
-    "vitest": ">=3"
+    "vitest": ">=3",
+    "@daytona/sdk": ">=0.225"
   },
   "peerDependenciesMeta": {
     "@heyocomputer/hws": {
@@ -74,9 +79,13 @@
     },
     "vitest": {
       "optional": true
+    },
+    "@daytona/sdk": {
+      "optional": true
     }
   },
   "devDependencies": {
+    "@daytona/sdk": "^0.225.0",
     "@heyocomputer/hws": "^0.4.0",
     "@types/node": "^26.6.5",
     "e2b": "^2.56.0",

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { docker } from "../../src/sandbox/docker/index.js";
 import { local } from "../../src/sandbox/local/index.js";
 import { e2b } from "../../src/sandbox/e2b/index.js";
+import { daytona } from "../../src/sandbox/daytona/index.js";
 import { heyo } from "../../src/sandbox/heyo/index.js";
 
 const heyoConfig = {
@@ -31,6 +32,9 @@ describe("egress control", () => {
     expect(e2b({ template: "base", quiet: true }).capabilities.egressControl).toBe(
       false,
     );
+    expect(
+      daytona({ image: "debian:12", quiet: true }).capabilities.egressControl,
+    ).toBe(false);
   });
 
   it("rejects egress none instead of running with network", async () => {
@@ -44,6 +48,12 @@ describe("egress control", () => {
 
     await expect(
       e2b({ template: "base", quiet: true }).create({ egress: "none" }).start(),
+    ).rejects.toThrow(/no egress control/);
+
+    await expect(
+      daytona({ image: "debian:12", quiet: true })
+        .create({ egress: "none" })
+        .start(),
     ).rejects.toThrow(/no egress control/);
   });
 });

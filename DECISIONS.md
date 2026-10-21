@@ -919,3 +919,40 @@ named, and `provider` when a gateway sends one, so the next run can prove
 what served it instead of inferring from the bill.
 
 Regressions: `tests/unit/llm.test.ts`.
+
+## Decision #81: The Daytona adapter ships behind `./sandbox/daytona`
+
+The planned stub becomes a real adapter, mapped 1:1 onto the E2B shape so the
+two remote-VM providers stay diffable. Daytona's TypeScript SDK
+(`@daytona/sdk`, an optional peer like `e2b`) supplies create-from-image,
+`get`+`start`, `pause`, `delete`, copy-on-write `fork`, and
+`process.executeCommand`.
+
+- **Images, not templates.** Daytona builds a snapshot from any registry image
+  at create time, so there is no E2B-style template step — but also no
+  "base" default: a missing image fails loudly at `start()`.
+- **Lifecycle timers disabled at create** (`autoStop: 0`, `autoPause: 0`,
+  `autoArchive: 0`, `autoDelete: -1`): a retained sandbox must never be
+  reaped by an idle timer while its thread is between runs. Retention is
+  Anchor's alone: `destroy()` pauses when `retain`, `adopt` is `get()` +
+  `start()`, `release(handle)` deletes unconditionally.
+- **The timeout rule unchanged.** `executeCommand`'s deadline is not trusted
+  as a process kill; every command is still wrapped in guest-side
+  `timeout -k`, exit 124/137 → `timedOut`, and the HTTP wait is
+  `timeoutSecs + 30` as a transport guard only.
+- **One stream, honestly reported.** Daytona returns a single combined
+  output; `ExecResult.output` carries it verbatim and `stderr` stays empty —
+  no fabricated split.
+- **Coordinates via labels.** Workspace/scratch paths ride base64 sandbox
+  labels (label validators are undocumented), read back on adopt.
+- **Capabilities unchanged from E2B:** `fork`/`retain`/`remoteCheckpoint`
+  true; `egressControl` false (Daytona's `networkBlockAll` is create-time
+  only, but clone-at-start needs network, so it cannot honor the
+  setup-then-block contract); `localPath` false.
+
+Live conformance stays opt-in (`RUN_LIVE_DAYTONA_TESTS=1` with
+`DAYTONA_API_KEY`/`DAYTONA_IMAGE`) until it has run green against a real
+account — the offline lifecycle suite covers the same paths through the
+injectable `clientFactory`.
+
+Regressions: `tests/unit/daytona.test.ts`, `tests/unit/daytona-lifecycle.test.ts`.
