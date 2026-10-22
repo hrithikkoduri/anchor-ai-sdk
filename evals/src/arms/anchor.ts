@@ -10,8 +10,10 @@
  */
 import {
   buildCodingPrompt,
+  buildTerminalPrompt,
   codingAgent,
   runAgent,
+  terminalAgent,
   type Agent,
   type EngineOptions,
 } from "anchor-ai-sdk";
@@ -55,10 +57,12 @@ const BENCHMARK_DISCIPLINE = [
 export interface AnchorArmOptions {
   /**
    * Which harness variant this arm runs. `baseline` is today's engine;
-   * `progress` will enable the progress ledger once it exists. The runner
-   * records it, so a null result can never be blamed on the wrong build.
+   * `progress` enables the ledger + verifier. The runner records it, so a null
+   * result can never be blamed on the wrong build.
    */
   variant?: string;
+  /** Choose coding (repo/diff) or terminal (shell/state) behavior. */
+  agentKind?: "auto" | "coding" | "terminal";
   /** Extra engine options for a variant (kept explicit; no hidden defaults). */
   engineOptions?: Partial<EngineOptions>;
 }
@@ -98,24 +102,43 @@ export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
         null,
         2,
       );
-      // Compose the prompt here (the block system is the point): the package
-      // defaults, plus the benchmark-discipline block this eval needs.
+      // Terminal-Bench is stateful shell work, not a repo patch. Use the
+      // terminal-native bundle and prompt for in-place Harbor tasks; keep the
+      // coding bundle for repo/patch tasks.
+      const terminal =
+        options.agentKind === "terminal" ||
+        (options.agentKind !== "coding" &&
+          task.kind === "harbor" &&
+          task.grading === "in-place");
+      const base = terminal ? terminalAgent : codingAgent;
       const agent: Agent = {
-        ...codingAgent,
-        name: "anchor",
+        ...base,
+        name: terminal ? "anchor-terminal" : "anchor",
         strategy: {
-          ...codingAgent.strategy,
+          ...base.strategy,
           systemPrompt: (args) =>
-            buildCodingPrompt({
-              tone: EVAL_TONE,
-              judgment: EVAL_JUDGMENT,
-              verification: EVAL_VERIFICATION,
-              context: [context, args.context].filter(Boolean).join("\n\n"),
-              ...(args.summary ? { summary: args.summary } : {}),
-              additionalSections: [
-                { title: "Benchmark discipline", body: BENCHMARK_DISCIPLINE },
-              ],
-            }),
+            terminal
+              ? buildTerminalPrompt({
+                  context: [context, args.context]
+                    .filter(Boolean)
+                    .join("\n\n"),
+                  ...(args.summary ? { summary: args.summary } : {}),
+                })
+              : buildCodingPrompt({
+                  tone: EVAL_TONE,
+                  judgment: EVAL_JUDGMENT,
+                  verification: EVAL_VERIFICATION,
+                  context: [context, args.context]
+                    .filter(Boolean)
+                    .join("\n\n"),
+                  ...(args.summary ? { summary: args.summary } : {}),
+                  additionalSections: [
+                    {
+                      title: "Benchmark discipline",
+                      body: BENCHMARK_DISCIPLINE,
+                    },
+                  ],
+                }),
         },
       };
       const budgets = { ...(ctx.budgets ?? {}), ...(task.budgets ?? {}) };

@@ -14,7 +14,8 @@ VARIANT="${VARIANT:-baseline}"
 REASONING="${REASONING:-high}"
 SHARD="${SHARD:-0}"
 SHARDS="${SHARDS:-1}"
-MAX_STEPS="${MAX_STEPS:-50}"
+MAX_STEPS="${MAX_STEPS:-300}"
+MAX_TOKENS="${MAX_TOKENS:-50000000}"
 MAX_USD="${MAX_USD:-8}"
 TASKS="${TASKS:-}"
 OUT_ROOT="${OUT_ROOT:-.bench-runs}"
@@ -94,6 +95,7 @@ for ID in "${IDS[@]}"; do
     --variant "$VARIANT" \
     --max-steps "$MAX_STEPS" \
     --max-usd "$MAX_USD" \
+    --max-tokens "$MAX_TOKENS" \
     "${EXTRA[@]}" \
     --out "$OUT_DIR/$ID" 2>&1 | tail -12
   status=${PIPESTATUS[0]}

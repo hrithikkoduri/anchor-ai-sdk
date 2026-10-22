@@ -24,7 +24,7 @@ on:
       max_steps:
         description: Max agent steps per task
         type: string
-        default: "50"
+        default: "300"
       max_usd:
         description: Max USD per task
         type: string
@@ -62,7 +62,7 @@ on:
         default: high
       max_steps:
         type: string
-        default: "50"
+        default: "300"
       max_usd:
         type: string
         default: "8"
@@ -136,6 +136,7 @@ jobs:
       REASONING: ${{ inputs.reasoning }}
       MAX_STEPS: ${{ inputs.max_steps }}
       MAX_USD: ${{ inputs.max_usd }}
+      MAX_TOKENS: "50000000"
       TIME_BUDGET: ${{ inputs.time_budget }}
       TASKS: ${{ inputs.tasks }}
     steps:
