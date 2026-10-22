@@ -551,6 +551,8 @@ await writeFile(
     {
       bench,
       tasksFile,
+      sdkVersion: process.env.SDK_VERSION ?? null,
+      gitSha: process.env.GIT_SHA ?? null,
       kind: tasks.every((task) => task.kind === "harbor") ? "harbor" : "mixed",
       arm: armName,
       variant,

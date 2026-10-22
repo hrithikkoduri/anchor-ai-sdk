@@ -12,6 +12,10 @@ on:
         description: Comma-separated OpenRouter model ids
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      sdk_ref:
+        description: Git ref/SHA to benchmark (blank = this workflow ref)
+        type: string
+        default: ""
       variants:
         description: Anchor variants (baseline,progress)
         type: string
@@ -48,6 +52,7 @@ jobs:
     with:
       bench: ${{ inputs.bench }}
       models: ${{ inputs.models }}
+      sdk_ref: ${{ inputs.sdk_ref }}
       variants: ${{ inputs.variants }}
       reasoning: ${{ inputs.reasoning }}
       max_usd: ${{ inputs.max_usd }}
@@ -61,6 +66,7 @@ jobs:
     with:
       bench: ${{ inputs.bench }}
       models: ${{ inputs.models }}
+      sdk_ref: ${{ inputs.sdk_ref }}
       pro_shards: ${{ inputs.pro_shards }}
       terminal_shards: ${{ inputs.terminal_shards }}
       tasks: ${{ inputs.tasks }}

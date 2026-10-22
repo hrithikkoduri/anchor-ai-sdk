@@ -12,6 +12,10 @@ on:
         description: Comma-separated OpenRouter model ids
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      sdk_ref:
+        description: Git ref/SHA to benchmark (blank = the workflow ref)
+        type: string
+        default: ""
       agent:
         description: Harbor agent, or auto (SWE-agent for SWE, Terminus-2 for Terminal)
         type: string
@@ -36,6 +40,9 @@ on:
       models:
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      sdk_ref:
+        type: string
+        default: ""
       agent:
         type: string
         default: auto
@@ -109,10 +116,16 @@ jobs:
       TASKS: ${{ inputs.tasks }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sdk_ref || github.sha }}
       - uses: actions/setup-python@v5
         id: setup-python
         with:
           python-version: "3.12"
+      - name: Version metadata
+        run: |
+          echo "SDK_VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+          echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Select Python
         run: echo "PYTHON_BIN=${{ steps.setup-python.outputs.python-path }}" >> "$GITHUB_ENV"
       - name: Install Harbor
