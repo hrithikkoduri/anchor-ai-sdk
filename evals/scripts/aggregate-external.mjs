@@ -58,7 +58,12 @@ for (const file of await walk(root)) {
       agent: meta.agent,
       results: [],
     };
-  for (const trial of job.trial_results ?? []) {
+  const trials = job.trial_results?.length
+    ? job.trial_results
+    : job.task_name
+      ? [job]
+      : [];
+  for (const trial of trials) {
     const rewards = trial.verifier_result?.rewards ?? {};
     const values = Object.values(rewards).filter((value) => typeof value === "number");
     const reward = values.length > 0 ? Math.max(...values) : 0;
