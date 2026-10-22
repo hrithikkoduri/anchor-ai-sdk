@@ -44,7 +44,7 @@ product, and a handle owned by a different provider is skipped, not "gone".
 | member | promise |
 |---|---|
 | `name` | stored verbatim on handles and in consumer databases |
-| `capabilities` | **declared = tested**: the conformance suite gates scenarios on it (`local` once declared `fork: false` while implementing `fork()`; the suite caught it). `egressControl: true` means `spec.egress: "none"` is enforced after `start()`; a provider without it rejects `"none"` instead of running with network. |
+| `capabilities` | **declared = tested**: the conformance suite gates scenarios on it (`local` once declared `fork: false` while implementing `fork()`; the suite caught it). `egressControl: true` means `spec.egress: "none"` is enforced after `start()`; a provider without it rejects `"none"` instead of running with network. `processStream: true` means `openProcess()` is implemented; the conformance suite exercises stdin, kill, timeout, and destroy. |
 | `create(spec)` | constructs only, with **no I/O**; `start()` does the I/O |
 | `adopt(handle, spec?)` | the workspace comes from the retained disk; `start()` proves it still exists; a failure is *gone*, not *fatal* |
 | `release(handle)` | destroy by handle alone; no spec, no start; already-gone is not an error |
@@ -127,14 +127,31 @@ bounded by the job's deadline; only a job that outlives that is reported on
 the next run. The model never polls. Heyo's `poll`/`kill` also work from a
 *fresh* adopted instance (no in-memory registry), which is what the wait uses.
 
+**Persistent process streams.** `exec()` is one-shot. For LSPs, REPLs, dev
+servers, watchers, and interactive CLIs, `Sandbox.openProcess(command, args,
+opts)` starts a process that stays alive: `write()`/`endInput()` feed stdin,
+`stdout`/`stderr` are async iterables, `wait()` reports the exit, and
+`kill()`/`timeoutSecs`/`AbortSignal` terminate it. The command and args are
+separate, so no user text is shell-interpolated. `capabilities.processStream`
+gates the feature; a provider that cannot support it must omit `openProcess`
+rather than fake it with repeated `exec` calls. Destroy closes every open
+process, and each backend caps concurrency with a clear error.
+
+Local, Docker, and E2B provide separate stderr. Heyo runs the process through
+its interactive PTY: stderr is merged into stdout, `endInput()` has Ctrl-D
+semantics, and the WebSocket has no drain signal. Use Local/Docker/E2B when a
+consumer needs strict stderr or real stdin backpressure. No LSP or JSON-RPC
+types belong in core; `anchor-ai-sdk/lsp` layers that protocol on this primitive.
+
 **The conformance suite**: `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
-self-containment, kill deadlines, env secrets, checkpoints, retain/adopt, git
-identity, push-failure reporting, clone, `hasChangesFrom`, `localPath` copies,
-bare-origin pushes, and `fork` where declared. Scenarios assert through
-`Sandbox`/`SandboxProvider` only, never backend internals. A backend is "done"
-when this passes (live backends opt in: `RUN_LIVE_HEYO_TESTS=1`,
-`ANCHOR_DOCKER_TEST_IMAGE` like the Docker image).
+self-containment, kill deadlines, env secrets, process streams (stdin, kill,
+timeout, destroy), checkpoints, retain/adopt, git identity, push-failure
+reporting, clone, `hasChangesFrom`, `localPath` copies, bare-origin pushes, and
+`fork` where declared. Scenarios assert through `Sandbox`/`SandboxProvider`
+only, never backend internals. A backend is "done" when this passes (live
+backends opt in: `RUN_LIVE_HEYO_TESTS=1`, `ANCHOR_DOCKER_TEST_IMAGE` like the
+Docker image).
 
 ## Images and boot cost
 
@@ -165,6 +182,27 @@ wait, clone, credentials) and 53s of actual agent work. Anything that compares
 "run duration" across backends must separate boot from work, or a fast adapter
 reads as a slow agent.
 
+## Custom images
+
+There is **no generic build-or-push API** in the Sandbox contract. Anchor does
+not publish images to a provider registry for you. `SandboxSpec.image` is a
+per-sandbox override only where the provider can vary its image; publishing is
+part of the consumer's image/deployment pipeline.
+
+| Provider | Default image | Per-sandbox `spec.image` | How a custom image gets there |
+|---|---|---|---|
+| **Docker** | `docker({ image })` | **Yes**; wins over the default | Build with `docker build` and push/pull with the Docker CLI yourself. `start()` pulls the name if it is not already local. |
+| **E2B** | `e2b({ template })` | **Yes**, but it is an E2B **template name or ID**, not a Docker image | Build and publish a template with E2B's `Template.build()`; repo scripts: `scripts/build-e2b-template.mjs` and `evals/scripts/build-e2b-templates.mjs`. Passing a Docker image fails with guidance. |
+| **Heyo** | `heyo({ image, imageKind, imageStore })` | **No**; rejected loudly | `imageKind: "artifact"` pulls a prebuilt rootfs from `imageStore` (default `https://hub.heyo.work`); `"dockerfile"` / `"git"` make the Heyo host build it. Publish artifacts outside Anchor. |
+| **Local** | none | **No**; rejected loudly | Host filesystem only; use `spec.localPath` or Docker. |
+| **Daytona** | planned | not available | Stub only; factory throws until it passes conformance. |
+
+If a task needs a prebaked repository, use `spec.workspacePath` on Docker, E2B,
+or Heyo so `start()` verifies the checkout instead of cloning. A uniform
+"build and publish this image" operation across providers is **not implemented**;
+it would need a separate image capability and conformance path rather than a
+field on `SandboxSpec`.
+
 The conformance suite deliberately asserts `start()`'s **guarantees** (workspace,
 git identity, credentials, scratch), not how long they take; measure boot per
 backend yourself. `create()` stays I/O-free precisely so the boot is
@@ -189,8 +227,11 @@ retryable/adoptable, and the boot itself lives in `start()`.
    the sandbox).
 5. Checkpoints: `checkpoint(message, { push? })`; push failures reported, not
    thrown; `destroy()` idempotent; `adopt` fails as "gone" not "crash".
-6. Run `runSandboxConformance(provider)` until green; add a live, opt-in test.
-7. Export on a subpath (`./sandbox/<name>`), SDK behind it; the root entry
+6. If declaring `capabilities.processStream`, implement `openProcess()` with
+   stdin/stdout/stderr, `wait`, `kill`, deadline/abort, a concurrency cap, and
+   destroy cleanup; the conformance suite gates the scenarios on the flag.
+7. Run `runSandboxConformance(provider)` until green; add a live, opt-in test.
+8. Export on a subpath (`./sandbox/<name>`), SDK behind it; the root entry
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
@@ -223,7 +264,8 @@ conformance suite.
 ```
 index.ts     openSandbox / openSandboxSession / releaseSandbox + stores
 provider.ts  the SandboxProvider contract (no implementations)
-types.ts     Sandbox, SandboxSpec, ExecResult, handles
+types.ts     Sandbox, SandboxSpec, ExecResult, ProcessHandle, handles
+process.ts   provider-neutral ChildProcess stream handle (local/docker)
 git.ts       shared git behavior (checkpoints, diffs, reserved scratch)
 heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
