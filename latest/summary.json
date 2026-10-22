@@ -1,135 +1,94 @@
 {
-  "generatedAt": "2026-10-22T05:52:05.883Z",
+  "generatedAt": "2026-10-22T05:57:08.926Z",
   "runs": [
     {
-      "bench": "swe-lite",
+      "bench": "swe-pro",
       "model": "openai/gpt-5.3-codex",
       "variant": "baseline",
       "tasks": 1,
       "scored": 1,
-      "fullCredit": 1,
-      "meanReward": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
       "falseFinishes": 0,
       "timeouts": 0,
-      "costUsd": 0.42570289999999994,
-      "p50WallMs": 292357,
+      "costUsd": 0.9134296500000002,
+      "p50WallMs": 559951,
       "runs": [
         {
-          "bench": "swe-lite",
-          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
-          "kind": "mixed",
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
           "arm": "anchor",
           "variant": "baseline",
           "reasoningEffort": "high",
           "model": "openai/gpt-5.3-codex",
           "llm": "openrouter",
           "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 900,
+          "timeBudgetSecs": 3000,
           "provider": "docker",
           "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 1,
-          "meanReward": 1,
+          "completed": 0,
+          "failed": 1,
+          "fullCredit": 0,
+          "meanReward": 0,
           "falseFinishes": 0,
           "timeouts": 0,
-          "checksPassed": 7,
-          "checksTotal": 7,
-          "totalUsd": 0.42570289999999994,
-          "wallMsP50": 292357,
-          "wallMsP95": 292357,
-          "startedAt": "2026-10-22T05:47:00.105Z",
-          "finishedAt": "2026-10-22T05:51:52.738Z",
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.9134296500000002,
+          "wallMsP50": 559951,
+          "wallMsP95": 559951,
+          "startedAt": "2026-10-22T05:47:24.688Z",
+          "finishedAt": "2026-10-22T05:56:45.268Z",
           "budgets": {
             "maxTokens": 50000000,
             "maxSteps": 50,
             "maxUsd": 8
           },
           "contextWindow": 400000,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/openai-gpt-5.3-codex/baseline/shard-0/psf__requests-1963"
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/openai-gpt-5.3-codex/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
         }
       ]
     }
   ],
   "results": [
     {
-      "bench": "swe-lite",
+      "bench": "swe-pro",
       "model": "openai/gpt-5.3-codex",
       "variant": "baseline",
-      "taskId": "psf__requests-1963",
+      "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
       "arm": "anchor",
-      "status": "completed",
-      "steps": 44,
-      "reason": "finished",
+      "status": "failed",
+      "error": "agent patch failed to apply: agent patch failed to apply (exit 1): /tmp/anchor-agent.patch:18: trailing whitespace.\n*2\r\n/tmp/anchor-agent.patch:19: trailing whitespace.\n$6\r\n/tmp/anchor-agent.patch:20: trailing whitespace.\nSELECT\r\n/tmp/anchor-agent.patch:21: trailing whitespace.\n$1\r\n/tmp/anchor-agent.patch:22: trailing whitespace.\n0\r\nChecking patch appendonlydir/appendonly.aof.1.base.rdb...\nerror: appendonlydir/appendonly.aof.1.base.rdb: already exists in working directory\nChecking patch appendonlydir/appendonly.aof.1.incr.aof...\nerror: appendonlydir/appendonly.aof.1.incr.aof: already exists in working directory\nChecking patch appendonlydir/appendonly.aof.manifest...\nerror: appendonlydir/appendonly.aof.manifest: already exists in working directory\nChecking patch src/controllers/admin/cache.js...\nChecking patch src/meta/index.js...\nChecking patch src/posts/",
+      "steps": 50,
+      "reason": "max_steps",
       "usage": {
-        "promptTokens": 888614,
-        "completionTokens": 13449,
-        "totalTokens": 902063,
-        "costUsd": 0.42570289999999994,
-        "reasoningTokens": 6313
+        "promptTokens": 1721059,
+        "completionTokens": 34663,
+        "totalTokens": 1755722,
+        "costUsd": 0.9134296500000002,
+        "reasoningTokens": 28275
       },
-      "reward": 1,
+      "reward": 0,
       "checks": [
         {
-          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE",
-          "ok": true,
+          "id": "task-verifier",
+          "ok": false,
           "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::RequestsTestCase::test_DIGEST_HTTP_200_OK_GET",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::RequestsTestCase::test_param_cookiejar_works",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
-        },
-        {
-          "id": "test_requests.py::TestRedirects::test_requests_are_updated_each_time",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/mocks/databasemock.js...\nChecking patch test/socket.io.js...\nChecking patch test/user.js...\nApplied patch test/mocks/databasemock.js cleanly.\nApplied patch test/socket.io.js cleanly.\nApplied patch test/user.js cleanly.\nRequired tests: 2\nPassed tests: 0\nRequired tests that passed: 0\n\nRESULT: FAILED\nMissing tests: ['test/user.js | User | socket methods | should return true/false if user/group "
         }
       ],
       "toolCalls": {
-        "set_phase": 5,
-        "search": 21,
-        "read_file": 13,
-        "bash": 7,
-        "edit_file": 3,
-        "run_tests": 3
+        "set_phase": 4,
+        "search": 31,
+        "read_file": 33,
+        "bash": 9,
+        "edit_file": 8,
+        "run_tests": 2
       },
-      "wallMs": 292357,
-      "patchChars": 3247
+      "wallMs": 559951,
+      "patchChars": 174005
     }
   ]
 }
