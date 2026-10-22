@@ -23,6 +23,11 @@ for (const row of rows) {
   const id = row.instance_id;
   const dir = path.join(dataDir, "tasks", id);
   await mkdir(path.join(dir, "tests"), { recursive: true });
+  await mkdir(path.join(dir, "environment"), { recursive: true });
+  await writeFile(
+    path.join(dir, "environment", "Dockerfile"),
+    `FROM ${row.image}\n`,
+  );
   await writeFile(
     path.join(dir, "task.toml"),
     [

