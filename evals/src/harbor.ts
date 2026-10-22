@@ -70,6 +70,44 @@ async function applyPatch(sandbox: Sandbox, patch: string): Promise<void> {
       );
     }
   }
+  // An agent can commit runtime junk (NodeBB's Redis appendonlydir) that the
+  // pristine image already has as untracked files. A patch's "new file" then
+  // collides with the pristine file. Remove only untracked colliding paths;
+  // never touch a tracked base file.
+  const created = new Set<string>();
+  const lines = patch.split("\n");
+  // Text diffs say `--- /dev/null`; binary new files only have the
+  // `diff --git ...` header plus `new file mode`. Cover both.
+  for (let index = 0; index < lines.length - 1; index++) {
+    const line = lines[index];
+    if (line.startsWith("diff --git a/")) {
+      const marker = line.lastIndexOf(" b/");
+      if (marker < 0) continue;
+      const path = line.slice(marker + 3);
+      let cursor = index + 1;
+      while (cursor < lines.length && !lines[cursor].startsWith("diff --git ")) {
+        if (lines[cursor].startsWith("new file mode ")) {
+          created.add(path);
+          break;
+        }
+        cursor++;
+      }
+    }
+    if (line.startsWith("--- /dev/null")) {
+      const plus = lines[index + 1];
+      if (plus.startsWith("+++ b/")) created.add(plus.slice(6));
+    }
+  }
+  const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+  const cleanup = [...created]
+    .map(
+      (file) =>
+        `if git ls-files --error-unmatch -- ${quote(file)} >/dev/null 2>&1; then :; else rm -rf -- ${quote(file)}; fi`,
+    )
+    .join("\n");
+  if (cleanup) {
+    await sandbox.exec(cleanup, { timeoutSecs: 120 });
+  }
   const command = [
     "base64 -d /tmp/anchor-agent.patch.b64 > /tmp/anchor-agent.patch",
     "git apply --binary --verbose /tmp/anchor-agent.patch",
