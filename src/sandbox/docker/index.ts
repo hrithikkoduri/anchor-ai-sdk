@@ -16,6 +16,7 @@
  * host platform's business, not this adapter's.
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   clampTimeout,
   newSandboxId,
@@ -55,6 +56,18 @@ export class DockerSandbox implements Sandbox {
 
   private started = false;
   private destroyed = false;
+  private readonly jobs = new Map<
+    string,
+    {
+      child: ReturnType<typeof spawn>;
+      startedAt: number;
+      timeoutSecs: number;
+      stdout: string;
+      stderr: string;
+      output: string;
+      result?: ExecResult;
+    }
+  >();
 
   constructor(
     private readonly spec: SandboxSpec,
@@ -259,14 +272,16 @@ export class DockerSandbox implements Sandbox {
 
   async exec(command: string, opts: ExecOptions = {}): Promise<ExecResult> {
     this.assertUsable();
+    if (opts.backgroundAfterSecs !== undefined && opts.backgroundAfterSecs > 0) {
+      return this.execBackground(command, opts);
+    }
     return this.execRaw(command, opts);
   }
 
-  /** Exec without the started guard — start()'s own setup uses this. */
-  private execRaw(
+  private execArgs(
     command: string,
-    opts: ExecOptions = {},
-  ): Promise<ExecResult> {
+    opts: ExecOptions,
+  ): { args: string[]; timeoutSecs: number } {
     const timeoutSecs = clampTimeout(opts.timeoutSecs);
     const cwd = opts.cwd ?? this.workspace;
     const env = { ...this.spec.env, ...opts.env };
@@ -277,8 +292,9 @@ export class DockerSandbox implements Sandbox {
     // Guest-side deadline (docker exec has none); the inner shell string is
     // ONE argv element, so quoting survives without a host shell.
     const inner = `cd ${shq(cwd)} && ${command}`;
-    return this.cli(
-      [
+    return {
+      timeoutSecs,
+      args: [
         "exec",
         ...envFlags,
         this.id,
@@ -290,8 +306,145 @@ export class DockerSandbox implements Sandbox {
         "-c",
         inner,
       ],
-      { timeoutSecs },
-    );
+    };
+  }
+
+  /** Exec without the started guard — start()'s own setup uses this. */
+  private execRaw(
+    command: string,
+    opts: ExecOptions = {},
+  ): Promise<ExecResult> {
+    const { args, timeoutSecs } = this.execArgs(command, opts);
+    return this.cli(args, { timeoutSecs });
+  }
+
+  /**
+   * Detached host-side docker-exec process. The guest command still has its
+   * hard timeout; the caller gets a job handle after backgroundAfterSecs and
+   * polls the same child later.
+   */
+  private execBackground(
+    command: string,
+    opts: ExecOptions,
+  ): Promise<ExecResult> {
+    const { args, timeoutSecs } = this.execArgs(command, opts);
+    const jobId = randomUUID();
+    const startedAt = Date.now();
+    const thresholdMs = Math.max(0, (opts.backgroundAfterSecs ?? 0) * 1000);
+    const child = spawn(this.dockerBin, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const job: {
+      child: ReturnType<typeof spawn>;
+      startedAt: number;
+      timeoutSecs: number;
+      stdout: string;
+      stderr: string;
+      output: string;
+      result?: ExecResult;
+    } = {
+      child,
+      startedAt,
+      timeoutSecs,
+      stdout: "",
+      stderr: "",
+      output: "",
+    };
+    this.jobs.set(jobId, job);
+    let timedOut = false;
+    let settled = false;
+
+    return new Promise((resolve) => {
+      const threshold = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({
+          exitCode: -1,
+          stdout: job.stdout,
+          stderr: job.stderr,
+          output: job.output,
+          timedOut: false,
+          durationMs: Date.now() - startedAt,
+          background: { jobId },
+        });
+      }, thresholdMs);
+      const guard = setTimeout(
+        () => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        },
+        (timeoutSecs + 60) * 1000,
+      );
+      const finish = (exitCode: number): ExecResult => {
+        const result: ExecResult = {
+          exitCode,
+          stdout: job.stdout,
+          stderr: job.stderr,
+          output: job.output,
+          timedOut: timedOut || exitCode === 124 || exitCode === 137,
+          durationMs: Date.now() - startedAt,
+        };
+        return result;
+      };
+      child.stdout.on("data", (chunk: Buffer) => {
+        job.stdout += chunk.toString();
+        job.output += chunk.toString();
+      });
+      child.stderr.on("data", (chunk: Buffer) => {
+        job.stderr += chunk.toString();
+        job.output += chunk.toString();
+      });
+      child.on("error", (err) => {
+        clearTimeout(threshold);
+        clearTimeout(guard);
+        const result = finish(-1);
+        result.output += `${err.message}
+`;
+        job.result = result;
+        if (!settled) {
+          settled = true;
+          resolve(result);
+        }
+      });
+      child.on("close", (code) => {
+        clearTimeout(threshold);
+        clearTimeout(guard);
+        const result = finish(code ?? -1);
+        job.result = result;
+        if (!settled) {
+          settled = true;
+          this.jobs.delete(jobId);
+          resolve(result);
+        }
+      });
+    });
+  }
+
+  async pollJob(
+    jobId: string,
+  ): Promise<ExecResult | undefined> {
+    const job = this.jobs.get(jobId);
+    if (!job || !job.result) return undefined;
+    this.jobs.delete(jobId);
+    return job.result;
+  }
+
+  async killJob(jobId: string): Promise<boolean> {
+    const job = this.jobs.get(jobId);
+    if (!job) return false;
+    job.child.kill("SIGKILL");
+    this.jobs.delete(jobId);
+    return true;
+  }
+
+  async killAllJobs(): Promise<number> {
+    let killed = 0;
+    for (const [id, job] of this.jobs) {
+      job.child.kill("SIGKILL");
+      this.jobs.delete(id);
+      killed += 1;
+    }
+    return killed;
   }
 
   async checkpoint(

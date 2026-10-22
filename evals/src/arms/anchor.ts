@@ -14,6 +14,8 @@ import {
   codingAgent,
   runAgent,
   terminalAgent,
+  MemoryOperationStore,
+  MemoryThreadStore,
   type Agent,
   type EngineOptions,
 } from "anchor-ai-sdk";
@@ -63,6 +65,8 @@ export interface AnchorArmOptions {
   variant?: string;
   /** Choose coding (repo/diff) or terminal (shell/state) behavior. */
   agentKind?: "auto" | "coding" | "terminal";
+  /** Enable background jobs, memory stores, and revival for this run. */
+  resilient?: boolean;
   /** Extra engine options for a variant (kept explicit; no hidden defaults). */
   engineOptions?: Partial<EngineOptions>;
 }
@@ -142,6 +146,20 @@ export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
         },
       };
       const budgets = { ...(ctx.budgets ?? {}), ...(task.budgets ?? {}) };
+      const resilient = options.resilient
+        ? {
+            thread: {
+              store: new MemoryThreadStore(),
+              id: `${task.id}-resilient`,
+            },
+            operations: {
+              store: new MemoryOperationStore(),
+              scope: task.id,
+            },
+            revival: { warnAtPercent: 80 },
+            backgroundAfterSecs: 60,
+          }
+        : {};
       const outcome = await runAgent(
         { task: task.problem },
         {
@@ -153,6 +171,7 @@ export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
           ...(ctx.sampling ? { sampling: ctx.sampling } : {}),
           ...(ctx.onEvent ? { onEvent: ctx.onEvent } : {}),
           ...(ctx.signal ? { signal: ctx.signal } : {}),
+          ...resilient,
           ...(options.engineOptions ?? {}),
         },
       );

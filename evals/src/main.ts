@@ -34,6 +34,7 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
   --variant <name>        harness variant recorded with the run (default baseline)
   --reasoning <effort>    minimal|low|medium|high|xhigh|max (anchor arm only)
   --verifier              enable the ledger + phase/finish verification gate
+  --resilient             enable background jobs, memory stores, and revival
   --task-image            heyo: boot the task's own image (no repo clone)
   --time-budget <secs>    wall-clock ceiling per task (checks still run)
   --repeat <n>            repeat each harness task n times (n>1 needs checks)
@@ -438,8 +439,10 @@ const report = (result: EvalTaskResult, index: number): void => {
 };
 
 const verifier = args.has("verifier");
+const resilient = args.has("resilient");
 const arm = anchorArm({
   variant,
+  resilient,
   ...((reasoningEffort || verifier)
     ? {
         engineOptions: {
@@ -558,6 +561,7 @@ await writeFile(
       variant,
       ...(reasoningEffort ? { reasoningEffort } : {}),
       ...(verifier ? { verifier: true } : {}),
+      ...(resilient ? { resilient: true } : {}),
       model,
       llm: llmName,
       baseUrl,
