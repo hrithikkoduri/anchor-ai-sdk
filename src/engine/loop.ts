@@ -815,7 +815,9 @@ async function runOne(
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
-        ...(ledger ? { ledger } : {}),
+        ...(ledger ?? prior?.ledger
+          ? { ledger: ledger ?? prior?.ledger }
+          : {}),
       });
       return true;
     } catch {

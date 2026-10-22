@@ -156,4 +156,58 @@ describe("engine verifier integration", () => {
     const saved = await store.load("task-1");
     expect(saved?.ledger?.requirements[0]?.status).toBe("verified");
   });
+
+  it("blocks a finish with no evidence and does not report success", async () => {
+    const store = new MemoryThreadStore();
+    const llm = agentLlm([
+      response("Done."),
+      response("Done."),
+      response("Done."),
+    ]);
+
+    const result = await runAgent(
+      { task: "Investigate where auth is refreshed" },
+      {
+        llm,
+        verifier: true,
+        agent: testAgent,
+        thread: { store, id: "task-2" },
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.verified).toBe(false);
+    expect(result.reason).toBe("stalled");
+    expect(result.ledger?.requirements[0]?.status).toBe("open");
+  });
+
+  it("preserves an existing ledger across a chat turn", async () => {
+    const store = new MemoryThreadStore();
+    await store.save("chat-2", {
+      messages: [],
+      ledger: {
+        version: 1,
+        taskId: "t1",
+        revision: 1,
+        source: { kind: "user", text: "task" },
+        goal: "task",
+        requirements: [],
+        evidence: {},
+        openFailures: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    await runAgent(
+      { task: "Hi" },
+      {
+        llm: agentLlm([response("Hello.")]),
+        verifier: true,
+        thread: { store, id: "chat-2" },
+      },
+    );
+
+    expect((await store.load("chat-2"))?.ledger?.taskId).toBe("t1");
+  });
 });
