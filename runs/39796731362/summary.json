@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-10-22T14:40:54.431Z",
+  "runs": [
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [
+        {
+          "taskId": "terminal-bench/adaptive-rejection-sampler",
+          "status": "failed",
+          "reward": 0,
+          "error": "Command timed out after 120 seconds",
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0
+          },
+          "wallMs": 134783
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "costUsd": 0,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0
+      },
+      "p50WallMs": 134783,
+      "p95WallMs": 134783
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+Skipping image OS validation for alexgshaw/adaptive-rejection-sampler:20251031: docker inspect returned 1
+Trial adaptive-rejection-sampler__KpZX974 failed: Command timed out after 120 seconds
+Collecting main service artifacts

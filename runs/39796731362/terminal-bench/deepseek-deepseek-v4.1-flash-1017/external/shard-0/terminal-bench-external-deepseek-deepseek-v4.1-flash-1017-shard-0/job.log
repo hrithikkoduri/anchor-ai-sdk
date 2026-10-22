@@ -1,0 +1,7 @@
+Skipping image OS validation for alexgshaw/adaptive-rejection-sampler:20251031: docker inspect returned 1
+Installing: tmux, asciinema
+Detected system: {'os': 'debian-based', 'package_manager': 'apt-get', 'update_command': None}
+Installing tools using apt-get: DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y tmux asciinema
+Trial adaptive-rejection-sampler__KpZX974 failed: Command timed out after 120 seconds
+Collecting main service artifacts
+Not retrying trial because the maximum number of retries has been reached
