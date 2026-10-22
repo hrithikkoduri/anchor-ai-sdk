@@ -1,37 +1,37 @@
 {
-  "generatedAt": "2026-10-22T16:29:59.988Z",
+  "generatedAt": "2026-10-22T16:32:17.065Z",
   "runs": [
     {
-      "bench": "swe-pro",
+      "bench": "swe-lite",
       "model": "deepseek/deepseek-v4.1-flash-1017",
       "variant": "external",
       "agent": "swe-agent",
       "results": [
         {
-          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+          "taskId": "swe-bench-lite/psf__requests-1963",
           "status": "completed",
-          "reward": 1,
+          "reward": 0,
           "usage": {
             "promptTokens": 0,
             "completionTokens": 0,
             "totalTokens": 0,
             "costUsd": 0
           },
-          "wallMs": 402474
+          "wallMs": 506262
         }
       ],
       "tasks": 1,
       "scored": 1,
-      "fullCredit": 1,
-      "meanReward": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
       "costUsd": 0,
       "tokens": {
         "prompt": 0,
         "completion": 0,
         "cached": 0
       },
-      "p50WallMs": 402474,
-      "p95WallMs": 402474
+      "p50WallMs": 506262,
+      "p95WallMs": 506262
     }
   ]
 }
