@@ -26,7 +26,7 @@ for (const row of rows) {
   await writeFile(
     path.join(dir, "task.toml"),
     [
-      'schema_version = "1.0"',
+      'schema_version = "1.4"',
       "",
       "[task]",
       `name = "swe-bench-lite/${id}"`,

@@ -15,15 +15,15 @@ TASKS="${TASKS:-}"
 
 case "$BENCH" in
   swe-lite)
-    TASKS_DIR="benchmarks/swe-bench-lite/data/tasks"
+    TASKS_DIR="$(pwd)/benchmarks/swe-bench-lite/data/tasks"
     TASKS_FILE="benchmarks/swe-bench-lite/data/tasks.jsonl"
     ;;
   swe-pro)
-    TASKS_DIR="benchmarks/swe-bench-pro/data/tasks"
+    TASKS_DIR="$(pwd)/benchmarks/swe-bench-pro/data/tasks"
     TASKS_FILE="benchmarks/swe-bench-pro/data/tasks.jsonl"
     ;;
   terminal-bench)
-    TASKS_DIR="benchmarks/terminal-bench/data/tasks"
+    TASKS_DIR="$(pwd)/benchmarks/terminal-bench/data/tasks"
     TASKS_FILE="benchmarks/terminal-bench/data/tasks.jsonl"
     ;;
   *)
@@ -90,6 +90,8 @@ for ID in "${IDS[@]}"; do
 done
 
 echo "external bench=$BENCH model=$MODEL agent=$AGENT shard=$SHARD/$SHARDS tasks=${#IDS[@]}"
+echo "tasks dir: $TASKS_DIR"
+find "$TASKS_DIR" -maxdepth 2 -name task.toml | head -3
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$LLM_API_KEY}" "$PYTHON_BIN" -m harbor.cli.main "${ARGS[@]}"
 
