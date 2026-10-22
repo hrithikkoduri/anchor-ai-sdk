@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-10-22T05:52:05.883Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 1,
+      "meanReward": 1,
+      "falseFinishes": 0,
+      "timeouts": 0,
+      "costUsd": 0.42570289999999994,
+      "p50WallMs": 292357,
+      "runs": [
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "openai/gpt-5.3-codex",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 7,
+          "checksTotal": 7,
+          "totalUsd": 0.42570289999999994,
+          "wallMsP50": 292357,
+          "wallMsP95": 292357,
+          "startedAt": "2026-10-22T05:47:00.105Z",
+          "finishedAt": "2026-10-22T05:51:52.738Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 8
+          },
+          "contextWindow": 400000,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/openai-gpt-5.3-codex/baseline/shard-0/psf__requests-1963"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "bench": "swe-lite",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "taskId": "psf__requests-1963",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 44,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 888614,
+        "completionTokens": 13449,
+        "totalTokens": 902063,
+        "costUsd": 0.42570289999999994,
+        "reasoningTokens": 6313
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_HTTP_200_OK_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_param_cookiejar_works",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::TestRedirects::test_requests_are_updated_each_time",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 5,
+        "search": 21,
+        "read_file": 13,
+        "bash": 7,
+        "edit_file": 3,
+        "run_tests": 3
+      },
+      "wallMs": 292357,
+      "patchChars": 3247
+    }
+  ]
+}
