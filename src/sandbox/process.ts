@@ -7,7 +7,7 @@
 import type { ChildProcess } from "node:child_process";
 import type { ProcessHandle, ProcessOptions } from "./types.js";
 
-class ByteQueue implements AsyncIterable<Uint8Array> {
+export class ByteQueue implements AsyncIterable<Uint8Array> {
   private readonly values: Uint8Array[] = [];
   private waiters: Array<(value: Uint8Array | undefined) => void> = [];
   private closed = false;

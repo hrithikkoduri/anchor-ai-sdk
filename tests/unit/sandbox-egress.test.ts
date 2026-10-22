@@ -55,6 +55,6 @@ describe("persistent process streams", () => {
       true,
     );
     expect(heyo(heyoConfig).capabilities.processStream).toBeUndefined();
-    expect(e2b({ template: "base", quiet: true }).capabilities.processStream).toBeUndefined();
+    expect(e2b({ template: "base", quiet: true }).capabilities.processStream).toBe(true);
   });
 });

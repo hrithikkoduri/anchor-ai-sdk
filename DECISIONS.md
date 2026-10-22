@@ -1040,9 +1040,11 @@ stdin/stdout/stderr, `write`/`endInput`, async output streams, `wait`, `kill`,
 `timeoutSecs`, and `AbortSignal`. `capabilities.processStream` says whether a
 backend implements it.
 
-Local and Docker implement it. Docker runs `docker exec -i` and best-effort
-kills the guest PID. Heyo and E2B omit the capability rather than fake a
-persistent channel with repeated one-shot execs. Sandbox `destroy()` closes
+Local, Docker, and E2B implement it. Docker runs `docker exec -i` and
+best-effort kills the guest PID. E2B uses its native background command handle
+with `stdin: true`. Heyo omits the capability: its current adapter has only
+one-shot `exec` requests and no persistent guest channel; faking it with
+repeated execs would break stdin/stream semantics. Sandbox `destroy()` closes
 every open process; each backend caps concurrent streams and rejects clearly
 above the cap.
 

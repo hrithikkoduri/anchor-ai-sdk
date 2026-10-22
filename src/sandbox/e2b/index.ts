@@ -18,6 +18,7 @@
  */
 import {
   CommandExitError,
+  type CommandHandle,
   Sandbox as E2BClient,
   SandboxNotFoundError,
   type SandboxConnectOpts,
@@ -33,7 +34,10 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
+  type ProcessHandle,
+  type ProcessOptions,
 } from "../types.js";
+import { ByteQueue } from "../process.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -114,6 +118,7 @@ export class E2BSandbox implements Sandbox {
   private started = false;
   private destroyed = false;
   private readonly factory: E2BClientFactory;
+  private readonly processes = new Set<CommandHandle>();
   /** Git tokens are installation tokens (hours); cache one briefly. */
   private gitToken?: { value: string; at: number };
 
@@ -227,6 +232,94 @@ export class E2BSandbox implements Sandbox {
     return this.execRaw(command, opts);
   }
 
+  async openProcess(
+    command: string,
+    args: string[],
+    opts: ProcessOptions = {},
+  ): Promise<ProcessHandle> {
+    this.assertUsable();
+    if (this.processes.size >= 8) {
+      throw new Error("e2b sandbox process limit reached (8)");
+    }
+    const client = this.client!;
+    const timeoutSecs = clampTimeout(opts.timeoutSecs ?? 3600);
+    const envs = {
+      ...this.spec.env,
+      ...(await this.gitEnv()),
+      ...opts.env,
+    };
+    const stdout = new ByteQueue();
+    const stderr = new ByteQueue();
+    const line = [command, ...args].map(shq).join(" ");
+    const handle = await client.commands.run(line, {
+      background: true,
+      stdin: true,
+      cwd: opts.cwd ?? this._workspace,
+      envs,
+      ...(this.opts.user ? { user: this.opts.user } : {}),
+      timeoutMs: timeoutSecs * 1000,
+      onStdout: (data: string) => stdout.push(Buffer.from(data)),
+      onStderr: (data: string) => stderr.push(Buffer.from(data)),
+    });
+    this.processes.add(handle);
+    let killed = false;
+    let timedOut = false;
+    let finished:
+      | { exitCode: number; signal?: string; timedOut: boolean }
+      | undefined;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      killed = true;
+      void handle.kill().catch(() => false);
+    }, timeoutSecs * 1000);
+    const abort = () => {
+      timedOut = true;
+      killed = true;
+      void handle.kill().catch(() => false);
+    };
+    if (opts.signal) {
+      if (opts.signal.aborted) abort();
+      else opts.signal.addEventListener("abort", abort, { once: true });
+    }
+    const finish = (exitCode: number) => {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", abort);
+      stdout.close();
+      stderr.close();
+      this.processes.delete(handle);
+      return { exitCode, timedOut };
+    };
+    const exitPromise = (async () => {
+      try {
+        const result = await handle.wait();
+        finished = finish(result.exitCode ?? 0);
+      } catch (error) {
+        if (error instanceof CommandExitError) {
+          finished = finish(error.exitCode);
+        } else {
+          throw error;
+        }
+      }
+      return finished;
+    })();
+    return {
+      id: String(handle.pid),
+      stdout,
+      stderr,
+      write: (data) => handle.sendStdin(data),
+      endInput: () => handle.closeStdin(),
+      wait: () => exitPromise,
+      kill: async (signal) => {
+        if (finished) return false;
+        killed = true;
+        void signal;
+        const did = await handle.kill().catch(() => false);
+        if (did) finished = finish(137);
+        return did;
+      },
+    };
+  }
+
   async checkpoint(
     message: string,
     opts?: { push?: string },
@@ -284,6 +377,10 @@ export class E2BSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
+    for (const handle of [...this.processes]) {
+      await handle.kill().catch(() => false);
+    }
+    this.processes.clear();
     const client = this.client;
     if (!client) return;
 
@@ -590,6 +687,7 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true, // git push over the sandbox's network
       egressControl: false, // not exposed by this adapter yet
       localPath: false, // remote VM; no host-directory import
+      processStream: true,
     },
     create: (spec) => new E2BSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
