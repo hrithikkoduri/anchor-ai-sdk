@@ -92,6 +92,17 @@ done
 echo "external bench=$BENCH model=$MODEL agent=$AGENT shard=$SHARD/$SHARDS tasks=${#IDS[@]}"
 echo "tasks dir: $TASKS_DIR"
 find "$TASKS_DIR" -maxdepth 2 -name task.toml | head -3
+"${PYTHON_BIN:-python3}" - "$TASKS_DIR" <<'PYDEBUG'
+import pathlib, sys
+from harbor.models.task.task import Task
+root = pathlib.Path(sys.argv[1])
+for d in sorted(root.iterdir())[:3]:
+    try:
+        Task(d)
+        print("valid task:", d.name)
+    except Exception as e:
+        print("invalid task:", d.name, type(e).__name__, e)
+PYDEBUG
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$LLM_API_KEY}" "$PYTHON_BIN" -m harbor.cli.main "${ARGS[@]}"
 
