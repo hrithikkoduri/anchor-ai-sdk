@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
-import { spillOrTruncate, truncate } from "../../src/tools/truncate.js";
+import { boundToolResult, spillOrTruncate, truncate } from "../../src/tools/truncate.js";
 
 const big = Array.from(
   { length: 900 },
@@ -28,6 +28,12 @@ describe("spillOrTruncate", () => {
   afterAll(async () => {
     await sandbox.destroy();
     await rm(rootDir, { recursive: true, force: true });
+  });
+
+  it("boundToolResult applies the same public boundary to consumer tools", async () => {
+    const out = await boundToolResult(big, { sandbox, label: "custom" });
+    expect(out).toContain("lines omitted");
+    expect(out).toContain("full output saved");
   });
 
   it("small outputs pass through untouched", async () => {

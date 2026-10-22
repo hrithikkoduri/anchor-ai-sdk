@@ -26,8 +26,12 @@ export function e2bCommand(
   command: string,
   cwd: string,
   timeoutSecs: number,
+  pidFile?: string,
 ): string {
-  return `cd ${shq(cwd)} && timeout -k 5 ${timeoutSecs} bash -c ${shq(command)}`;
+  // `exec` makes the shell PID the timeout process, so a cancellation can
+  // target one known process group instead of pattern-matching command text.
+  const marker = pidFile ? `echo $$ > ${shq(pidFile)}; ` : "";
+  return `cd ${shq(cwd)} && ${marker}exec timeout -k 5 ${timeoutSecs} bash -c ${shq(command)}`;
 }
 
 /** Map E2B's result (or a thrown `CommandExitError`) onto the SDK's ExecResult. */
@@ -86,8 +90,20 @@ export async function killE2bCommand(
       run(command: string, opts?: unknown): unknown;
     };
   },
+  pidFile: string,
   command: string,
 ): Promise<void> {
+  try {
+    const found = await sandbox.commands.run(`cat ${shq(pidFile)} 2>/dev/null`, { timeoutMs: 20_000 });
+    const pid = Number((found as { stdout?: string }).stdout?.trim());
+    if (Number.isInteger(pid) && pid > 0) {
+      await sandbox.commands.run(
+        `kill -TERM -${pid} 2>/dev/null || kill -TERM ${pid} 2>/dev/null || true; sleep 1; kill -KILL -${pid} 2>/dev/null || kill -KILL ${pid} 2>/dev/null || true; rm -f ${shq(pidFile)}`,
+        { timeoutMs: 30_000 },
+      );
+      return;
+    }
+  } catch { /* fall through to the bounded pattern kill */ }
   try {
     await Promise.resolve(
       sandbox.commands.run(
@@ -96,7 +112,6 @@ export async function killE2bCommand(
       ),
     );
   } catch {
-    // The pattern-kill is best-effort; the guest-side `timeout -k` deadline
-    // remains in force even if this control call fails.
+    // The guest-side `timeout -k` deadline remains in force.
   }
 }

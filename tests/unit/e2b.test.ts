@@ -10,8 +10,14 @@ describe("e2b exec plumbing", () => {
   it("wraps a command in a workspace cd and a guest-side kill deadline", () => {
     const command = e2bCommand(`echo "it's fine" && pwd`, "/home/user/repo", 30);
     expect(command).toBe(
-      `cd '/home/user/repo' && timeout -k 5 30 bash -c 'echo "it'\\''s fine" && pwd'`,
+      `cd '/home/user/repo' && exec timeout -k 5 30 bash -c 'echo "it'\\''s fine" && pwd'`,
     );
+  });
+
+  it("writes a PID file before exec when cancellation needs a target", () => {
+    const command = e2bCommand("sleep 1", "/workspace", 10, "/tmp/run.pid");
+    expect(command).toContain("echo $$ > '/tmp/run.pid'");
+    expect(command).toContain("exec timeout -k 5 10 bash -c 'sleep 1'");
   });
 
   it("maps a normal exit without inventing a timeout", () => {

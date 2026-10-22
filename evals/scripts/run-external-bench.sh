@@ -93,26 +93,6 @@ if [ "$AGENT" = "swe-agent" ]; then
 fi
 
 echo "external bench=$BENCH model=$MODEL agent=$AGENT shard=$SHARD/$SHARDS tasks=${#IDS[@]}"
-echo "tasks dir: $TASKS_DIR"
-find "$TASKS_DIR" -maxdepth 2 -name task.toml | head -3
-"${PYTHON_BIN:-python3}" - "$TASKS_DIR" <<'PYDEBUG'
-import pathlib, sys
-from harbor.models.task.task import Task
-root = pathlib.Path(sys.argv[1])
-for d in sorted(root.iterdir())[:3]:
-    try:
-        print("valid task:", d.name, Task.is_valid_dir(d))
-        from harbor.models.task.paths import TaskPaths
-        from harbor.models.task.config import TaskConfig
-        paths = TaskPaths(d)
-        config = TaskConfig.model_validate_toml(paths.config_path.read_text())
-        print("  image:", config.environment.docker_image, "envdir:", paths.environment_dir.is_dir(), "instruction:", paths.instruction_path.is_file())
-        Task._validate_input_paths(config, paths)
-        Task._validate_tests(config, paths)
-        print("  detail ok")
-    except Exception as e:
-        print("invalid task:", d.name, type(e).__name__, e)
-PYDEBUG
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$LLM_API_KEY}" "$PYTHON_BIN" -m harbor.cli.main "${ARGS[@]}"
 

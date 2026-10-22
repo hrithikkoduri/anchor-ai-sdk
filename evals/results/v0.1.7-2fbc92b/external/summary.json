@@ -1,0 +1,903 @@
+{
+  "generatedAt": "2026-10-22T21:44:33.960Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/django__django-10914",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3160708,
+            "completionTokens": 1987,
+            "totalTokens": 3162695
+          },
+          "wallMs": 867867
+        },
+        {
+          "taskId": "swe-bench-lite/matplotlib__matplotlib-18869",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 1914511,
+            "completionTokens": 407,
+            "totalTokens": 1914918
+          },
+          "wallMs": 712361
+        },
+        {
+          "taskId": "swe-bench-lite/mwaskom__seaborn-2848",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3623522,
+            "completionTokens": 242,
+            "totalTokens": 3623764
+          },
+          "wallMs": 1220494
+        },
+        {
+          "taskId": "swe-bench-lite/pallets__flask-4045",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 174149,
+            "completionTokens": 0,
+            "totalTokens": 174149
+          },
+          "wallMs": 154981
+        },
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2030425,
+            "completionTokens": 1205,
+            "totalTokens": 2031630
+          },
+          "wallMs": 878186
+        },
+        {
+          "taskId": "swe-bench-lite/pydata__xarray-3364",
+          "status": "failed",
+          "reward": 0,
+          "error": "Agent execution timed out after 1800.0 seconds",
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 16347938,
+            "completionTokens": 18,
+            "totalTokens": 16347956
+          },
+          "wallMs": 1879206
+        },
+        {
+          "taskId": "swe-bench-lite/pylint-dev__pylint-5859",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 563014,
+            "completionTokens": 583,
+            "totalTokens": 563597
+          },
+          "wallMs": 237466
+        },
+        {
+          "taskId": "swe-bench-lite/pytest-dev__pytest-11143",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 523781,
+            "completionTokens": 365,
+            "totalTokens": 524146
+          },
+          "wallMs": 307750
+        },
+        {
+          "taskId": "swe-bench-lite/sphinx-doc__sphinx-10325",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 951266,
+            "completionTokens": 368,
+            "totalTokens": 951634
+          },
+          "wallMs": 283210
+        },
+        {
+          "taskId": "swe-bench-lite/sympy__sympy-11400",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 392792,
+            "completionTokens": 615,
+            "totalTokens": 393407
+          },
+          "wallMs": 154906
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "tokens": {
+        "prompt": 29682106,
+        "completion": 5790,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 712361,
+      "p95WallMs": 1879206
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/django__django-10914",
+          "status": "failed",
+          "reward": 0,
+          "error": "Agent execution timed out after 1800.0 seconds",
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 4511845,
+            "completionTokens": 76784,
+            "totalTokens": 4588629
+          },
+          "wallMs": 1867554
+        },
+        {
+          "taskId": "swe-bench-lite/matplotlib__matplotlib-18869",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 30603871,
+            "completionTokens": 5762,
+            "totalTokens": 30609633
+          },
+          "wallMs": 1791510
+        },
+        {
+          "taskId": "swe-bench-lite/mwaskom__seaborn-2848",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 1486867,
+            "completionTokens": 1111,
+            "totalTokens": 1487978
+          },
+          "wallMs": 215188
+        },
+        {
+          "taskId": "swe-bench-lite/pallets__flask-4045",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 727249,
+            "completionTokens": 749,
+            "totalTokens": 727998
+          },
+          "wallMs": 176303
+        },
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 773028,
+            "completionTokens": 1345,
+            "totalTokens": 774373
+          },
+          "wallMs": 178231
+        },
+        {
+          "taskId": "swe-bench-lite/pydata__xarray-3364",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 74980,
+            "completionTokens": 81,
+            "totalTokens": 75061
+          },
+          "wallMs": 128216
+        },
+        {
+          "taskId": "swe-bench-lite/pylint-dev__pylint-5859",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 62774
+        },
+        {
+          "taskId": "swe-bench-lite/pytest-dev__pytest-11143",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 56835
+        },
+        {
+          "taskId": "swe-bench-lite/sphinx-doc__sphinx-10325",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 62306
+        },
+        {
+          "taskId": "swe-bench-lite/sympy__sympy-11400",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 60438
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "costUsd": 0,
+      "tokens": {
+        "prompt": 38177840,
+        "completion": 85832,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 176303,
+      "p95WallMs": 1867554
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 5652982,
+            "completionTokens": 946,
+            "totalTokens": 5653928
+          },
+          "wallMs": 1281262
+        },
+        {
+          "taskId": "swebench-pro/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3537827,
+            "completionTokens": 332,
+            "totalTokens": 3538159
+          },
+          "wallMs": 1759265
+        },
+        {
+          "taskId": "swebench-pro/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 162861,
+            "completionTokens": 512,
+            "totalTokens": 163373
+          },
+          "wallMs": 238619
+        },
+        {
+          "taskId": "swebench-pro/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 1790230,
+            "completionTokens": 1641,
+            "totalTokens": 1791871
+          },
+          "wallMs": 1045775
+        },
+        {
+          "taskId": "swebench-pro/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2665243,
+            "completionTokens": 939,
+            "totalTokens": 2666182
+          },
+          "wallMs": 1470063
+        },
+        {
+          "taskId": "swebench-pro/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2221370,
+            "completionTokens": 65,
+            "totalTokens": 2221435
+          },
+          "wallMs": 1812822
+        },
+        {
+          "taskId": "swebench-pro/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2584543,
+            "completionTokens": 841,
+            "totalTokens": 2585384
+          },
+          "wallMs": 807685
+        },
+        {
+          "taskId": "swebench-pro/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+          "status": "failed",
+          "reward": 0,
+          "error": "Agent execution timed out after 6000.0 seconds",
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3414518,
+            "completionTokens": 819,
+            "totalTokens": 3415337
+          },
+          "wallMs": 6058938
+        },
+        {
+          "taskId": "swebench-pro/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 169614,
+            "completionTokens": 265,
+            "totalTokens": 169879
+          },
+          "wallMs": 239572
+        },
+        {
+          "taskId": "swebench-pro/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3530191,
+            "completionTokens": 1973,
+            "totalTokens": 3532164
+          },
+          "wallMs": 1110028
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 6,
+      "meanReward": 0.6,
+      "tokens": {
+        "prompt": 25729379,
+        "completion": 8333,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 1281262,
+      "p95WallMs": 6058938
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swebench-pro/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 31052727,
+            "completionTokens": 13688,
+            "totalTokens": 31066415
+          },
+          "wallMs": 3583854
+        },
+        {
+          "taskId": "swebench-pro/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 32179,
+            "completionTokens": 32,
+            "totalTokens": 32211
+          },
+          "wallMs": 98718
+        },
+        {
+          "taskId": "swebench-pro/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2029754,
+            "completionTokens": 3055,
+            "totalTokens": 2032809
+          },
+          "wallMs": 583046
+        },
+        {
+          "taskId": "swebench-pro/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 4203645,
+            "completionTokens": 18687,
+            "totalTokens": 4222332
+          },
+          "wallMs": 1034308
+        },
+        {
+          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 35238653,
+            "completionTokens": 7489,
+            "totalTokens": 35246142
+          },
+          "wallMs": 2228478
+        },
+        {
+          "taskId": "swebench-pro/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 83029,
+            "completionTokens": 109,
+            "totalTokens": 83138
+          },
+          "wallMs": 310266
+        },
+        {
+          "taskId": "swebench-pro/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 3732410,
+            "completionTokens": 2234,
+            "totalTokens": 3734644
+          },
+          "wallMs": 1222082
+        },
+        {
+          "taskId": "swebench-pro/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 4106830,
+            "completionTokens": 7501,
+            "totalTokens": 4114331
+          },
+          "wallMs": 880581
+        },
+        {
+          "taskId": "swebench-pro/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 6630528,
+            "completionTokens": 10176,
+            "totalTokens": 6640704
+          },
+          "wallMs": 1010271
+        },
+        {
+          "taskId": "swebench-pro/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2729891,
+            "completionTokens": 544,
+            "totalTokens": 2730435
+          },
+          "wallMs": 563330
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 3,
+      "meanReward": 0.3,
+      "tokens": {
+        "prompt": 89839646,
+        "completion": 63515,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 1010271,
+      "p95WallMs": 3583854
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [
+        {
+          "taskId": "terminal-bench/adaptive-rejection-sampler",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 608271,
+            "completionTokens": 94847,
+            "totalTokens": 703118,
+            "cachedTokens": 467456,
+            "costUsd": 0.10070114799999999
+          },
+          "wallMs": 797362
+        },
+        {
+          "taskId": "terminal-bench/chess-best-move",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 622004,
+            "completionTokens": 79477,
+            "totalTokens": 701481,
+            "cachedTokens": 443392,
+            "costUsd": 0.096654112
+          },
+          "wallMs": 575223
+        },
+        {
+          "taskId": "terminal-bench/bn-fit-modify",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 61366,
+            "completionTokens": 13088,
+            "totalTokens": 74454,
+            "cachedTokens": 26624,
+            "costUsd": 0.017228254
+          },
+          "wallMs": 205365
+        },
+        {
+          "taskId": "terminal-bench/circuit-fibsqrt",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 377718,
+            "completionTokens": 72912,
+            "totalTokens": 450630,
+            "cachedTokens": 226304,
+            "costUsd": 0.084888836
+          },
+          "wallMs": 424047
+        },
+        {
+          "taskId": "terminal-bench/break-filter-js-from-html",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 98576,
+            "completionTokens": 20815,
+            "totalTokens": 119391,
+            "cachedTokens": 52224,
+            "costUsd": 0.025364984
+          },
+          "wallMs": 216272
+        },
+        {
+          "taskId": "terminal-bench/cobol-modernization",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 254848,
+            "completionTokens": 47459,
+            "totalTokens": 302307,
+            "cachedTokens": 167424,
+            "costUsd": 0.05427699999999999
+          },
+          "wallMs": 389871
+        },
+        {
+          "taskId": "terminal-bench/build-cython-ext",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 723411,
+            "completionTokens": 24351,
+            "totalTokens": 747762,
+            "cachedTokens": 536064,
+            "costUsd": 0.07380279899999999
+          },
+          "wallMs": 330686
+        },
+        {
+          "taskId": "terminal-bench/code-from-image",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 137145,
+            "completionTokens": 12125,
+            "totalTokens": 149270,
+            "cachedTokens": 81920,
+            "costUsd": 0.023049165000000003
+          },
+          "wallMs": 130890
+        },
+        {
+          "taskId": "terminal-bench/cancel-async-tasks",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 12202,
+            "completionTokens": 27150,
+            "totalTokens": 39352,
+            "cachedTokens": 4608,
+            "costUsd": 0.018312658000000002
+          },
+          "wallMs": 155120
+        },
+        {
+          "taskId": "terminal-bench/compile-compcert",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 1011082,
+            "completionTokens": 15620,
+            "totalTokens": 1026702,
+            "cachedTokens": 789504,
+            "costUsd": 0.082800322
+          },
+          "wallMs": 1177896
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 8,
+      "meanReward": 0.8,
+      "costUsd": 0.5770792779999999,
+      "tokens": {
+        "prompt": 3906623,
+        "completion": 407844,
+        "cached": 2795520
+      },
+      "cacheKnown": true,
+      "cacheHitRate": 0.7155847902395496,
+      "p50WallMs": 389871,
+      "p95WallMs": 1177896
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [
+        {
+          "taskId": "terminal-bench/adaptive-rejection-sampler",
+          "status": "failed",
+          "reward": 0,
+          "error": "Agent execution timed out after 900.0 seconds",
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 495261,
+            "completionTokens": 30794,
+            "totalTokens": 526055,
+            "cachedTokens": 445536,
+            "costUsd": 0.06178971999999999
+          },
+          "wallMs": 944354
+        },
+        {
+          "taskId": "terminal-bench/chess-best-move",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 710798,
+            "completionTokens": 21434,
+            "totalTokens": 732232,
+            "cachedTokens": 657152,
+            "costUsd": 0.06958535999999999
+          },
+          "wallMs": 435668
+        },
+        {
+          "taskId": "terminal-bench/bn-fit-modify",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 991342,
+            "completionTokens": 18474,
+            "totalTokens": 1009816,
+            "cachedTokens": 930784,
+            "costUsd": 0.08720104000000001
+          },
+          "wallMs": 1410284
+        },
+        {
+          "taskId": "terminal-bench/circuit-fibsqrt",
+          "status": "failed",
+          "reward": 0,
+          "error": "litellm.APIError: APIError: OpenrouterException - {\"error\":{\"message\":\"This request would exceed your available credits given your current in-flight requests. Retry after in-flight requests settle, or add credits.\",\"code\":402,\"metadata\":{\"reason\":\"in_flight_budget_exhausted\",\"limit_source\":\"openrouter_in_flight_budget\",\"remedy_hint\":\"Retry after your in-flight requests settle (see the Retry-After header). Adding credits at https://openrouter.ai/settings/credits raises your in-flight budget, up to a capped ceiling.\",\"headers\":{\"Retry-After\":\"120\"},\"provider_name\":null}},\"user_id\":\"user_3KnrwxGsmXV1Kg2nUDdq8cUh07h\"}",
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 4386832,
+            "completionTokens": 43981,
+            "totalTokens": 4430813,
+            "cachedTokens": 4302496,
+            "costUsd": 0.34647984
+          },
+          "wallMs": 2257796
+        },
+        {
+          "taskId": "terminal-bench/break-filter-js-from-html",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 1362838,
+            "completionTokens": 22998,
+            "totalTokens": 1385836,
+            "cachedTokens": 1309952,
+            "costUsd": 0.11644136
+          },
+          "wallMs": 938036
+        },
+        {
+          "taskId": "terminal-bench/cobol-modernization",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 839812,
+            "completionTokens": 15712,
+            "totalTokens": 855524,
+            "cachedTokens": 795328,
+            "costUsd": 0.07358064000000003
+          },
+          "wallMs": 338794
+        },
+        {
+          "taskId": "terminal-bench/build-cython-ext",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 2016653,
+            "completionTokens": 13631,
+            "totalTokens": 2030284,
+            "cachedTokens": 1945888,
+            "costUsd": 0.15560875999999998
+          },
+          "wallMs": 860213
+        },
+        {
+          "taskId": "terminal-bench/code-from-image",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 227745,
+            "completionTokens": 8782,
+            "totalTokens": 236527,
+            "cachedTokens": 199648,
+            "costUsd": 0.024372599999999998
+          },
+          "wallMs": 238223
+        },
+        {
+          "taskId": "terminal-bench/cancel-async-tasks",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 41968,
+            "completionTokens": 2954,
+            "totalTokens": 44922,
+            "cachedTokens": 34272,
+            "costUsd": 0.005685759999999999
+          },
+          "wallMs": 90269
+        },
+        {
+          "taskId": "terminal-bench/compile-compcert",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": true,
+          "usage": {
+            "promptTokens": 837710,
+            "completionTokens": 6083,
+            "totalTokens": 843793,
+            "cachedTokens": 793152,
+            "costUsd": 0.06573400000000001
+          },
+          "wallMs": 1676305
+        }
+      ],
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 3,
+      "meanReward": 0.3,
+      "costUsd": 1.00647908,
+      "tokens": {
+        "prompt": 11910959,
+        "completion": 184843,
+        "cached": 11414208
+      },
+      "cacheKnown": true,
+      "cacheHitRate": 0.958294625982677,
+      "p50WallMs": 938036,
+      "p95WallMs": 2257796
+    }
+  ]
+}

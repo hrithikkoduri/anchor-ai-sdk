@@ -1,0 +1,36 @@
+{
+  "sdkVersion": "0.1.7",
+  "gitSha": "2fbc92b745cedd4f913bf9f31a07613d087271d9",
+  "gitDescribe": "v0.1.7-46-g2fbc92b",
+  "tag": "v0.1.7",
+  "tagCommit": "08472b12f782cc1bf4b590a91a3511fb889edf09",
+  "note": "Measured at current main (package version 0.1.7), not at tag v0.1.7. The tag predates the bench workflow.",
+  "generatedAt": "2026-10-22",
+  "models": [
+    "deepseek/deepseek-v4.1-flash-1017",
+    "qwen/qwen3-coder-next"
+  ],
+  "budgets": {
+    "maxSteps": 300,
+    "maxTokens": 50000000
+  },
+  "runs": [
+    {
+      "id": 39829353245,
+      "label": "full run (#3)",
+      "status": "partial: one Anchor Lite Qwen job failed"
+    },
+    {
+      "id": 39846226796,
+      "label": "Anchor Lite Qwen retry",
+      "status": "success"
+    }
+  ],
+  "externalRuns": [
+    {
+      "id": 39829353245,
+      "label": "external full from #3",
+      "status": "artifacts recovered; aggregate publish failed on >100MB trajectories"
+    }
+  ]
+}

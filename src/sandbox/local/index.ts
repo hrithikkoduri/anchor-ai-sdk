@@ -16,6 +16,7 @@
  *   - checkpoints are plain git commits
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { cp, mkdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -27,7 +28,10 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
+  type ProcessHandle,
+  type ProcessOptions,
 } from "../types.js";
+import { ChildProcessHandle } from "../process.js";
 import type { SandboxProvider } from "../provider.js";
 import {
   checkpointVia,
@@ -57,6 +61,7 @@ export class LocalSandbox implements Sandbox {
 
   private started = false;
   private destroyed = false;
+  private readonly processes = new Map<string, ChildProcessHandle>();
 
   constructor(
     private readonly spec: SandboxSpec,
@@ -159,6 +164,33 @@ export class LocalSandbox implements Sandbox {
     });
   }
 
+  async openProcess(
+    command: string,
+    args: string[],
+    opts: ProcessOptions = {},
+  ): Promise<ProcessHandle> {
+    this.assertUsable();
+    if (this.processes.size >= 8) {
+      throw new Error("local sandbox process limit reached (8)");
+    }
+    const id = randomUUID();
+    const timeoutSecs = clampTimeout(opts.timeoutSecs ?? 3600);
+    const child = spawn(command, args, {
+      cwd: opts.cwd ?? this.workspace,
+      env: { ...process.env, ...this.spec.env, ...opts.env },
+      detached: true,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    const handle = new ChildProcessHandle(id, child, {
+      ...opts,
+      timeoutSecs,
+      processGroup: true,
+      onClose: () => this.processes.delete(id),
+    });
+    this.processes.set(id, handle);
+    return handle;
+  }
+
   async checkpoint(
     message: string,
     opts?: { push?: string },
@@ -204,6 +236,11 @@ export class LocalSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
+    for (const handle of [...this.processes.values()]) {
+      await handle.kill("SIGKILL").catch(() => undefined);
+      await handle.wait().catch(() => undefined);
+    }
+    this.processes.clear();
     if (this.spec.keep || this.spec.retain) {
       process.stderr.write(
         this.spec.keep
@@ -386,6 +423,7 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true, // file-backed pushes to a host origin work
       egressControl: false,
       localPath: true,
+      processStream: true,
     },
     create: (spec) => new LocalSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

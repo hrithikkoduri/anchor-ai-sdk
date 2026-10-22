@@ -127,6 +127,9 @@ for (const file of await walk(root)) {
       ...(trial.exception_info
         ? { error: trial.exception_info.exception_message }
         : {}),
+      cacheKnown:
+        trial.agent_result?.n_cache_tokens !== null &&
+        trial.agent_result?.n_cache_tokens !== undefined,
       usage: {
         promptTokens: inputTokens,
         completionTokens: outputTokens,
@@ -166,6 +169,7 @@ const rows = [...groups.values()].map((group) => {
       ? group.results.reduce((sum, r) => sum + (r.usage?.costUsd ?? 0), 0)
       : undefined,
     tokens,
+    cacheKnown: group.results.some((r) => r.cacheKnown === true),
     cacheHitRate: tokens.prompt > 0 ? tokens.cached / tokens.prompt : undefined,
     p50WallMs: walls.length ? walls[Math.floor(walls.length / 2)] : undefined,
     p95WallMs: walls.length ? walls[Math.min(walls.length - 1, Math.floor(0.95 * walls.length))] : undefined,
@@ -187,7 +191,7 @@ const lines = [
   "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
   ...rows.map(
     (row) =>
-      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${tok(row.tokens.prompt)} | ${tok(row.tokens.completion)} | ${tok(row.tokens.cached)} | ${row.cacheHitRate == null ? "—" : `${(row.cacheHitRate * 100).toFixed(1)}%`} | ${row.costUsd == null ? "—" : money(row.costUsd)} | ${mins(row.p50WallMs)} | ${mins(row.p95WallMs)} |`,
+      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${tok(row.tokens.prompt)} | ${tok(row.tokens.completion)} | ${row.cacheKnown ? tok(row.tokens.cached) : "—"} | ${!row.cacheKnown || row.cacheHitRate == null ? "—" : `${(row.cacheHitRate * 100).toFixed(1)}%`} | ${row.costUsd == null ? "—" : money(row.costUsd)} | ${mins(row.p50WallMs)} | ${mins(row.p95WallMs)} |`,
   ),
   "",
   "## Per task",

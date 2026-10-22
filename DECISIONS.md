@@ -1030,3 +1030,26 @@ Regressions: `tests/unit/ledger.test.ts`,
 `tests/unit/ledger-compiler.test.ts`,
 `tests/unit/engine-verifier.test.ts`,
 `tests/unit/structured-output.test.ts`.
+
+## Decision #86: Persistent process streams are an optional sandbox capability
+
+`exec()` is one-shot by design; LSPs, REPLs, watchers, and dev servers need a
+process that stays alive and exchanges bytes. `Sandbox.openProcess(command,
+args, opts)` is the generic primitive: no shell interpolation, separate
+stdin/stdout/stderr, `write`/`endInput`, async output streams, `wait`, `kill`,
+`timeoutSecs`, and `AbortSignal`. `capabilities.processStream` says whether a
+backend implements it.
+
+Local, Docker, and E2B implement it. Docker runs `docker exec -i` and
+best-effort kills the guest PID. E2B uses its native background command handle
+with `stdin: true`. Heyo omits the capability: its current adapter has only
+one-shot `exec` requests and no persistent guest channel; faking it with
+repeated execs would break stdin/stream semantics. Sandbox `destroy()` closes
+every open process; each backend caps concurrent streams and rejects clearly
+above the cap.
+
+No LSP or JSON-RPC types live in core. `anchor-ai-sdk/lsp` can layer framing and
+language-server behavior on this primitive.
+
+Regressions: `tests/unit/local-process.test.ts`,
+`tests/unit/sandbox-egress.test.ts`.

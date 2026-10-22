@@ -89,6 +89,33 @@ export interface ExecOptions {
   signal?: AbortSignal;
 }
 
+export interface ProcessOptions {
+  /** Working directory; defaults to the sandbox workspace. */
+  cwd?: string;
+  /** Extra environment for this process only. */
+  env?: Record<string, string>;
+  /** Hard lifetime; the process is killed at the deadline. */
+  timeoutSecs?: number;
+  /** Caller cancellation; also kills the process. */
+  signal?: AbortSignal;
+}
+
+export interface ProcessHandle {
+  /** Stable id for diagnostics and cleanup. */
+  readonly id: string;
+  /** Write bytes/UTF-8 to stdin, honoring backpressure. */
+  write(data: string | Uint8Array): Promise<void>;
+  /** Close stdin without killing stdout/stderr. */
+  endInput(): Promise<void>;
+  /** Readable output streams. Both are always present. */
+  readonly stdout: AsyncIterable<Uint8Array>;
+  readonly stderr: AsyncIterable<Uint8Array>;
+  /** Resolves on exit; rejects only on transport failure. */
+  wait(): Promise<{ exitCode: number; signal?: string; timedOut: boolean }>;
+  /** Kill the process group where possible. Idempotent. */
+  kill(signal?: "SIGTERM" | "SIGKILL"): Promise<boolean>;
+}
+
 export interface Checkpoint {
   /** Git commit sha the workspace was checkpointed at. */
   sha: string;
@@ -190,6 +217,16 @@ export interface Sandbox {
   start(): Promise<void>;
   /** Run one self-contained, time-bounded command. */
   exec(command: string, opts?: ExecOptions): Promise<ExecResult>;
+  /**
+   * Start a long-lived process with piped stdin/stdout/stderr. Optional: only
+   * providers that declare capabilities.processStream implement it. No shell
+   * interpolation — command and args are separate.
+   */
+  openProcess?(
+    command: string,
+    args: string[],
+    opts?: ProcessOptions,
+  ): Promise<ProcessHandle>;
   /**
    * A backgrounded job's completion, or `undefined` while it is still
    * running. Throws when the job is unknown (already reaped, or the sandbox

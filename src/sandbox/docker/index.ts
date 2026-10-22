@@ -16,6 +16,7 @@
  * host platform's business, not this adapter's.
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   clampTimeout,
   newSandboxId,
@@ -25,7 +26,10 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
+  type ProcessHandle,
+  type ProcessOptions,
 } from "../types.js";
+import { ChildProcessHandle } from "../process.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -55,6 +59,19 @@ export class DockerSandbox implements Sandbox {
 
   private started = false;
   private destroyed = false;
+  private readonly jobs = new Map<
+    string,
+    {
+      child: ReturnType<typeof spawn>;
+      startedAt: number;
+      timeoutSecs: number;
+      stdout: string;
+      stderr: string;
+      output: string;
+      result?: ExecResult;
+    }
+  >();
+  private readonly processes = new Map<string, ChildProcessHandle>();
 
   constructor(
     private readonly spec: SandboxSpec,
@@ -249,10 +266,7 @@ export class DockerSandbox implements Sandbox {
       const off = await this.cli(["network", "disconnect", network, this.id], {
         timeoutSecs: 60,
       });
-      if (
-        off.exitCode !== 0 &&
-        !/not connected|is not connected/i.test(off.output)
-      ) {
+      if (off.exitCode !== 0 && !/not connected|is not connected/i.test(off.output)) {
         throw new Error(
           `docker egress: could not disconnect ${this.id} from ${network}: ${off.output.trim()}`,
         );
@@ -262,14 +276,16 @@ export class DockerSandbox implements Sandbox {
 
   async exec(command: string, opts: ExecOptions = {}): Promise<ExecResult> {
     this.assertUsable();
+    if (opts.backgroundAfterSecs !== undefined && opts.backgroundAfterSecs > 0) {
+      return this.execBackground(command, opts);
+    }
     return this.execRaw(command, opts);
   }
 
-  /** Exec without the started guard — start()'s own setup uses this. */
-  private execRaw(
+  private execArgs(
     command: string,
-    opts: ExecOptions = {},
-  ): Promise<ExecResult> {
+    opts: ExecOptions,
+  ): { args: string[]; timeoutSecs: number } {
     const timeoutSecs = clampTimeout(opts.timeoutSecs);
     const cwd = opts.cwd ?? this.workspace;
     const env = { ...this.spec.env, ...opts.env };
@@ -280,8 +296,9 @@ export class DockerSandbox implements Sandbox {
     // Guest-side deadline (docker exec has none); the inner shell string is
     // ONE argv element, so quoting survives without a host shell.
     const inner = `cd ${shq(cwd)} && ${command}`;
-    return this.cli(
-      [
+    return {
+      timeoutSecs,
+      args: [
         "exec",
         ...envFlags,
         this.id,
@@ -293,8 +310,200 @@ export class DockerSandbox implements Sandbox {
         "-c",
         inner,
       ],
-      { timeoutSecs, signal: opts.signal },
+    };
+  }
+
+  /** Exec without the started guard — start()'s own setup uses this. */
+  private execRaw(
+    command: string,
+    opts: ExecOptions = {},
+  ): Promise<ExecResult> {
+    const { args, timeoutSecs } = this.execArgs(command, opts);
+    return this.cli(args, { timeoutSecs, signal: opts.signal });
+  }
+
+  /**
+   * Detached host-side docker-exec process. The guest command still has its
+   * hard timeout; the caller gets a job handle after backgroundAfterSecs and
+   * polls the same child later.
+   */
+  private execBackground(
+    command: string,
+    opts: ExecOptions,
+  ): Promise<ExecResult> {
+    const { args, timeoutSecs } = this.execArgs(command, opts);
+    const jobId = randomUUID();
+    const startedAt = Date.now();
+    const thresholdMs = Math.max(0, (opts.backgroundAfterSecs ?? 0) * 1000);
+    const child = spawn(this.dockerBin, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const job: {
+      child: ReturnType<typeof spawn>;
+      startedAt: number;
+      timeoutSecs: number;
+      stdout: string;
+      stderr: string;
+      output: string;
+      result?: ExecResult;
+    } = {
+      child,
+      startedAt,
+      timeoutSecs,
+      stdout: "",
+      stderr: "",
+      output: "",
+    };
+    this.jobs.set(jobId, job);
+    let timedOut = false;
+    let settled = false;
+
+    return new Promise((resolve) => {
+      const threshold = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({
+          exitCode: -1,
+          stdout: job.stdout,
+          stderr: job.stderr,
+          output: job.output,
+          timedOut: false,
+          durationMs: Date.now() - startedAt,
+          background: { jobId },
+        });
+      }, thresholdMs);
+      const guard = setTimeout(
+        () => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        },
+        (timeoutSecs + 60) * 1000,
+      );
+      const finish = (exitCode: number): ExecResult => {
+        const result: ExecResult = {
+          exitCode,
+          stdout: job.stdout,
+          stderr: job.stderr,
+          output: job.output,
+          timedOut: timedOut || exitCode === 124 || exitCode === 137,
+          durationMs: Date.now() - startedAt,
+        };
+        return result;
+      };
+      child.stdout.on("data", (chunk: Buffer) => {
+        job.stdout += chunk.toString();
+        job.output += chunk.toString();
+      });
+      child.stderr.on("data", (chunk: Buffer) => {
+        job.stderr += chunk.toString();
+        job.output += chunk.toString();
+      });
+      child.on("error", (err) => {
+        clearTimeout(threshold);
+        clearTimeout(guard);
+        const result = finish(-1);
+        result.output += `${err.message}
+`;
+        job.result = result;
+        if (!settled) {
+          settled = true;
+          resolve(result);
+        }
+      });
+      child.on("close", (code) => {
+        clearTimeout(threshold);
+        clearTimeout(guard);
+        const result = finish(code ?? -1);
+        job.result = result;
+        if (!settled) {
+          settled = true;
+          this.jobs.delete(jobId);
+          resolve(result);
+        }
+      });
+    });
+  }
+
+  async openProcess(
+    command: string,
+    args: string[],
+    opts: ProcessOptions = {},
+  ): Promise<ProcessHandle> {
+    this.assertUsable();
+    if (this.processes.size >= 8) {
+      throw new Error("docker sandbox process limit reached (8)");
+    }
+    const id = randomUUID();
+    const timeoutSecs = clampTimeout(opts.timeoutSecs ?? 3600);
+    const pidFile = `/tmp/anchor-process-${id}.pid`;
+    const env = { ...this.spec.env, ...opts.env };
+    const envFlags = Object.entries(env).flatMap(([key, value]) => [
+      "-e",
+      `${key}=${value}`,
+    ]);
+    const script = `echo $$ > ${shq(pidFile)}; exec "$@"`;
+    const child = spawn(
+      this.dockerBin,
+      [
+        "exec",
+        "-i",
+        ...envFlags,
+        "-w",
+        opts.cwd ?? this.workspace,
+        this.id,
+        "bash",
+        "-c",
+        script,
+        "anchor-process",
+        command,
+        ...args,
+      ],
+      { stdio: ["pipe", "pipe", "pipe"] },
     );
+    const handle = new ChildProcessHandle(id, child, {
+      ...opts,
+      timeoutSecs,
+      processGroup: false,
+      killGuest: async () => {
+        await this.cli([
+          "exec",
+          this.id,
+          "bash",
+          "-c",
+          `p=$(cat ${shq(pidFile)} 2>/dev/null) || exit 0; kill -TERM -$p 2>/dev/null || kill -TERM $p 2>/dev/null || true; rm -f ${shq(pidFile)}`,
+        ], { timeoutSecs: 30 });
+      },
+      onClose: () => this.processes.delete(id),
+    });
+    this.processes.set(id, handle);
+    return handle;
+  }
+
+  async pollJob(
+    jobId: string,
+  ): Promise<ExecResult | undefined> {
+    const job = this.jobs.get(jobId);
+    if (!job || !job.result) return undefined;
+    this.jobs.delete(jobId);
+    return job.result;
+  }
+
+  async killJob(jobId: string): Promise<boolean> {
+    const job = this.jobs.get(jobId);
+    if (!job) return false;
+    job.child.kill("SIGKILL");
+    this.jobs.delete(jobId);
+    return true;
+  }
+
+  async killAllJobs(): Promise<number> {
+    let killed = 0;
+    for (const [id, job] of this.jobs) {
+      job.child.kill("SIGKILL");
+      this.jobs.delete(id);
+      killed += 1;
+    }
+    return killed;
   }
 
   async checkpoint(
@@ -319,6 +528,11 @@ export class DockerSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
+    for (const handle of [...this.processes.values()]) {
+      await handle.kill("SIGKILL").catch(() => undefined);
+      await handle.wait().catch(() => undefined);
+    }
+    this.processes.clear();
     if (this.spec.keep || this.spec.retain) {
       if (!this.opts.quiet) {
         process.stderr.write(
@@ -467,6 +681,7 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true,
       egressControl: true, // `--network none` shape via disconnect after setup
       localPath: false,
+      processStream: true,
     },
     create: (spec) => new DockerSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

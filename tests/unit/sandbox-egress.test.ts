@@ -47,3 +47,14 @@ describe("egress control", () => {
     ).rejects.toThrow(/no egress control/);
   });
 });
+
+describe("persistent process streams", () => {
+  it("advertises the capability only where it is implemented", () => {
+    expect(local().capabilities.processStream).toBe(true);
+    expect(docker({ image: "ubuntu:24.04" }).capabilities.processStream).toBe(
+      true,
+    );
+    expect(heyo(heyoConfig).capabilities.processStream).toBeUndefined();
+    expect(e2b({ template: "base", quiet: true }).capabilities.processStream).toBeUndefined();
+  });
+});

@@ -28,6 +28,8 @@ export interface SandboxCapabilities {
    * conformance suite gates its host-filesystem scenarios on this.
    */
   localPath: boolean;
+  /** Persistent stdin/stdout process streams (`Sandbox.openProcess`). */
+  processStream?: boolean;
   /**
    * Provider-specific flags beyond the contract — declared, never implied.
    * (Deliberately not an index signature: a typo must not type-check as a

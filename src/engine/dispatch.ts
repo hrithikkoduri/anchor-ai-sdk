@@ -12,6 +12,7 @@ import type { Tool } from "../tools/types.js";
 import type { ToolContext } from "../tools/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { toolVerb } from "../tools/activity.js";
+import { boundToolResult, TOOL_RESULT_MAX_CHARS } from "../tools/truncate.js";
 import { toolResultMessage } from "./context.js";
 import type { EventSink } from "./events.js";
 import type { ToolResultRecord } from "./strategy.js";
@@ -126,7 +127,21 @@ async function invoke(
     };
   }
   try {
-    return { result: await tool.run(input, ctx) };
+    const result = await tool.run(input, ctx);
+    // Consumer tools are not required to know the truncation policy. Enforce
+    // one ceiling here so a badly behaved tool cannot flood context.
+    if (result.content.length > TOOL_RESULT_MAX_CHARS) {
+      return {
+        result: {
+          ...result,
+          content: await boundToolResult(result.content, {
+            ...(ctx.sandbox ? { sandbox: ctx.sandbox } : {}),
+            label: `tool-${name}`,
+          }),
+        },
+      };
+    }
+    return { result };
   } catch (err) {
     return {
       result: {

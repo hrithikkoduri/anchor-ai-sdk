@@ -12,6 +12,10 @@ on:
         description: Comma-separated OpenRouter model ids
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      sdk_ref:
+        description: Git ref/SHA to benchmark (blank = the workflow ref)
+        type: string
+        default: ""
       variants:
         description: Comma-separated harness variants
         type: string
@@ -54,6 +58,9 @@ on:
       models:
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      sdk_ref:
+        type: string
+        default: ""
       variants:
         type: string
         default: baseline,progress
@@ -141,10 +148,16 @@ jobs:
       TASKS: ${{ inputs.tasks }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sdk_ref || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - name: Version metadata
+        run: |
+          echo "SDK_VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+          echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Install
         run: |
           npm ci
@@ -198,7 +211,8 @@ jobs:
           mkdir -p latest "runs/$GITHUB_RUN_ID"
           cp .bench-results/summary.json latest/
           cp .bench-results/summary.md latest/
-          cp -R .bench-results/. "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.json "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.md "runs/$GITHUB_RUN_ID/"
           mkdir -p dashboard
           cp -R /tmp/anchor-dashboard/. dashboard/
           git add latest runs dashboard

@@ -39,7 +39,8 @@ export function toolByName(name: string): Tool | undefined {
   return allTools.find((t) => t.definition.name === name);
 }
 
-export { truncate } from "./truncate.js";
+export { boundToolResult, spillOrTruncate, truncate, TOOL_RESULT_MAX_CHARS } from "./truncate.js";
+export type { SpillTarget, TruncateOptions } from "./truncate.js";
 export { toolVerb } from "./activity.js";
 export {
   defineTool,

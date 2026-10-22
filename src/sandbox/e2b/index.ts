@@ -16,6 +16,7 @@
  * deadline, so every command is wrapped in guest-side `timeout -k` and exit
  * 124/137 is reported as `timedOut`.
  */
+import { randomUUID } from "node:crypto";
 import {
   CommandExitError,
   Sandbox as E2BClient,
@@ -548,8 +549,9 @@ export class E2BSandbox implements Sandbox {
         output += data;
       },
     } satisfies Parameters<typeof client.commands.run>[1];
+    const pidFile = `/tmp/anchor-e2b-${randomUUID()}.pid`;
     const pending = client.commands.run(
-      e2bCommand(command, cwd, timeoutSecs),
+      e2bCommand(command, cwd, timeoutSecs, pidFile),
       runOptions,
     );
 
@@ -557,7 +559,7 @@ export class E2BSandbox implements Sandbox {
     let abortListener: (() => void) | undefined;
     if (abortSignal) {
       if (abortSignal.aborted) {
-        await killE2bCommand(client, command);
+        await killE2bCommand(client, pidFile, command);
         return {
           exitCode: 130,
           stdout,
@@ -579,7 +581,7 @@ export class E2BSandbox implements Sandbox {
         ),
       ]);
       if (raced === "aborted") {
-        await killE2bCommand(client, command);
+        await killE2bCommand(client, pidFile, command);
         return {
           exitCode: 130,
           stdout,
