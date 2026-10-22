@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-10-22T06:11:42.024Z",
+  "runs": [
+    {
+      "bench": "swe-pro",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 1,
+      "meanReward": 1,
+      "falseFinishes": 0,
+      "timeouts": 0,
+      "costUsd": 0.8183349999999998,
+      "p50WallMs": 542588,
+      "runs": [
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "openai/gpt-5.3-codex",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.8183349999999998,
+          "wallMsP50": 542588,
+          "wallMsP95": 542588,
+          "startedAt": "2026-10-22T06:02:14.409Z",
+          "finishedAt": "2026-10-22T06:11:17.493Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 8
+          },
+          "contextWindow": 400000,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/openai-gpt-5.3-codex/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "bench": "swe-pro",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1676116,
+        "completionTokens": 29226,
+        "totalTokens": 1705342,
+        "costUsd": 0.8183349999999998,
+        "reasoningTokens": 22387
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/mocks/databasemock.js...\nChecking patch test/socket.io.js...\nChecking patch test/user.js...\nApplied patch test/mocks/databasemock.js cleanly.\nApplied patch test/socket.io.js cleanly.\nApplied patch test/user.js cleanly.\nRequired tests: 2\nPassed tests: 681\nRequired tests that passed: 2\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 4,
+        "search": 39,
+        "read_file": 28,
+        "bash": 4,
+        "edit_file": 17,
+        "run_tests": 2
+      },
+      "wallMs": 542588,
+      "patchChars": 174771
+    }
+  ]
+}
