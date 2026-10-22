@@ -71,6 +71,9 @@ for ID in "${IDS[@]}"; do
   if [ -n "$TIME_BUDGET" ]; then
     EXTRA+=(--time-budget "$TIME_BUDGET")
   fi
+  if [ "$VARIANT" = "progress" ]; then
+    EXTRA+=(--verifier)
+  fi
   # Qwen3-Coder-Next exposes no reasoning-effort variants; sending the
   # OpenRouter reasoning field to it is not a fair control.
   MODEL_REASONING="$REASONING"
