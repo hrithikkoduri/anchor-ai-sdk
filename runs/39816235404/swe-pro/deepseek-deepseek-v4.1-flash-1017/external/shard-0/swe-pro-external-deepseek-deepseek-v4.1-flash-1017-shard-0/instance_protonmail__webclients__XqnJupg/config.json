@@ -1,0 +1,19 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
+        "source": "tasks"
+    },
+    "trial_name": "instance_protonmail__webclients__XqnJupg",
+    "trials_dir": "external-runs/swe-pro/deepseek-deepseek-v4.1-flash-1017/external/shard-0/swe-pro-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+    "agent_timeout_multiplier": 2.0,
+    "agent_setup_timeout_multiplier": 4.0,
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "7a3cdd5c-5e31-4c80-bdae-e86b4454b575"
+}

@@ -1,0 +1,14 @@
+PASS src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+  mimeTypeFromFile
+    ✓ Based on File.type (3 ms)
+    ✓ Based on mimetypeFromExtension() (14 ms)
+    ✓ Fallback to application/octet-stream
+  isSupportedImage
+    ✓ treats HEIC and JXL as supported images on Safari 17 on macOS
+    ✓ does not treat HEIC and JXL as supported images on Chrome (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        28.341 s
+Ran all test suites matching /applications\/drive\/src\/app\/store\/_uploads\/mimeTypeParser\/mimeTypeParser.test.ts/i.

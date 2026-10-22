@@ -1,6 +1,37 @@
 {
-  "generatedAt": "2026-10-22T16:40:16.392Z",
+  "generatedAt": "2026-10-22T17:57:19.353Z",
   "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/django__django-10914",
+          "status": "completed",
+          "reward": 0,
+          "usage": {
+            "promptTokens": 2338142,
+            "completionTokens": 802,
+            "totalTokens": 2338944
+          },
+          "wallMs": 745106
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "tokens": {
+        "prompt": 2338142,
+        "completion": 802,
+        "cached": 0
+      },
+      "cacheHitRate": 0,
+      "p50WallMs": 745106,
+      "p95WallMs": 745106
+    },
     {
       "bench": "swe-pro",
       "model": "deepseek/deepseek-v4.1-flash-1017",
@@ -8,30 +39,63 @@
       "agent": "swe-agent",
       "results": [
         {
-          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+          "taskId": "swebench-pro/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
           "status": "completed",
           "reward": 1,
           "usage": {
-            "promptTokens": 0,
-            "completionTokens": 0,
-            "totalTokens": 0,
-            "costUsd": 0
+            "promptTokens": 15015530,
+            "completionTokens": 1411,
+            "totalTokens": 15016941
           },
-          "wallMs": 1686468
+          "wallMs": 4207869
         }
       ],
       "tasks": 1,
       "scored": 1,
       "fullCredit": 1,
       "meanReward": 1,
-      "costUsd": 0,
       "tokens": {
-        "prompt": 0,
-        "completion": 0,
+        "prompt": 15015530,
+        "completion": 1411,
         "cached": 0
       },
-      "p50WallMs": 1686468,
-      "p95WallMs": 1686468
+      "cacheHitRate": 0,
+      "p50WallMs": 4207869,
+      "p95WallMs": 4207869
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [
+        {
+          "taskId": "terminal-bench/chess-best-move",
+          "status": "completed",
+          "reward": 1,
+          "usage": {
+            "promptTokens": 435581,
+            "completionTokens": 98198,
+            "totalTokens": 533779,
+            "cachedTokens": 284160,
+            "costUsd": 0.103479833
+          },
+          "wallMs": 611343
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 1,
+      "meanReward": 1,
+      "costUsd": 0.103479833,
+      "tokens": {
+        "prompt": 435581,
+        "completion": 98198,
+        "cached": 284160
+      },
+      "cacheHitRate": 0.6523700528719113,
+      "p50WallMs": 611343,
+      "p95WallMs": 611343
     }
   ]
 }

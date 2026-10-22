@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | mimeTypeFromFile Based on File.type",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | mimeTypeFromFile Based on mimetypeFromExtension()",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | mimeTypeFromFile Fallback to application/octet-stream",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | isSupportedImage treats HEIC and JXL as supported images on Safari 17 on macOS",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | isSupportedImage does not treat HEIC and JXL as supported images on Chrome",
+      "status": "PASSED"
+    }
+  ]
+}

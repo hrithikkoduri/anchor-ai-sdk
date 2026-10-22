@@ -1,0 +1,19 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/django__django-10914",
+        "source": "tasks"
+    },
+    "trial_name": "django__django-10914__ykcL5dP",
+    "trials_dir": "external-runs/swe-lite/deepseek-deepseek-v4.1-flash-1017/external/shard-0/swe-lite-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+    "agent_timeout_multiplier": 2.0,
+    "agent_setup_timeout_multiplier": 4.0,
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "0bbace90-bc72-49e7-9bd5-63aab40264e7"
+}
