@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-10-22T15:14:52.913Z",
+  "generatedAt": "2026-10-22T15:38:26.560Z",
   "runs": [
     {
       "bench": "swe-lite",
       "model": "deepseek/deepseek-v4.1-flash-1017",
       "variant": "external",
-      "agent": "swe-agent",
+      "agent": "openhands",
       "results": [
         {
           "taskId": "swe-bench-lite/psf__requests-1963",
           "status": "failed",
           "reward": 0,
-          "error": "Agent execution timed out after 900.0 seconds",
+          "error": "Command failed (exit 1): set -euo pipefail; curl -LsSf https://astral.sh/uv/install.sh | sh && if [ -f \"$HOME/.local/bin/env\" ]; then source \"$HOME/.local/bin/env\"; fi && uv python install 3.13 && uv venv /opt/openhands-venv --python 3.13 && source /opt/openhands-venv/bin/activate && export SKIP_VSCODE_BUILD=true && uv pip install openhands-ai && /opt/openhands-venv/bin/python -m openhands.core.main --version\nstdout: downloading uv 0.13.5 x86_64-unknown-linux-gnu\ninstalling to /root/.local/bin\n  uv\n  uvx\neverything's installed!\n\nTo add $HOME/.local/bin to your PATH, either restart your shell or run:\n\n    source $HOME/.local/bin/env (sh, bash, zsh)\n    source $HOM ... [9125 chars truncated] ... classifiers==2026.9.21.13\n + truststore==0.10.5\n + types-toml==0.10.8.20260518\n + typing-extensions==4.16.0\n + typing-inspection==0.4.4\n + tzdata==2026.5\n + uncalled-for==0.4.1\n + uri-template==1.3.0\n + uritemplate==4.2.0\n + urllib3==2.7.0\n + uuid7==0.1.0\n + uvicorn==0.54.0\n + virtualenv==21.14.12\n + watchfiles==1.3.0\n + wcwidth==0.9.3\n + webcolors==25.10.0\n + webencodings==0.6.1\n + websocket-client==1.9.2\n + websockets==16.1.1\n + whatthepatch==1.0.7\n + widgetsnbextension==4.0.16\n + wrapt==1.17.3\n + wsproto==1.3.2\n + xlsxwriter==3.3.0\n + yarl==1.25.1\n + zipp==4.1.2\n + zope-interface==7.2\n/opt/openhands-venv/bin/python: Error while finding module specification for 'openhands.core.main' (ModuleNotFoundError: No module named 'openhands.core')\n\nstderr: None",
           "usage": {
             "promptTokens": 0,
             "completionTokens": 0,
             "totalTokens": 0
           },
-          "wallMs": 965069
+          "wallMs": 78585
         }
       ],
       "tasks": 1,
@@ -30,75 +30,8 @@
         "completion": 0,
         "cached": 0
       },
-      "p50WallMs": 965069,
-      "p95WallMs": 965069
-    },
-    {
-      "bench": "swe-pro",
-      "model": "deepseek/deepseek-v4.1-flash-1017",
-      "variant": "external",
-      "agent": "swe-agent",
-      "results": [
-        {
-          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
-          "status": "failed",
-          "reward": 0,
-          "error": "Command failed (exit 1): set -euo pipefail\nset +u\n. /etc/profile.d/testbed-conda.sh || true\nset -u\nmkdir -p /logs/agent\ncat > '/logs/agent/problem_statement.md' << 'HARBOR_INSTRUCTION_40473c4dc8834319b64933a784175eb0'\nA code repository is available in the `/app` directory. Your task is to implement the changes necessary to satisfy the following Pull Request (PR) description:\n\n<pr_description>\n## Title: Post cache access and slug existence checks behave inconsistently\n\n\n### Description\nPost cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.\nSlug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently.\n\n## Requirements\n- The post cache must use a shared instance so all cache operations observe the same state.\n\n- The post cache module must expose `getOrCreate()`, which returns the shared cache instance and creates it only when first requested.\n\n- All modules that read or modify the post cache must obtain it through `getOrCreate()` so they operate on the same shared instance.\n\n- The post cache module must expose `reset()` to clear the cache when the shared instance exists.\n\n- The post cache module must expose `del()`, which takes a cache key, or an array of cache keys, and removes exactly those entries from the shared cache when the instance exists, leaving every other entry in place.\n\n- `Meta.slugTaken` must accept either a single slug string or an array of slug strings.\n\n- For a single slug, `Meta.slugTaken` must return a boolean indicating whether the slug belongs to an existing user, group, or category.\n\n- For an array of slugs, `Meta.slugTaken` must return an array of booleans in the same order as the input.\n\n- `Meta.slugTaken` must throw an error with the message `[[error:invalid-data]]` for an empty string, `undefined`, or an array containing falsy values.\n\n- `Meta.userOrGroupExists` must remain an alias of `Meta.slugTaken` and provide the same behavior for scalar and array inputs.\n\n- Every input slug, whether given singly or as an array element, must be normalized to its slug form before lookup, exactly as the existing single-slug path already does, so that a display name such as `John Smith` matches the user whose userslug is `john-smith`. For example `['doesnot exist', 'John Smith']` yields `[false, true]` when a user with display name `John Smith` exists.\n\n- `User.getUidsByUserslugs` must return `null` for each slug that matches no user, and for known slugs each value must be strictly equal (`===`) to what `User.getUidByUserslug` returns for that slug.\n\n## New Interfaces\n- Path: `src/posts/cache.js`\n- Name: `getOrCreate`\n- Type: function\n- Input: `NA`\n- Output: `Cache instance object`\n- Description: Returns the shared post cache instance, creating it on first use.\n\n- Path: `src/posts/cache.js`\n- Name: `reset`\n- Type: function\n- Input: `NA`\n- Output: `void`\n- Description: Clears the post cache when the shared instance exists.\n\n- Path: `src/posts/cache.js`\n- Name: `del`\n- Type: function\n- Input: `cache key, or an array of cache keys`\n- Output: `void`\n- Description: Removes exactly the given cache key or keys from the shared cache when the instance exists, leaving every other entry in place.\n\n- Path: `src/user/index.js`\n- Name: `getUidsByUserslugs`\n- Type: function\n- Input: `userslugs (string array)`\n- Output: `array of uid values`\n- Description: Returns the user ids corresponding to each userslug in order.\n</pr_description>\n\nConstraints:\n\n* Do not reference, look up, or copy existing solutions, external PRs, or online workarounds. The implementation must be entirely your own independent work.\n\nHARBOR_INSTRUCTION_40473c4dc8834319b64933a784175eb0\ncd / && sweagent run --agent.model.name=openrouter/deepseek/deepseek-v4.1-flash-1017 --problem_statement.path=/logs/agent/problem_statement.md --env.deployment.type=local --output_dir=/logs/agent/swe-agent-output $(if [ -d /testbed ]; then echo '--env.repo.type=preexisting --env.repo.repo_name=/testbed'; else echo '--env.repo.path=/app'; fi) --config=/opt/sweagent-configs/default.yaml 2>&1 | stdbuf -oL tee /logs/agent/swe-agent.txt\n\nstdout: 👋 INFO     This is SWE-agent version 1.1.0 (hash='unavailable') with SWE-ReX   \n            version 1.4.0 (rex_hash='unavailable').                             \n15:00:05 - LiteLLM:WARNING: get_model_cost_map.py:318 - LiteLLM: model cost map fetch att ... [3979 chars truncated] ... uest.target_path)\n  File \"/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py\", line 600, in copytree\n    return _copytree(entries=entries, src=src, dst=dst, symlinks=symlinks,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py\", line 498, in _copytree\n    os.makedirs(dst, exist_ok=dirs_exist_ok)\n  File \"<frozen os>\", line 225, in makedirs\nFileExistsError: [Errno 17] File exists: '/app'\n/opt/sweagent-venv/lib/python3.12/site-packages/swerex/deployment/abstract.py:60: RuntimeWarning: coroutine 'LocalDeployment.stop' was never awaited\nEnsuring deployment is stopped because object is deleted\n\nstderr: None",
-          "usage": {
-            "promptTokens": 0,
-            "completionTokens": 0,
-            "totalTokens": 0
-          },
-          "wallMs": 112373
-        }
-      ],
-      "tasks": 1,
-      "scored": 1,
-      "fullCredit": 0,
-      "meanReward": 0,
-      "costUsd": 0,
-      "tokens": {
-        "prompt": 0,
-        "completion": 0,
-        "cached": 0
-      },
-      "p50WallMs": 112373,
-      "p95WallMs": 112373
-    },
-    {
-      "bench": "terminal-bench",
-      "model": "deepseek/deepseek-v4.1-flash-1017",
-      "variant": "external",
-      "agent": "terminus-2",
-      "results": [
-        {
-          "taskId": "terminal-bench/adaptive-rejection-sampler",
-          "status": "failed",
-          "reward": 1,
-          "error": "Agent execution timed out after 900.0 seconds",
-          "usage": {
-            "promptTokens": 388787,
-            "completionTokens": 130693,
-            "totalTokens": 519480,
-            "cachedTokens": 229888,
-            "costUsd": 0.12367478299999998
-          },
-          "wallMs": 1051362
-        }
-      ],
-      "tasks": 1,
-      "scored": 1,
-      "fullCredit": 1,
-      "meanReward": 1,
-      "costUsd": 0.12367478299999998,
-      "tokens": {
-        "prompt": 388787,
-        "completion": 130693,
-        "cached": 229888
-      },
-      "cacheHitRate": 0.5912954908471734,
-      "p50WallMs": 1051362,
-      "p95WallMs": 1051362
+      "p50WallMs": 78585,
+      "p95WallMs": 78585
     }
   ]
 }

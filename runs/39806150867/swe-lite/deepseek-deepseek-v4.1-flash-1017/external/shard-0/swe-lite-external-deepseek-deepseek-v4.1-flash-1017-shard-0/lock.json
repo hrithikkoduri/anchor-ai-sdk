@@ -1,0 +1,69 @@
+{
+    "schema_version": 3,
+    "created_at": "2026-10-22T15:36:52.464489Z",
+    "harbor": {
+        "version": "0.24.0",
+        "is_editable": false
+    },
+    "n_concurrent_trials": 1,
+    "retry": {
+        "max_retries": 0,
+        "exclude_exceptions": [
+            "VerifierTimeoutError",
+            "AgentTimeoutError",
+            "ModelNotFoundError",
+            "VerifierOutputParseError",
+            "AgentAuthenticationError",
+            "ApiUsageLimitError",
+            "RewardFileEmptyError",
+            "RewardFileNotFoundError",
+            "AgentSafetyRefusalError"
+        ],
+        "wait_multiplier": 1.0,
+        "min_wait_sec": 1.0,
+        "max_wait_sec": 60.0
+    },
+    "trials": [
+        {
+            "schema_version": 2,
+            "task": {
+                "name": "psf__requests-1963",
+                "type": "local",
+                "digest": "sha256:8135473017bb73fa8bf867c22e7435d8560381bf80cb1a3a2a513b4f32fce302",
+                "source": "tasks",
+                "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/psf__requests-1963"
+            },
+            "install_only": false,
+            "timeout_multiplier": 1.0,
+            "agent": {
+                "name": "openhands",
+                "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+                "skills": [],
+                "resume_trajectory": false,
+                "extra_allowed_hosts": [
+                    "openrouter.ai",
+                    "api.openrouter.ai"
+                ],
+                "kwargs": {},
+                "mcp_servers": []
+            },
+            "bridge_inputs": {},
+            "skills": [],
+            "environment": {
+                "type": "docker",
+                "force_build": false,
+                "delete": true,
+                "stream": false,
+                "cpu_enforcement_policy": "auto",
+                "memory_enforcement_policy": "auto",
+                "extra_docker_compose": [],
+                "kwargs": {},
+                "extra_allowed_hosts": []
+            },
+            "verifier": {
+                "disable": false,
+                "environment_mode": "shared"
+            }
+        }
+    ]
+}
