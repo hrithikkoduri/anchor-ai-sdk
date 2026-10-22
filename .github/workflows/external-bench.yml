@@ -138,6 +138,13 @@ jobs:
               'command = " ".join(cmd_parts)',
               'command = "cd / && " + " ".join(cmd_parts)',
           )
+          # SWE-agent's latest litellm imports mcp at runtime; Harbor's venv
+          # install does not pull it, so the first model call dies before any
+          # tokens are counted.
+          text = text.replace(
+              "uv pip install /opt/sweagent-repo && ",
+              "uv pip install /opt/sweagent-repo && uv pip install mcp && ",
+          )
           path.write_text(text)
           PY
           sudo apt-get update && sudo apt-get install -y tmux
