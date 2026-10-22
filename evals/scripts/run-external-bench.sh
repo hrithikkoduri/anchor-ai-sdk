@@ -103,6 +103,7 @@ for d in sorted(root.iterdir())[:3]:
         from harbor.models.task.config import TaskConfig
         paths = TaskPaths(d)
         config = TaskConfig.model_validate_toml(paths.config_path.read_text())
+        print("  image:", config.environment.docker_image, "envdir:", paths.environment_dir.is_dir(), "instruction:", paths.instruction_path.is_file())
         Task._validate_input_paths(config, paths)
         Task._validate_tests(config, paths)
         print("  detail ok")
