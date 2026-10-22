@@ -13,6 +13,7 @@ export * from "./llm/index.js";
 export * from "./llm/from-catalog.js";
 export * from "./sandbox/index.js";
 export * from "./tools/index.js";
+export * from "./ledger/index.js";
 
 // Engine — the loop mechanics (strategy-agnostic)
 export * from "./engine/budgets.js";
