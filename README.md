@@ -229,8 +229,10 @@ try {
 }
 ```
 
-Provider boot settings and optional capabilities differ. Retention needs a cleanup
-policy; remote machines and model calls can cost money. Private HTTPS repositories
+Provider boot settings and optional capabilities differ. Per-sandbox
+`spec.image` is supported by Docker and E2B (as a template name), fixed at the
+provider for Heyo, and rejected by Local; image build/push stays outside Anchor.
+Retention needs a cleanup policy; remote machines and model calls can cost money. Private HTTPS repositories
 can use `spec.git.token`, a caller-supplied credential callback.
 
 The latest Docker adapter also supports `spec.egress: "none"`: it disconnects

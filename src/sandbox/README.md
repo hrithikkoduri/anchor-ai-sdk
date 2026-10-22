@@ -182,6 +182,27 @@ wait, clone, credentials) and 53s of actual agent work. Anything that compares
 "run duration" across backends must separate boot from work, or a fast adapter
 reads as a slow agent.
 
+## Custom images
+
+There is **no generic build-or-push API** in the Sandbox contract. Anchor does
+not publish images to a provider registry for you. `SandboxSpec.image` is a
+per-sandbox override only where the provider can vary its image; publishing is
+part of the consumer's image/deployment pipeline.
+
+| Provider | Default image | Per-sandbox `spec.image` | How a custom image gets there |
+|---|---|---|---|
+| **Docker** | `docker({ image })` | **Yes**; wins over the default | Build with `docker build` and push/pull with the Docker CLI yourself. `start()` pulls the name if it is not already local. |
+| **E2B** | `e2b({ template })` | **Yes**, but it is an E2B **template name or ID**, not a Docker image | Build and publish a template with E2B's `Template.build()`; repo scripts: `scripts/build-e2b-template.mjs` and `evals/scripts/build-e2b-templates.mjs`. Passing a Docker image fails with guidance. |
+| **Heyo** | `heyo({ image, imageKind, imageStore })` | **No**; rejected loudly | `imageKind: "artifact"` pulls a prebuilt rootfs from `imageStore` (default `https://hub.heyo.work`); `"dockerfile"` / `"git"` make the Heyo host build it. Publish artifacts outside Anchor. |
+| **Local** | none | **No**; rejected loudly | Host filesystem only; use `spec.localPath` or Docker. |
+| **Daytona** | planned | not available | Stub only; factory throws until it passes conformance. |
+
+If a task needs a prebaked repository, use `spec.workspacePath` on Docker, E2B,
+or Heyo so `start()` verifies the checkout instead of cloning. A uniform
+"build and publish this image" operation across providers is **not implemented**;
+it would need a separate image capability and conformance path rather than a
+field on `SandboxSpec`.
+
 The conformance suite deliberately asserts `start()`'s **guarantees** (workspace,
 git identity, credentials, scratch), not how long they take; measure boot per
 backend yourself. `create()` stays I/O-free precisely so the boot is
