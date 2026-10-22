@@ -1,0 +1,23 @@
+{
+    "job_name": "terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+    "jobs_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-0",
+    "n_concurrent_trials": 1,
+    "agents": [
+        {
+            "name": "terminus-2",
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ]
+        }
+    ],
+    "datasets": [
+        {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks",
+            "task_names": [
+                "adaptive-rejection-sampler"
+            ]
+        }
+    ]
+}

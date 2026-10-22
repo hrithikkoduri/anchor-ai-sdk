@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-10-22T15:50:22.890Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 0,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 1020733
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "costUsd": 0,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0
+      },
+      "p50WallMs": 1020733,
+      "p95WallMs": 1020733
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swebench-pro/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+          "status": "completed",
+          "reward": 0,
+          "usage": {
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0
+          },
+          "wallMs": 1257554
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "costUsd": 0,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0
+      },
+      "p50WallMs": 1257554,
+      "p95WallMs": 1257554
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [
+        {
+          "taskId": "terminal-bench/adaptive-rejection-sampler",
+          "status": "failed",
+          "reward": 0,
+          "error": "Agent execution timed out after 900.0 seconds",
+          "usage": {
+            "promptTokens": 117761,
+            "completionTokens": 104321,
+            "totalTokens": 222082,
+            "cachedTokens": 73728,
+            "costUsd": 0.07034452199999999
+          },
+          "wallMs": 950815
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "costUsd": 0.07034452199999999,
+      "tokens": {
+        "prompt": 117761,
+        "completion": 104321,
+        "cached": 73728
+      },
+      "cacheHitRate": 0.6260816399317262,
+      "p50WallMs": 950815,
+      "p95WallMs": 950815
+    }
+  ]
+}

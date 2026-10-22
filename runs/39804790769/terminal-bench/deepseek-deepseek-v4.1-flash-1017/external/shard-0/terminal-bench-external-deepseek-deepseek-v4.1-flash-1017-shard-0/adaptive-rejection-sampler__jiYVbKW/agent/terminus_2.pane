@@ -1,0 +1,1790 @@
+[?2004hroot@2f4ccf9d796a:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@2f4ccf9d796a:/app# clear
+[?2004l[H[J[3J[?2004hroot@2f4ccf9d796a:/app# ls -la /app
+[?2004ltotal 8
+drwxr-xr-x 2 root root 4096 Oct 22  2025 [0m[01;34m.[0m
+drwxr-xr-x 1 root root 4096 Oct 22 15:28 [01;34m..[0m
+[?2004hroot@2f4ccf9d796a:/app# command -v R && R --version | head -n 2 || echo 'R not found'
+[?2004lR not found
+[?2004hroot@2f4ccf9d796a:/app# cat /etc/os-release | head -n 5
+[?2004lPRETTY_NAME="Ubuntu 24.04.3 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.3 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+[?2004hroot@2f4ccf9d796a:/app# apt-get update
+[?2004l0% [Working]            Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease
+0% [Connecting to security.ubuntu.com (91.189.90.12)]0% [Waiting for headers] [Connecting to security.ubuntu.com (91.189.90.12)]                                                                           Hit:2 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+                                                                           0% [Waiting for headers]0% [Waiting for headers] [Waiting for headers]                                              Hit:3 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+                                              0% [Waiting for headers]0% [Waiting for headers]                        Hit:4 http://security.ubuntu.com/ubuntu noble-security InRelease
+                        0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 5%Reading package lists... 5%Reading package lists... 58%Reading package lists... 58%Reading package lists... 59%Reading package lists... 59%Reading package lists... 60%Reading package lists... 60%Reading package lists... 65%Reading package lists... 65%Reading package lists... 73%Reading package lists... 73%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 82%Reading package lists... 82%Reading package lists... 82%Reading package lists... 82%Reading package lists... 86%Reading package lists... 86%Reading package lists... 92%Reading package lists... 92%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
+[?2004hroot@2f4ccf9d796a:/app# DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends r-base-core
+[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 5%Reading package lists... 5%Reading package lists... 58%Reading package lists... 58%Reading package lists... 59%Reading package lists... 59%Reading package lists... 60%Reading package lists... 60%Reading package lists... 65%Reading package lists... 65%Reading package lists... 73%Reading package lists... 73%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 82%Reading package lists... 82%Reading package lists... 82%Reading package lists... 82%Reading package lists... 86%Reading package lists... 86%Reading package lists... 92%Reading package lists... 92%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 4%Reading state information... Done
+The following additional packages will be installed:
+  fontconfig fontconfig-config fonts-dejavu-core fonts-dejavu-mono gcc-14-base libblas3 libbrotli1 libbsd0 libcairo2 libcurl4t64 libdatrie1 libdeflate0
+  libfontconfig1 libfreetype6 libfribidi0 libgcc-s1 libgfortran5 libglib2.0-0t64 libgomp1 libgraphite2-3 libgssapi-krb5-2 libharfbuzz0b libice6 libicu74
+  libjbig0 libjpeg-turbo8 libjpeg8 libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblapack3 libldap2 liblerc4 libnghttp2-14 libpango-1.0-0
+  libpangocairo-1.0-0 libpangoft2-1.0-0 libpaper-utils libpaper1 libpixman-1-0 libpng16-16t64 libpsl5t64 librtmp1 libsasl2-2 libsasl2-modules-db libsharpyuv0
+  libsm6 libssh-4 libstdc++6 libtcl8.6 libthai-data libthai0 libtiff6 libtirpc-common libtirpc3t64 libtk8.6 libwebp7 libx11-6 libx11-data libxau6
+  libxcb-render0 libxcb-shm0 libxcb1 libxdmcp6 libxext6 libxft2 libxrender1 libxss1 libxt6t64 ucf unzip x11-common xdg-utils zip
+Suggested packages:
+  low-memory-monitor krb5-doc krb5-user tcl8.6 tk8.6 elpa-ess r-doc-info | r-doc-pdf r-mathlib r-base-html
+Recommended packages:
+  libglib2.0-data shared-mime-info xdg-user-dirs krb5-locales libldap-common publicsuffix libsasl2-modules r-recommended r-base-dev r-doc-html
+  libfile-mimeinfo-perl libnet-dbus-perl libx11-protocol-perl x11-utils x11-xserver-utils
+The following NEW packages will be installed:
+  fontconfig fontconfig-config fonts-dejavu-core fonts-dejavu-mono libblas3 libbrotli1 libbsd0 libcairo2 libcurl4t64 libdatrie1 libdeflate0 libfontconfig1
+  libfreetype6 libfribidi0 libgfortran5 libglib2.0-0t64 libgomp1 libgraphite2-3 libgssapi-krb5-2 libharfbuzz0b libice6 libicu74 libjbig0 libjpeg-turbo8
+  libjpeg8 libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblapack3 libldap2 liblerc4 libnghttp2-14 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0
+  libpaper-utils libpaper1 libpixman-1-0 libpng16-16t64 libpsl5t64 librtmp1 libsasl2-2 libsasl2-modules-db libsharpyuv0 libsm6 libssh-4 libtcl8.6 libthai-data
+  libthai0 libtiff6 libtirpc-common libtirpc3t64 libtk8.6 libwebp7 libx11-6 libx11-data libxau6 libxcb-render0 libxcb-shm0 libxcb1 libxdmcp6 libxext6 libxft2
+  libxrender1 libxss1 libxt6t64 r-base-core ucf unzip x11-common xdg-utils zip
+The following packages will be upgraded:
+  gcc-14-base libgcc-s1 libstdc++6
+3 upgraded, 73 newly installed, 0 to remove and 41 not upgraded.
+Need to get 54.9 MB of archives.
+After this operation, 129 MB of additional disk space will be used.
+0% [Working]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]                        Get:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gcc-14-base amd64 14.2.0-4ubuntu2~24.04.1 [51.0 kB]
+0% [1 gcc-14-base 2566 B/51.0 kB 5%]0% [1 gcc-14-base 26.8 kB/51.0 kB 53%]                                      0% [Working]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s0% [Waiting for headers]                                                                                                                  7967 B/s 1h 54min 48s                                                                                                                                                               0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]0% [Waiting for headers]                        Get:2 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libstdc++6 amd64 14.2.0-4ubuntu2~24.04.1 [792 kB]
+0% [2 libstdc++6 5420 B/792 kB 1%]0% [2 libstdc++6 58.3 kB/792 kB 7%]0% [2 libstdc++6 95.4 kB/792 kB 12%]                                    1% [2 libstdc++6 120 kB/792 kB 15%]1% [2 libstdc++6 147 kB/792 kB 19%]1% [2 libstdc++6 180 kB/792 kB 23%]1% [2 libstdc++6 207 kB/792 kB 26%]1% [2 libstdc++6 250 kB/792 kB 32%]1% [2 libstdc++6 292 kB/792 kB 37%]                                                                                                         48.1 kB/s 18min 54s1% [2 libstdc++6 324 kB/792 kB 41%]                                                                                                         48.1 kB/s 18min 53s1% [2 libstdc++6 355 kB/792 kB 45%]                                                                                                         48.1 kB/s 18min 52s1% [2 libstdc++6 395 kB/792 kB 50%]                                                                                                         48.1 kB/s 18min 51s1% [2 libstdc++6 430 kB/792 kB 54%]                                                                                                         48.1 kB/s 18min 51s1% [2 libstdc++6 470 kB/792 kB 59%]                                                                                                         48.1 kB/s 18min 50s1% [2 libstdc++6 502 kB/792 kB 63%]                                                                                                         48.1 kB/s 18min 49s1% [2 libstdc++6 531 kB/792 kB 67%]                                                                                                         48.1 kB/s 18min 49s1% [2 libstdc++6 571 kB/792 kB 72%]                                                                                                         48.1 kB/s 18min 48s1% [2 libstdc++6 605 kB/792 kB 76%]                                                                                                         48.1 kB/s 18min 47scommand -v Rscript && Rscript --version
+1% [2 libstdc++6 632 kB/792 kB 80%]                                                                                                         48.1 kB/s 18min 47s1% [2 libstdc++6 664 kB/792 kB 84%]                                                                                                         48.1 kB/s 18min 46s1% [2 libstdc++6 695 kB/792 kB 88%]                                                                                                         67.0 kB/s 13min 28s1% [2 libstdc++6 745 kB/792 kB 94%]                                                                                                         67.0 kB/s 13min 27s1% [2 libstdc++6 791 kB/792 kB 100%]                                                                                                        67.0 kB/s 13min 26s2% [Working]                                                                                                                                67.0 kB/s 13min 26s                                                                                                                                                               Get:3 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libgcc-s1 amd64 14.2.0-4ubuntu2~24.04.1 [78.4 kB]
+2% [3 libgcc-s1 2565 B/78.4 kB 3%]                                                                                                          67.0 kB/s 13min 26s2% [3 libgcc-s1 32.6 kB/78.4 kB 42%]                                                                                                        67.0 kB/s 13min 26s2% [3 libgcc-s1 58.3 kB/78.4 kB 74%]                                                                                                        67.0 kB/s 13min 25s2% [Working]                                                                                                                                67.0 kB/s 13min 25s                                                                                                                                                               Get:4 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libbsd0 amd64 0.12.1-1build1.1 [41.2 kB]
+2% [4 libbsd0 1138 B/41.2 kB 3%]                                                                                                            67.0 kB/s 13min 25s2% [4 libbsd0 28.3 kB/41.2 kB 69%]                                                                                                          67.0 kB/s 13min 25s2% [Working]                                                                                                                                67.0 kB/s 13min 25s                                                                                                                                                               Get:5 http://archive.ubuntu.com/ubuntu noble/main amd64 libfribidi0 amd64 1.0.13-3build1 [26.1 kB]
+2% [5 libfribidi0 2566 B/26.1 kB 10%]                                                                                                       67.0 kB/s 13min 25s3% [Working]                                                                                                                                67.0 kB/s 13min 24s                                                                                                                                                               Get:6 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libglib2.0-0t64 amd64 2.80.0-6ubuntu3.10 [1548 kB]
+3% [6 libglib2.0-0t64 2562 B/1548 kB 0%]                                                                                                    67.0 kB/s 13min 24s3% [6 libglib2.0-0t64 51.1 kB/1548 kB 3%]                                                                                                   67.0 kB/s 13min 23s3% [6 libglib2.0-0t64 95.4 kB/1548 kB 6%]                                                                                                   67.0 kB/s 13min 23s3% [6 libglib2.0-0t64 120 kB/1548 kB 8%]                                                                                                    67.0 kB/s 13min 22s3% [6 libglib2.0-0t64 157 kB/1548 kB 10%]                                                                                                   67.0 kB/s 13min 22s3% [6 libglib2.0-0t64 195 kB/1548 kB 13%]                                                                                                   67.0 kB/s 13min 21s3% [6 libglib2.0-0t64 228 kB/1548 kB 15%]                                                                                                   73.3 kB/s 12min 12s3% [6 libglib2.0-0t64 260 kB/1548 kB 17%]                                                                                                   73.3 kB/s 12min 12s3% [6 libglib2.0-0t64 291 kB/1548 kB 19%]                                                                                                   73.3 kB/s 12min 11s3% [6 libglib2.0-0t64 325 kB/1548 kB 21%]                                                                                                   73.3 kB/s 12min 11s3% [6 libglib2.0-0t64 352 kB/1548 kB 23%]                                                                                                   73.3 kB/s 12min 10s3% [6 libglib2.0-0t64 392 kB/1548 kB 25%]                                                                                                   73.3 kB/s 12min 10s3% [6 libglib2.0-0t64 430 kB/1548 kB 28%]                                                                                                    73.3 kB/s 12min 9s3% [6 libglib2.0-0t64 458 kB/1548 kB 30%]                                                                                                    73.3 kB/s 12min 9s3% [6 libglib2.0-0t64 491 kB/1548 kB 32%]                                                                                                    73.3 kB/s 12min 9s4% [6 libglib2.0-0t64 519 kB/1548 kB 34%]                                                                                                    73.3 kB/s 12min 8s4% [6 libglib2.0-0t64 545 kB/1548 kB 35%]                                                                                                    73.3 kB/s 12min 8s4% [6 libglib2.0-0t64 571 kB/1548 kB 37%]                                                                                                    73.3 kB/s 12min 7s4% [6 libglib2.0-0t64 599 kB/1548 kB 39%]                                                                                                   61.8 kB/s 14min 23s4% [6 libglib2.0-0t64 642 kB/1548 kB 42%]                                                                                                   61.8 kB/s 14min 22s4% [6 libglib2.0-0t64 674 kB/1548 kB 44%]                                                                                                   61.8 kB/s 14min 21s4% [6 libglib2.0-0t64 702 kB/1548 kB 45%]                                                                                                   61.8 kB/s 14min 21s4% [6 libglib2.0-0t64 737 kB/1548 kB 48%]                                                                                                   61.8 kB/s 14min 20s4% [6 libglib2.0-0t64 772 kB/1548 kB 50%]                                                                                                   61.8 kB/s 14min 20s4% [6 libglib2.0-0t64 808 kB/1548 kB 52%]                                                                                                   61.8 kB/s 14min 19s4% [6 libglib2.0-0t64 854 kB/1548 kB 55%]                                                                                                   61.8 kB/s 14min 19s4% [6 libglib2.0-0t64 888 kB/1548 kB 57%]                                                                                                   61.8 kB/s 14min 18s4% [6 libglib2.0-0t64 922 kB/1548 kB 60%]                                                                                                   61.8 kB/s 14min 17s4% [6 libglib2.0-0t64 959 kB/1548 kB 62%]                                                                                                   61.8 kB/s 14min 17s4% [6 libglib2.0-0t64 998 kB/1548 kB 64%]                                                                                                   61.8 kB/s 14min 16s4% [6 libglib2.0-0t64 1031 kB/1548 kB 67%]                                                                                                  71.8 kB/s 12min 17s4% [6 libglib2.0-0t64 1062 kB/1548 kB 69%]                                                                                                  71.8 kB/s 12min 16s4% [6 libglib2.0-0t64 1108 kB/1548 kB 72%]                                                                                                  71.8 kB/s 12min 16s4% [6 libglib2.0-0t64 1136 kB/1548 kB 73%]                                                                                                  71.8 kB/s 12min 15s4% [6 libglib2.0-0t64 1172 kB/1548 kB 76%]                                                                                                  71.8 kB/s 12min 15s5% [6 libglib2.0-0t64 1202 kB/1548 kB 78%]                                                                                                  71.8 kB/s 12min 14s5% [6 libglib2.0-0t64 1239 kB/1548 kB 80%]                                                                                                  71.8 kB/s 12min 14s5% [6 libglib2.0-0t64 1296 kB/1548 kB 84%]                                                                                                  71.8 kB/s 12min 13s5% [6 libglib2.0-0t64 1333 kB/1548 kB 86%]                                                                                                  71.8 kB/s 12min 12s5% [6 libglib2.0-0t64 1363 kB/1548 kB 88%]                                                                                                  71.8 kB/s 12min 12s5% [6 libglib2.0-0t64 1396 kB/1548 kB 90%]                                                                                                  71.8 kB/s 12min 12s5% [6 libglib2.0-0t64 1438 kB/1548 kB 93%]                                                                                                  71.8 kB/s 12min 11s5% [6 libglib2.0-0t64 1471 kB/1548 kB 95%]                                                                                                  73.2 kB/s 11min 56s5% [6 libglib2.0-0t64 1519 kB/1548 kB 98%]                                                                                                  73.2 kB/s 11min 56s5% [Working]                                                                                                                                73.2 kB/s 11min 55s                                                                                                                                                               Get:7 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libkrb5support0 amd64 1.20.1-6ubuntu2.10 [34.9 kB]
+5% [7 libkrb5support0 2566 B/34.9 kB 7%]                                                                                                    73.2 kB/s 11min 55s6% [Working]                                                                                                                                73.2 kB/s 11min 55s                                                                                                                                                               Get:8 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libk5crypto3 amd64 1.20.1-6ubuntu2.10 [81.9 kB]
+6% [8 libk5crypto3 2565 B/81.9 kB 3%]                                                                                                       73.2 kB/s 11min 55s6% [8 libk5crypto3 32.6 kB/81.9 kB 40%]                                                                                                     73.2 kB/s 11min 54s6% [8 libk5crypto3 62.5 kB/81.9 kB 76%]                                                                                                     73.2 kB/s 11min 54s6% [Working]                                                                                                                                73.2 kB/s 11min 54s                                                                                                                                                               Get:9 http://archive.ubuntu.com/ubuntu noble/main amd64 libkeyutils1 amd64 1.6.3-3build1 [9490 B]
+6% [9 libkeyutils1 1139 B/9490 B 12%]                                                                                                       73.2 kB/s 11min 54s6% [Working]                                                                                                                                73.2 kB/s 11min 53s                                                                                                                                                               Get:10 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libkrb5-3 amd64 1.20.1-6ubuntu2.10 [348 kB]
+6% [10 libkrb5-3 1136 B/348 kB 0%]                                                                                                          73.2 kB/s 11min 53s6% [10 libkrb5-3 31.1 kB/348 kB 9%]                                                                                                         73.2 kB/s 11min 53s6% [10 libkrb5-3 59.7 kB/348 kB 17%]                                                                                                        73.2 kB/s 11min 53s6% [10 libkrb5-3 91.1 kB/348 kB 26%]                                                                                                        73.2 kB/s 11min 52s6% [10 libkrb5-3 121 kB/348 kB 35%]                                                                                                         73.2 kB/s 11min 52s6% [10 libkrb5-3 141 kB/348 kB 41%]                                                                                                         73.2 kB/s 11min 52s6% [10 libkrb5-3 172 kB/348 kB 50%]                                                                                                         61.3 kB/s 14min 10s7% [10 libkrb5-3 210 kB/348 kB 60%]                                                                                                          61.3 kB/s 14min 9s7% [10 libkrb5-3 270 kB/348 kB 78%]                                                                                                          61.3 kB/s 14min 8s7% [10 libkrb5-3 307 kB/348 kB 88%]                                                                                                          61.3 kB/s 14min 8s7% [10 libkrb5-3 335 kB/348 kB 96%]                                                                                                          61.3 kB/s 14min 7s7% [Working]                                                                                                                                 61.3 kB/s 14min 7s                                                                                                                                                               Get:11 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libgssapi-krb5-2 amd64 1.20.1-6ubuntu2.10 [143 kB]
+7% [11 libgssapi-krb5-2 1136 B/143 kB 1%]                                                                                                    61.3 kB/s 14min 7s7% [11 libgssapi-krb5-2 29.7 kB/143 kB 21%]                                                                                                  61.3 kB/s 14min 6s7% [11 libgssapi-krb5-2 69.7 kB/143 kB 49%]                                                                                                  61.3 kB/s 14min 6s7% [11 libgssapi-krb5-2 110 kB/143 kB 77%]                                                                                                   61.3 kB/s 14min 5s7% [11 libgssapi-krb5-2 143 kB/143 kB 100%]                                                                                                  61.3 kB/s 14min 5s7% [Working]                                                                                                                                 61.3 kB/s 14min 5s                                                                                                                                                               Get:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libicu74 amd64 74.2-1ubuntu3.1 [10.9 MB]
+7% [12 libicu74 2561 B/10.9 MB 0%]                                                                                                           61.3 kB/s 14min 5s8% [12 libicu74 39.7 kB/10.9 MB 0%]                                                                                                          61.3 kB/s 14min 4s8% [12 libicu74 71.1 kB/10.9 MB 1%]                                                                                                          61.3 kB/s 14min 3s8% [12 libicu74 95.4 kB/10.9 MB 1%]                                                                                                          61.3 kB/s 14min 3s8% [12 libicu74 133 kB/10.9 MB 1%]                                                                                                          72.2 kB/s 11min 54s8% [12 libicu74 187 kB/10.9 MB 2%]                                                                                                          72.2 kB/s 11min 54s8% [12 libicu74 231 kB/10.9 MB 2%]                                                                                                          72.2 kB/s 11min 53s8% [12 libicu74 270 kB/10.9 MB 2%]                                                                                                          72.2 kB/s 11min 53s8% [12 libicu74 304 kB/10.9 MB 3%]                                                                                                          72.2 kB/s 11min 52s8% [12 libicu74 337 kB/10.9 MB 3%]                                                                                                          72.2 kB/s 11min 52s8% [12 libicu74 368 kB/10.9 MB 3%]                                                                                                          72.2 kB/s 11min 51s8% [12 libicu74 398 kB/10.9 MB 4%]                                                                                                          72.2 kB/s 11min 51s8% [12 libicu74 427 kB/10.9 MB 4%]                                                                                                          72.2 kB/s 11min 50s8% [12 libicu74 461 kB/10.9 MB 4%]                                                                                                          72.2 kB/s 11min 50s8% [12 libicu74 491 kB/10.9 MB 5%]                                                                                                          72.2 kB/s 11min 49s8% [12 libicu74 534 kB/10.9 MB 5%]                                                                                                          72.2 kB/s 11min 49s8% [12 libicu74 567 kB/10.9 MB 5%]                                                                                                          72.3 kB/s 11min 48s8% [12 libicu74 598 kB/10.9 MB 6%]                                                                                                          72.3 kB/s 11min 48s8% [12 libicu74 645 kB/10.9 MB 6%]                                                                                                          72.3 kB/s 11min 47s8% [12 libicu74 691 kB/10.9 MB 6%]                                                                                                          72.3 kB/s 11min 47s9% [12 libicu74 724 kB/10.9 MB 7%]                                                                                                          72.3 kB/s 11min 46s9% [12 libicu74 762 kB/10.9 MB 7%]                                                                                                          72.3 kB/s 11min 46s9% [12 libicu74 798 kB/10.9 MB 7%]                                                                                                          72.3 kB/s 11min 45s9% [12 libicu74 851 kB/10.9 MB 8%]                                                                                                          72.3 kB/s 11min 44s9% [12 libicu74 888 kB/10.9 MB 8%]                                                                                                          72.3 kB/s 11min 44s9% [12 libicu74 929 kB/10.9 MB 9%]                                                                                                          72.3 kB/s 11min 43s9% [12 libicu74 975 kB/10.9 MB 9%]                                                                                                          72.3 kB/s 11min 43s9% [12 libicu74 1018 kB/10.9 MB 9%]                                                                                                         72.3 kB/s 11min 42s9% [12 libicu74 1048 kB/10.9 MB 10%]                                                                                                        80.1 kB/s 10min 33s9% [12 libicu74 1084 kB/10.9 MB 10%]                                                                                                        80.1 kB/s 10min 32s9% [12 libicu74 1116 kB/10.9 MB 10%]                                                                                                        80.1 kB/s 10min 32s9% [12 libicu74 1142 kB/10.9 MB 11%]                                                                                                        80.1 kB/s 10min 32s9% [12 libicu74 1184 kB/10.9 MB 11%]                                                                                                        80.1 kB/s 10min 31s9% [12 libicu74 1219 kB/10.9 MB 11%]                                                                                                        80.1 kB/s 10min 31s9% [12 libicu74 1258 kB/10.9 MB 12%]                                                                                                        80.1 kB/s 10min 30s9% [12 libicu74 1293 kB/10.9 MB 12%]                                                                                                        80.1 kB/s 10min 30s9% [12 libicu74 1331 kB/10.9 MB 12%]                                                                                                        80.1 kB/s 10min 29s9% [12 libicu74 1361 kB/10.9 MB 13%]                                                                                                        80.1 kB/s 10min 29s10% [12 libicu74 1396 kB/10.9 MB 13%]                                                                                                       80.1 kB/s 10min 28s10% [12 libicu74 1429 kB/10.9 MB 13%]                                                                                                       80.1 kB/s 10min 28s10% [12 libicu74 1471 kB/10.9 MB 14%]                                                                                                       70.4 kB/s 11min 55s10% [12 libicu74 1508 kB/10.9 MB 14%]                                                                                                       70.4 kB/s 11min 54s10% [12 libicu74 1543 kB/10.9 MB 14%]                                                                                                       70.4 kB/s 11min 54s10% [12 libicu74 1581 kB/10.9 MB 15%]                                                                                                       70.4 kB/s 11min 53s10% [12 libicu74 1610 kB/10.9 MB 15%]                                                                                                       70.4 kB/s 11min 53s10% [12 libicu74 1649 kB/10.9 MB 15%]                                                                                                       70.4 kB/s 11min 52s10% [12 libicu74 1688 kB/10.9 MB 16%]                                                                                                       70.4 kB/s 11min 51s10% [12 libicu74 1716 kB/10.9 MB 16%]                                                                                                       70.4 kB/s 11min 51s10% [12 libicu74 1742 kB/10.9 MB 16%]                                                                                                       70.4 kB/s 11min 51s10% [12 libicu74 1786 kB/10.9 MB 16%]                                                                                                       70.4 kB/s 11min 50s10% [12 libicu74 1830 kB/10.9 MB 17%]                                                                                                       70.4 kB/s 11min 49s10% [12 libicu74 1872 kB/10.9 MB 17%]                                                                                                       70.4 kB/s 11min 49s10% [12 libicu74 1909 kB/10.9 MB 18%]                                                                                                       73.0 kB/s 11min 23s10% [12 libicu74 1942 kB/10.9 MB 18%]                                                                                                       73.0 kB/s 11min 22s10% [12 libicu74 1985 kB/10.9 MB 18%]                                                                                                       73.0 kB/s 11min 22s10% [12 libicu74 2025 kB/10.9 MB 19%]                                                                                                       73.0 kB/s 11min 21s10% [12 libicu74 2060 kB/10.9 MB 19%]                                                                                                       73.0 kB/s 11min 21s11% [12 libicu74 2089 kB/10.9 MB 19%]                                                                                                       73.0 kB/s 11min 20s11% [12 libicu74 2119 kB/10.9 MB 20%]                                                                                                       73.0 kB/s 11min 20s11% [12 libicu74 2170 kB/10.9 MB 20%]                                                                                                       73.0 kB/s 11min 19s11% [12 libicu74 2252 kB/10.9 MB 21%]                                                                                                       73.0 kB/s 11min 18s11% [12 libicu74 2293 kB/10.9 MB 21%]                                                                                                       73.0 kB/s 11min 18s11% [12 libicu74 2334 kB/10.9 MB 21%]                                                                                                       73.0 kB/s 11min 17s11% [12 libicu74 2373 kB/10.9 MB 22%]                                                                                                       73.0 kB/s 11min 17s11% [12 libicu74 2407 kB/10.9 MB 22%]                                                                                                        83.0 kB/s 9min 55s11% [12 libicu74 2443 kB/10.9 MB 22%]                                                                                                        83.0 kB/s 9min 54s11% [12 libicu74 2483 kB/10.9 MB 23%]                                                                                                        83.0 kB/s 9min 54s11% [12 libicu74 2514 kB/10.9 MB 23%]                                                                                                        83.0 kB/s 9min 53s11% [12 libicu74 2549 kB/10.9 MB 23%]                                                                                                        83.0 kB/s 9min 53s11% [12 libicu74 2580 kB/10.9 MB 24%]                                                                                                        83.0 kB/s 9min 53s11% [12 libicu74 2619 kB/10.9 MB 24%]                                                                                                        83.0 kB/s 9min 52s11% [12 libicu74 2671 kB/10.9 MB 25%]                                                                                                        83.0 kB/s 9min 51s11% [12 libicu74 2710 kB/10.9 MB 25%]                                                                                                        83.0 kB/s 9min 51s11% [12 libicu74 2751 kB/10.9 MB 25%]                                                                                                        83.0 kB/s 9min 51s12% [12 libicu74 2801 kB/10.9 MB 26%]                                                                                                        83.0 kB/s 9min 50s12% [12 libicu74 2846 kB/10.9 MB 26%]                                                                                                        83.0 kB/s 9min 49s12% [12 libicu74 2880 kB/10.9 MB 27%]                                                                                                       78.7 kB/s 10min 21s12% [12 libicu74 2929 kB/10.9 MB 27%]                                                                                                       78.7 kB/s 10min 20s12% [12 libicu74 2973 kB/10.9 MB 27%]                                                                                                       78.7 kB/s 10min 20s12% [12 libicu74 3013 kB/10.9 MB 28%]                                                                                                       78.7 kB/s 10min 19s12% [12 libicu74 3043 kB/10.9 MB 28%]                                                                                                       78.7 kB/s 10min 19s12% [12 libicu74 3068 kB/10.9 MB 28%]                                                                                                       78.7 kB/s 10min 19s12% [12 libicu74 3114 kB/10.9 MB 29%]                                                                                                       78.7 kB/s 10min 18s12% [12 libicu74 3146 kB/10.9 MB 29%]                                                                                                       78.7 kB/s 10min 18s12% [12 libicu74 3181 kB/10.9 MB 29%]                                                                                                       78.7 kB/s 10min 17s12% [12 libicu74 3223 kB/10.9 MB 30%]                                                                                                       78.7 kB/s 10min 17s12% [12 libicu74 3241 kB/10.9 MB 30%]                                                                                                       78.7 kB/s 10min 16s12% [12 libicu74 3273 kB/10.9 MB 30%]                                                                                                       78.7 kB/s 10min 16s12% [12 libicu74 3293 kB/10.9 MB 30%]                                                                                                       68.7 kB/s 11min 45s12% [12 libicu74 3380 kB/10.9 MB 31%]                                                                                                       68.7 kB/s 11min 44s13% [12 libicu74 3488 kB/10.9 MB 32%]                                                                                                       68.7 kB/s 11min 43s13% [12 libicu74 3613 kB/10.9 MB 33%]                                                                                                       68.7 kB/s 11min 41s13% [12 libicu74 3748 kB/10.9 MB 35%]                                                                                                       68.7 kB/s 11min 39s13% [12 libicu74 3898 kB/10.9 MB 36%]                                                                                                       68.7 kB/s 11min 37s13% [12 libicu74 4068 kB/10.9 MB 37%]                                                                                                       68.7 kB/s 11min 34s14% [12 libicu74 4251 kB/10.9 MB 39%]                                                                                                       68.7 kB/s 11min 31s14% [12 libicu74 4448 kB/10.9 MB 41%]                                                                                                       68.7 kB/s 11min 29s14% [12 libicu74 4634 kB/10.9 MB 43%]                                                                                                       68.7 kB/s 11min 26s14% [12 libicu74 4811 kB/10.9 MB 44%]                                                                                                       68.7 kB/s 11min 23s15% [12 libicu74 5455 kB/10.9 MB 50%]                                                                                                       68.7 kB/s 11min 14s17% [12 libicu74 6224 kB/10.9 MB 57%]                                                                                                         488 kB/s 1min 33s18% [12 libicu74 7143 kB/10.9 MB 66%]                                                                                                         488 kB/s 1min 31s19% [12 libicu74 8201 kB/10.9 MB 76%]                                                                                                         488 kB/s 1min 29s21% [12 libicu74 9310 kB/10.9 MB 86%]                                                                                                         488 kB/s 1min 27s23% [12 libicu74 10.8 MB/10.9 MB 99%]                                                                                                         488 kB/s 1min 24s24% [Waiting for headers]                                                                                                                     488 kB/s 1min 23s                                                                                                                                                               Get:13 http://archive.ubuntu.com/ubuntu noble/main amd64 libtirpc-common all 1.3.4+ds-1.1build1 [8094 B]
+24% [13 libtirpc-common 5423 B/8094 B 67%]                                                                                                    488 kB/s 1min 23s24% [Working]                                                                                                                                 488 kB/s 1min 23s                                                                                                                                                               Get:14 http://archive.ubuntu.com/ubuntu noble/main amd64 libtirpc3t64 amd64 1.3.4+ds-1.1build1 [82.6 kB]
+24% [14 libtirpc3t64 2565 B/82.6 kB 3%]                                                                                                       488 kB/s 1min 23s24% [Working]                                                                                                                                 488 kB/s 1min 23s                                                                                                                                                               Get:15 http://archive.ubuntu.com/ubuntu noble/main amd64 ucf all 3.0043+nmu1 [56.5 kB]
+24% [15 ucf 3994 B/56.5 kB 7%]                                                                                                                488 kB/s 1min 23s25% [Working]                                                                                                                                 488 kB/s 1min 23s                                                                                                                                                               Get:16 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libnghttp2-14 amd64 1.59.0-1ubuntu0.4 [74.6 kB]
+25% [16 libnghttp2-14 3993 B/74.6 kB 5%]                                                                                                      488 kB/s 1min 23s25% [Working]                                                                                                                                 488 kB/s 1min 23s                                                                                                                                                               Get:17 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libpng16-16t64 amd64 1.6.43-5ubuntu0.7 [189 kB]
+25% [17 libpng16-16t64 3992 B/189 kB 2%]                                                                                                      488 kB/s 1min 23s25% [Working]                                                                                                                                 488 kB/s 1min 23s                                                                                                                                                               Get:18 http://archive.ubuntu.com/ubuntu noble/main amd64 libpsl5t64 amd64 0.21.2-1.1build1 [57.1 kB]
+25% [18 libpsl5t64 3994 B/57.1 kB 7%]                                                                                                         488 kB/s 1min 23s26% [Working]                                                                                                                                 488 kB/s 1min 22s                                                                                                                                                               Get:19 http://archive.ubuntu.com/ubuntu noble/main amd64 libxau6 amd64 1:1.0.9-1build6 [7160 B]
+26% [19 libxau6 3995 B/7160 B 56%]                                                                                                            488 kB/s 1min 22s26% [Working]                                                                                                                                 488 kB/s 1min 22s                                                                                                                                                               Get:20 http://archive.ubuntu.com/ubuntu noble/main amd64 libxdmcp6 amd64 1:1.1.3-0ubuntu6 [10.3 kB]
+26% [20 libxdmcp6 3994 B/10.3 kB 39%]                                                                                                         488 kB/s 1min 22s26% [Working]                                                                                                                                 488 kB/s 1min 22s                                                                                                                                                               Get:21 http://archive.ubuntu.com/ubuntu noble/main amd64 libxcb1 amd64 1.15-1ubuntu2 [47.7 kB]
+26% [21 libxcb1 3994 B/47.7 kB 8%]                                                                                                            488 kB/s 1min 22s27% [Working]                                                                                                                                 488 kB/s 1min 22s                                                                                                                                                               Get:22 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libx11-data all 2:1.8.7-1ubuntu0.1 [116 kB]
+27% [22 libx11-data 6848 B/116 kB 6%]                                                                                                         488 kB/s 1min 22s27% [Working]                                                                                                                                 488 kB/s 1min 22s                                                                                                                                                               Get:23 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libx11-6 amd64 2:1.8.7-1ubuntu0.1 [653 kB]
+27% [23 libx11-6 3992 B/653 kB 1%]                                                                                                            488 kB/s 1min 22s28% [Working]                                                                                                                                 488 kB/s 1min 21s                                                                                                                                                               Get:24 http://archive.ubuntu.com/ubuntu noble/main amd64 libxext6 amd64 2:1.3.4-1build2 [30.4 kB]
+28% [24 libxext6 2566 B/30.4 kB 8%]                                                                                                           488 kB/s 1min 21s29% [Working]                                                                                                                                 488 kB/s 1min 21s                                                                                                                                                               Get:25 http://archive.ubuntu.com/ubuntu noble/main amd64 libbrotli1 amd64 1.1.0-2build2 [331 kB]
+29% [25 libbrotli1 5420 B/331 kB 2%]                                                                                                          488 kB/s 1min 21s29% [Working]                                                                                                                                 488 kB/s 1min 20s                                                                                                                                                               Get:26 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libfreetype6 amd64 2.13.2+dfsg-1ubuntu0.2 [403 kB]
+29% [26 libfreetype6 5420 B/403 kB 1%]                                                                                                        488 kB/s 1min 20s30% [Working]                                                                                                                                 488 kB/s 1min 19s                                                                                                                                                               Get:27 http://archive.ubuntu.com/ubuntu noble/main amd64 fonts-dejavu-mono all 2.37-8 [502 kB]
+30% [27 fonts-dejavu-mono 2564 B/502 kB 1%]                                                                                                   488 kB/s 1min 19s31% [Working]                                                                                                                                 488 kB/s 1min 18s                                                                                                                                                               Get:28 http://archive.ubuntu.com/ubuntu noble/main amd64 fonts-dejavu-core all 2.37-8 [835 kB]
+31% [28 fonts-dejavu-core 5420 B/835 kB 1%]                                                                                                   488 kB/s 1min 18s33% [Working]                                                                                                                                 488 kB/s 1min 16s                                                                                                                                                               Get:29 http://archive.ubuntu.com/ubuntu noble/main amd64 fontconfig-config amd64 2.15.0-1.1ubuntu2 [37.3 kB]
+33% [29 fontconfig-config 5422 B/37.3 kB 15%]                                                                                                 488 kB/s 1min 16s33% [Working]                                                                                                                                 488 kB/s 1min 16s                                                                                                                                                               Get:30 http://archive.ubuntu.com/ubuntu noble/main amd64 libfontconfig1 amd64 2.15.0-1.1ubuntu2 [139 kB]
+33% [30 libfontconfig1 5420 B/139 kB 4%]                                                                                                      488 kB/s 1min 16s34% [Working]                                                                                                                                 488 kB/s 1min 16s                                                                                                                                                               Get:31 http://archive.ubuntu.com/ubuntu noble/main amd64 fontconfig amd64 2.15.0-1.1ubuntu2 [180 kB]
+34% [31 fontconfig 5420 B/180 kB 3%]                                                                                                          488 kB/s 1min 16s34% [Working]                                                                                                                                 488 kB/s 1min 16s                                                                                                                                                               Get:32 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libblas3 amd64 3.12.0-3build1.1 [238 kB]
+34% [32 libblas3 6848 B/238 kB 3%]                                                                                                            488 kB/s 1min 16s35% [Working]                                                                                                                                 488 kB/s 1min 15s                                                                                                                                                               Get:33 http://archive.ubuntu.com/ubuntu noble/main amd64 libpixman-1-0 amd64 0.42.2-1build1 [279 kB]
+35% [33 libpixman-1-0 6848 B/279 kB 2%]                                                                                                       488 kB/s 1min 15s35% [Working]                                                                                                                                 488 kB/s 1min 15s                                                                                                                                                               Get:34 http://archive.ubuntu.com/ubuntu noble/main amd64 libxcb-render0 amd64 1.15-1ubuntu2 [16.2 kB]
+35% [34 libxcb-render0 6850 B/16.2 kB 42%]                                                                                                    488 kB/s 1min 15s36% [Working]                                                                                                                                 488 kB/s 1min 15s                                                                                                                                                               Get:35 http://archive.ubuntu.com/ubuntu noble/main amd64 libxcb-shm0 amd64 1.15-1ubuntu2 [5756 B]
+36% [35 libxcb-shm0 5423 B/5756 B 94%]                                                                                                        488 kB/s 1min 15s36% [Working]                                                                                                                                 488 kB/s 1min 15s                                                                                                                                                               Get:36 http://archive.ubuntu.com/ubuntu noble/main amd64 libxrender1 amd64 1:0.9.10-1.1build1 [19.0 kB]
+36% [36 libxrender1 6850 B/19.0 kB 36%]                                                                                                       488 kB/s 1min 15s36% [Working]                                                                                                                                 488 kB/s 1min 15s                                                                                                                                                               Get:37 http://archive.ubuntu.com/ubuntu noble/main amd64 libcairo2 amd64 1.18.0-3build1 [566 kB]
+36% [37 libcairo2 6848 B/566 kB 1%]                                                                                                           488 kB/s 1min 14s37% [Working]                                                                                                                                 488 kB/s 1min 13s                                                                                                                                                               Get:38 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg1-5ubuntu3.1 [20.4 kB]
+37% [38 libsasl2-modules-db 6850 B/20.4 kB 34%]                                                                                               488 kB/s 1min 13s38% [Working]                                                                                                                                 488 kB/s 1min 13s                                                                                                                                                               Get:39 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libsasl2-2 amd64 2.1.28+dfsg1-5ubuntu3.1 [53.2 kB]
+38% [39 libsasl2-2 6850 B/53.2 kB 13%]                                                                                                        488 kB/s 1min 13s38% [Working]                                                                                                                                 488 kB/s 1min 13s                                                                                                                                                               Get:40 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libldap2 amd64 2.6.10+dfsg-0ubuntu0.24.04.1 [198 kB]
+38% [40 libldap2 6848 B/198 kB 3%]                                                                                                            488 kB/s 1min 13s38% [Working]                                                                                                                                 488 kB/s 1min 13s                                                                                                                                                               Get:41 http://archive.ubuntu.com/ubuntu noble/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2build7 [56.3 kB]
+38% [41 librtmp1 6850 B/56.3 kB 12%]                                                                                                          488 kB/s 1min 13s39% [Working]                                                                                                                                 488 kB/s 1min 13s                                                                                                                                                               Get:42 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libssh-4 amd64 0.10.6-2ubuntu0.5 [191 kB]
+39% [42 libssh-4 6848 B/191 kB 4%]                                                                                                            488 kB/s 1min 13s39% [Working]                                                                                                                                 488 kB/s 1min 12s                                                                                                                                                               Get:43 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcurl4t64 amd64 8.5.0-2ubuntu10.16 [344 kB]
+39% [43 libcurl4t64 6848 B/344 kB 2%]                                                                                                         488 kB/s 1min 12s40% [Working]                                                                                                                                 488 kB/s 1min 12s                                                                                                                                                               Get:44 http://archive.ubuntu.com/ubuntu noble/main amd64 libdatrie1 amd64 0.2.13-3build1 [19.0 kB]
+40% [44 libdatrie1 6850 B/19.0 kB 36%]                                                                                                        488 kB/s 1min 12s40% [Working]                                                                                                                                 488 kB/s 1min 12s                                                                                                                                                               Get:45 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libdeflate0 amd64 1.19-1build1.1 [43.9 kB]
+40% [45 libdeflate0 6850 B/43.9 kB 16%]                                                                                                       488 kB/s 1min 12s41% [Working]                                                                                                                                 488 kB/s 1min 11s                                                                                                                                                               Get:46 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libgfortran5 amd64 14.2.0-4ubuntu2~24.04.1 [916 kB]
+41% [46 libgfortran5 6848 B/916 kB 1%]                                                                                                        488 kB/s 1min 11s42% [Working]                                                                                                                                 488 kB/s 1min 10s                                                                                                                                                               Get:47 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libgomp1 amd64 14.2.0-4ubuntu2~24.04.1 [148 kB]
+42% [47 libgomp1 6848 B/148 kB 5%]                                                                                                            488 kB/s 1min 10s43% [Working]                                                                                                                                  488 kB/s 1min 9s                                                                                                                                                               Get:48 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libgraphite2-3 amd64 1.3.14-2ubuntu0.24.04.1 [73.4 kB]
+43% [48 libgraphite2-3 6849 B/73.4 kB 9%]                                                                                                      488 kB/s 1min 9s43% [Working]                                                                                                                                  488 kB/s 1min 9s                                                                                                                                                               Get:49 http://archive.ubuntu.com/ubuntu noble/main amd64 libharfbuzz0b amd64 8.3.0-2build2 [469 kB]
+43% [49 libharfbuzz0b 15.4 kB/469 kB 3%]                                                                                                       488 kB/s 1min 9s44% [Working]                                                                                                                                  488 kB/s 1min 8s                                                                                                                                                               Get:50 http://archive.ubuntu.com/ubuntu noble/main amd64 x11-common all 1:7.7+23ubuntu3 [21.7 kB]
+44% [50 x11-common 6850 B/21.7 kB 31%]                                                                                                         488 kB/s 1min 8s44% [Working]                                                                                                                                  488 kB/s 1min 8s                                                                                                                                                               Get:51 http://archive.ubuntu.com/ubuntu noble/main amd64 libice6 amd64 2:1.0.10-1build3 [41.4 kB]
+44% [51 libice6 6850 B/41.4 kB 17%]                                                                                                            488 kB/s 1min 8s45% [Working]                                                                                                                                  488 kB/s 1min 8s                                                                                                                                                               Get:52 http://archive.ubuntu.com/ubuntu noble/main amd64 libjpeg-turbo8 amd64 2.1.5-2ubuntu2 [150 kB]
+45% [52 libjpeg-turbo8 6848 B/150 kB 5%]                                                                                                       488 kB/s 1min 8s45% [Working]                                                                                                                                  488 kB/s 1min 8s                                                                                                                                                               Get:53 http://archive.ubuntu.com/ubuntu noble/main amd64 libjpeg8 amd64 8c-2ubuntu11 [2148 B]
+45% [53 libjpeg8 2148 B/2148 B 100%]                                                                                                           488 kB/s 1min 8s45% [Working]                                                                                                                                  488 kB/s 1min 8s                                                                                                                                                               Get:54 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 liblapack3 amd64 3.12.0-3build1.1 [2646 kB]
+45% [54 liblapack3 6846 B/2646 kB 0%]                                                                                                          488 kB/s 1min 8s50% [Working]                                                                                                                                  488 kB/s 1min 2s                                                                                                                                                               Get:55 http://archive.ubuntu.com/ubuntu noble/main amd64 liblerc4 amd64 4.0.0+ds-4ubuntu2 [179 kB]
+50% [55 liblerc4 15.4 kB/179 kB 9%]                                                                                                            488 kB/s 1min 2s50% [Working]                                                                                                                                  488 kB/s 1min 2s                                                                                                                                                               Get:56 http://archive.ubuntu.com/ubuntu noble/main amd64 libthai-data all 0.1.29-2build1 [158 kB]
+50% [56 libthai-data 6848 B/158 kB 4%]                                                                                                         488 kB/s 1min 2s51% [Working]                                                                                                                                  488 kB/s 1min 2s                                                                                                                                                               Get:57 http://archive.ubuntu.com/ubuntu noble/main amd64 libthai0 amd64 0.1.29-2build1 [18.9 kB]
+51% [57 libthai0 15.4 kB/18.9 kB 82%]                                                                                                          488 kB/s 1min 2s51% [Working]                                                                                                                                  488 kB/s 1min 2s                                                                                                                                                               Get:58 http://archive.ubuntu.com/ubuntu noble/main amd64 libpango-1.0-0 amd64 1.52.1+ds-1build1 [231 kB]
+51% [58 libpango-1.0-0 15.4 kB/231 kB 7%]                                                                                                      488 kB/s 1min 2s51% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:59 http://archive.ubuntu.com/ubuntu noble/main amd64 libpangoft2-1.0-0 amd64 1.52.1+ds-1build1 [42.5 kB]
+52% [59 libpangoft2-1.0-0 15.4 kB/42.5 kB 36%]                                                                                                 488 kB/s 1min 1s52% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:60 http://archive.ubuntu.com/ubuntu noble/main amd64 libpangocairo-1.0-0 amd64 1.52.1+ds-1build1 [28.8 kB]
+52% [60 libpangocairo-1.0-0 15.4 kB/28.8 kB 53%]                                                                                               488 kB/s 1min 1s52% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:61 http://archive.ubuntu.com/ubuntu noble/main amd64 libpaper1 amd64 1.1.29build1 [13.4 kB]
+52% [61 libpaper1 6850 B/13.4 kB 51%]                                                                                                          488 kB/s 1min 1s52% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:62 http://archive.ubuntu.com/ubuntu noble/main amd64 libpaper-utils amd64 1.1.29build1 [8650 B]
+52% [62 libpaper-utils 6851 B/8650 B 79%]                                                                                                      488 kB/s 1min 1s53% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:63 http://archive.ubuntu.com/ubuntu noble/main amd64 libsharpyuv0 amd64 1.3.2-0.4build3 [15.8 kB]
+53% [63 libsharpyuv0 15.4 kB/15.8 kB 98%]                                                                                                      488 kB/s 1min 1s53% [Working]                                                                                                                                  488 kB/s 1min 1s                                                                                                                                                               Get:64 http://archive.ubuntu.com/ubuntu noble/main amd64 libsm6 amd64 2:1.2.3-1build3 [15.7 kB]
+53% [64 libsm6 14.3 kB/15.7 kB 91%]                                                                                                               2590 kB/s 11s53% [Working]                                                                                                                                     2590 kB/s 11s                                                                                                                                                               Get:65 http://archive.ubuntu.com/ubuntu noble/main amd64 libtcl8.6 amd64 8.6.14+dfsg-1build1 [988 kB]
+53% [65 libtcl8.6 15.4 kB/988 kB 2%]                                                                                                              2590 kB/s 11s55% [Working]                                                                                                                                     2590 kB/s 11s                                                                                                                                                               Get:66 http://archive.ubuntu.com/ubuntu noble/main amd64 libjbig0 amd64 2.1-6.1ubuntu2 [29.7 kB]
+55% [66 libjbig0 15.4 kB/29.7 kB 52%]                                                                                                             2590 kB/s 11s55% [Working]                                                                                                                                     2590 kB/s 11s                                                                                                                                                               Get:67 http://archive.ubuntu.com/ubuntu noble/main amd64 libwebp7 amd64 1.3.2-0.4build3 [230 kB]
+55% [67 libwebp7 15.4 kB/230 kB 7%]                                                                                                               2590 kB/s 11s56% [Working]                                                                                                                                     2590 kB/s 11s                                                                                                                                                               Get:68 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libtiff6 amd64 4.5.1+git230720-4ubuntu2.5 [200 kB]
+56% [68 libtiff6 15.4 kB/200 kB 8%]                                                                                                               2590 kB/s 11s56% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:69 http://archive.ubuntu.com/ubuntu noble/main amd64 libxft2 amd64 2.3.6-1build1 [45.3 kB]
+56% [69 libxft2 15.4 kB/45.3 kB 34%]                                                                                                              2590 kB/s 10s57% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:70 http://archive.ubuntu.com/ubuntu noble/main amd64 libxss1 amd64 1:1.2.3-1build3 [7204 B]
+57% [70 libxss1 6851 B/7204 B 95%]                                                                                                                2590 kB/s 10s57% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:71 http://archive.ubuntu.com/ubuntu noble/main amd64 libtk8.6 amd64 8.6.14-1build1 [779 kB]
+57% [71 libtk8.6 15.4 kB/779 kB 2%]                                                                                                               2590 kB/s 10s58% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:72 http://archive.ubuntu.com/ubuntu noble/main amd64 libxt6t64 amd64 1:1.2.1-1.2build1 [171 kB]
+58% [72 libxt6t64 11.5 kB/171 kB 7%]                                                                                                              2590 kB/s 10s59% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:73 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 zip amd64 3.0-13ubuntu0.2 [176 kB]
+59% [73 zip 6848 B/176 kB 4%]                                                                                                                     2590 kB/s 10s59% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:74 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 unzip amd64 6.0-28ubuntu4.1 [174 kB]
+59% [74 unzip 6848 B/174 kB 4%]                                                                                                                   2590 kB/s 10s60% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:75 http://archive.ubuntu.com/ubuntu noble/main amd64 xdg-utils all 1.1.3-4.1ubuntu3 [62.0 kB]
+60% [75 xdg-utils 14.0 kB/62.0 kB 23%]                                                                                                            2590 kB/s 10s60% [Working]                                                                                                                                     2590 kB/s 10s                                                                                                                                                               Get:76 http://archive.ubuntu.com/ubuntu noble/universe amd64 r-base-core amd64 4.3.3-2build2 [27.1 MB]
+60% [76 r-base-core 6844 B/27.1 MB 0%]                                                                                                            2590 kB/s 10s80% [76 r-base-core 13.8 MB/27.1 MB 51%]                                                                                                           2590 kB/s 5s100% [Working]                                                                                                                                     2590 kB/s 0s                                                                                                                                                               Fetched 54.9 MB in 2min 3s (447 kB/s)
+debconf: delaying package configuration, since apt-utils is not installed
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6311 files and directories currently installed.)
+Preparing to unpack .../gcc-14-base_14.2.0-4ubuntu2~24.04.1_amd64.deb ...
+Unpacking gcc-14-base:amd64 (14.2.0-4ubuntu2~24.04.1) over (14.2.0-4ubuntu2~24.04) ...
+Setting up gcc-14-base:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6311 files and directories currently installed.)
+Preparing to unpack .../libstdc++6_14.2.0-4ubuntu2~24.04.1_amd64.deb ...
+Unpacking libstdc++6:amd64 (14.2.0-4ubuntu2~24.04.1) over (14.2.0-4ubuntu2~24.04) ...
+Setting up libstdc++6:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6311 files and directories currently installed.)
+Preparing to unpack .../libgcc-s1_14.2.0-4ubuntu2~24.04.1_amd64.deb ...
+Unpacking libgcc-s1:amd64 (14.2.0-4ubuntu2~24.04.1) over (14.2.0-4ubuntu2~24.04) ...
+Setting up libgcc-s1:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+Selecting previously unselected package libbsd0:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6311 files and directories currently installed.)
+Preparing to unpack .../00-libbsd0_0.12.1-1build1.1_amd64.deb ...
+Unpacking libbsd0:amd64 (0.12.1-1build1.1) ...
+Selecting previously unselected package libfribidi0:amd64.
+Preparing to unpack .../01-libfribidi0_1.0.13-3build1_amd64.deb ...
+Unpacking libfribidi0:amd64 (1.0.13-3build1) ...
+Selecting previously unselected package libglib2.0-0t64:amd64.
+Preparing to unpack .../02-libglib2.0-0t64_2.80.0-6ubuntu3.10_amd64.deb ...
+Unpacking libglib2.0-0t64:amd64 (2.80.0-6ubuntu3.10) ...
+Selecting previously unselected package libkrb5support0:amd64.
+Preparing to unpack .../03-libkrb5support0_1.20.1-6ubuntu2.10_amd64.deb ...
+Unpacking libkrb5support0:amd64 (1.20.1-6ubuntu2.10) ...
+Selecting previously unselected package libk5crypto3:amd64.
+Preparing to unpack .../04-libk5crypto3_1.20.1-6ubuntu2.10_amd64.deb ...
+Unpacking libk5crypto3:amd64 (1.20.1-6ubuntu2.10) ...
+Selecting previously unselected package libkeyutils1:amd64.
+Preparing to unpack .../05-libkeyutils1_1.6.3-3build1_amd64.deb ...
+Unpacking libkeyutils1:amd64 (1.6.3-3build1) ...
+Selecting previously unselected package libkrb5-3:amd64.
+Preparing to unpack .../06-libkrb5-3_1.20.1-6ubuntu2.10_amd64.deb ...
+Unpacking libkrb5-3:amd64 (1.20.1-6ubuntu2.10) ...
+Selecting previously unselected package libgssapi-krb5-2:amd64.
+Preparing to unpack .../07-libgssapi-krb5-2_1.20.1-6ubuntu2.10_amd64.deb ...
+Unpacking libgssapi-krb5-2:amd64 (1.20.1-6ubuntu2.10) ...
+Selecting previously unselected package libicu74:amd64.
+Preparing to unpack .../08-libicu74_74.2-1ubuntu3.1_amd64.deb ...
+Unpacking libicu74:amd64 (74.2-1ubuntu3.1) ...
+Selecting previously unselected package libtirpc-common.
+Preparing to unpack .../09-libtirpc-common_1.3.4+ds-1.1build1_all.deb ...
+Unpacking libtirpc-common (1.3.4+ds-1.1build1) ...
+Selecting previously unselected package libtirpc3t64:amd64.
+Preparing to unpack .../10-libtirpc3t64_1.3.4+ds-1.1build1_amd64.deb ...
+Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3 to /lib/x86_64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
+Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3.0.0 to /lib/x86_64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
+Unpacking libtirpc3t64:amd64 (1.3.4+ds-1.1build1) ...
+Selecting previously unselected package ucf.
+Preparing to unpack .../11-ucf_3.0043+nmu1_all.deb ...
+Moving old data out of the way
+Unpacking ucf (3.0043+nmu1) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../12-libnghttp2-14_1.59.0-1ubuntu0.4_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.59.0-1ubuntu0.4) ...
+Selecting previously unselected package libpng16-16t64:amd64.
+Preparing to unpack .../13-libpng16-16t64_1.6.43-5ubuntu0.7_amd64.deb ...
+Unpacking libpng16-16t64:amd64 (1.6.43-5ubuntu0.7) ...
+Selecting previously unselected package libpsl5t64:amd64.
+Preparing to unpack .../14-libpsl5t64_0.21.2-1.1build1_amd64.deb ...
+Unpacking libpsl5t64:amd64 (0.21.2-1.1build1) ...
+Selecting previously unselected package libxau6:amd64.
+Preparing to unpack .../15-libxau6_1%3a1.0.9-1build6_amd64.deb ...
+Unpacking libxau6:amd64 (1:1.0.9-1build6) ...
+Selecting previously unselected package libxdmcp6:amd64.
+Preparing to unpack .../16-libxdmcp6_1%3a1.1.3-0ubuntu6_amd64.deb ...
+Unpacking libxdmcp6:amd64 (1:1.1.3-0ubuntu6) ...
+Selecting previously unselected package libxcb1:amd64.
+Preparing to unpack .../17-libxcb1_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb1:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libx11-data.
+Preparing to unpack .../18-libx11-data_2%3a1.8.7-1ubuntu0.1_all.deb ...
+Unpacking libx11-data (2:1.8.7-1ubuntu0.1) ...
+Selecting previously unselected package libx11-6:amd64.
+Preparing to unpack .../19-libx11-6_2%3a1.8.7-1ubuntu0.1_amd64.deb ...
+Unpacking libx11-6:amd64 (2:1.8.7-1ubuntu0.1) ...
+Selecting previously unselected package libxext6:amd64.
+Preparing to unpack .../20-libxext6_2%3a1.3.4-1build2_amd64.deb ...
+Unpacking libxext6:amd64 (2:1.3.4-1build2) ...
+Selecting previously unselected package libbrotli1:amd64.
+Preparing to unpack .../21-libbrotli1_1.1.0-2build2_amd64.deb ...
+Unpacking libbrotli1:amd64 (1.1.0-2build2) ...
+Selecting previously unselected package libfreetype6:amd64.
+Preparing to unpack .../22-libfreetype6_2.13.2+dfsg-1ubuntu0.2_amd64.deb ...
+Unpacking libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) ...
+Selecting previously unselected package fonts-dejavu-mono.
+Preparing to unpack .../23-fonts-dejavu-mono_2.37-8_all.deb ...
+Unpacking fonts-dejavu-mono (2.37-8) ...
+Selecting previously unselected package fonts-dejavu-core.
+Preparing to unpack .../24-fonts-dejavu-core_2.37-8_all.deb ...
+Unpacking fonts-dejavu-core (2.37-8) ...
+Selecting previously unselected package fontconfig-config.
+Preparing to unpack .../25-fontconfig-config_2.15.0-1.1ubuntu2_amd64.deb ...
+Unpacking fontconfig-config (2.15.0-1.1ubuntu2) ...
+Selecting previously unselected package libfontconfig1:amd64.
+Preparing to unpack .../26-libfontconfig1_2.15.0-1.1ubuntu2_amd64.deb ...
+Unpacking libfontconfig1:amd64 (2.15.0-1.1ubuntu2) ...
+Selecting previously unselected package fontconfig.
+Preparing to unpack .../27-fontconfig_2.15.0-1.1ubuntu2_amd64.deb ...
+Unpacking fontconfig (2.15.0-1.1ubuntu2) ...
+Selecting previously unselected package libblas3:amd64.
+Preparing to unpack .../28-libblas3_3.12.0-3build1.1_amd64.deb ...
+Unpacking libblas3:amd64 (3.12.0-3build1.1) ...
+Selecting previously unselected package libpixman-1-0:amd64.
+Preparing to unpack .../29-libpixman-1-0_0.42.2-1build1_amd64.deb ...
+Unpacking libpixman-1-0:amd64 (0.42.2-1build1) ...
+Selecting previously unselected package libxcb-render0:amd64.
+Preparing to unpack .../30-libxcb-render0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-render0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxcb-shm0:amd64.
+Preparing to unpack .../31-libxcb-shm0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-shm0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxrender1:amd64.
+Preparing to unpack .../32-libxrender1_1%3a0.9.10-1.1build1_amd64.deb ...
+Unpacking libxrender1:amd64 (1:0.9.10-1.1build1) ...
+Selecting previously unselected package libcairo2:amd64.
+Preparing to unpack .../33-libcairo2_1.18.0-3build1_amd64.deb ...
+Unpacking libcairo2:amd64 (1.18.0-3build1) ...
+Selecting previously unselected package libsasl2-modules-db:amd64.
+Preparing to unpack .../34-libsasl2-modules-db_2.1.28+dfsg1-5ubuntu3.1_amd64.deb ...
+Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg1-5ubuntu3.1) ...
+Selecting previously unselected package libsasl2-2:amd64.
+Preparing to unpack .../35-libsasl2-2_2.1.28+dfsg1-5ubuntu3.1_amd64.deb ...
+Unpacking libsasl2-2:amd64 (2.1.28+dfsg1-5ubuntu3.1) ...
+Selecting previously unselected package libldap2:amd64.
+Preparing to unpack .../36-libldap2_2.6.10+dfsg-0ubuntu0.24.04.1_amd64.deb ...
+Unpacking libldap2:amd64 (2.6.10+dfsg-0ubuntu0.24.04.1) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../37-librtmp1_2.4+20151223.gitfa8646d.1-2build7_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build7) ...
+Selecting previously unselected package libssh-4:amd64.
+Preparing to unpack .../38-libssh-4_0.10.6-2ubuntu0.5_amd64.deb ...
+Unpacking libssh-4:amd64 (0.10.6-2ubuntu0.5) ...
+Selecting previously unselected package libcurl4t64:amd64.
+Preparing to unpack .../39-libcurl4t64_8.5.0-2ubuntu10.16_amd64.deb ...
+Unpacking libcurl4t64:amd64 (8.5.0-2ubuntu10.16) ...
+Selecting previously unselected package libdatrie1:amd64.
+Preparing to unpack .../40-libdatrie1_0.2.13-3build1_amd64.deb ...
+Unpacking libdatrie1:amd64 (0.2.13-3build1) ...
+Selecting previously unselected package libdeflate0:amd64.
+Preparing to unpack .../41-libdeflate0_1.19-1build1.1_amd64.deb ...
+Unpacking libdeflate0:amd64 (1.19-1build1.1) ...
+Selecting previously unselected package libgfortran5:amd64.
+Preparing to unpack .../42-libgfortran5_14.2.0-4ubuntu2~24.04.1_amd64.deb ...
+Unpacking libgfortran5:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+Selecting previously unselected package libgomp1:amd64.
+Preparing to unpack .../43-libgomp1_14.2.0-4ubuntu2~24.04.1_amd64.deb ...
+Unpacking libgomp1:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+Selecting previously unselected package libgraphite2-3:amd64.
+Preparing to unpack .../44-libgraphite2-3_1.3.14-2ubuntu0.24.04.1_amd64.deb ...
+Unpacking libgraphite2-3:amd64 (1.3.14-2ubuntu0.24.04.1) ...
+Selecting previously unselected package libharfbuzz0b:amd64.
+Preparing to unpack .../45-libharfbuzz0b_8.3.0-2build2_amd64.deb ...
+Unpacking libharfbuzz0b:amd64 (8.3.0-2build2) ...
+Selecting previously unselected package x11-common.
+Preparing to unpack .../46-x11-common_1%3a7.7+23ubuntu3_all.deb ...
+Unpacking x11-common (1:7.7+23ubuntu3) ...
+Selecting previously unselected package libice6:amd64.
+Preparing to unpack .../47-libice6_2%3a1.0.10-1build3_amd64.deb ...
+Unpacking libice6:amd64 (2:1.0.10-1build3) ...
+Selecting previously unselected package libjpeg-turbo8:amd64.
+Preparing to unpack .../48-libjpeg-turbo8_2.1.5-2ubuntu2_amd64.deb ...
+Unpacking libjpeg-turbo8:amd64 (2.1.5-2ubuntu2) ...
+Selecting previously unselected package libjpeg8:amd64.
+Preparing to unpack .../49-libjpeg8_8c-2ubuntu11_amd64.deb ...
+Unpacking libjpeg8:amd64 (8c-2ubuntu11) ...
+Selecting previously unselected package liblapack3:amd64.
+Preparing to unpack .../50-liblapack3_3.12.0-3build1.1_amd64.deb ...
+Unpacking liblapack3:amd64 (3.12.0-3build1.1) ...
+Selecting previously unselected package liblerc4:amd64.
+Preparing to unpack .../51-liblerc4_4.0.0+ds-4ubuntu2_amd64.deb ...
+Unpacking liblerc4:amd64 (4.0.0+ds-4ubuntu2) ...
+Selecting previously unselected package libthai-data.
+Preparing to unpack .../52-libthai-data_0.1.29-2build1_all.deb ...
+Unpacking libthai-data (0.1.29-2build1) ...
+Selecting previously unselected package libthai0:amd64.
+Preparing to unpack .../53-libthai0_0.1.29-2build1_amd64.deb ...
+Unpacking libthai0:amd64 (0.1.29-2build1) ...
+Selecting previously unselected package libpango-1.0-0:amd64.
+Preparing to unpack .../54-libpango-1.0-0_1.52.1+ds-1build1_amd64.deb ...
+Unpacking libpango-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Selecting previously unselected package libpangoft2-1.0-0:amd64.
+Preparing to unpack .../55-libpangoft2-1.0-0_1.52.1+ds-1build1_amd64.deb ...
+Unpacking libpangoft2-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Selecting previously unselected package libpangocairo-1.0-0:amd64.
+Preparing to unpack .../56-libpangocairo-1.0-0_1.52.1+ds-1build1_amd64.deb ...
+Unpacking libpangocairo-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Selecting previously unselected package libpaper1:amd64.
+Preparing to unpack .../57-libpaper1_1.1.29build1_amd64.deb ...
+Unpacking libpaper1:amd64 (1.1.29build1) ...
+Selecting previously unselected package libpaper-utils.
+Preparing to unpack .../58-libpaper-utils_1.1.29build1_amd64.deb ...
+Unpacking libpaper-utils (1.1.29build1) ...
+Selecting previously unselected package libsharpyuv0:amd64.
+Preparing to unpack .../59-libsharpyuv0_1.3.2-0.4build3_amd64.deb ...
+Unpacking libsharpyuv0:amd64 (1.3.2-0.4build3) ...
+Selecting previously unselected package libsm6:amd64.
+Preparing to unpack .../60-libsm6_2%3a1.2.3-1build3_amd64.deb ...
+Unpacking libsm6:amd64 (2:1.2.3-1build3) ...
+Selecting previously unselected package libtcl8.6:amd64.
+Preparing to unpack .../61-libtcl8.6_8.6.14+dfsg-1build1_amd64.deb ...
+Unpacking libtcl8.6:amd64 (8.6.14+dfsg-1build1) ...
+Selecting previously unselected package libjbig0:amd64.
+Preparing to unpack .../62-libjbig0_2.1-6.1ubuntu2_amd64.deb ...
+Unpacking libjbig0:amd64 (2.1-6.1ubuntu2) ...
+Selecting previously unselected package libwebp7:amd64.
+Preparing to unpack .../63-libwebp7_1.3.2-0.4build3_amd64.deb ...
+Unpacking libwebp7:amd64 (1.3.2-0.4build3) ...
+Selecting previously unselected package libtiff6:amd64.
+Preparing to unpack .../64-libtiff6_4.5.1+git230720-4ubuntu2.5_amd64.deb ...
+Unpacking libtiff6:amd64 (4.5.1+git230720-4ubuntu2.5) ...
+Selecting previously unselected package libxft2:amd64.
+Preparing to unpack .../65-libxft2_2.3.6-1build1_amd64.deb ...
+Unpacking libxft2:amd64 (2.3.6-1build1) ...
+Selecting previously unselected package libxss1:amd64.
+Preparing to unpack .../66-libxss1_1%3a1.2.3-1build3_amd64.deb ...
+Unpacking libxss1:amd64 (1:1.2.3-1build3) ...
+Selecting previously unselected package libtk8.6:amd64.
+Preparing to unpack .../67-libtk8.6_8.6.14-1build1_amd64.deb ...
+Unpacking libtk8.6:amd64 (8.6.14-1build1) ...
+Selecting previously unselected package libxt6t64:amd64.
+Preparing to unpack .../68-libxt6t64_1%3a1.2.1-1.2build1_amd64.deb ...
+Unpacking libxt6t64:amd64 (1:1.2.1-1.2build1) ...
+Selecting previously unselected package zip.
+Preparing to unpack .../69-zip_3.0-13ubuntu0.2_amd64.deb ...
+Unpacking zip (3.0-13ubuntu0.2) ...
+Selecting previously unselected package unzip.
+Preparing to unpack .../70-unzip_6.0-28ubuntu4.1_amd64.deb ...
+Unpacking unzip (6.0-28ubuntu4.1) ...
+Selecting previously unselected package xdg-utils.
+Preparing to unpack .../71-xdg-utils_1.1.3-4.1ubuntu3_all.deb ...
+Unpacking xdg-utils (1.1.3-4.1ubuntu3) ...
+Selecting previously unselected package r-base-core.
+Preparing to unpack .../72-r-base-core_4.3.3-2build2_amd64.deb ...
+Unpacking r-base-core (4.3.3-2build2) ...
+Setting up libgraphite2-3:amd64 (1.3.14-2ubuntu0.24.04.1) ...
+Setting up libpixman-1-0:amd64 (0.42.2-1build1) ...
+Setting up libsharpyuv0:amd64 (1.3.2-0.4build3) ...
+Setting up libxau6:amd64 (1:1.0.9-1build6) ...
+Setting up libkeyutils1:amd64 (1.6.3-3build1) ...
+Setting up liblerc4:amd64 (4.0.0+ds-4ubuntu2) ...
+Setting up libdatrie1:amd64 (0.2.13-3build1) ...
+Setting up libtirpc-common (1.3.4+ds-1.1build1) ...
+Setting up unzip (6.0-28ubuntu4.1) ...
+Setting up libbrotli1:amd64 (1.1.0-2build2) ...
+Setting up x11-common (1:7.7+23ubuntu3) ...
+invoke-rc.d: could not determine current runlevel
+invoke-rc.d: policy-rc.d denied execution of start.
+Setting up libpsl5t64:amd64 (0.21.2-1.1build1) ...
+Setting up libnghttp2-14:amd64 (1.59.0-1ubuntu0.4) ...
+Setting up libdeflate0:amd64 (1.19-1build1.1) ...
+Setting up libgomp1:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+Setting up libjbig0:amd64 (2.1-6.1ubuntu2) ...
+Setting up libkrb5support0:amd64 (1.20.1-6ubuntu2.10) ...
+Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg1-5ubuntu3.1) ...
+Setting up zip (3.0-13ubuntu0.2) ...
+Setting up libglib2.0-0t64:amd64 (2.80.0-6ubuntu3.10) ...
+No schema files found: doing nothing.
+Setting up libblas3:amd64 (3.12.0-3build1.1) ...
+update-alternatives: using /usr/lib/x86_64-linux-gnu/blas/libblas.so.3 to provide /usr/lib/x86_64-linux-gnu/libblas.so.3 (libblas.so.3-x86_64-linux-gnu) in auto mode
+Setting up libx11-data (2:1.8.7-1ubuntu0.1) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build7) ...
+Setting up libfribidi0:amd64 (1.0.13-3build1) ...
+Setting up fonts-dejavu-mono (2.37-8) ...
+Setting up libpng16-16t64:amd64 (1.6.43-5ubuntu0.7) ...
+Setting up libtcl8.6:amd64 (8.6.14+dfsg-1build1) ...
+Setting up fonts-dejavu-core (2.37-8) ...
+Setting up ucf (3.0043+nmu1) ...
+Setting up libk5crypto3:amd64 (1.20.1-6ubuntu2.10) ...
+Setting up libjpeg-turbo8:amd64 (2.1.5-2ubuntu2) ...
+Setting up libsasl2-2:amd64 (2.1.28+dfsg1-5ubuntu3.1) ...
+Setting up libgfortran5:amd64 (14.2.0-4ubuntu2~24.04.1) ...
+Setting up libwebp7:amd64 (1.3.2-0.4build3) ...
+Setting up libicu74:amd64 (74.2-1ubuntu3.1) ...
+Setting up libthai-data (0.1.29-2build1) ...
+Setting up libkrb5-3:amd64 (1.20.1-6ubuntu2.10) ...
+Setting up libbsd0:amd64 (0.12.1-1build1.1) ...
+Setting up xdg-utils (1.1.3-4.1ubuntu3) ...
+update-alternatives: using /usr/bin/xdg-open to provide /usr/bin/open (open) in auto mode
+update-alternatives: warning: skip creation of /usr/share/man/man1/open.1.gz because associated file /usr/share/man/man1/xdg-open.1.gz (of link group open) doesn't exist
+Setting up libldap2:amd64 (2.6.10+dfsg-0ubuntu0.24.04.1) ...
+Setting up libjpeg8:amd64 (8c-2ubuntu11) ...
+Setting up libpaper1:amd64 (1.1.29build1) ...
+
+Creating config file /etc/papersize with new version
+Setting up libice6:amd64 (2:1.0.10-1build3) ...
+Setting up libxdmcp6:amd64 (1:1.1.3-0ubuntu6) ...
+Setting up liblapack3:amd64 (3.12.0-3build1.1) ...
+update-alternatives: using /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3 to provide /usr/lib/x86_64-linux-gnu/liblapack.so.3 (liblapack.so.3-x86_64-linux-gnu) in auto mode
+Setting up libxcb1:amd64 (1.15-1ubuntu2) ...
+Setting up libxcb-render0:amd64 (1.15-1ubuntu2) ...
+Setting up fontconfig-config (2.15.0-1.1ubuntu2) ...
+Setting up libxcb-shm0:amd64 (1.15-1ubuntu2) ...
+Setting up libpaper-utils (1.1.29build1) ...
+Setting up libthai0:amd64 (0.1.29-2build1) ...
+Setting up libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) ...
+Setting up libgssapi-krb5-2:amd64 (1.20.1-6ubuntu2.10) ...
+Setting up libssh-4:amd64 (0.10.6-2ubuntu0.5) ...
+Setting up libtiff6:amd64 (4.5.1+git230720-4ubuntu2.5) ...
+Setting up libx11-6:amd64 (2:1.8.7-1ubuntu0.1) ...
+Setting up libharfbuzz0b:amd64 (8.3.0-2build2) ...
+Setting up libfontconfig1:amd64 (2.15.0-1.1ubuntu2) ...
+Setting up libsm6:amd64 (2:1.2.3-1build3) ...
+Setting up fontconfig (2.15.0-1.1ubuntu2) ...
+Regenerating fonts cache... done.
+Setting up libxrender1:amd64 (1:0.9.10-1.1build1) ...
+Setting up libcurl4t64:amd64 (8.5.0-2ubuntu10.16) ...
+Setting up libtirpc3t64:amd64 (1.3.4+ds-1.1build1) ...
+Setting up libpango-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Setting up libxext6:amd64 (2:1.3.4-1build2) ...
+Setting up libcairo2:amd64 (1.18.0-3build1) ...
+Setting up libxt6t64:amd64 (1:1.2.1-1.2build1) ...
+Setting up libxss1:amd64 (1:1.2.3-1build3) ...
+Setting up libpangoft2-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Setting up libpangocairo-1.0-0:amd64 (1.52.1+ds-1build1) ...
+Setting up libxft2:amd64 (2.3.6-1build1) ...
+Setting up libtk8.6:amd64 (8.6.14-1build1) ...
+Setting up r-base-core (4.3.3-2build2) ...
+
+Creating config file /etc/R/Renviron with new version
+Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
+[?2004hroot@2f4ccf9d796a:/app# command -v Rscript && Rscript --version
+[?2004l/usr/bin/Rscript
+Rscript (R) version 4.3.3 (2024-02-29)
+[?2004hroot@2f4ccf9d796a:/app# pwd && ls -la /app
+[?2004l/app
+total 8
+drwxr-xr-x 2 root root 4096 Oct 22  2025 [0m[01;34m.[0m
+drwxr-xr-x 1 root root 4096 Oct 22 15:28 [01;34m..[0m
+[?2004hroot@2f4ccf9d796a:/app# cat > /app/ars.R <<'EOF'
+[?2004l[?2004h> validate_ars_inputs <- function(density_function, domain, n) {
+[?2004l[?2004h>   if (missing(density_function) || is.null(density_function)) stop('density_function must be supplied')
+[?2004l[?2004h>   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n != floor(n)) stop('n must be a positive integer')
+[?2004l[?2004h>   if (!is.numeric(domain) || length(domain) != 2 || anyNA(domain) || domain[1] >= domain[2]) stop('domain must be c(lower, upper) with lower < upper')
+[?2004l[?2004h>   if (is.infinite(domain[1]) && domain[1] > 0) stop('domain lower bound cannot be +Inf')
+[?2004l[?2004h>   if (is.infinite(domain[2]) && domain[2] < 0) stop('domain upper bound cannot be -Inf')
+[?2004l[?2004h>   invisible(TRUE)
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> prepare_density <- function(density_function, envir) {
+[?2004l[?2004h>   if (is.function(density_function)) {
+[?2004l[?2004h>     f <- density_function
+[?2004l[?2004h>   } else if (is.character(density_function)) {
+[?2004l[?2004h>     if (length(density_function) != 1) stop('character density must have length one')
+[?2004l[?2004h>     expr <- parse(text = density_function)[[1]]
+[?2004l[?2004h>     f <- eval(bquote(function(x) .(expr)), envir = envir)
+[?2004l[?2004h>   } else if (is.expression(density_function) || is.call(density_function)) {
+[?2004l[?2004h>     expr <- if (is.expression(density_function)) density_function[[1]] else density_function
+[?2004l[?2004h>     f <- eval(bquote(function(x) .(expr)), envir = envir)
+[?2004l[?2004h>   } else {
+[?2004l[?2004h>     stop('density_function must be a function or an expression/string')
+[?2004l[?2004h>   }
+[?2004l[?2004h>   function(x) {
+[?2004l[?2004h>     y <- f(x)
+[?2004l[?2004h>     if (!is.numeric(y)) stop('density_function must return numeric values')
+[?2004l[?2004h>     y <- as.numeric(y)
+[?2004l[?2004h>     if (length(y) == 1 && length(x) > 1) y <- rep(y, length(x))
+[?2004l[?2004h>     if (length(y) != length(x)) stop('density_function must be vectorized')
+[?2004l[?2004h>     y
+[?2004l[?2004h>   }
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> log_density_of <- function(density) {
+[?2004l[?2004h>   function(x) {
+[?2004l[?2004h>     y <- density(x)
+[?2004l[?2004h>     out <- rep(-Inf, length(x))
+[?2004l[?2004h>     ok <- is.finite(y) & y > 0
+[?2004l[?2004h>     out[ok] <- log(y[ok])
+[?2004l[?2004h>     out
+[?2004l[?2004h>   }
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> num_deriv <- function(logf, x, domain) {
+[?2004l[?2004h>   one <- function(xi) {
+[?2004l[?2004h>     h <- 1e-6 * max(1, abs(xi))
+[?2004l[?2004h>     if (is.finite(domain[1]) && xi - h <= domain[1]) return((logf(xi + h) - logf(xi))/h)
+[?2004l[?2004h>     if (is.finite(domain[2]) && xi + h >= domain[2]) return((logf(xi) - logf(xi - h))/h)
+[?2004l[?2004h>     (logf(xi + h) - logf(xi - h))/(2*h)
+[?2004l[?2004h>   }
+[?2004l[?2004h>   vapply(x, one, numeric(1))
+[?2004l[?2004h> }
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@2f4ccf9d796a:/app# cat >> /app/ars.R <<'EOF'
+[?2004l[?2004h> 
+[?2004l[?2004h> log_sum_exp <- function(v) {
+[?2004l[?2004h>   m <- max(v)
+[?2004l[?2004h>   if (!is.finite(m)) return(m)
+[?2004l[?2004h>   m + log(sum(exp(v - m)))
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> safe_scalar_logf <- function(logf, x) {
+[?2004low) [?2004h>   v <- logf(x)
+[?2004l[?2004h>   if (length(v) < 1) return(NA_real_)
+[?2004l[?2004h>   as.numeric(v[1])
+[?2004lop('could not determine a valid fi[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> deriv_at <- function(logf, x, domain) {
+[?2004l[?2004h>   h <- 1e-6 * max(1, abs(x))
+[?2004l[?2004h>   if (is.finite(domain[1]) && x - h <= domain[1]) {
+[?2004l[?2004h>     return((safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x)) / h)
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (is.finite(domain[2]) && x + h >= domain[2]) {
+[?2004l[?2004h>     return((safe_scalar_logf(logf, x) - safe_scalar_logf(logf, x - h)) / h)
+[?2004ll)) st[?2004h>   }
+[?2004l[?2004h>   (safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x - h)) / (2 * h)
+[?2004lF[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> find_valid_seed <- function(logf, domain) {
+[?2004l[?2004h>   if (is.finite(domain[1]) && is.finite(domain[2])) {
+[?2004l[?2004h>     center <- (domain[1] + domain[2]) / 2
+[?2004l[?2004h>   } else if (is.finite(domain[1])) {
+[?2004l[?2004h>     center <- domain[1] + max(1, abs(domain[1]))
+[?2004l[?2004h>   } else if (is.finite(domain[2])) {
+[?2004l[?2004h>     center <- domain[2] - max(1, abs(domain[2]))
+[?2004l[?2004h>   } else {
+[?2004l[?2004h>     center <- 0
+[?2004l[?2004h>   }
+[?2004l[?2004h>   offsets <- c(0, 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, -128)
+[?2004l[?2004h>   candidates <- center + offsets
+[?2004l[?2004h>   if (is.finite(domain[1])) candidates <- candidates[candidates >= domain[1]]
+[?2004l[?2004h>   if (is.finite(domain[2])) candidates <- candidates[candidates <= domain[2]]
+[?2004l[?2004h>   vals <- logf(candidates)
+[?2004l[?2004h>   ok <- is.finite(vals)
+[?2004l[?2004h>   if (!any(ok)) stop('could not find a point where the log-density is finite')
+[?2004l[?2004h>   candidates[which.max(vals[ok])]
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> find_mode <- function(logf, domain, seed) {
+[?2004l[?2004h>   x0 <- seed
+[?2004l[?2004h>   d0 <- deriv_at(logf, x0, domain)
+[?2004l[?2004h>   if (!is.finite(d0)) return(x0)
+[?2004l[?2004h>   if (abs(d0) < 1e-7) return(x0)
+[?2004l[?2004h>   direction <- if (d0 > 0) 1 else -1
+[?2004l[?2004h>   step <- max(1, abs(x0) / 2)
+[?2004l[?2004h>   lo <- x0
+[?2004l[?2004h>   hi <- x0
+[?2004l[?2004h>   repeat {
+[?2004l[?2004h>     cand <- if (direction > 0) hi + step else lo - step
+[?2004l[?2004h>     if (is.finite(domain[1]) && cand <= domain[1]) cand <- domain[1]
+[?2004l[?2004h>     if (is.finite(domain[2]) && cand >= domain[2]) cand <- domain[2]
+[?2004l[?2004h>     v <- safe_scalar_logf(logf, cand)
+[?2004l[?2004h>     if (!is.finite(v)) break
+[?2004l[?2004h>     d <- deriv_at(logf, cand, domain)
+[?2004l[?2004h>     if (direction > 0) {
+[?2004l[?2004h>       hi <- cand
+[?2004l[?2004h>       if (d <= 0) break
+[?2004l[?2004h>     } else {
+[?2004l[?2004h>       lo <- cand
+[?2004l[?2004h>       if (d >= 0) break
+[?2004l[?2004h>     }
+[?2004l[?2004h>     if (cand == domain[1] || cand == domain[2]) break
+[?2004l[?2004h>     step <- step * 2
+[?2004l[?2004h>     if (step > 1e8) break
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (lo < hi) {
+[?2004l[?2004h>     obj <- function(z) {
+[?2004l[?2004h>       v <- safe_scalar_logf(logf, z)
+[?2004l[?2004h>       if (is.finite(v)) v else -Inf
+[?2004l[?2004h>     }
+[?2004l[?2004h>     opt <- tryCatch(stats::optimize(obj, interval = c(lo, hi), maximum = TRUE),
+[?2004l[?2004h>                     error = function(e) NULL)
+[?2004l[?2004h>     if (!is.null(opt) && is.finite(opt$objective)) return(opt$maximum)
+[?2004l[?2004h>   }
+[?2004l[?2004h>   x0
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> find_tail_bound <- function(logf, mode, hmax, domain, direction) {
+[?2004l[?2004h>   x <- mode
+[?2004l[?2004h>   step <- max(1, abs(mode) / 4)
+[?2004l[?2004h>   repeat {
+[?2004l[?2004h>     xnew <- x + direction * step
+[?2004l[?2004h>     if (direction < 0 && is.finite(domain[1]) && xnew <= domain[1]) {
+[?2004l[?2004h>       xnew <- domain[1]
+[?2004l[?2004h>       if (!is.finite(safe_scalar_logf(logf, xnew))) return(x)
+[?2004l[?2004h>       return(xnew)
+[?2004l[?2004h>     }
+[?2004l[?2004h>     if (direction > 0 && is.finite(domain[2]) && xnew >= domain[2]) {
+[?2004l[?2004h>       xnew <- domain[2]
+[?2004l[?2004h>       if (!is.finite(safe_scalar_logf(logf, xnew))) return(x)
+[?2004l[?2004h>       return(xnew)
+[?2004l[?2004h>     }
+[?2004l[?2004h>     v <- safe_scalar_logf(logf, xnew)
+[?2004l[?2004h>     if (!is.finite(v)) return(x)
+[?2004l[?2004h>     if (v < hmax - 40) return(xnew)
+[?2004l[?2004h>     x <- xnew
+[?2004l[?2004h>     step <- step * 2
+[?2004l[?2004h>     if (step > 1e9) stop('could not locate a finite practical support bound')
+[?2004l[?2004h>   }
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> find_finite_boundary <- function(logf, boundary, mode, direction) {
+[?2004l[?2004h>   if (is.finite(safe_scalar_logf(logf, boundary))) return(boundary)
+[?2004l[?2004h>   scale <- max(1, abs(boundary), abs(mode - boundary))
+[?2004l[?2004h>   delta <- scale * 1e-12
+[?2004l[?2004h>   for (k in 1:30) {
+[?2004l[?2004h>     cand <- boundary + direction * delta
+[?2004l[?2004h>     v <- safe_scalar_logf(logf, cand)
+[?2004l[?2004h>     if (is.finite(v)) return(cand)
+[?2004l[?2004h>     delta <- delta * 10
+[?2004l[?2004h>   }
+[?2004l[?2004h>   mode
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> find_practical_support <- function(logf, domain) {
+[?2004l[?2004h>   seed <- find_valid_seed(logf, domain)
+[?2004l[?2004h>   mode <- find_mode(logf, domain, seed)
+[?2004l[?2004h>   hmax <- safe_scalar_logf(logf, mode)
+[?2004l[?2004h>   if (!is.finite(hmax)) hmax <- safe_scalar_logf(logf, seed)
+[?2004l[?2004h>   if (is.finite(domain[1])) {
+[?2004l[?2004h>     low <- find_finite_boundary(logf, domain[1], mode, 1)
+[?2004l[?2004h>   } else {
+[?2004l[?2004h>     low <- find_tail_bound(logf, mode, hmax, domain, -1)
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (is.finite(domain[2])) {
+[?2004l[?2004h>     high <- find_finite_boundary(logf, domain[2], mode, -1)
+[?2004l[?2004h>   } else {
+[?2004l[?2004h>     high <- find_tail_bound(logf, mode, hmax, domain, 1)
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (!is.finite(low) || !is.finite(high) || low >= high) stop('could not determine a valid finite sampling range')
+[?2004l[?2004h>   list(low = low, high = high, mode = mode, seed = seed)
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> check_discrete_log_concavity <- function(x, h, tol = 1e-7) {
+[?2004l[?2004h>   if (length(x) < 3) return(invisible(TRUE))
+[?2004l[?2004h>   z <- diff(h) / diff(x)
+[?2004l[?2004h>   if (any(!is.finite(z))) stop('log-density is not finite on its support; cannot use ARS')
+[?2004l[?2004h>   if (any(diff(z) > tol)) stop('density is not log-concave: secant slopes increase')
+[?2004l[?2004h>   invisible(TRUE)
+[?2004l[?2004h> }
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@2f4ccf9d796a:/app# nl -ba /app/ars.R | sed -n '1,220p'
+[?2004l     1	validate_ars_inputs <- function(density_function, domain, n) {
+     2	  if (missing(density_function) || is.null(density_function)) stop('density_function must be supplied')
+     3	  if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n != floor(n)) stop('n must be a positive integer')
+     4	  if (!is.numeric(domain) || length(domain) != 2 || anyNA(domain) || domain[1] >= domain[2]) stop('domain must be c(lower, upper) with lower < upper')
+     5	  if (is.infinite(domain[1]) && domain[1] > 0) stop('domain lower bound cannot be +Inf')
+     6	  if (is.infinite(domain[2]) && domain[2] < 0) stop('domain upper bound cannot be -Inf')
+     7	  invisible(TRUE)
+     8	}
+     9	
+    10	prepare_density <- function(density_function, envir) {
+    11	  if (is.function(density_function)) {
+    12	    f <- density_function
+    13	  } else if (is.character(density_function)) {
+    14	    if (length(density_function) != 1) stop('character density must have length one')
+    15	    expr <- parse(text = density_function)[[1]]
+    16	    f <- eval(bquote(function(x) .(expr)), envir = envir)
+    17	  } else if (is.expression(density_function) || is.call(density_function)) {
+    18	    expr <- if (is.expression(density_function)) density_function[[1]] else density_function
+    19	    f <- eval(bquote(function(x) .(expr)), envir = envir)
+    20	  } else {
+    21	    stop('density_function must be a function or an expression/string')
+    22	  }
+    23	  function(x) {
+    24	    y <- f(x)
+    25	    if (!is.numeric(y)) stop('density_function must return numeric values')
+    26	    y <- as.numeric(y)
+    27	    if (length(y) == 1 && length(x) > 1) y <- rep(y, length(x))
+    28	    if (length(y) != length(x)) stop('density_function must be vectorized')
+    29	    y
+    30	  }
+    31	}
+    32	
+    33	log_density_of <- function(density) {
+    34	  function(x) {
+    35	    y <- density(x)
+    36	    out <- rep(-Inf, length(x))
+    37	    ok <- is.finite(y) & y > 0
+    38	    out[ok] <- log(y[ok])
+    39	    out
+    40	  }
+    41	}
+    42	
+    43	num_deriv <- function(logf, x, domain) {
+    44	  one <- function(xi) {
+    45	    h <- 1e-6 * max(1, abs(xi))
+    46	    if (is.finite(domain[1]) && xi - h <= domain[1]) return((logf(xi + h) - logf(xi))/h)
+    47	    if (is.finite(domain[2]) && xi + h >= domain[2]) return((logf(xi) - logf(xi - h))/h)
+    48	    (logf(xi + h) - logf(xi - h))/(2*h)
+    49	  }
+    50	  vapply(x, one, numeric(1))
+    51	}
+    52	
+    53	log_sum_exp <- function(v) {
+    54	  m <- max(v)
+    55	  if (!is.finite(m)) return(m)
+    56	  m + log(sum(exp(v - m)))
+    57	}
+    58	
+    59	safe_scalar_logf <- function(logf, x) {
+    60	  v <- logf(x)
+    61	  if (length(v) < 1) return(NA_real_)
+    62	  as.numeric(v[1])
+    63	}
+    64	
+    65	deriv_at <- function(logf, x, domain) {
+    66	  h <- 1e-6 * max(1, abs(x))
+    67	  if (is.finite(domain[1]) && x - h <= domain[1]) {
+    68	    return((safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x)) / h)
+    69	  }
+    70	  if (is.finite(domain[2]) && x + h >= domain[2]) {
+    71	    return((safe_scalar_logf(logf, x) - safe_scalar_logf(logf, x - h)) / h)
+    72	  }
+    73	  (safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x - h)) / (2 * h)
+    74	}
+    75	
+    76	find_valid_seed <- function(logf, domain) {
+    77	  if (is.finite(domain[1]) && is.finite(domain[2])) {
+    78	    center <- (domain[1] + domain[2]) / 2
+    79	  } else if (is.finite(domain[1])) {
+    80	    center <- domain[1] + max(1, abs(domain[1]))
+    81	  } else if (is.finite(domain[2])) {
+    82	    center <- domain[2] - max(1, abs(domain[2]))
+    83	  } else {
+    84	    center <- 0
+    85	  }
+    86	  offsets <- c(0, 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, -128)
+    87	  candidates <- center + offsets
+    88	  if (is.finite(domain[1])) candidates <- candidates[candidates >= domain[1]]
+    89	  if (is.finite(domain[2])) candidates <- candidates[candidates <= domain[2]]
+    90	  vals <- logf(candidates)
+    91	  ok <- is.finite(vals)
+    92	  if (!any(ok)) stop('could not find a point where the log-density is finite')
+    93	  candidates[which.max(vals[ok])]
+    94	}
+    95	
+    96	find_mode <- function(logf, domain, seed) {
+    97	  x0 <- seed
+    98	  d0 <- deriv_at(logf, x0, domain)
+    99	  if (!is.finite(d0)) return(x0)
+   100	  if (abs(d0) < 1e-7) return(x0)
+   101	  direction <- if (d0 > 0) 1 else -1
+   102	  step <- max(1, abs(x0) / 2)
+   103	  lo <- x0
+   104	  hi <- x0
+   105	  repeat {
+   106	    cand <- if (direction > 0) hi + step else lo - step
+   107	    if (is.finite(domain[1]) && cand <= domain[1]) cand <- domain[1]
+   108	    if (is.finite(domain[2]) && cand >= domain[2]) cand <- domain[2]
+   109	    v <- safe_scalar_logf(logf, cand)
+   110	    if (!is.finite(v)) break
+   111	    d <- deriv_at(logf, cand, domain)
+   112	    if (direction > 0) {
+   113	      hi <- cand
+   114	      if (d <= 0) break
+   115	    } else {
+   116	      lo <- cand
+   117	      if (d >= 0) break
+   118	    }
+   119	    if (cand == domain[1] || cand == domain[2]) break
+   120	    step <- step * 2
+   121	    if (step > 1e8) break
+   122	  }
+   123	  if (lo < hi) {
+   124	    obj <- function(z) {
+   125	      v <- safe_scalar_logf(logf, z)
+   126	      if (is.finite(v)) v else -Inf
+   127	    }
+   128	    opt <- tryCatch(stats::optimize(obj, interval = c(lo, hi), maximum = TRUE),
+   129	                    error = function(e) NULL)
+   130	    if (!is.null(opt) && is.finite(opt$objective)) return(opt$maximum)
+   131	  }
+   132	  x0
+   133	}
+   134	
+   135	find_tail_bound <- function(logf, mode, hmax, domain, direction) {
+   136	  x <- mode
+   137	  step <- max(1, abs(mode) / 4)
+   138	  repeat {
+   139	    xnew <- x + direction * step
+   140	    if (direction < 0 && is.finite(domain[1]) && xnew <= domain[1]) {
+   141	      xnew <- domain[1]
+   142	      if (!is.finite(safe_scalar_logf(logf, xnew))) return(x)
+   143	      return(xnew)
+   144	    }
+   145	    if (direction > 0 && is.finite(domain[2]) && xnew >= domain[2]) {
+   146	      xnew <- domain[2]
+   147	      if (!is.finite(safe_scalar_logf(logf, xnew))) return(x)
+   148	      return(xnew)
+   149	    }
+   150	    v <- safe_scalar_logf(logf, xnew)
+   151	    if (!is.finite(v)) return(x)
+   152	    if (v < hmax - 40) return(xnew)
+   153	    x <- xnew
+   154	    step <- step * 2
+   155	    if (step > 1e9) stop('could not locate a finite practical support bound')
+   156	  }
+   157	}
+   158	
+   159	find_finite_boundary <- function(logf, boundary, mode, direction) {
+   160	  if (is.finite(safe_scalar_logf(logf, boundary))) return(boundary)
+   161	  scale <- max(1, abs(boundary), abs(mode - boundary))
+   162	  delta <- scale * 1e-12
+   163	  for (k in 1:30) {
+   164	    cand <- boundary + direction * delta
+   165	    v <- safe_scalar_logf(logf, cand)
+   166	    if (is.finite(v)) return(cand)
+   167	    delta <- delta * 10
+   168	  }
+   169	  mode
+   170	}
+   171	
+   172	find_practical_support <- function(logf, domain) {
+   173	  seed <- find_valid_seed(logf, domain)
+   174	  mode <- find_mode(logf, domain, seed)
+   175	  hmax <- safe_scalar_logf(logf, mode)
+   176	  if (!is.finite(hmax)) hmax <- safe_scalar_logf(logf, seed)
+   177	  if (is.finite(domain[1])) {
+   178	    low <- find_finite_boundary(logf, domain[1], mode, 1)
+   179	  } else {
+   180	    low <- find_tail_bound(logf, mode, hmax, domain, -1)
+   181	  }
+   182	  if (is.finite(domain[2])) {
+   183	    high <- find_finite_boundary(logf, domain[2], mode, -1)
+   184	  } else {
+   185	    high <- find_tail_bound(logf, mode, hmax, domain, 1)
+   186	  }
+   187	  if (!is.finite(low) || !is.finite(high) || low >= high) stop('could not determine a valid finite sampling range')
+   188	  list(low = low, high = high, mode = mode, seed = seed)
+   189	}
+   190	
+   191	check_discrete_log_concavity <- function(x, h, tol = 1e-7) {
+   192	  if (length(x) < 3) return(invisible(TRUE))
+   193	  z <- diff(h) / diff(x)
+   194	  if (any(!is.finite(z))) stop('log-density is not finite on its support; cannot use ARS')
+   195	  if (any(diff(z) > tol)) stop('density is not log-concave: secant slopes increase')
+   196	  invisible(TRUE)
+   197	}
+[?2004hroot@2f4ccf9d796a:/app# Rscript -e "parse('/app/ars.R'); cat('PARSE_OK\n')"
+[?2004lexpression(validate_ars_inputs <- function(density_function, 
+    domain, n) {
+    if (missing(density_function) || is.null(density_function)) 
+        stop("density_function must be supplied")
+    if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || 
+        n != floor(n)) 
+        stop("n must be a positive integer")
+    if (!is.numeric(domain) || length(domain) != 2 || anyNA(domain) || 
+        domain[1] >= domain[2]) 
+        stop("domain must be c(lower, upper) with lower < upper")
+    if (is.infinite(domain[1]) && domain[1] > 0) 
+        stop("domain lower bound cannot be +Inf")
+    if (is.infinite(domain[2]) && domain[2] < 0) 
+        stop("domain upper bound cannot be -Inf")
+    invisible(TRUE)
+}, prepare_density <- function(density_function, envir) {
+    if (is.function(density_function)) {
+        f <- density_function
+    }
+    else if (is.character(density_function)) {
+        if (length(density_function) != 1) 
+            stop("character density must have length one")
+        expr <- parse(text = density_function)[[1]]
+        f <- eval(bquote(function(x) .(expr)), envir = envir)
+    }
+    else if (is.expression(density_function) || is.call(density_function)) {
+        expr <- if (is.expression(density_function)) 
+            density_function[[1]]
+        else density_function
+        f <- eval(bquote(function(x) .(expr)), envir = envir)
+    }
+    else {
+        stop("density_function must be a function or an expression/string")
+    }
+    function(x) {
+        y <- f(x)
+        if (!is.numeric(y)) 
+            stop("density_function must return numeric values")
+        y <- as.numeric(y)
+        if (length(y) == 1 && length(x) > 1) 
+            y <- rep(y, length(x))
+        if (length(y) != length(x)) 
+            stop("density_function must be vectorized")
+        y
+    }
+}, log_density_of <- function(density) {
+    function(x) {
+        y <- density(x)
+        out <- rep(-Inf, length(x))
+        ok <- is.finite(y) & y > 0
+        out[ok] <- log(y[ok])
+        out
+    }
+}, num_deriv <- function(logf, x, domain) {
+    one <- function(xi) {
+        h <- 1e-06 * max(1, abs(xi))
+        if (is.finite(domain[1]) && xi - h <= domain[1]) 
+            return((logf(xi + h) - logf(xi))/h)
+        if (is.finite(domain[2]) && xi + h >= domain[2]) 
+            return((logf(xi) - logf(xi - h))/h)
+        (logf(xi + h) - logf(xi - h))/(2 * h)
+    }
+    vapply(x, one, numeric(1))
+}, log_sum_exp <- function(v) {
+    m <- max(v)
+    if (!is.finite(m)) 
+        return(m)
+    m + log(sum(exp(v - m)))
+}, safe_scalar_logf <- function(logf, x) {
+    v <- logf(x)
+    if (length(v) < 1) 
+        return(NA_real_)
+    as.numeric(v[1])
+}, deriv_at <- function(logf, x, domain) {
+    h <- 1e-06 * max(1, abs(x))
+    if (is.finite(domain[1]) && x - h <= domain[1]) {
+        return((safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, 
+            x))/h)
+    }
+    if (is.finite(domain[2]) && x + h >= domain[2]) {
+        return((safe_scalar_logf(logf, x) - safe_scalar_logf(logf, 
+            x - h))/h)
+    }
+    (safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x - 
+        h))/(2 * h)
+}, find_valid_seed <- function(logf, domain) {
+    if (is.finite(domain[1]) && is.finite(domain[2])) {
+        center <- (domain[1] + domain[2])/2
+    }
+    else if (is.finite(domain[1])) {
+        center <- domain[1] + max(1, abs(domain[1]))
+    }
+    else if (is.finite(domain[2])) {
+        center <- domain[2] - max(1, abs(domain[2]))
+    }
+    else {
+        center <- 0
+    }
+    offsets <- c(0, 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, 
+        -32, 64, -64, 128, -128)
+    candidates <- center + offsets
+    if (is.finite(domain[1])) 
+        candidates <- candidates[candidates >= domain[1]]
+    if (is.finite(domain[2])) 
+        candidates <- candidates[candidates <= domain[2]]
+    vals <- logf(candidates)
+    ok <- is.finite(vals)
+    if (!any(ok)) 
+        stop("could not find a point where the log-density is finite")
+    candidates[which.max(vals[ok])]
+}, find_mode <- function(logf, domain, seed) {
+    x0 <- seed
+    d0 <- deriv_at(logf, x0, domain)
+    if (!is.finite(d0)) 
+        return(x0)
+    if (abs(d0) < 1e-07) 
+        return(x0)
+    direction <- if (d0 > 0) 
+        1
+    else -1
+    step <- max(1, abs(x0)/2)
+    lo <- x0
+    hi <- x0
+    repeat {
+        cand <- if (direction > 0) 
+            hi + step
+        else lo - step
+        if (is.finite(domain[1]) && cand <= domain[1]) 
+            cand <- domain[1]
+        if (is.finite(domain[2]) && cand >= domain[2]) 
+            cand <- domain[2]
+        v <- safe_scalar_logf(logf, cand)
+        if (!is.finite(v)) 
+            break
+        d <- deriv_at(logf, cand, domain)
+        if (direction > 0) {
+            hi <- cand
+            if (d <= 0) 
+                break
+        }
+        else {
+            lo <- cand
+            if (d >= 0) 
+                break
+        }
+        if (cand == domain[1] || cand == domain[2]) 
+            break
+        step <- step * 2
+        if (step > 1e+08) 
+            break
+    }
+    if (lo < hi) {
+        obj <- function(z) {
+            v <- safe_scalar_logf(logf, z)
+            if (is.finite(v)) 
+                v
+            else -Inf
+        }
+        opt <- tryCatch(stats::optimize(obj, interval = c(lo, 
+            hi), maximum = TRUE), error = function(e) NULL)
+        if (!is.null(opt) && is.finite(opt$objective)) 
+            return(opt$maximum)
+    }
+    x0
+}, find_tail_bound <- function(logf, mode, hmax, domain, direction) {
+    x <- mode
+    step <- max(1, abs(mode)/4)
+    repeat {
+        xnew <- x + direction * step
+        if (direction < 0 && is.finite(domain[1]) && xnew <= 
+            domain[1]) {
+            xnew <- domain[1]
+            if (!is.finite(safe_scalar_logf(logf, xnew))) 
+                return(x)
+            return(xnew)
+        }
+        if (direction > 0 && is.finite(domain[2]) && xnew >= 
+            domain[2]) {
+            xnew <- domain[2]
+            if (!is.finite(safe_scalar_logf(logf, xnew))) 
+                return(x)
+            return(xnew)
+        }
+        v <- safe_scalar_logf(logf, xnew)
+        if (!is.finite(v)) 
+            return(x)
+        if (v < hmax - 40) 
+            return(xnew)
+        x <- xnew
+        step <- step * 2
+        if (step > 1e+09) 
+            stop("could not locate a finite practical support bound")
+    }
+}, find_finite_boundary <- function(logf, boundary, mode, direction) {
+    if (is.finite(safe_scalar_logf(logf, boundary))) 
+        return(boundary)
+    scale <- max(1, abs(boundary), abs(mode - boundary))
+    delta <- scale * 1e-12
+    for (k in 1:30) {
+        cand <- boundary + direction * delta
+        v <- safe_scalar_logf(logf, cand)
+        if (is.finite(v)) 
+            return(cand)
+        delta <- delta * 10
+    }
+    mode
+}, find_practical_support <- function(logf, domain) {
+    seed <- find_valid_seed(logf, domain)
+    mode <- find_mode(logf, domain, seed)
+    hmax <- safe_scalar_logf(logf, mode)
+    if (!is.finite(hmax)) 
+        hmax <- safe_scalar_logf(logf, seed)
+    if (is.finite(domain[1])) {
+        low <- find_finite_boundary(logf, domain[1], mode, 1)
+    }
+    else {
+        low <- find_tail_bound(logf, mode, hmax, domain, -1)
+    }
+    if (is.finite(domain[2])) {
+        high <- find_finite_boundary(logf, domain[2], mode, -1)
+    }
+    else {
+        high <- find_tail_bound(logf, mode, hmax, domain, 1)
+    }
+    if (!is.finite(low) || !is.finite(high) || low >= high) 
+        stop("could not determine a valid finite sampling range")
+    list(low = low, high = high, mode = mode, seed = seed)
+}, check_discrete_log_concavity <- function(x, h, tol = 1e-07) {
+    if (length(x) < 3) 
+        return(invisible(TRUE))
+    z <- diff(h)/diff(x)
+    if (any(!is.finite(z))) 
+        stop("log-density is not finite on its support; cannot use ARS")
+    if (any(diff(z) > tol)) 
+        stop("density is not log-concave: secant slopes increase")
+    invisible(TRUE)
+})
+PARSE_OK
+[?2004hroot@2f4ccf9d796a:/app# cat >> /app/ars.R <<'EOF'
+[?2004l[?2004h> 
+[?2004l[?2004h> log_integral_exp_line <- function(m, b, L, R) {
+[?2004l[?2004h>   len <- R - L
+[?2004l[?2004h>   if (!is.finite(len) || len <= 0) return(-Inf)
+[?2004l+ 1L[?2004h>   if (abs(m) < 1e-12) return(b + log(len))
+[?2004l[?2004h>   mlen <- m * len
+[?2004l[?2004h>   if (mlen > 50) {
+[?2004l[?2004h>     return(b + m * R - log(m) + log1p(-exp(-mlen)))
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (mlen < -50) {
+[?2004l[?2004h>     return(b + m * L - log(-m))
+[?2004l[?2004h>   }
+[?2004l[?2004h>   b + m * L + log(abs(expm1(mlen))) - log(abs(m))
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> build_envelope <- function(x, h, m, low, high) {
+[?2004l[?2004h>   ord <- order(x)
+[?2004l[?2004h>   x <- x[ord]
+[?2004l[?2004h>   h <- h[ord]
+[?2004l[?2004h>   m <- m[ord]
+[?2004l[?2004h>   b <- h - m * x
+[?2004l[?2004h>   k <- length(x)
+[?2004l[?2004h>   if (k < 1) stop('at least one abscissa is required')
+[?2004l[?2004h> 
+[?2004l[?2004h>   cross <- numeric(0)
+[?2004l[?2004h>   if (k >= 2) {
+[?2004l[?2004h>     for (i in seq_len(k - 1)) {
+[?2004l[?2004h>       dm <- m[i] - m[i + 1]
+[?2004l[?2004h>       if (abs(dm) > 1e-10) {
+[?2004l[?2004h>         z <- (b[i + 1] - b[i]) / dm
+[?2004l[?2004h>         if (is.finite(z) && z > low && z < high) cross <- c(cross, z)
+[?2004l[?2004h>       }
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h> 
+[?2004l[?2004h>   breaks <- sort(unique(c(low, cross, high)))
+[?2004l[?2004h>   breaks <- breaks[breaks >= low & breaks <= high]
+[?2004l[?2004h>   if (length(breaks) < 2) stop('could not construct envelope intervals')
+[?2004l[?2004h> 
+[?2004l[?2004h>   mids <- (breaks[-1] + breaks[-length(breaks)]) / 2
+[?2004l[?2004h>   active <- vapply(mids, function(xx) which.min(m * xx + b), integer(1))
+[?2004l[?2004h>   L <- breaks[-length(breaks)]
+[?2004lhar[?2004h>   R <- breaks[-1]
+[?2004l[?2004h>   keep <- R > L
+[?2004l[?2004h>   active <- active[keep]
+[?2004l[?2004h>   L <- L[keep]
+[?2004l[?2004h>   R <- R[keep]
+[?2004l[?2004h>   if (!length(active)) stop('envelope has no positive-length intervals')
+[?2004l[?2004h> 
+[?2004ls[?2004h>   log_ints <- mapply(function(idx, l, r) log_integral_exp_line(m[idx], b[idx], l, r),
+[?2004l[?2004h>                      active, L, R)
+[?2004l[?2004h>   log_z <- log_sum_exp(log_ints)
+[?2004l[?2004h>   if (!is.finite(log_z)) stop('envelope integral is not finite')
+[?2004l  [?2004h>   probs <- exp(log_ints - log_z)
+[?2004l[?2004h>   probs <- probs / sum(probs)
+[?2004l[?2004h> 
+[?2004lm[?2004h>   list(m = m, b = b, active = active, L = L, R = R,
+[?2004l[?2004h>        log_ints = log_ints, probs = probs, log_z = log_z)
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> upper_envelope_value <- function(env, x) {
+[?2004l[?2004h>   vapply(x, function(xx) min(env$m * xx + env$b), numeric(1))
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l,[?2004h> invert_segment <- function(m, b, L, R, p) {
+[?2004l       c(0, Inf), 0.5, 0.5, n [?2004h>   if (abs(m) < 1e-12) return(L + p * (R - L))
+[?2004lIDATION[?2004h>   len <- R - L
+[?2004lg... ')[?2004h>   mlen <- m * len
+[?2004l[?2004h>   if (mlen > 700) {
+[?2004l[?2004h>     x <- R + log(p) / m
+[?2004l[?2004h>   } else {
+[?2004l))[?2004h>     x <- L + log1p(p * expm1(mlen)) / m
+[?2004l[?2004h>   }
+[?2004l[?2004h>   min(max(x, L), R)
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l [?2004h> sample_envelope <- function(env, n) {
+[?2004l[?2004h>   if (n < 1) return(numeric(0))
+[?2004l[?2004h>   u <- runif(n)
+[?2004lif [?2004h>   cdf <- cumsum(env$probs)
+[?2004l[?2004h>   cdf[length(cdf)] <- 1
+[?2004l[?2004h>   seg <- findInterval(u, cdf) + 1
+[?2004l[?2004h>   seg[seg < 1] <- 1
+[?2004l[?2004h>   seg[seg > length(env$probs)] <- length(env$probs)
+[?2004l[?2004h>   p <- runif(n)
+[?2004l[?2004h>   out <- numeric(n)
+[?2004l[?2004h>   for (j in unique(seg)) {
+[?2004l[?2004h>     idx <- which(seg == j)
+[?2004l[?2004h>     si <- env$active[j]
+[?2004l[?2004h>     out[idx] <- vapply(p[idx], function(pp) {
+[?2004l[?2004h>       invert_segment(env$m[si], env$b[si], env$L[j], env$R[j], pp)
+[?2004l[?2004h>     }, numeric(1))
+[?2004l =[?2004h>   }
+[?2004l[?2004h>   out
+[?2004l[?2004h> }
+[?2004l w[?2004h> 
+[?2004lr[?2004h> lower_hull_value <- function(x, h, z) {
+[?2004l[?2004h>   if (length(x) < 2) return(rep(-Inf, length(z)))
+[?2004l[?2004h>   approx(x, h, xout = z, method = 'linear', rule = 1)$y
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> ars <- function(density_function, domain, n = 1000) {
+[?2004l[?2004h>   validate_ars_inputs(density_function, domain, n)
+[?2004l[?2004h>   density <- prepare_density(density_function, parent.frame())
+[?2004l[?2004h>   logf <- log_density_of(density)
+[?2004l[?2004h> 
+[?2004l[?2004h>   support <- find_practical_support(logf, domain)
+[?2004l[?2004h>   low <- support$low
+[?2004l[?2004h>   high <- support$high
+[?2004l[?2004h> 
+[?2004l[?2004h>   xgrid <- sort(unique(c(low, high, support$mode,
+[?2004l[?2004h>                          seq(low, high, length.out = 5))))
+[?2004l[?2004h>   hx <- logf(xgrid)
+[?2004l[?2004h>   if (any(!is.finite(hx))) stop('log-density must be finite at all used abscissae')
+[?2004l[?2004h>   check_discrete_log_concavity(xgrid, hx)
+[?2004l[?2004h> 
+[?2004l[?2004h>   mx <- num_deriv(logf, xgrid, domain)
+[?2004l[?2004h>   if (any(!is.finite(mx))) stop('could not compute finite log-density derivatives')
+[?2004l[?2004h> 
+[?2004l[?2004h>   env <- build_envelope(xgrid, hx, mx, low, high)
+[?2004l[?2004h>   samples <- numeric(n)
+[?2004l[?2004h>   accepted <- 0L
+[?2004l[?2004h>   iter <- 0L
+[?2004l[?2004h>   max_iter <- max(10000L, 200L * n)
+[?2004l[?2004h> 
+[?2004l[?2004h>   while (accepted < n) {
+[?2004l[?2004h>     iter <- iter + 1L
+[?2004l[?2004h>     if (iter > max_iter) stop('ARS failed to produce enough accepted samples')
+[?2004l[?2004h> 
+[?2004l[?2004h>     xprop <- sample_envelope(env, 1)
+[?2004l[?2004h>     u <- upper_envelope_value(env, xprop)
+[?2004l[?2004h>     l <- lower_hull_value(xgrid, hx, xprop)
+[?2004l[?2004h>     logw <- log(runif(1))
+[?2004l[?2004h> 
+[?2004l[?2004h>     accepted_now <- FALSE
+[?2004l[?2004h>     if (is.finite(l) && logw <= l - u) {
+[?2004l[?2004h>       accepted_now <- TRUE
+[?2004l[?2004h>     } else {
+[?2004l[?2004h>       hp <- safe_scalar_logf(logf, xprop)
+[?2004l[?2004h>       if (!is.finite(hp)) {
+[?2004l[?2004h>         stop('log-density is not finite at a proposed point; the density may not be log-concave on the given domain')
+[?2004l[?2004h>       }
+[?2004l[?2004h>       if (logw <= hp - u) accepted_now <- TRUE
+[?2004l[?2004h>     }
+[?2004l[?2004h> 
+[?2004l[?2004h>     if (accepted_now) {
+[?2004l[?2004h>       accepted <- accepted + 1L
+[?2004l[?2004h>       samples[accepted] <- xprop
+[?2004l[?2004h>     } else {
+[?2004l[?2004h>       if (!any(abs(xgrid - xprop) < 1e-12)) {
+[?2004l[?2004h>         xgrid <- sort(c(xgrid, xprop))
+[?2004l[?2004h>         hx <- c(hx, safe_scalar_logf(logf, xprop))
+[?2004l[?2004h>         ord <- order(xgrid)
+[?2004l[?2004h>         xgrid <- xgrid[ord]
+[?2004l[?2004h>         hx <- hx[ord]
+[?2004l[?2004h>         check_discrete_log_concavity(xgrid, hx)
+[?2004l[?2004h>         mx <- num_deriv(logf, xgrid, domain)
+[?2004l[?2004h>         if (any(!is.finite(mx))) stop('could not update ARS derivatives')
+[?2004l[?2004h>         env <- build_envelope(xgrid, hx, mx, low, high)
+[?2004l[?2004h>       }
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h> 
+[?2004l[?2004h>   samples
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> check_error <- function(expr) {
+[?2004l[?2004h>   inherits(try(force(expr), silent = TRUE), 'try-error')
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> test <- function() {
+[?2004l[?2004h>   cat('Running ARS formal tests...\n')
+[?2004l[?2004h>   pass <- TRUE
+[?2004l[?2004h> 
+[?2004l[?2004h>   run_known <- function(name, density, domain, true_mean, true_sd, n = 10000) {
+[?2004l[?2004h>     cat(sprintf('TEST_%s: running (n=%d)... ', name, n))
+[?2004l[?2004h>     res <- tryCatch({
+[?2004l[?2004h>       x <- ars(density, domain, n = n)
+[?2004l[?2004h>       c(mean = mean(x), sd = sd(x), n = length(x), finite = all(is.finite(x)))
+[?2004l[?2004h>     }, error = function(e) conditionMessage(e))
+[?2004l[?2004h>     if (is.character(res)) {
+[?2004l[?2004h>       cat('FAIL\n')
+[?2004l[?2004h>       cat(sprintf('  reason: %s\n', res))
+[?2004l[?2004h>       return(FALSE)
+[?2004l[?2004h>     }
+[?2004l[?2004h>     mean_ok <- abs(res['mean'] - true_mean) < 6 * true_sd / sqrt(n)
+[?2004l[?2004h>     sd_ok <- abs(res['sd'] - true_sd) < 6 * true_sd / sqrt(2 * n)
+[?2004l[?2004h>     ok <- mean_ok && sd_ok && res['finite'] && res['n'] == n
+[?2004l[?2004h>     cat(sprintf('%s (mean=%.4f, sd=%.4f, true_mean=%.4f, true_sd=%.4f)\n',
+[?2004l[?2004h>                 if (ok) 'PASS' else 'FAIL', res['mean'], res['sd'], true_mean, true_sd))
+[?2004l[?2004h>     ok
+[?2004l[?2004h>   }
+[?2004l[?2004h> 
+[?2004l[?2004h>   pass <- run_known('NORMAL', function(x) dnorm(x, mean = 1, sd = 2),
+[?2004l[?2004h>                     c(-Inf, Inf), 1, 2, n = 10000) && pass
+[?2004l[?2004h>   pass <- run_known('EXPONENTIAL', function(x) dexp(x, rate = 2),
+[?2004l[?2004h>                     c(0, Inf), 0.5, 0.5, n = 10000) && pass
+[?2004l[?2004h> 
+[?2004l[?2004h>   cat('TEST_INPUT_VALIDATION: running... ')
+[?2004l[?2004h>   val_ok <- check_error(ars(function(x) dnorm(x), c(-Inf, Inf), n = -1)) &&
+[?2004l[?2004h>             check_error(ars(function(x) dnorm(x), c(1, 1), n = 10)) &&
+[?2004l[?2004h>             check_error(ars(function(x) dnorm(x), c(1, -1), n = 10))
+[?2004l[?2004h>   cat(if (val_ok) 'PASS\n' else 'FAIL\n')
+[?2004l[?2004h>   pass <- val_ok && pass
+[?2004l[?2004h> 
+[?2004l[?2004h>   cat('TEST_NON_LOG_CONCAVE: running... ')
+[?2004l[?2004h>   nonconcave_ok <- check_error(ars(function(x) dt(x, df = 1), c(-Inf, Inf), n = 100))
+[?2004l[?2004h>   cat(if (nonconcave_ok) 'PASS\n' else 'FAIL\n')
+[?2004l[?2004h>   pass <- nonconcave_ok && pass
+[?2004l[?2004h> 
+[?2004l[?2004h>   cat('TEST_SAMPLE_FILE: running... ')
+[?2004l[?2004h>   file_ok <- tryCatch({
+[?2004l[?2004h>     x <- ars(function(x) dnorm(x, mean = 0, sd = 1), c(-Inf, Inf), n = 2000)
+[?2004l[?2004h>     write.table(x, '/app/normal_samples.txt', row.names = FALSE, col.names = FALSE)
+[?2004l[?2004h>     TRUE
+[?2004l[?2004h>   }, error = function(e) FALSE)
+[?2004l[?2004h>   cat(if (file_ok) 'PASS\n' else 'FAIL\n')
+[?2004l[?2004h>   pass <- file_ok && pass
+[?2004l[?2004h> 
+[?2004l[?2004h>   cat(sprintf('OVERALL: %s\n', if (pass) 'PASS' else 'FAIL'))
+[?2004l[?2004h>   invisible(pass)
+[?2004l[?2004h> }
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@2f4ccf9d796a:/app# Rscript -e "parse('/app/ars.R'); cat('PARSE_OK\n')"
+[?2004lexpression(validate_ars_inputs <- function(density_function, 
+    domain, n) {
+    if (missing(density_function) || is.null(density_function)) 
+        stop("density_function must be supplied")
+    if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || 
+        n != floor(n)) 
+        stop("n must be a positive integer")
+    if (!is.numeric(domain) || length(domain) != 2 || anyNA(domain) || 
+        domain[1] >= domain[2]) 
+        stop("domain must be c(lower, upper) with lower < upper")
+    if (is.infinite(domain[1]) && domain[1] > 0) 
+        stop("domain lower bound cannot be +Inf")
+    if (is.infinite(domain[2]) && domain[2] < 0) 
+        stop("domain upper bound cannot be -Inf")
+    invisible(TRUE)
+}, prepare_density <- function(density_function, envir) {
+    if (is.function(density_function)) {
+        f <- density_function
+    }
+    else if (is.character(density_function)) {
+        if (length(density_function) != 1) 
+            stop("character density must have length one")
+        expr <- parse(text = density_function)[[1]]
+        f <- eval(bquote(function(x) .(expr)), envir = envir)
+    }
+    else if (is.expression(density_function) || is.call(density_function)) {
+        expr <- if (is.expression(density_function)) 
+            density_function[[1]]
+        else density_function
+        f <- eval(bquote(function(x) .(expr)), envir = envir)
+    }
+    else {
+        stop("density_function must be a function or an expression/string")
+    }
+    function(x) {
+        y <- f(x)
+        if (!is.numeric(y)) 
+            stop("density_function must return numeric values")
+        y <- as.numeric(y)
+        if (length(y) == 1 && length(x) > 1) 
+            y <- rep(y, length(x))
+        if (length(y) != length(x)) 
+            stop("density_function must be vectorized")
+        y
+    }
+}, log_density_of <- function(density) {
+    function(x) {
+        y <- density(x)
+        out <- rep(-Inf, length(x))
+        ok <- is.finite(y) & y > 0
+        out[ok] <- log(y[ok])
+        out
+    }
+}, num_deriv <- function(logf, x, domain) {
+    one <- function(xi) {
+        h <- 1e-06 * max(1, abs(xi))
+        if (is.finite(domain[1]) && xi - h <= domain[1]) 
+            return((logf(xi + h) - logf(xi))/h)
+        if (is.finite(domain[2]) && xi + h >= domain[2]) 
+            return((logf(xi) - logf(xi - h))/h)
+        (logf(xi + h) - logf(xi - h))/(2 * h)
+    }
+    vapply(x, one, numeric(1))
+}, log_sum_exp <- function(v) {
+    m <- max(v)
+    if (!is.finite(m)) 
+        return(m)
+    m + log(sum(exp(v - m)))
+}, safe_scalar_logf <- function(logf, x) {
+    v <- logf(x)
+    if (length(v) < 1) 
+        return(NA_real_)
+    as.numeric(v[1])
+}, deriv_at <- function(logf, x, domain) {
+    h <- 1e-06 * max(1, abs(x))
+    if (is.finite(domain[1]) && x - h <= domain[1]) {
+        return((safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, 
+            x))/h)
+    }
+    if (is.finite(domain[2]) && x + h >= domain[2]) {
+        return((safe_scalar_logf(logf, x) - safe_scalar_logf(logf, 
+            x - h))/h)
+    }
+    (safe_scalar_logf(logf, x + h) - safe_scalar_logf(logf, x - 
+        h))/(2 * h)
+}, find_valid_seed <- function(logf, domain) {
+    if (is.finite(domain[1]) && is.finite(domain[2])) {
+        center <- (domain[1] + domain[2])/2
+    }
+    else if (is.finite(domain[1])) {
+        center <- domain[1] + max(1, abs(domain[1]))
+    }
+    else if (is.finite(domain[2])) {
+        center <- domain[2] - max(1, abs(domain[2]))
+    }
+    else {
+        center <- 0
+    }
+    offsets <- c(0, 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, 
+        -32, 64, -64, 128, -128)
+    candidates <- center + offsets
+    if (is.finite(domain[1])) 
+        candidates <- candidates[candidates >= domain[1]]
+    if (is.finite(domain[2])) 
+        candidates <- candidates[candidates <= domain[2]]
+    vals <- logf(candidates)
+    ok <- is.finite(vals)
+    if (!any(ok)) 
+        stop("could not find a point where the log-density is finite")
+    candidates[which.max(vals[ok])]
+}, find_mode <- function(logf, domain, seed) {
+    x0 <- seed
+    d0 <- deriv_at(logf, x0, domain)
+    if (!is.finite(d0)) 
+        return(x0)
+    if (abs(d0) < 1e-07) 
+        return(x0)
+    direction <- if (d0 > 0) 
+        1
+    else -1
+    step <- max(1, abs(x0)/2)
+    lo <- x0
+    hi <- x0
+    repeat {
+        cand <- if (direction > 0) 
+            hi + step
+        else lo - step
+        if (is.finite(domain[1]) && cand <= domain[1]) 
+            cand <- domain[1]
+        if (is.finite(domain[2]) && cand >= domain[2]) 
+            cand <- domain[2]
+        v <- safe_scalar_logf(logf, cand)
+        if (!is.finite(v)) 
+            break
+        d <- deriv_at(logf, cand, domain)
+        if (direction > 0) {
+            hi <- cand
+            if (d <= 0) 
+                break
+        }
+        else {
+            lo <- cand
+            if (d >= 0) 
+                break
+        }
+        if (cand == domain[1] || cand == domain[2]) 
+            break
+        step <- step * 2
+        if (step > 1e+08) 
+            break
+    }
+    if (lo < hi) {
+        obj <- function(z) {
+            v <- safe_scalar_logf(logf, z)
+            if (is.finite(v)) 
+                v
+            else -Inf
+        }
+        opt <- tryCatch(stats::optimize(obj, interval = c(lo, 
+            hi), maximum = TRUE), error = function(e) NULL)
+        if (!is.null(opt) && is.finite(opt$objective)) 
+            return(opt$maximum)
+    }
+    x0
+}, find_tail_bound <- function(logf, mode, hmax, domain, direction) {
+    x <- mode
+    step <- max(1, abs(mode)/4)
+    repeat {
+        xnew <- x + direction * step
+        if (direction < 0 && is.finite(domain[1]) && xnew <= 
+            domain[1]) {
+            xnew <- domain[1]
+            if (!is.finite(safe_scalar_logf(logf, xnew))) 
+                return(x)
+            return(xnew)
+        }
+        if (direction > 0 && is.finite(domain[2]) && xnew >= 
+            domain[2]) {
+            xnew <- domain[2]
+            if (!is.finite(safe_scalar_logf(logf, xnew))) 
+                return(x)
+            return(xnew)
+        }
+        v <- safe_scalar_logf(logf, xnew)
+        if (!is.finite(v)) 
+            return(x)
+        if (v < hmax - 40) 
+            return(xnew)
+        x <- xnew
+        step <- step * 2
+        if (step > 1e+09) 
+            stop("could not locate a finite practical support bound")
+    }
+}, find_finite_boundary <- function(logf, boundary, mode, direction) {
+    if (is.finite(safe_scalar_logf(logf, boundary))) 
+        return(boundary)
+    scale <- max(1, abs(boundary), abs(mode - boundary))
+    delta <- scale * 1e-12
+    for (k in 1:30) {
+        cand <- boundary + direction * delta
+        v <- safe_scalar_logf(logf, cand)
+        if (is.finite(v)) 
+            return(cand)
+        delta <- delta * 10
+    }
+    mode
+}, find_practical_support <- function(logf, domain) {
+    seed <- find_valid_seed(logf, domain)
+    mode <- find_mode(logf, domain, seed)
+    hmax <- safe_scalar_logf(logf, mode)
+    if (!is.finite(hmax)) 
+        hmax <- safe_scalar_logf(logf, seed)
+    if (is.finite(domain[1])) {
+        low <- find_finite_boundary(logf, domain[1], mode, 1)
+    }
+    else {
+        low <- find_tail_bound(logf, mode, hmax, domain, -1)
+    }
+    if (is.finite(domain[2])) {
+        high <- find_finite_boundary(logf, domain[2], mode, -1)
+    }
+    else {
+        high <- find_tail_bound(logf, mode, hmax, domain, 1)
+    }
+    if (!is.finite(low) || !is.finite(high) || low >= high) 
+        stop("could not determine a valid finite sampling range")
+    list(low = low, high = high, mode = mode, seed = seed)
+}, check_discrete_log_concavity <- function(x, h, tol = 1e-07) {
+    if (length(x) < 3) 
+        return(invisible(TRUE))
+    z <- diff(h)/diff(x)
+    if (any(!is.finite(z))) 
+        stop("log-density is not finite on its support; cannot use ARS")
+    if (any(diff(z) > tol)) 
+        stop("density is not log-concave: secant slopes increase")
+    invisible(TRUE)
+}, log_integral_exp_line <- function(m, b, L, R) {
+    len <- R - L
+    if (!is.finite(len) || len <= 0) 
+        return(-Inf)
+    if (abs(m) < 1e-12) 
+        return(b + log(len))
+    mlen <- m * len
+    if (mlen > 50) {
+        return(b + m * R - log(m) + log1p(-exp(-mlen)))
+    }
+    if (mlen < -50) {
+        return(b + m * L - log(-m))
+    }
+    b + m * L + log(abs(expm1(mlen))) - log(abs(m))
+}, build_envelope <- function(x, h, m, low, high) {
+    ord <- order(x)
+    x <- x[ord]
+    h <- h[ord]
+    m <- m[ord]
+    b <- h - m * x
+    k <- length(x)
+    if (k < 1) 
+        stop("at least one abscissa is required")
+    cross <- numeric(0)
+    if (k >= 2) {
+        for (i in seq_len(k - 1)) {
+            dm <- m[i] - m[i + 1]
+            if (abs(dm) > 1e-10) {
+                z <- (b[i + 1] - b[i])/dm
+                if (is.finite(z) && z > low && z < high) 
+                  cross <- c(cross, z)
+            }
+        }
+    }
+    breaks <- sort(unique(c(low, cross, high)))
+    breaks <- breaks[breaks >= low & breaks <= high]
+    if (length(breaks) < 2) 
+        stop("could not construct envelope intervals")
+    mids <- (breaks[-1] + breaks[-length(breaks)])/2
+    active <- vapply(mids, function(xx) which.min(m * xx + b), 
+        integer(1))
+    L <- breaks[-length(breaks)]
+    R <- breaks[-1]
+    keep <- R > L
+    active <- active[keep]
+    L <- L[keep]
+    R <- R[keep]
+    if (!length(active)) 
+        stop("envelope has no positive-length intervals")
+    log_ints <- mapply(function(idx, l, r) log_integral_exp_line(m[idx], 
+        b[idx], l, r), active, L, R)
+    log_z <- log_sum_exp(log_ints)
+    if (!is.finite(log_z)) 
+        stop("envelope integral is not finite")
+    probs <- exp(log_ints - log_z)
+    probs <- probs/sum(probs)
+    list(m = m, b = b, active = active, L = L, R = R, log_ints = log_ints, 
+        probs = probs, log_z = log_z)
+}, upper_envelope_value <- function(env, x) {
+    vapply(x, function(xx) min(env$m * xx + env$b), numeric(1))
+}, invert_segment <- function(m, b, L, R, p) {
+    if (abs(m) < 1e-12) 
+        return(L + p * (R - L))
+    len <- R - L
+    mlen <- m * len
+    if (mlen > 700) {
+        x <- R + log(p)/m
+    }
+    else {
+        x <- L + log1p(p * expm1(mlen))/m
+    }
+    min(max(x, L), R)
+}, sample_envelope <- function(env, n) {
+    if (n < 1) 
+        return(numeric(0))
+    u <- runif(n)
+    cdf <- cumsum(env$probs)
+    cdf[length(cdf)] <- 1
+    seg <- findInterval(u, cdf) + 1
+    seg[seg < 1] <- 1
+    seg[seg > length(env$probs)] <- length(env$probs)
+    p <- runif(n)
+    out <- numeric(n)
+    for (j in unique(seg)) {
+        idx <- which(seg == j)
+        si <- env$active[j]
+        out[idx] <- vapply(p[idx], function(pp) {
+            invert_segment(env$m[si], env$b[si], env$L[j], env$R[j], 
+                pp)
+        }, numeric(1))
+    }
+    out
+}, lower_hull_value <- function(x, h, z) {
+    if (length(x) < 2) 
+        return(rep(-Inf, length(z)))
+    approx(x, h, xout = z, method = "linear", rule = 1)$y
+}, ars <- function(density_function, domain, n = 1000) {
+    validate_ars_inputs(density_function, domain, n)
+    density <- prepare_density(density_function, parent.frame())
+    logf <- log_density_of(density)
+    support <- find_practical_support(logf, domain)
+    low <- support$low
+    high <- support$high
+    xgrid <- sort(unique(c(low, high, support$mode, seq(low, 
+        high, length.out = 5))))
+    hx <- logf(xgrid)
+    if (any(!is.finite(hx))) 
+        stop("log-density must be finite at all used abscissae")
+    check_discrete_log_concavity(xgrid, hx)
+    mx <- num_deriv(logf, xgrid, domain)
+    if (any(!is.finite(mx))) 
+        stop("could not compute finite log-density derivatives")
+    env <- build_envelope(xgrid, hx, mx, low, high)
+    samples <- numeric(n)
+    accepted <- 0L
+    iter <- 0L
+    max_iter <- max(10000L, 200L * n)
+    while (accepted < n) {
+        iter <- iter + 1L
+        if (iter > max_iter) 
+            stop("ARS failed to produce enough accepted samples")
+        xprop <- sample_envelope(env, 1)
+        u <- upper_envelope_value(env, xprop)
+        l <- lower_hull_value(xgrid, hx, xprop)
+        logw <- log(runif(1))
+        accepted_now <- FALSE
+        if (is.finite(l) && logw <= l - u) {
+            accepted_now <- TRUE
+        }
+        else {
+            hp <- safe_scalar_logf(logf, xprop)
+            if (!is.finite(hp)) {
+                stop("log-density is not finite at a proposed point; the density may not be log-concave on the given domain")
+            }
+            if (logw <= hp - u) 
+                accepted_now <- TRUE
+        }
+        if (accepted_now) {
+            accepted <- accepted + 1L
+            samples[accepted] <- xprop
+        }
+        else {
+            if (!any(abs(xgrid - xprop) < 1e-12)) {
+                xgrid <- sort(c(xgrid, xprop))
+                hx <- c(hx, safe_scalar_logf(logf, xprop))
+                ord <- order(xgrid)
+                xgrid <- xgrid[ord]
+                hx <- hx[ord]
+                check_discrete_log_concavity(xgrid, hx)
+                mx <- num_deriv(logf, xgrid, domain)
+                if (any(!is.finite(mx))) 
+                  stop("could not update ARS derivatives")
+                env <- build_envelope(xgrid, hx, mx, low, high)
+            }
+        }
+    }
+    samples
+}, check_error <- function(expr) {
+    inherits(try(force(expr), silent = TRUE), "try-error")
+}, test <- function() {
+    cat("Running ARS formal tests...\n")
+    pass <- TRUE
+    run_known <- function(name, density, domain, true_mean, true_sd, 
+        n = 10000) {
+        cat(sprintf("TEST_%s: running (n=%d)... ", name, n))
+        res <- tryCatch({
+            x <- ars(density, domain, n = n)
+            c(mean = mean(x), sd = sd(x), n = length(x), finite = all(is.finite(x)))
+        }, error = function(e) conditionMessage(e))
+        if (is.character(res)) {
+            cat("FAIL\n")
+            cat(sprintf("  reason: %s\n", res))
+            return(FALSE)
+        }
+        mean_ok <- abs(res["mean"] - true_mean) < 6 * true_sd/sqrt(n)
+        sd_ok <- abs(res["sd"] - true_sd) < 6 * true_sd/sqrt(2 * 
+            n)
+        ok <- mean_ok && sd_ok && res["finite"] && res["n"] == 
+            n
+        cat(sprintf("%s (mean=%.4f, sd=%.4f, true_mean=%.4f, true_sd=%.4f)\n", 
+            if (ok) 
+                "PASS"
+            else "FAIL", res["mean"], res["sd"], true_mean, true_sd))
+        ok
+    }
+    pass <- run_known("NORMAL", function(x) dnorm(x, mean = 1, 
+        sd = 2), c(-Inf, Inf), 1, 2, n = 10000) && pass
+    pass <- run_known("EXPONENTIAL", function(x) dexp(x, rate = 2), 
+        c(0, Inf), 0.5, 0.5, n = 10000) && pass
+    cat("TEST_INPUT_VALIDATION: running... ")
+    val_ok <- check_error(ars(function(x) dnorm(x), c(-Inf, Inf), 
+        n = -1)) && check_error(ars(function(x) dnorm(x), c(1, 
+        1), n = 10)) && check_error(ars(function(x) dnorm(x), 
+        c(1, -1), n = 10))
+    cat(if (val_ok) 
+        "PASS\n"
+    else "FAIL\n")
+    pass <- val_ok && pass
+    cat("TEST_NON_LOG_CONCAVE: running... ")
+    nonconcave_ok <- check_error(ars(function(x) dt(x, df = 1), 
+        c(-Inf, Inf), n = 100))
+    cat(if (nonconcave_ok) 
+        "PASS\n"
+    else "FAIL\n")
+    pass <- nonconcave_ok && pass
+    cat("TEST_SAMPLE_FILE: running... ")
+    file_ok <- tryCatch({
+        x <- ars(function(x) dnorm(x, mean = 0, sd = 1), c(-Inf, 
+            Inf), n = 2000)
+        write.table(x, "/app/normal_samples.txt", row.names = FALSE, 
+            col.names = FALSE)
+        TRUE
+    }, error = function(e) FALSE)
+    cat(if (file_ok) 
+        "PASS\n"
+    else "FAIL\n")
+    pass <- file_ok && pass
+    cat(sprintf("OVERALL: %s\n", if (pass) 
+        "PASS"
+    else "FAIL"))
+    invisible(pass)
+})
+PARSE_OK
+[?2004hroot@2f4ccf9d796a:/app# Rscript -e "source('/app/ars.R'); test()"
+[?2004lRunning ARS formal tests...
+TEST_NORMAL: running (n=10000)... FAIL
+  reason: density is not log-concave: secant slopes increase
+TEST_EXPONENTIAL: running (n=10000)... PASS (mean=0.4893, sd=0.4865, true_mean=0.5000, true_sd=0.5000)
+TEST_INPUT_VALIDATION: running... PASS
+TEST_NON_LOG_CONCAVE: running... PASS
+TEST_SAMPLE_FILE: running... FAIL
+OVERALL: FAIL
+[?2004hroot@2f4ccf9d796a:/app# 

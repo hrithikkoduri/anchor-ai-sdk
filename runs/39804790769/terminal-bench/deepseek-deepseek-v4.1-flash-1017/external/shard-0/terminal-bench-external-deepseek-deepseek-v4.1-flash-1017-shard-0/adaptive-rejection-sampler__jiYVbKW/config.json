@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/adaptive-rejection-sampler",
+        "source": "tasks"
+    },
+    "trial_name": "adaptive-rejection-sampler__jiYVbKW",
+    "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-0/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "2cb32190-8eb3-4123-848b-7597a7e91aac"
+}
