@@ -1,0 +1,45 @@
+{
+    "id": "8db53b44-7fc0-4759-8797-449a7f08f311",
+    "started_at": "2026-10-22T08:05:23.254892",
+    "updated_at": "2026-10-22T08:13:51.823091",
+    "finished_at": "2026-10-22T08:13:51.823091",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_element-hq__element-web__zZqX9Xg",
+                            "instance_protonmail__webclients__eQQoGFg"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_element-hq__element-web__zZqX9Xg",
+                        "instance_protonmail__webclients__eQQoGFg"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

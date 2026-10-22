@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/break-filter-js-from-html",
+        "source": "tasks"
+    },
+    "trial_name": "break-filter-js-from-html__RBDjRcU",
+    "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-2/terminal-bench-external-qwen-qwen3-coder-next-shard-2",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/qwen/qwen3-coder-next",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "08eed26b-d713-4b5d-b8bf-c45d7d10ca86"
+}

@@ -1,0 +1,42 @@
+{
+    "id": "8101ce97-46ef-4cad-a7fd-678180b85124",
+    "started_at": "2026-10-22T08:21:29.719715",
+    "updated_at": "2026-10-22T08:33:43.441401",
+    "finished_at": "2026-10-22T08:33:43.441401",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "mean": 0.5
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "build-cython-ext__N48WCte"
+                        ],
+                        "1.0": [
+                            "code-from-image__vRM9zX7"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 640420,
+        "n_cache_tokens": 551072,
+        "n_output_tokens": 12303,
+        "cost_usd": 0.0591392
+    }
+}

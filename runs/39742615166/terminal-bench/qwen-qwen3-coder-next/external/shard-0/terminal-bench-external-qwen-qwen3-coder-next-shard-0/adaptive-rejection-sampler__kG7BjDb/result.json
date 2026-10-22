@@ -1,0 +1,187 @@
+{
+    "id": "63a47a35-321c-4534-8da8-a0645569952f",
+    "task_name": "terminal-bench/adaptive-rejection-sampler",
+    "trial_name": "adaptive-rejection-sampler__kG7BjDb",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-0/terminal-bench-external-qwen-qwen3-coder-next-shard-0/adaptive-rejection-sampler__kG7BjDb",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/adaptive-rejection-sampler"
+    },
+    "source": "tasks",
+    "task_checksum": "77d51cf615a0f417dcbcf2458f5601af5be0d32d027e9343e594ba1bba58ea93",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/adaptive-rejection-sampler",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "adaptive-rejection-sampler__kG7BjDb",
+        "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-0/terminal-bench-external-qwen-qwen3-coder-next-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "d05d6e82-3668-4578-92bd-fec0284ba94b",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 1091158,
+        "n_cache_tokens": 1020000,
+        "n_output_tokens": 14738,
+        "cost_usd": 0.09172935999999997,
+        "model_usage": {
+            "qwen/qwen3-coder-next": {
+                "n_input_tokens": 1057277,
+                "n_cache_tokens": 986816,
+                "n_output_tokens": 14369,
+                "cost_usd": 0.08902763999999996
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 48,
+            "api_request_times_msec": [
+                3013.8072967529297,
+                2265.627861022949,
+                2167.35577583313,
+                1857.4323654174805,
+                74091.7615890503,
+                2500.263214111328,
+                2328.0043601989746,
+                3373.0266094207764,
+                1672.661542892456,
+                2513.023853302002,
+                2551.6436100006104,
+                1903.6338329315186,
+                2260.650873184204,
+                2397.226333618164,
+                3776.3302326202393,
+                4004.256010055542,
+                3764.7695541381836,
+                3204.1287422180176,
+                6532.055616378784,
+                2582.6728343963623,
+                2845.2558517456055,
+                1753.7689208984375,
+                2053.4415245056152,
+                2190.581798553467,
+                2421.8227863311768,
+                3202.9848098754883,
+                1828.8745880126953,
+                2659.5256328582764,
+                2489.3124103546143,
+                1656.7957401275635,
+                2192.0125484466553,
+                2489.208221435547,
+                2687.232494354248,
+                5181.491136550903,
+                1556.68306350708,
+                3511.472225189209,
+                3130.713939666748,
+                3114.5832538604736,
+                2170.2325344085693,
+                1690.9236907958984,
+                2989.3765449523926,
+                3189.1822814941406,
+                5404.700994491577,
+                2456.591844558716,
+                2055.213689804077,
+                4789.135456085205,
+                3417.7145957946777,
+                6063.49515914917
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": {
+        "exception_type": "AgentTimeoutError",
+        "exception_message": "Agent execution timed out after 900.0 seconds",
+        "exception_traceback": "Traceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1743, in run\n    await self._run_agent_loop(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1523, in _run_agent_loop\n    timeout_occurred, terminal_output = await self._execute_commands(\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1339, in _execute_commands\n    await session.send_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 817, in send_keys\n    await self._send_non_blocking_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 777, in _send_non_blocking_keys\n    await asyncio.sleep(min_timeout_sec - elapsed_time_sec)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 665, in sleep\n    return await future\n           ^^^^^^^^^^^^\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 651, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 76, in _run_agent\n    await self._run_agent_phase(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 660, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 900.0 seconds\n",
+        "occurred_at": "2026-10-22T08:18:43.851483Z"
+    },
+    "started_at": "2026-10-22T08:03:14.761604Z",
+    "finished_at": "2026-10-22T08:19:15.564416Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:03:14.805823Z",
+        "finished_at": "2026-10-22T08:03:18.405715Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:03:18.405769Z",
+        "finished_at": "2026-10-22T08:03:43.843274Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:03:43.843439Z",
+        "finished_at": "2026-10-22T08:18:43.849486Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:18:44.190274Z",
+        "finished_at": "2026-10-22T08:19:02.970796Z"
+    },
+    "step_results": null
+}

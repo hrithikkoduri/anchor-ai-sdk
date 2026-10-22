@@ -1,0 +1,40 @@
+{
+    "id": "9b022e32-9b42-4ff1-82e9-b43ef78de77e",
+    "started_at": "2026-10-22T08:08:15.825127",
+    "updated_at": "2026-10-22T08:22:59.914242",
+    "finished_at": "2026-10-22T08:22:59.914242",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__deepseek/deepseek-v4.1-flash-1017__tasks": {
+                "n_trials": 2,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "mean": 1.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "break-filter-js-from-html__SB8NJvn",
+                            "cobol-modernization__Jv9w2LS"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 385552,
+        "n_cache_tokens": 329216,
+        "n_output_tokens": 107502,
+        "cost_usd": 0.08599696000000001
+    }
+}

@@ -1,0 +1,44 @@
+{
+    "id": "0cc28886-7a71-435e-a886-c6d6f9128248",
+    "started_at": "2026-10-22T08:20:40.171362",
+    "updated_at": "2026-10-22T09:03:06.058284",
+    "finished_at": "2026-10-22T09:03:06.058284",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 1,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 1,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "cancel-async-tasks__ovqWvCx",
+                            "compile-compcert__5kjU9DY"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "compile-compcert__5kjU9DY"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": 2588397,
+        "n_cache_tokens": 2462144,
+        "n_output_tokens": 14719,
+        "cost_usd": 0.19927563999999995
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "job_name": "terminal-bench-external-qwen-qwen3-coder-next-shard-4",
+    "jobs_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-4",
+    "n_concurrent_trials": 1,
+    "agents": [
+        {
+            "name": "terminus-2",
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ]
+        }
+    ],
+    "datasets": [
+        {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks",
+            "task_names": [
+                "cancel-async-tasks",
+                "compile-compcert"
+            ]
+        }
+    ]
+}

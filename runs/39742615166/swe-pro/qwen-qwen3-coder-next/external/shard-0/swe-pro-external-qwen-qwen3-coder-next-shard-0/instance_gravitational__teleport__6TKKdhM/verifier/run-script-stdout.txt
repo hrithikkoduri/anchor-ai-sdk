@@ -1,0 +1,4 @@
+Running selected tests: TestColumn TestMessage
+{"Time":"2026-10-22T08:10:33.658793152Z","Action":"start","Package":"github.com/gravitational/teleport/lib/backend/pgbk"}
+{"Time":"2026-10-22T08:10:33.658845219Z","Action":"output","Package":"github.com/gravitational/teleport/lib/backend/pgbk","Output":"FAIL\tgithub.com/gravitational/teleport/lib/backend/pgbk [build failed]\n"}
+{"Time":"2026-10-22T08:10:33.658855528Z","Action":"fail","Package":"github.com/gravitational/teleport/lib/backend/pgbk","Elapsed":0}

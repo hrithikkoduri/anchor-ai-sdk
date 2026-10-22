@@ -1,0 +1,18 @@
+2026-10-22 08:09:01,798 - INFO - swea-run - Starting environment
+2026-10-22 08:09:02,480 - TRACE - swea-env - Input:
+export LANG=C.UTF-8 && export LC_ALL=C.UTF-8 && export PIP_PROGRESS_BAR=off && export PAGER=cat
+2026-10-22 08:09:02,586 - TRACE - swea-env - Output:
+
+2026-10-22 08:09:02,586 - INFO - swea-env - Environment Initialized
+2026-10-22 08:09:02,587 - TRACE - swea-env - Input:
+cd /
+2026-10-22 08:09:02,691 - TRACE - swea-env - Output:
+
+2026-10-22 08:09:02,691 - TRACE - swea-env - Input:
+ls
+2026-10-22 08:09:02,797 - TRACE - swea-env - Output:
+app   build.sh	go		 lib	media  preprocess.sh  run   sys  var
+bin   dev	home		 lib64	mnt    proc	      sbin  tmp
+boot  etc	installed-agent  logs	opt    root	      srv   usr
+
+2026-10-22 08:09:03,007 - DEBUG - rex-deploy - Ensuring deployment is stopped because object is deleted

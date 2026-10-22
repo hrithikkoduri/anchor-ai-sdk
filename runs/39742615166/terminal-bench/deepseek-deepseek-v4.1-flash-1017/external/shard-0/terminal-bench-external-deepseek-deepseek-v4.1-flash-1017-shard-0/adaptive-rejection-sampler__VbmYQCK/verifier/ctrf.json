@@ -1,0 +1,104 @@
+{
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "8.4.1"
+        },
+        "summary": {
+            "tests": 9,
+            "passed": 8,
+            "failed": 1,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792657327.0362794,
+            "stop": 1792657332.924792
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_ars_function_exists",
+                "status": "passed",
+                "duration": 0.0005348600001298109,
+                "start": 1792657327.3580234,
+                "stop": 1792657327.3587735,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_can_generate_standard_distribution_samples",
+                "status": "passed",
+                "duration": 0.6594502609999608,
+                "start": 1792657327.3589036,
+                "stop": 1792657328.018558,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_has_test_function",
+                "status": "passed",
+                "duration": 0.0006461339999077609,
+                "start": 1792657328.0187478,
+                "stop": 1792657328.019492,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_formal_testing_with_known_truth",
+                "status": "passed",
+                "duration": 4.46281249499998,
+                "start": 1792657328.0196018,
+                "stop": 1792657332.4825969,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_sample_files_generated",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 0.004899126999930559,
+                "start": 1792657332.4827938,
+                "stop": 1792657332.5083888,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_sample_files_generated():\n        \"\"\"Test that required sample files are generated.\"\"\"\n        app_dir = Path(\"/app\")\n    \n        # Check for required sample files as specified in task\n        normal_file = app_dir / \"normal_samples.txt\"\n        exp_file = app_dir / \"exponential_samples.txt\"\n    \n        assert normal_file.exists() or exp_file.exists(), (\n            \"At least one sample file must be generated. Task requires generating 'normal_samples.txt' \"\n            \"or 'exponential_samples.txt' containing test samples\"\n        )\n    \n        # Verify samples are valid if files exist\n        if normal_file.exists():\n            samples = np.loadtxt(normal_file)\n            assert len(samples) >= 100, (\n                \"Normal samples file should contain at least 100 samples\"\n            )\n            mean = np.mean(samples)\n            std = np.std(samples)\n            assert abs(mean) < 0.5 and 0.5 < std < 1.5, (\n                f\"Normal samples don't match expected distribution \"\n                f\"(mean={mean:.3f}, std={std:.3f})\"\n            )\n    \n        if exp_file.exists():\n            samples = np.loadtxt(exp_file)\n            assert len(samples) >= 100, (\n                \"Exponential samples file should contain at least 100 samples\"\n            )\n>           assert all(samples >= 0), \"Exponential samples must be non-negative\"\n                   ^^^^^^^^^^^^^^^^^\nE           ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()\n\n/tests/test_outputs.py:184: ValueError",
+                "message": "The test failed in the call phase"
+            },
+            {
+                "name": "test_outputs.py::test_implementation_is_modular",
+                "status": "passed",
+                "duration": 0.0004392390000020896,
+                "start": 1792657332.5085316,
+                "stop": 1792657332.5090604,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_implementation_handles_errors",
+                "status": "passed",
+                "duration": 0.0003100789999734843,
+                "start": 1792657332.509163,
+                "stop": 1792657332.5095484,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_input_validation_functionality",
+                "status": "passed",
+                "duration": 0.16516332699995928,
+                "start": 1792657332.5096414,
+                "stop": 1792657332.674982,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_log_concavity_functionality",
+                "status": "passed",
+                "duration": 0.24928420399987772,
+                "start": 1792657332.6751685,
+                "stop": 1792657332.9246297,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

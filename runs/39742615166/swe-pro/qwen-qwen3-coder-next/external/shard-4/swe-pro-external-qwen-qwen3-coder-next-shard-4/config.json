@@ -1,0 +1,24 @@
+{
+    "job_name": "swe-pro-external-qwen-qwen3-coder-next-shard-4",
+    "jobs_dir": "external-runs/swe-pro/qwen-qwen3-coder-next/external/shard-4",
+    "n_concurrent_trials": 1,
+    "agents": [
+        {
+            "name": "swe-agent",
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ]
+        }
+    ],
+    "datasets": [
+        {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks",
+            "task_names": [
+                "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+                "instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+            ]
+        }
+    ]
+}

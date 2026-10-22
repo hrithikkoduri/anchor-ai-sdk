@@ -1,0 +1,157 @@
+Running selected tests: openlibrary/plugins/importapi/tests/test_import_validator.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.2, pytest-7.4.4, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pyproject.toml
+plugins: asyncio-0.23.6, cov-4.1.0, rerunfailures-15.1, anyio-4.10.0
+asyncio: mode=Mode.STRICT
+collecting ... collected 20 items
+
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_create_an_author_with_no_name PASSED [  5%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate PASSED [ 10%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_strong_identifier_minimal RERUN [ 15%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_strong_identifier_minimal RERUN [ 15%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_strong_identifier_minimal RERUN [ 15%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_strong_identifier_minimal FAILED [ 15%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_record_with_missing_required_fields[title] PASSED [ 20%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_record_with_missing_required_fields[source_records] PASSED [ 25%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_record_with_missing_required_fields[authors] PASSED [ 30%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_record_with_missing_required_fields[publishers] PASSED [ 35%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_record_with_missing_required_fields[publish_date] PASSED [ 40%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_empty_string[title] PASSED [ 45%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_empty_string[publish_date] PASSED [ 50%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_empty_list[source_records] PASSED [ 55%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_empty_list[authors] PASSED [ 60%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_empty_list[publishers] PASSED [ 65%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_list_with_an_empty_string[source_records] PASSED [ 70%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_list_with_an_empty_string[publishers] PASSED [ 75%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[isbn_10] RERUN [ 80%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[isbn_10] RERUN [ 80%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[isbn_10] RERUN [ 80%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[isbn_10] FAILED [ 80%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[lccn] RERUN [ 85%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[lccn] RERUN [ 85%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[lccn] RERUN [ 85%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[lccn] FAILED [ 85%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_not_complete_no_strong_identifier[isbn_13] PASSED [ 90%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[isbn_10-value0] RERUN [ 95%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[isbn_10-value0] RERUN [ 95%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[isbn_10-value0] RERUN [ 95%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[isbn_10-value0] FAILED [ 95%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[lccn-value1] RERUN [100%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[lccn-value1] RERUN [100%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[lccn-value1] RERUN [100%]
+openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[lccn-value1] FAILED [100%]
+
+=================================== FAILURES ===================================
+___________________ test_validate_strong_identifier_minimal ____________________
+openlibrary/plugins/importapi/tests/test_import_validator.py:38: in test_validate_strong_identifier_minimal
+    assert validator.validate(valid_values_strong_identifier) is True
+openlibrary/plugins/importapi/import_validator.py:34: in validate
+    raise e
+openlibrary/plugins/importapi/import_validator.py:32: in validate
+    Book.model_validate(data)
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for Book
+E   authors
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..._13': ['0123456789012']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publishers
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..._13': ['0123456789012']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publish_date
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..._13': ['0123456789012']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+______________ test_validate_multiple_strong_identifiers[isbn_10] ______________
+openlibrary/plugins/importapi/tests/test_import_validator.py:80: in test_validate_multiple_strong_identifiers
+    assert validator.validate(multiple_valid_values) is True
+openlibrary/plugins/importapi/import_validator.py:34: in validate
+    raise e
+openlibrary/plugins/importapi/import_validator.py:32: in validate
+    Book.model_validate(data)
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for Book
+E   authors
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...isbn_10': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publishers
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...isbn_10': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publish_date
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...isbn_10': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+_______________ test_validate_multiple_strong_identifiers[lccn] ________________
+openlibrary/plugins/importapi/tests/test_import_validator.py:80: in test_validate_multiple_strong_identifiers
+    assert validator.validate(multiple_valid_values) is True
+openlibrary/plugins/importapi/import_validator.py:34: in validate
+    raise e
+openlibrary/plugins/importapi/import_validator.py:32: in validate
+    Book.model_validate(data)
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for Book
+E   authors
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..., 'lccn': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publishers
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..., 'lccn': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publish_date
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou..., 'lccn': ['non-empty']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+___________ test_validate_isolated_strong_identifier[isbn_10-value0] ___________
+openlibrary/plugins/importapi/tests/test_import_validator.py:106: in test_validate_isolated_strong_identifier
+    assert validator.validate(isolated) is True
+openlibrary/plugins/importapi/import_validator.py:34: in validate
+    raise e
+openlibrary/plugins/importapi/import_validator.py:32: in validate
+    Book.model_validate(data)
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for Book
+E   authors
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...sbn_10': ['0123456789']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publishers
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...sbn_10': ['0123456789']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publish_date
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...sbn_10': ['0123456789']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+____________ test_validate_isolated_strong_identifier[lccn-value1] _____________
+openlibrary/plugins/importapi/tests/test_import_validator.py:106: in test_validate_isolated_strong_identifier
+    assert validator.validate(isolated) is True
+openlibrary/plugins/importapi/import_validator.py:34: in validate
+    raise e
+openlibrary/plugins/importapi/import_validator.py:32: in validate
+    Book.model_validate(data)
+E   pydantic_core._pydantic_core.ValidationError: 3 validation errors for Book
+E   authors
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...], 'lccn': ['12345678']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publishers
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...], 'lccn': ['12345678']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+E   publish_date
+E     Field required [type=missing, input_value={'title': 'Beowulf', 'sou...], 'lccn': ['12345678']}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.1/v/missing
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/babel/messages/checkers.py:160
+  /usr/local/lib/python3.12/site-packages/babel/messages/checkers.py:160: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import working_set
+
+../usr/local/lib/python3.12/site-packages/genshi/compat.py:141
+  /usr/local/lib/python3.12/site-packages/genshi/compat.py:141: DeprecationWarning: ast.Ellipsis is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    _ast_Ellipsis = ast.Ellipsis
+
+../usr/local/lib/python3.12/site-packages/genshi/compat.py:142
+  /usr/local/lib/python3.12/site-packages/genshi/compat.py:142: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    _ast_Str = ast.Str
+
+../usr/local/lib/python3.12/site-packages/dateutil/tz/tz.py:37
+  /usr/local/lib/python3.12/site-packages/dateutil/tz/tz.py:37: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+    EPOCH = datetime.datetime.utcfromtimestamp(0)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_strong_identifier_minimal
+FAILED openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[isbn_10]
+FAILED openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_multiple_strong_identifiers[lccn]
+FAILED openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[isbn_10-value0]
+FAILED openlibrary/plugins/importapi/tests/test_import_validator.py::test_validate_isolated_strong_identifier[lccn-value1]
+============== 5 failed, 15 passed, 4 warnings, 15 rerun in 0.21s ==============

@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/code-from-image",
+        "source": "tasks"
+    },
+    "trial_name": "code-from-image__eLyCVvk",
+    "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-3/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-3",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "de54f933-9e26-4750-956a-296247162675"
+}

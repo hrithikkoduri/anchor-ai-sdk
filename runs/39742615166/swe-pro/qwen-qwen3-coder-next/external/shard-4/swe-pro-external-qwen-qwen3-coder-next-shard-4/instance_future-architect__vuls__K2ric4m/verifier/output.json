@@ -1,0 +1,100 @@
+{
+  "tests": [
+    {
+      "name": "TestConvert",
+      "status": "FAILED"
+    },
+    {
+      "name": "TestConvert/Cisco_NX-OS_Version_7.1(4)N1(1)",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOS_Version_15.1(4)M3",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOS_Version_15.1(4)M4",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOS_Vresion_15.5(3)M_on_Cisco_892J-K9-V02",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOS_Version_15.4(3)M5_on_Cisco_C892FSP-K9-V02",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOS_Version_12.2(17d)SXB11",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOX-XE_Version_16.12.4",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Cisco_IOX-XE_Version_03.06.07.E",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Juniper_SSG-5-SH-BT",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/JUNOS_20.4R3-S4.8_on_Juniper_MX240",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/JUNOS_12.1X46-D65.4_on_Juniper_SRX220H",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/JUNOS_12.3X48-D30.7_on_Juniper_SRX220H2",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/JUNOS_20.4R3-S4.8_on_Juniper_SRX4600",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/cpe:2.3:o:juniper:junos:20.4:r2-s2.2:*:*:*:*:*:*",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Arista_Networks_EOS_version_4.28.4M_on_DCS-7050TX-64",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/FortiGate-50E",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/FortiGate-60F",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/FortiSwitch-108E",
+      "status": "FAILED"
+    },
+    {
+      "name": "TestConvert/YAMAHA_RTX1000",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/YAMAHA_RTX810",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/NEC_IX2105",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/NEC_IX2235",
+      "status": "PASSED"
+    },
+    {
+      "name": "TestConvert/Palo_Alto_Networks_PAN-OS_10.0.0_on_PA-220",
+      "status": "PASSED"
+    }
+  ]
+}

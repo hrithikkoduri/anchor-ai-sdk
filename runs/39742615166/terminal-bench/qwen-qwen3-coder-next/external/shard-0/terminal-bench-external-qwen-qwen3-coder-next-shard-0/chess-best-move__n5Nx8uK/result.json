@@ -1,0 +1,169 @@
+{
+    "id": "d6ab7e18-3ddf-4b9d-a80f-91fe774b7e86",
+    "task_name": "terminal-bench/chess-best-move",
+    "trial_name": "chess-best-move__n5Nx8uK",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-0/terminal-bench-external-qwen-qwen3-coder-next-shard-0/chess-best-move__n5Nx8uK",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/chess-best-move"
+    },
+    "source": "tasks",
+    "task_checksum": "477eca016a7af962b4f7b9ab1af295617639e06e44be4a447ae939e6e8954d03",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/chess-best-move",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "chess-best-move__n5Nx8uK",
+        "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-0/terminal-bench-external-qwen-qwen3-coder-next-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "d05d6e82-3668-4578-92bd-fec0284ba94b",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 743216,
+        "n_cache_tokens": 675648,
+        "n_output_tokens": 21521,
+        "cost_usd": 0.07262032,
+        "model_usage": {
+            "qwen/qwen3-coder-next": {
+                "n_input_tokens": 743216,
+                "n_cache_tokens": 675648,
+                "n_output_tokens": 21521,
+                "cost_usd": 0.07262032
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 35,
+            "api_request_times_msec": [
+                3136.0833644866943,
+                2354.226589202881,
+                1663.4182929992676,
+                3515.33842086792,
+                9785.874128341675,
+                8679.495334625244,
+                14234.506607055664,
+                6281.0609340667725,
+                4932.174921035767,
+                15016.376495361328,
+                10439.49294090271,
+                7963.540077209473,
+                6979.195594787598,
+                16881.606101989746,
+                16537.980794906616,
+                14172.720909118652,
+                19469.470739364624,
+                12199.695825576782,
+                18212.498664855957,
+                9115.081548690796,
+                7283.304691314697,
+                8886.766195297241,
+                6836.813688278198,
+                3205.1734924316406,
+                14879.222631454468,
+                12148.892879486084,
+                3186.802387237549,
+                18550.857543945312,
+                4642.399787902832,
+                12773.143291473389,
+                5650.37989616394,
+                2144.7293758392334,
+                6707.552433013916,
+                1647.0952033996582,
+                2852.2872924804688
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T08:19:15.573202Z",
+    "finished_at": "2026-10-22T08:25:56.100387Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:19:15.574380Z",
+        "finished_at": "2026-10-22T08:19:23.931749Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:19:23.931779Z",
+        "finished_at": "2026-10-22T08:19:48.034663Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:19:48.034751Z",
+        "finished_at": "2026-10-22T08:25:33.661172Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:25:33.996119Z",
+        "finished_at": "2026-10-22T08:25:44.902879Z"
+    },
+    "step_results": null
+}

@@ -1,0 +1,45 @@
+{
+    "id": "916f8147-23a8-4b66-9c66-8577705c44cd",
+    "started_at": "2026-10-22T08:07:44.457836",
+    "updated_at": "2026-10-22T08:11:58.556713",
+    "finished_at": "2026-10-22T08:11:58.556713",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_future-architect__vuls__K2ric4m",
+                            "instance_tutao__tutanota-5181821__sf427Cs"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_future-architect__vuls__K2ric4m",
+                        "instance_tutao__tutanota-5181821__sf427Cs"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

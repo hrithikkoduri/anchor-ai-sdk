@@ -1,0 +1,3 @@
+2026-10-22 08:07:18,272 - INFO - swea-run - Starting environment
+2026-10-22 08:07:19,013 - INFO - swea-env - Environment Initialized
+2026-10-22 08:07:19,406 - DEBUG - rex-deploy - Ensuring deployment is stopped because object is deleted

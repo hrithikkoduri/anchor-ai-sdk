@@ -1,0 +1,46 @@
+{
+    "id": "08eed26b-d713-4b5d-b8bf-c45d7d10ca86",
+    "started_at": "2026-10-22T08:08:18.104925",
+    "updated_at": "2026-10-22T08:32:14.831617",
+    "finished_at": "2026-10-22T08:32:14.831617",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 1,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 1,
+                "metrics": [
+                    {
+                        "mean": 0.5
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "break-filter-js-from-html__RBDjRcU"
+                        ],
+                        "1.0": [
+                            "cobol-modernization__PdUfEXT"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "break-filter-js-from-html__RBDjRcU"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": 4004035,
+        "n_cache_tokens": 3846080,
+        "n_output_tokens": 51991,
+        "cost_usd": 0.3297729999999999
+    }
+}

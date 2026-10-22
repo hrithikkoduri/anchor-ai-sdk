@@ -1,0 +1,53 @@
+FAIL src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+  mimeTypeFromFile
+    ✓ Based on File.type (10 ms)
+    ✕ Based on mimetypeFromExtension() (4 ms)
+    ✓ Fallback to application/octet-stream (1 ms)
+  isSupportedImage
+    ✕ treats HEIC and JXL as supported images on Safari 17 on macOS (1 ms)
+    ✓ does not treat HEIC and JXL as supported images on Chrome (1 ms)
+
+  ● mimeTypeFromFile › Based on mimetypeFromExtension()
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: "image/jxl"
+    Received: "application/octet-stream"
+
+      31 |             type: '',
+      32 |         });
+    > 33 |         expect(await mimeTypeFromFile(testFile)).toEqual('image/jxl');
+         |                                                  ^
+      34 |     });
+      35 |
+      36 |     test('Fallback to application/octet-stream', async () => {
+
+      at toEqual (src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts:33:50)
+      at tryCatch (../../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:45:16)
+      at Generator.<anonymous> (../../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:133:17)
+      at Generator.next (../../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:74:21)
+      at asyncGeneratorStep (../../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:24)
+      at _next (../../node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:9)
+
+  ● isSupportedImage › treats HEIC and JXL as supported images on Safari 17 on macOS
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      50 |         (isSafari as jest.Mock).mockReturnValue(true);
+      51 |         (isMinimumSafariVersion as jest.Mock).mockReturnValue(true);
+    > 52 |         expect(isSupportedImage('image/heic')).toBe(true);
+         |                                                ^
+      53 |         expect(isSupportedImage('image/jxl')).toBe(true);
+      54 |     });
+      55 |
+
+      at Object.toBe (src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts:52:48)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 3 passed, 5 total
+Snapshots:   0 total
+Time:        41.553 s
+Ran all test suites matching /applications\/drive\/src\/app\/store\/_uploads\/mimeTypeParser\/mimeTypeParser.test.ts/i.

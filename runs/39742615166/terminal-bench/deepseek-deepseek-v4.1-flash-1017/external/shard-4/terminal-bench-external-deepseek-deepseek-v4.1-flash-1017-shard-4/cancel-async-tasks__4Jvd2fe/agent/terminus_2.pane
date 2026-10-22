@@ -1,0 +1,97 @@
+[?2004hroot@1f0e548baa1d:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@1f0e548baa1d:/app# clear
+[?2004l[H[J[3J[?2004hroot@1f0e548baa1d:/app# python3 --version
+[?2004lPython 3.13.7
+[?2004hroot@1f0e548baa1d:/app# ls -la /app
+[?2004ltotal 8
+drwxr-xr-x 2 root root 4096 Aug 22  2025 .
+drwxr-xr-x 1 root root 4096 Oct 22 08:16 ..
+[?2004hroot@1f0e548baa1d:/app# cat > /app/run.py <<'PY'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from collections.abc import Awaitable, Callable
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     if max_concurrent < 1:
+[?2004l[?2004h>         raise ValueError('max_concurrent must be at least 1')
+[?2004l[?2004h> 
+[?2004l[?2004h>     semaphore = asyncio.Semaphore(max_concurrent)
+[?2004l[?2004h> 
+[?2004l[?2004h>     async def run_one(task: Callable[[], Awaitable[None]]) -> None:
+[?2004l[?2004h>         async with semaphore:
+[?2004l[?2004h>             await task()
+[?2004l[?2004h> 
+[?2004l[?2004h>     running = [asyncio.create_task(run_one(task)) for task in tasks]
+[?2004l[?2004h>     if not running:
+[?2004l[?2004h>         return
+[?2004l[?2004h> 
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.gather(*running)
+[?2004l[?2004h>     except asyncio.CancelledError:
+[?2004l[?2004h>         # Wait for child tasks to finish their cancellation cleanup.
+[?2004l[?2004h>         await asyncio.gather(*running, return_exceptions=True)
+[?2004l[?2004h>         raise
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@1f0e548baa1d:/app# python3 -m py_compile /app/run.py
+[?2004l[?2004hroot@1f0e548baa1d:/app# python3 - <<'PY'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> async def main():
+[?2004l[?2004h>     active = 0
+[?2004l[?2004h>     peak = 0
+[?2004l[?2004h>     completed = []
+[?2004l[?2004h> 
+[?2004l[?2004h>     async def job(i):
+[?2004l[?2004h>         nonlocal active, peak
+[?2004l[?2004h>         active += 1
+[?2004l[?2004h>         peak = max(peak, active)
+[?2004l[?2004h>         await asyncio.sleep(0.03)
+[?2004l[?2004h>         active -= 1
+[?2004l[?2004h>         completed.append(i)
+[?2004l[?2004h> 
+[?2004l[?2004h>     await run_tasks([lambda i=i: job(i) for i in range(5)], 2)
+[?2004l[?2004h>     assert sorted(completed) == list(range(5)), completed
+[?2004l[?2004h>     assert peak == 2, peak
+[?2004l[?2004h>     print('basic concurrency test passed')
+[?2004l[?2004h> 
+[?2004l[?2004h> asyncio.run(main())
+[?2004l[?2004h> PY
+[?2004lbasic concurrency test passed
+[?2004hroot@1f0e548baa1d:/app# python3 - <<'PY'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> async def main():
+[?2004l[?2004h>     started = []
+[?2004l[?2004h>     cleaned = []
+[?2004l[?2004h> 
+[?2004l[?2004h>     async def job(i):
+[?2004l[?2004h>         started.append(i)
+[?2004l[?2004h>         try:
+[?2004l[?2004h>             await asyncio.sleep(10)
+[?2004l[?2004h>         finally:
+[?2004l[?2004h>             await asyncio.sleep(0.01)
+[?2004l[?2004h>             cleaned.append(i)
+[?2004l[?2004h> 
+[?2004l[?2004h>     runner = asyncio.create_task(
+[?2004l[?2004h>         run_tasks([lambda i=i: job(i) for i in range(5)], 2)
+[?2004l[?2004h>     )
+[?2004l[?2004h>     await asyncio.sleep(0.05)
+[?2004l[?2004h>     runner.cancel()
+[?2004l[?2004h> 
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await runner
+[?2004l[?2004h>     except asyncio.CancelledError:
+[?2004l[?2004h>         pass
+[?2004l[?2004h> 
+[?2004l[?2004h>     assert sorted(started) == [0, 1], started
+[?2004l[?2004h>     assert sorted(cleaned) == sorted(started), (started, cleaned)
+[?2004l[?2004h>     print('cancellation cleanup test passed')
+[?2004l[?2004h> 
+[?2004l[?2004h> asyncio.run(main())
+[?2004l[?2004h> PY
+[?2004lcancellation cleanup test passed
+[?2004hroot@1f0e548baa1d:/app# 
