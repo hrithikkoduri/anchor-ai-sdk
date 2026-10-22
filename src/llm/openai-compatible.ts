@@ -210,6 +210,22 @@ export class OpenAICompatibleClient implements LLMClient {
     // block; ask for it so accounting needs no price table.
     if (this.opts.includeUsageCost) body.usage = { include: true };
     if (req.tools && req.tools.length > 0) body.tools = req.tools;
+    if (req.responseFormat) {
+      body.response_format =
+        req.responseFormat.type === "json_object"
+          ? { type: "json_object" }
+          : {
+              type: "json_schema",
+              json_schema: {
+                name: req.responseFormat.name,
+                schema: req.responseFormat.schema,
+                strict: req.responseFormat.strict ?? true,
+                ...(req.responseFormat.description
+                  ? { description: req.responseFormat.description }
+                  : {}),
+              },
+            };
+    }
     if (req.temperature !== undefined) body.temperature = req.temperature;
     if (req.seed !== undefined) body.seed = req.seed;
     if (req.maxTokens !== undefined) body.max_tokens = req.maxTokens;

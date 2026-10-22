@@ -129,6 +129,41 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.tools).toBeUndefined();
   });
 
+  it("sends a provider-neutral JSON schema as response_format", async () => {
+    let capturedBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      capturedBody = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    const schema = {
+      type: "object",
+      properties: { ok: { type: "boolean" } },
+      required: ["ok"],
+      additionalProperties: false,
+    };
+    await make(fetchImpl).complete({
+      messages: [{ role: "user", content: "verdict?" }],
+      maxTokens: 16,
+      responseFormat: {
+        type: "json_schema",
+        name: "verdict",
+        schema,
+      },
+    });
+
+    expect(capturedBody.response_format).toEqual({
+      type: "json_schema",
+      json_schema: {
+        name: "verdict",
+        schema,
+        strict: true,
+      },
+    });
+    expect(capturedBody.stream).toBe(true);
+    expect(capturedBody.max_tokens).toBe(16);
+    expect(capturedBody.tools).toBeUndefined();
+  });
+
   it("sends a sampling pin and records the upstream the gateway names", async () => {
     let capturedBody: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
