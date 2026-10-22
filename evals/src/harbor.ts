@@ -79,14 +79,14 @@ async function applyPatch(sandbox: Sandbox, patch: string): Promise<void> {
   // Text diffs say `--- /dev/null`; binary new files only have the
   // `diff --git ...` header plus `new file mode`. Cover both.
   for (let index = 0; index < lines.length - 1; index++) {
-    const line = lines[index];
+    const line = lines[index] ?? "";
     if (line.startsWith("diff --git a/")) {
       const marker = line.lastIndexOf(" b/");
       if (marker < 0) continue;
       const path = line.slice(marker + 3);
       let cursor = index + 1;
-      while (cursor < lines.length && !lines[cursor].startsWith("diff --git ")) {
-        if (lines[cursor].startsWith("new file mode ")) {
+      while (cursor < lines.length && !(lines[cursor] ?? "").startsWith("diff --git ")) {
+        if ((lines[cursor] ?? "").startsWith("new file mode ")) {
           created.add(path);
           break;
         }
@@ -94,7 +94,7 @@ async function applyPatch(sandbox: Sandbox, patch: string): Promise<void> {
       }
     }
     if (line.startsWith("--- /dev/null")) {
-      const plus = lines[index + 1];
+      const plus = lines[index + 1] ?? "";
       if (plus.startsWith("+++ b/")) created.add(plus.slice(6));
     }
   }
