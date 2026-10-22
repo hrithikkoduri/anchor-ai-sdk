@@ -998,3 +998,35 @@ Ignored by non-reasoning models. No validation beyond the type: providers
 reject unsupported levels, and the eval records the chosen level in `run.json`.
 
 Regressions: `tests/unit/llm.test.ts`, `tests/unit/reasoning-effort.test.ts`.
+
+## Decision #85: Verification is opt-in, ledger-backed, and storage-free
+
+Task verification is a mode, not a second agent framework. One option —
+`EngineOptions.verifier: true` — enables a durable ledger, an intent gate,
+automatic evidence capture, a coverage gate, and cheap structured phase/finish
+verification. No new store: the ledger is a field on the existing
+`StoredThread` and is saved by the consumer's existing `ThreadStore`.
+
+Intent routing is SDK-owned and deterministic first: greetings/thanks are chat;
+clear task verbs or code references are tasks; ambiguous turns clarify. Chat
+turns create no ledger and make no verifier call. The consumer can override
+with `EngineOptions.intent`.
+
+The ledger is append-only. User/compiled requirements are locked; agents may
+add requirements and link evidence, never delete or weaken locked ones. Every
+tool result is captured as an evidence reference (tool, ref, status, compact
+summary); raw output stays in the thread/artifact store. A deterministic gate
+checks coverage and evidence presence before the verifier judges whether the
+evidence supports the claim. The verifier is a separate low-effort structured
+call (same model by default, optional cheap model), used at phase transitions
+and finish, with a call cap and an allow-with-warning outage policy.
+
+Structured output is first-class (`LLMRequest.responseFormat` +
+`completeStructured`), so compiler and verifier decisions are schema-bound
+rather than prose parsed by regex. Compiler and verifier token usage is recorded
+against the run budget.
+
+Regressions: `tests/unit/ledger.test.ts`,
+`tests/unit/ledger-compiler.test.ts`,
+`tests/unit/engine-verifier.test.ts`,
+`tests/unit/structured-output.test.ts`.

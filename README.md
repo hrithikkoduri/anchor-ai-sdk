@@ -77,6 +77,40 @@ No sandbox is needed for this chat example. Model calls may incur cost.
 pass its returned `compaction` settings to the engine as shown. Catalog lookup is
 best-effort; configure overrides and fallbacks for endpoints without this metadata.
 
+## Task verification
+
+For tasks that need evidence before completion, enable the opt-in verifier:
+
+```ts
+const result = await runAgent(
+  { task: "Investigate where auth is refreshed" },
+  {
+    llm,
+    sandbox,
+    thread: { store, id: threadId },
+    verifier: true,
+  },
+);
+```
+
+The SDK owns the ledger, intent routing, evidence capture, and phase/finish
+checks. The consumer supplies only the normal `ThreadStore` (the ledger is an
+optional field on `StoredThread`) and the model. Greetings and other chat turns
+create no ledger and make no verifier call. A separate cheap verifier model is
+optional:
+
+```ts
+verifier: {
+  llm: cheapLlm,
+  gates: ["phase", "finish"],
+  allowWaived: true,
+}
+```
+
+`finish` is rejected while a required ledger item is open or lacks linked
+evidence; the agent loops with the missing-evidence feedback. Compiler and
+verifier token usage is counted against the run budget.
+
 ## One sandbox interface
 
 **Configure the provider once. Keep the agent-facing machine interface the same.**

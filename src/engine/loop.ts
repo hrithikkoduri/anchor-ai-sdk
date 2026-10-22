@@ -373,7 +373,7 @@ async function runOne(
       (phaseOn ? `\n\n${phaseDisciplineBlock(strategy.phases)}` : "") +
       (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : "") +
       (ledger
-        ? `\n\nPROGRESS LEDGER (authoritative task state):\n${renderLedger(ledger)}`
+        ? `\n\nPROGRESS LEDGER (authoritative task state):\n${renderLedger(ledger)}\n\nUse update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.`
         : ""),
   });
   if (ledger) {
