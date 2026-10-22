@@ -1,6 +1,6 @@
 # External harness results
 
-Generated: 2026-10-22T06:40:24.683Z
+Generated: 2026-10-22T06:44:04.042Z
 
 | Bench | Model | Harness | Tasks | Full credit | Mean reward | Cost | p50 |
 |---|---|---|---:|---:|---:|---:|---:|
