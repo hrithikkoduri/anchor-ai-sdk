@@ -190,8 +190,15 @@ export function ledgerGate(
     if (policy.allowWaived && item.status === "waived") return false;
     return true;
   });
-  const missingEvidence = blocking
-    .filter((item) => item.evidenceIds.length === 0)
+  // A requirement cannot be verified without evidence; an agent flipping
+  // statuses must not bypass the gate.
+  const missingEvidence = ledger.requirements
+    .filter(
+      (item) =>
+        item.required &&
+        item.status !== "superseded" &&
+        item.evidenceIds.length === 0,
+    )
     .map((item) => item.id);
   const failures = policy.ignoreOpenFailures ? [] : [...ledger.openFailures];
   return {

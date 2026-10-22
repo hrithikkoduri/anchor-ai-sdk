@@ -81,6 +81,12 @@ describe("progress ledger", () => {
 
   it("keeps optional items out of the gate", () => {
     const ledger = base();
+    const evidence = recordEvidence(ledger, {
+      tool: "bash",
+      ref: "message:msg_1",
+      ok: true,
+    });
+    linkEvidence(ledger, "r1", evidence.id);
     addRequirement(ledger, { text: "Consider a docs update", required: false });
     setRequirementStatus(ledger, "r1", "verified");
     expect(ledgerGate(ledger).allow).toBe(true);
@@ -103,6 +109,12 @@ describe("progress ledger", () => {
 
   it("supersedes on revision instead of deleting, and gates the new revision", () => {
     const ledger = base();
+    const evidence = recordEvidence(ledger, {
+      tool: "bash",
+      ref: "message:msg_1",
+      ok: true,
+    });
+    linkEvidence(ledger, "r1", evidence.id);
     setRequirementStatus(ledger, "r1", "verified");
     expect(ledgerGate(ledger).allow).toBe(true);
 

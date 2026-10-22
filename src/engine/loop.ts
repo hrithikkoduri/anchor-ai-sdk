@@ -438,9 +438,22 @@ async function runOne(
           if (status === "superseded") {
             return { ok: false, content: "use a user revision to supersede" };
           }
+          const requirementId = String(input.requirementId ?? "");
+          if (status === "verified") {
+            const requirement = ledger!.requirements.find(
+              (item) => item.id === requirementId,
+            );
+            if (!requirement || requirement.evidenceIds.length === 0) {
+              return {
+                ok: false,
+                content:
+                  "link evidence to this requirement before marking it verified",
+              };
+            }
+          }
           setRequirementStatus(
             ledger!,
-            String(input.requirementId ?? ""),
+            requirementId,
             status as "open" | "in_progress" | "verified" | "blocked" | "waived",
           );
           return { ok: true, content: `status set to ${status}` };
@@ -1211,6 +1224,9 @@ async function runOne(
       // fold. A job that finished since the previous turn (including one
       // carried in from a previous run) rides this call, not the one after.
       await pollJobs();
+      // Refresh the authoritative contract every turn so evidence ids and
+      // status changes are visible after each tool result.
+      if (ledger) messages[0] = system();
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(
