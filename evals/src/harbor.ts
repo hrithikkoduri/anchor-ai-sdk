@@ -13,6 +13,7 @@
 import { execFileSync } from "node:child_process";
 import type { Sandbox } from "anchor-ai-sdk";
 import type { EvalTask } from "./tasks.js";
+import { extractPatch, untrackedFiles } from "./patch.js";
 import type {
   ArmOutcome,
   EvalRunOptions,
@@ -20,25 +21,6 @@ import type {
 } from "./runner.js";
 
 const MAX_ARCHIVE = 128 * 1024 * 1024;
-
-/** Stage untracked files and diff against the sandbox's pre-run HEAD. */
-async function extractPatch(sandbox: Sandbox, headRef: string): Promise<string> {
-  const diff = await sandbox.exec(
-    `git add -A && git diff --cached --binary ${headRef} -- . ':(exclude).anchor'`,
-    { timeoutSecs: 180 },
-  );
-  if (diff.exitCode === 0) return diff.stdout;
-  const fallback = await sandbox.exec(
-    `git add -A && git diff --cached --binary -- . ':(exclude).anchor'`,
-    { timeoutSecs: 180 },
-  );
-  if (fallback.exitCode !== 0) {
-    throw new Error(
-      `patch extraction failed (git diff exited ${diff.exitCode}, ${fallback.exitCode}): ${fallback.output.trim().slice(0, 300)}`,
-    );
-  }
-  return fallback.stdout;
-}
 
 /** Copy a host directory into the sandbox without a host bind mount. */
 async function uploadTree(
@@ -173,6 +155,7 @@ export async function runHarborTask(
   let failure: string | undefined;
   let timedOut = false;
   let patch = "";
+  let baselineUntracked: string[] = [];
   let verifier: VerifierResult;
   let result: EvalTaskResult;
 
@@ -184,6 +167,7 @@ export async function runHarborTask(
     if (head.exitCode === 0 && /^[0-9a-f]{40}$/.test(head.stdout.trim())) {
       headRef = head.stdout.trim();
     }
+    baselineUntracked = await untrackedFiles(sandbox);
 
     const controller = new AbortController();
     const timeBudgetSecs = options.timeBudgetSecs ?? task.timeBudgetSecs;
@@ -220,7 +204,7 @@ export async function runHarborTask(
     await sandbox.killAllJobs?.().catch(() => undefined);
 
     if (task.grading === "patch") {
-      patch = await extractPatch(sandbox, headRef).catch((error: unknown) => {
+      patch = await extractPatch(sandbox, headRef, baselineUntracked).catch((error: unknown) => {
         failure ??= `patch extraction failed: ${
           error instanceof Error ? error.message : String(error)
         }`;

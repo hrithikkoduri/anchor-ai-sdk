@@ -24,6 +24,7 @@ import type {
   SandboxProvider,
 } from "anchor-ai-sdk";
 import type { EvalCheck, EvalTask } from "./tasks.js";
+import { extractPatch, untrackedFiles } from "./patch.js";
 import { runHarborTask } from "./harbor.js";
 
 export interface ArmOutcome {
@@ -103,45 +104,6 @@ export interface EvalRunOptions {
   /** Directory for side artifacts (mini's trajectories etc.). */
   artifactsDir?: string;
   log?: (line: string) => void;
-}
-
-/**
- * The workspace's final diff, staged first so untracked files are included,
- * diffed against the sandbox's OWN pre-run HEAD.
- *
- * Never the task's `baseRef`: benchmark images ship the repo at a commit
- * whose file modes already differ from the dataset's base_commit, and diffing
- * against base_commit turns that drift into >100 mode-only blocks around the
- * real change. The pre-run HEAD is the sandbox's actual starting state, so
- * the diff is the agent's work exactly — and a committing agent's commits
- * still count, because the index is compared to that pre-run commit.
- */
-async function extractPatch(
-  sandbox: Sandbox,
-  headRef: string,
-): Promise<string> {
-  const diff = await sandbox.exec(
-    `git add -A && git diff --cached --binary ${headRef} -- . ':(exclude).anchor'`,
-    { timeoutSecs: 120 },
-  );
-  if (diff.exitCode !== 0) {
-    // A degraded repo may not resolve the ref — report the worktree as-is.
-    const fallback = await sandbox.exec(
-      `git add -A && git diff --cached --binary -- . ':(exclude).anchor'`,
-      { timeoutSecs: 120 },
-    );
-    // BOTH failing means the sandbox is broken (paused? gone?) — a TOOLING
-    // failure, and it must be loud: silently returning "" turns a lost patch
-    // into an innocent-looking empty one (2026-10-18: an xarray attempt's
-    // real 1k-char fix died this way and read as "agent did nothing").
-    if (fallback.exitCode !== 0) {
-      throw new Error(
-        `patch extraction failed (git diff exited ${diff.exitCode}, ${fallback.exitCode}): ${fallback.output.trim().slice(0, 300)}`,
-      );
-    }
-    return fallback.stdout;
-  }
-  return diff.stdout;
 }
 
 /**
@@ -304,6 +266,7 @@ export async function runEvalSuite(
 
     let result: EvalTaskResult;
     let headRef = task.baseRef ?? "HEAD";
+    let baselineUntracked: string[] = [];
     try {
       await sandbox.start();
       // A remote provider has no host-path copy; materialize the fixture now.
@@ -341,6 +304,7 @@ export async function runEvalSuite(
       if (head.exitCode === 0 && /^[0-9a-f]{40}$/.test(head.stdout.trim())) {
         headRef = head.stdout.trim();
       }
+      baselineUntracked = await untrackedFiles(sandbox);
 
       const controller = new AbortController();
       let timedOut = false;
@@ -388,7 +352,7 @@ export async function runEvalSuite(
       // Capture the agent's patch BEFORE the official test patch lands, so the
       // deliverable stays the agent's work. Then apply the test patch, exactly
       // as the official grader does, and run the dense checks.
-      const patch = await extractPatch(sandbox, headRef).catch(
+      const patch = await extractPatch(sandbox, headRef, baselineUntracked).catch(
         (error: unknown) => {
           failure ??= `patch extraction failed: ${
             error instanceof Error ? error.message : String(error)
@@ -457,7 +421,7 @@ export async function runEvalSuite(
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const patch = await extractPatch(sandbox, headRef).catch(() => "");
+      const patch = await extractPatch(sandbox, headRef, baselineUntracked).catch(() => "");
       result = {
         taskId: task.id,
         arm: options.arm.name,
