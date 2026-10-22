@@ -891,6 +891,9 @@ async function runOne(
       ...(budget.reasoningTokens !== undefined
         ? { reasoningTokens: budget.reasoningTokens }
         : {}),
+      ...(budget.cachedTokens > 0
+        ? { cachedTokens: budget.cachedTokens }
+        : {}),
     };
     emit({
       type: "run_finished",
@@ -1544,6 +1547,7 @@ interface ChainSpend {
   costUsd: number;
   costsKnown: boolean;
   reasoningTokens?: number;
+  cachedTokens?: number;
 }
 
 function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
@@ -1554,6 +1558,8 @@ function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
   budget.costsKnown = spend.costsKnown;
   if (spend.reasoningTokens !== undefined)
     budget.reasoningTokens = spend.reasoningTokens;
+  if (spend.cachedTokens !== undefined)
+    budget.cachedTokens = spend.cachedTokens;
   return budget;
 }
 
@@ -1590,6 +1596,9 @@ function usageDelta(
     totalTokens: Math.max(0, now.totalTokens - (before.promptTokens + before.completionTokens)),
     ...(now.costUsd !== undefined ? { costUsd: now.costUsd - before.costUsd } : {}),
     ...(reasoning !== undefined ? { reasoningTokens: reasoning } : {}),
+    ...(now.cachedTokens !== undefined
+      ? { cachedTokens: Math.max(0, now.cachedTokens - (before.cachedTokens ?? 0)) }
+      : {}),
   };
 }
 
@@ -1665,6 +1674,9 @@ async function runChain(
       costsKnown: usage.costUsd !== undefined,
       ...(usage.reasoningTokens !== undefined
         ? { reasoningTokens: usage.reasoningTokens }
+        : {}),
+      ...(usage.cachedTokens !== undefined
+        ? { cachedTokens: usage.cachedTokens }
         : {}),
     };
     stepsBefore += result.steps;

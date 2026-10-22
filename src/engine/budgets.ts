@@ -41,6 +41,7 @@ export class BudgetTracker {
   promptTokens = 0;
   completionTokens = 0;
   reasoningTokens: number | undefined;
+  cachedTokens = 0;
   costUsd = 0;
   costsKnown = true;
 
@@ -52,6 +53,7 @@ export class BudgetTracker {
     this.promptTokens += usage.promptTokens;
     this.completionTokens += usage.completionTokens;
     if (usage.reasoningTokens !== undefined) this.reasoningTokens = (this.reasoningTokens ?? 0) + usage.reasoningTokens;
+    if (usage.cachedTokens !== undefined) this.cachedTokens += usage.cachedTokens;
     if (usage.costUsd !== undefined) {
       this.costUsd += usage.costUsd;
     } else {
