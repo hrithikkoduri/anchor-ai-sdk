@@ -29,6 +29,7 @@
     const pct = (n, d) => d ? `${(100 * n / d).toFixed(1)}%` : "—";
     const money = (n) => `$${Number(n ?? 0).toFixed(2)}`;
     const mins = (ms) => ms == null ? "—" : `${Math.round(ms / 60000)}m`;
+    const tok = (n) => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : `${Math.round(n / 1000)}k`;
     fetch("../latest/summary.json", { cache: "no-store" })
       .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((data) => {
@@ -44,8 +45,13 @@
             <td class="num">${r.meanReward == null ? "—" : r.meanReward.toFixed(3)}</td>
             <td class="num">${r.falseFinishes}</td>
             <td class="num">${r.timeouts}</td>
+            <td class="num">${tok(r.tokens?.prompt ?? 0)}</td>
+            <td class="num">${tok(r.tokens?.completion ?? 0)}</td>
+            <td class="num">${tok(r.tokens?.cached ?? 0)}</td>
+            <td class="num">${r.cacheHitRate == null ? "—" : `${(r.cacheHitRate * 100).toFixed(1)}%`}</td>
             <td class="num">${money(r.costUsd)}</td>
             <td class="num">${mins(r.p50WallMs)}</td>
+            <td class="num">${mins(r.p95WallMs)}</td>
           </tr>`).join("");
         const tasks = data.results.map((r) => `
           <tr>
@@ -60,7 +66,7 @@
           </tr>`).join("");
         document.getElementById("root").innerHTML = `
           <table>
-            <thead><tr><th>Bench</th><th>Model</th><th>Variant</th><th>Tasks</th><th>Full credit</th><th>Mean reward</th><th>False finish</th><th>Timeout</th><th>Cost</th><th>p50</th></tr></thead>
+            <thead><tr><th>Bench</th><th>Model</th><th>Variant</th><th>Tasks</th><th>Full credit</th><th>Mean reward</th><th>False finish</th><th>Timeout</th><th>Prompt tok</th><th>Completion tok</th><th>Cached tok</th><th>Cache hit</th><th>Cost</th><th>p50</th><th>p95</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
           <h2>Per task</h2>

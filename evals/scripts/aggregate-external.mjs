@@ -64,6 +64,9 @@ for (const file of await walk(root)) {
     const reward = values.length > 0 ? Math.max(...values) : 0;
     const started = trial.started_at ? Date.parse(trial.started_at) : NaN;
     const finished = trial.finished_at ? Date.parse(trial.finished_at) : NaN;
+    const inputTokens = trial.agent_result?.n_input_tokens ?? 0;
+    const outputTokens = trial.agent_result?.n_output_tokens ?? 0;
+    const cachedTokens = trial.agent_result?.n_cache_tokens ?? 0;
     group.results.push({
       taskId: trial.task_name,
       status: trial.exception_info ? "failed" : trial.verifier_result ? "completed" : "failed",
@@ -71,9 +74,15 @@ for (const file of await walk(root)) {
       ...(trial.exception_info
         ? { error: trial.exception_info.exception_message }
         : {}),
-      ...(trial.agent_result?.cost_usd != null
-        ? { usage: { costUsd: trial.agent_result.cost_usd } }
-        : {}),
+      usage: {
+        promptTokens: inputTokens,
+        completionTokens: outputTokens,
+        totalTokens: inputTokens + outputTokens,
+        ...(cachedTokens > 0 ? { cachedTokens } : {}),
+        ...(trial.agent_result?.cost_usd != null
+          ? { costUsd: trial.agent_result.cost_usd }
+          : {}),
+      },
       wallMs: Number.isFinite(started) && Number.isFinite(finished) ? finished - started : 0,
     });
   }
@@ -87,6 +96,15 @@ const rows = [...groups.values()].map((group) => {
     ? scored.reduce((sum, r) => sum + r.reward, 0) / scored.length
     : undefined;
   const walls = group.results.map((r) => r.wallMs).sort((a, b) => a - b);
+  const tokens = group.results.reduce(
+    (sum, r) => {
+      sum.prompt += r.usage?.promptTokens ?? 0;
+      sum.completion += r.usage?.completionTokens ?? 0;
+      sum.cached += r.usage?.cachedTokens ?? 0;
+      return sum;
+    },
+    { prompt: 0, completion: 0, cached: 0 },
+  );
   return {
     ...group,
     tasks: group.results.length,
@@ -94,7 +112,10 @@ const rows = [...groups.values()].map((group) => {
     fullCredit: full,
     meanReward: mean,
     costUsd: group.results.reduce((sum, r) => sum + (r.usage?.costUsd ?? 0), 0),
+    tokens,
+    cacheHitRate: tokens.prompt > 0 ? tokens.cached / tokens.prompt : undefined,
     p50WallMs: walls.length ? walls[Math.floor(walls.length / 2)] : undefined,
+    p95WallMs: walls.length ? walls[Math.min(walls.length - 1, Math.floor(0.95 * walls.length))] : undefined,
   };
 });
 rows.sort((a, b) => `${a.bench}${a.model}`.localeCompare(`${b.bench}${b.model}`));
@@ -102,17 +123,18 @@ rows.sort((a, b) => `${a.bench}${a.model}`.localeCompare(`${b.bench}${b.model}`)
 const pct = (n, d) => (d === 0 ? "—" : `${((n / d) * 100).toFixed(1)}%`);
 const money = (n) => `$${Number(n).toFixed(2)}`;
 const mins = (ms) => (ms == null ? "—" : `${Math.round(ms / 60000)}m`);
+const tok = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : `${Math.round(n / 1000)}k`);
 
 const lines = [
   "# External harness results",
   "",
   `Generated: ${new Date().toISOString()}`,
   "",
-  "| Bench | Model | Harness | Tasks | Full credit | Mean reward | Cost | p50 |",
-  "|---|---|---|---:|---:|---:|---:|---:|",
+  "| Bench | Model | Harness | Tasks | Full credit | Mean reward | Prompt tok | Completion tok | Cached tok | Cache hit | Cost | p50 | p95 |",
+  "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
   ...rows.map(
     (row) =>
-      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${money(row.costUsd)} | ${mins(row.p50WallMs)} |`,
+      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${tok(row.tokens.prompt)} | ${tok(row.tokens.completion)} | ${tok(row.tokens.cached)} | ${row.cacheHitRate == null ? "—" : `${(row.cacheHitRate * 100).toFixed(1)}%`} | ${money(row.costUsd)} | ${mins(row.p50WallMs)} | ${mins(row.p95WallMs)} |`,
   ),
   "",
   "## Per task",
