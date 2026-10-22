@@ -1,5 +1,93 @@
 {
-  "generatedAt": "2026-10-22T05:35:21.411Z",
-  "runs": [],
-  "results": []
+  "generatedAt": "2026-10-22T05:40:21.449Z",
+  "runs": [
+    {
+      "bench": "swe-pro",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "falseFinishes": 0,
+      "timeouts": 0,
+      "costUsd": 0.7043638000000001,
+      "p50WallMs": 373825,
+      "runs": [
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "openai/gpt-5.3-codex",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 0,
+          "failed": 1,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.7043638000000001,
+          "wallMsP50": 373825,
+          "wallMsP95": 373825,
+          "startedAt": "2026-10-22T05:33:47.665Z",
+          "finishedAt": "2026-10-22T05:40:01.851Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 8
+          },
+          "contextWindow": 400000,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/openai-gpt-5.3-codex/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "bench": "swe-pro",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "baseline",
+      "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+      "arm": "anchor",
+      "status": "failed",
+      "error": "agent patch failed to apply: agent patch failed to apply (exit 1): /tmp/anchor-agent.patch:18: trailing whitespace.\n*2\r\n/tmp/anchor-agent.patch:19: trailing whitespace.\n$6\r\n/tmp/anchor-agent.patch:20: trailing whitespace.\nSELECT\r\n/tmp/anchor-agent.patch:21: trailing whitespace.\n$1\r\n/tmp/anchor-agent.patch:22: trailing whitespace.\n0\r\nChecking patch appendonlydir/appendonly.aof.1.base.rdb...\nerror: appendonlydir/appendonly.aof.1.base.rdb: already exists in working directory\nChecking patch appendonlydir/appendonly.aof.1.incr.aof...\nerror: appendonlydir/appendonly.aof.1.incr.aof: already exists in working directory\nChecking patch appendonlydir/appendonly.aof.manifest...\nerror: appendonlydir/appendonly.aof.manifest: already exists in working directory\nChecking patch src/controllers/admin/cache.js...\nChecking patch src/meta/index.js...\nChecking patch src/posts/",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1696252,
+        "completionTokens": 20757,
+        "totalTokens": 1717009,
+        "costUsd": 0.7043638000000001,
+        "reasoningTokens": 13574
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/mocks/databasemock.js...\nChecking patch test/socket.io.js...\nChecking patch test/user.js...\nApplied patch test/mocks/databasemock.js cleanly.\nApplied patch test/socket.io.js cleanly.\nApplied patch test/user.js cleanly.\nRequired tests: 2\nPassed tests: 0\nRequired tests that passed: 0\n\nRESULT: FAILED\nMissing tests: ['test/socket.io.js | socket.io | should toggle caches', 'test/user.js | User | "
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 3,
+        "search": 34,
+        "read_file": 31,
+        "bash": 3,
+        "edit_file": 15
+      },
+      "wallMs": 373825,
+      "patchChars": 174260
+    }
+  ]
 }
