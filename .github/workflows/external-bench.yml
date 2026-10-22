@@ -13,9 +13,9 @@ on:
         type: string
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
       agent:
-        description: Harbor agent
+        description: Harbor agent, or auto (SWE-agent for SWE, Terminus-2 for Terminal)
         type: string
-        default: terminus-2
+        default: auto
       tasks:
         description: Optional comma-separated task ids (smoke runs)
         type: string
@@ -38,7 +38,7 @@ on:
         default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
       agent:
         type: string
-        default: terminus-2
+        default: auto
       tasks:
         type: string
         default: ""
@@ -66,19 +66,26 @@ jobs:
         env:
           BENCH: ${{ inputs.bench }}
           MODELS: ${{ inputs.models }}
+          AGENT: ${{ inputs.agent }}
           PRO_SHARDS: ${{ inputs.pro_shards }}
           TERMINAL_SHARDS: ${{ inputs.terminal_shards }}
         run: |
           node - <<'NODE' >> "$GITHUB_OUTPUT"
-          const { BENCH, MODELS, PRO_SHARDS, TERMINAL_SHARDS } = process.env;
+          const { BENCH, MODELS, AGENT, PRO_SHARDS, TERMINAL_SHARDS } = process.env;
           const benches = BENCH === "all" ? ["swe-lite", "swe-pro", "terminal-bench"] : [BENCH];
           const shardsFor = (bench) => bench === "swe-pro" ? Number(PRO_SHARDS) : bench === "terminal-bench" ? Number(TERMINAL_SHARDS) : 1;
           const include = [];
           for (const bench of benches) {
             const shards = shardsFor(bench);
             for (const model of MODELS.split(",").map((s) => s.trim()).filter(Boolean)) {
-              for (let shard = 0; shard < shards; shard++) {
-                include.push({ bench, model, shard: String(shard), shards: String(shards) });
+              const selectedAgent =
+              AGENT && AGENT !== "auto"
+                ? AGENT
+                : bench === "terminal-bench"
+                  ? "terminus-2"
+                  : "swe-agent";
+            for (let shard = 0; shard < shards; shard++) {
+                include.push({ bench, model, agent: selectedAgent, shard: String(shard), shards: String(shards) });
               }
             }
           }
@@ -98,7 +105,7 @@ jobs:
       MODEL: ${{ matrix.model }}
       SHARD: ${{ matrix.shard }}
       SHARDS: ${{ matrix.shards }}
-      AGENT: ${{ inputs.agent }}
+      AGENT: ${{ matrix.agent }}
       TASKS: ${{ inputs.tasks }}
     steps:
       - uses: actions/checkout@v4
