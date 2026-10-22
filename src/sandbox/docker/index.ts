@@ -26,7 +26,10 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
+  type ProcessHandle,
+  type ProcessOptions,
 } from "../types.js";
+import { ChildProcessHandle } from "../process.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -68,6 +71,7 @@ export class DockerSandbox implements Sandbox {
       result?: ExecResult;
     }
   >();
+  private readonly processes = new Map<string, ChildProcessHandle>();
 
   constructor(
     private readonly spec: SandboxSpec,
@@ -420,6 +424,61 @@ export class DockerSandbox implements Sandbox {
     });
   }
 
+  async openProcess(
+    command: string,
+    args: string[],
+    opts: ProcessOptions = {},
+  ): Promise<ProcessHandle> {
+    this.assertUsable();
+    if (this.processes.size >= 8) {
+      throw new Error("docker sandbox process limit reached (8)");
+    }
+    const id = randomUUID();
+    const timeoutSecs = clampTimeout(opts.timeoutSecs ?? 3600);
+    const pidFile = `/tmp/anchor-process-${id}.pid`;
+    const env = { ...this.spec.env, ...opts.env };
+    const envFlags = Object.entries(env).flatMap(([key, value]) => [
+      "-e",
+      `${key}=${value}`,
+    ]);
+    const script = `echo $$ > ${shq(pidFile)}; exec "$@"`;
+    const child = spawn(
+      this.dockerBin,
+      [
+        "exec",
+        "-i",
+        ...envFlags,
+        "-w",
+        opts.cwd ?? this.workspace,
+        this.id,
+        "bash",
+        "-c",
+        script,
+        "anchor-process",
+        command,
+        ...args,
+      ],
+      { stdio: ["pipe", "pipe", "pipe"] },
+    );
+    const handle = new ChildProcessHandle(id, child, {
+      ...opts,
+      timeoutSecs,
+      processGroup: false,
+      killGuest: async () => {
+        await this.cli([
+          "exec",
+          this.id,
+          "bash",
+          "-c",
+          `p=$(cat ${shq(pidFile)} 2>/dev/null) || exit 0; kill -TERM -$p 2>/dev/null || kill -TERM $p 2>/dev/null || true; rm -f ${shq(pidFile)}`,
+        ], { timeoutSecs: 30 });
+      },
+      onClose: () => this.processes.delete(id),
+    });
+    this.processes.set(id, handle);
+    return handle;
+  }
+
   async pollJob(
     jobId: string,
   ): Promise<ExecResult | undefined> {
@@ -469,6 +528,11 @@ export class DockerSandbox implements Sandbox {
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
+    for (const handle of [...this.processes.values()]) {
+      await handle.kill("SIGKILL").catch(() => undefined);
+      await handle.wait().catch(() => undefined);
+    }
+    this.processes.clear();
     if (this.spec.keep || this.spec.retain) {
       if (!this.opts.quiet) {
         process.stderr.write(
@@ -582,6 +646,7 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true,
       egressControl: true, // `--network none` shape via disconnect after setup
       localPath: false,
+      processStream: true,
     },
     create: (spec) => new DockerSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
