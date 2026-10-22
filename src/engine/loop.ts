@@ -250,6 +250,8 @@ async function runOne(
     phase = prior.phase;
   let summary = prior?.summary;
 
+  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
+
   // ---- Task verification ------------------------------------------------
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
   const verifierConfig: VerifierConfig =
@@ -270,6 +272,7 @@ async function runOne(
       reasoningEffort: "low",
     });
     ledger = compiled.ledger;
+    if (compiled.usage) budget.record(compiled.usage);
   }
   const recentEvidence = (): string => {
     if (!ledger) return "(none)";
@@ -289,7 +292,7 @@ async function runOne(
     }
     verifierCalls += 1;
     try {
-      const { verdict } = await verifyAlignment({
+      const { verdict, usage } = await verifyAlignment({
         llm: verifierLlm,
         task: task.task,
         phase: phaseGoal,
@@ -297,6 +300,7 @@ async function runOne(
         recentEvidence: recentEvidence(),
         reasoningEffort: "low",
       });
+      if (usage) budget.record(usage);
       return verdict;
     } catch (error) {
       emit({
@@ -470,7 +474,6 @@ async function runOne(
     ...conversationHistory(prior?.messages ?? []),
     currentRequest,
   ];
-  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
   const compact =
     opts.compaction === false
       ? null
