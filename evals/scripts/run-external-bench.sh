@@ -91,7 +91,8 @@ for ID in "${IDS[@]}"; do
 done
 
 echo "external bench=$BENCH model=$MODEL agent=$AGENT shard=$SHARD/$SHARDS tasks=${#IDS[@]}"
-OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$LLM_API_KEY}" python -m harbor.cli.main "${ARGS[@]}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-$LLM_API_KEY}" "$PYTHON_BIN" -m harbor.cli.main "${ARGS[@]}"
 
 count="$(find "$OUT_DIR" -name result.json -type f | wc -l | tr -d ' ')"
 if [ "$count" -eq 0 ]; then
