@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   anchor:
-    uses: ./.github/workflows/anchor-bench.yml
+    uses: ./.github/workflows/bench.yml
     secrets: inherit
     with:
       bench: ${{ inputs.bench }}

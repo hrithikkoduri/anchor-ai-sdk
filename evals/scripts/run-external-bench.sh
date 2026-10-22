@@ -84,7 +84,6 @@ ARGS=(
   --job-name "$BENCH-external-${MODEL_SLUG}-shard-${SHARD}"
   --allow-agent-host openrouter.ai
   --allow-agent-host api.openrouter.ai
-  --api-key-name OPENROUTER_API_KEY
 )
 for ID in "${IDS[@]}"; do
   ARGS+=(-i "$ID")
