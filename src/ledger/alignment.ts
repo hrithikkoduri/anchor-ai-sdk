@@ -7,7 +7,7 @@
  * user revision?
  */
 import { completeStructured } from "../llm/structured.js";
-import type { LLMClient, LLMUsage } from "../llm/types.js";
+import type { LLMClient, LLMRequest, LLMUsage } from "../llm/types.js";
 import { renderLedger } from "./ledger.js";
 import type { PhaseGoal } from "./compiler.js";
 import type { ProgressLedger } from "./types.js";
@@ -36,6 +36,7 @@ export interface VerifyAlignmentOptions {
   recentEvidence?: string;
   maxTokens?: number;
   temperature?: number;
+  reasoningEffort?: LLMRequest["reasoningEffort"];
   signal?: AbortSignal;
 }
 
@@ -123,6 +124,9 @@ export async function verifyAlignment(
     ...(opts.maxTokens !== undefined ? { maxTokens: opts.maxTokens } : {}),
     ...(opts.temperature !== undefined
       ? { temperature: opts.temperature }
+      : {}),
+    ...(opts.reasoningEffort !== undefined
+      ? { reasoningEffort: opts.reasoningEffort }
       : {}),
     ...(opts.signal ? { signal: opts.signal } : {}),
     messages: [

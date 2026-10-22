@@ -7,7 +7,7 @@
  * to the authoritative task instead of letting the model invent scope.
  */
 import { completeStructured } from "../llm/structured.js";
-import type { LLMClient, LLMUsage } from "../llm/types.js";
+import type { LLMClient, LLMRequest, LLMUsage } from "../llm/types.js";
 import { createLedger } from "./ledger.js";
 import type { ProgressLedger } from "./types.js";
 
@@ -24,6 +24,7 @@ export interface CompileLedgerOptions {
   phases: readonly PhaseGoal[];
   maxTokens?: number;
   temperature?: number;
+  reasoningEffort?: LLMRequest["reasoningEffort"];
   signal?: AbortSignal;
 }
 
@@ -119,6 +120,9 @@ export async function compileLedger(
     ...(opts.maxTokens !== undefined ? { maxTokens: opts.maxTokens } : {}),
     ...(opts.temperature !== undefined
       ? { temperature: opts.temperature }
+      : {}),
+    ...(opts.reasoningEffort !== undefined
+      ? { reasoningEffort: opts.reasoningEffort }
       : {}),
     ...(opts.signal ? { signal: opts.signal } : {}),
     messages: [
