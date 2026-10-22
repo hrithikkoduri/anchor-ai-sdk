@@ -11,7 +11,7 @@ on:
       models:
         description: Comma-separated OpenRouter model ids
         type: string
-        default: openai/gpt-5.3-codex,anthropic/claude-sonnet-5.5
+        default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
       variants:
         description: Comma-separated harness variants
         type: string

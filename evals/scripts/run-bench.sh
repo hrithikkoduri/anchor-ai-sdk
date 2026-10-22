@@ -71,6 +71,15 @@ for ID in "${IDS[@]}"; do
   if [ -n "$TIME_BUDGET" ]; then
     EXTRA+=(--time-budget "$TIME_BUDGET")
   fi
+  # Qwen3-Coder-Next exposes no reasoning-effort variants; sending the
+  # OpenRouter reasoning field to it is not a fair control.
+  MODEL_REASONING="$REASONING"
+  case "$MODEL" in
+    *qwen3-coder-next*) MODEL_REASONING="" ;;
+  esac
+  if [ -n "$MODEL_REASONING" ]; then
+    EXTRA+=(--reasoning "$MODEL_REASONING")
+  fi
   npx tsx src/main.ts \
     --tasks "$TASKS_FILE" \
     --task "$ID" \
@@ -80,7 +89,6 @@ for ID in "${IDS[@]}"; do
     --llm openrouter \
     --model "$MODEL" \
     --variant "$VARIANT" \
-    --reasoning "$REASONING" \
     --max-steps "$MAX_STEPS" \
     --max-usd "$MAX_USD" \
     "${EXTRA[@]}" \
