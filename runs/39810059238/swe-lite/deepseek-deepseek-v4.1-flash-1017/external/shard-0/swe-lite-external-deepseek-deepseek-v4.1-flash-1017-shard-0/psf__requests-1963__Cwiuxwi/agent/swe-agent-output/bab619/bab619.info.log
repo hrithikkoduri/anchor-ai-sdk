@@ -1,0 +1,123 @@
+2026-10-22 16:07:51,349 - INFO - swea-run - Starting environment
+2026-10-22 16:07:52,213 - INFO - swea-env - Environment Initialized
+2026-10-22 16:07:52,579 - INFO - swea-run - Running agent
+2026-10-22 16:07:52,585 - INFO - swea-agent - Setting up agent for instance bab619
+2026-10-22 16:07:52,586 - INFO - swea-agent - Trajectory will be saved to /logs/agent/swe-agent-output/bab619/bab619.traj
+2026-10-22 16:07:54,475 - INFO - swea-tools - Resetting tools
+2026-10-22 16:07:54,793 - INFO - swea-agent - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-10-22 16:07:54,924 - INFO - swea-agent - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+`Session.resolve_redirects` copies the original request for all subsequent requests, can cause incorrect method selection
+Consider the following redirection chain:
+
+```
+POST /do_something HTTP/1.1
+Host: server.example.com
+...
+
+HTTP/1.1 303 See Other
+Location: /new_thing_1513
+
+GET /new_thing_1513
+Host: server.example.com
+...
+
+HTTP/1.1 307 Temporary Redirect
+Location: //failover.example.com/new_thing_1513
+```
+
+The intermediate 303 See Other has caused the POST to be converted to
+a GET.  The subsequent 307 should preserve the GET.  However, because
+`Session.resolve_redirects` starts each iteration by copying the _original_
+request object, Requests will issue a POST!
+
+
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-10-22 16:07:54,926 - INFO - swea-agent - ========================= STEP 1 =========================
+2026-10-22 16:07:55,024 - WARNING - swea-lm - No max input tokens found for model 'openrouter/deepseek/deepseek-v4.1-flash-1017'. If you are using a local model, you can set `max_input_token` in the model config to override this.
+2026-10-22 16:07:58,154 - ERROR - swea-lm - Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check.
+2026-10-22 16:07:58,155 - ERROR - swea-agent - Exiting due to unknown error: Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check.
+Traceback (most recent call last):
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 744, in _single_query
+    cost = litellm.cost_calculator.completion_cost(response, model=self.config.name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/cost_calculator.py", line 2061, in completion_cost
+    raise e
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/cost_calculator.py", line 2058, in completion_cost
+    raise e
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/cost_calculator.py", line 1913, in completion_cost
+    ) = cost_per_token(
+        ^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/cost_calculator.py", line 768, in cost_per_token
+    model_info: Final = cached_get_model_info_helper(model=model, custom_llm_provider=custom_llm_provider)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/utils.py", line 6127, in cached_get_model_info_helper
+    return get_model_info_helper(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/utils.py", line 6310, in get_model_info_helper
+    raise ModelNotMappedError(_model_not_mapped_message(model, custom_llm_provider))
+litellm.exceptions.ModelNotMappedError: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/agents.py", line 1109, in forward_with_handling
+    return self.forward(history)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/agents.py", line 1042, in forward
+    output = self.model.query(history)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 809, in query
+    for attempt in Retrying(
+                   ^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/tenacity/__init__.py", line 514, in __iter__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/tenacity/__init__.py", line 440, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/tenacity/__init__.py", line 462, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 835, in query
+    result = self._query(messages, n=n, temperature=temperature)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 791, in _query
+    outputs.extend(self._single_query(messages))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 754, in _single_query
+    raise ModelConfigurationError(msg)
+sweagent.exceptions.ModelConfigurationError: Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check.
+2026-10-22 16:07:58,165 - WARNING - swea-agent - Exit due to unknown error: Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check.
+2026-10-22 16:07:58,166 - WARNING - swea-agent - Attempting autosubmission after error
+2026-10-22 16:07:58,167 - INFO - swea-agent - Executing submission command git add -A && git diff --cached > /root/model.patch in //testbed
+2026-10-22 16:07:58,172 - INFO - swea-agent - Found submission: 
+2026-10-22 16:07:58,173 - INFO - swea-agent - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-10-22 16:07:58,174 - INFO - swea-agent - Trajectory saved to /logs/agent/swe-agent-output/bab619/bab619.traj
+2026-10-22 16:07:58,175 - INFO - swea-save_apply_patch - No patch to save.
+2026-10-22 16:07:58,175 - INFO - swea-run - Done
+2026-10-22 16:07:58,176 - INFO - swea-env - Beginning environment shutdown...

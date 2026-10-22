@@ -1,0 +1,25 @@
+{
+  "schema_version": "ATIF-v1.5",
+  "session_id": "f1d58b6f-6834-42ba-bd48-0166d547b374",
+  "agent": {
+    "name": "swe-agent",
+    "version": "1.1.0",
+    "model_name": "unknown",
+    "extra": {
+      "original_format": "swe-agent-traj",
+      "environment": "main"
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-10-22T16:07:59.332971+00:00",
+      "source": "agent",
+      "model_name": "unknown",
+      "message": "Exit due to unknown error: Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check.",
+      "reasoning_content": "Exit due to unknown error: Error calculating cost: This model isn't mapped yet. model=openrouter/deepseek/deepseek-v4.1-flash-1017, custom_llm_provider=openrouter. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json. for your model openrouter/deepseek/deepseek-v4.1-flash-1017. If this is ok (local models, etc.), please make sure you set `per_instance_cost_limit` and `total_cost_limit` to 0 to disable this safety check."
+    }
+  ],
+  "notes": "Converted from SWE-agent .traj format to ATIF",
+  "final_metrics": {}
+}
