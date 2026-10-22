@@ -108,10 +108,16 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
         Math.min(3600, optionalNumber(input, "timeout_secs", 600)),
       );
       const sandbox = requireSandbox(ctx);
-      const r = await sandbox.exec(command, { timeoutSecs });
+      const r = await sandbox.exec(command, {
+        timeoutSecs,
+        ...(ctx.signal ? { signal: ctx.signal } : {}),
+      });
       // Freshness evidence: the tree hash at this moment. Checks compare it at
       // move time — "green" only counts if the tree still matches (decision #38).
-      const tree = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
+      const tree = await sandbox.exec(TREE_HASH_CMD, {
+        timeoutSecs: 60,
+        ...(ctx.signal ? { signal: ctx.signal } : {}),
+      });
       const treeHash = /^[0-9a-f]{40}$/.test(tree.stdout.trim())
         ? tree.stdout.trim()
         : undefined;

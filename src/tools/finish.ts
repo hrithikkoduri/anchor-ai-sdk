@@ -82,9 +82,7 @@ export function createFinishTool(opts: FinishOptions = {}) {
       )
         throw new Error('"handoff" must be an object');
       const handoffValue =
-        raw !== undefined
-          ? (raw as Record<string, unknown>)
-          : undefined;
+        raw !== undefined ? (raw as Record<string, unknown>) : undefined;
       if (opts.validate) {
         const verdict = await opts.validate({
           summary,

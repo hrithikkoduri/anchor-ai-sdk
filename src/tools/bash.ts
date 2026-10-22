@@ -45,6 +45,7 @@ export const bashTool = defineTool(
     const r = await sandbox.exec(command, {
       timeoutSecs,
       ...(backgroundAfterSecs !== undefined ? { backgroundAfterSecs } : {}),
+      ...(ctx.signal ? { signal: ctx.signal } : {}),
     });
     if (r.background) {
       return {

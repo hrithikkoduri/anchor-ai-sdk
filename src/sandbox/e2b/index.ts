@@ -40,7 +40,12 @@ import {
   reservedScratchPrepCommand,
   type GitAccess,
 } from "../git.js";
-import { e2bCommand, e2bResult, e2bTransportFailure } from "./exec.js";
+import {
+  e2bCommand,
+  e2bResult,
+  e2bTransportFailure,
+  killE2bCommand,
+} from "./exec.js";
 
 /** Default workspace for a repo cloned by this adapter. */
 const DEFAULT_WORKSPACE = "/home/user/repo";
@@ -122,8 +127,7 @@ export class E2BSandbox implements Sandbox {
     private readonly opts: E2BSandboxOptions = {},
   ) {
     this._id = spec.adopt ?? "pending";
-    this._workspace =
-      spec.workspacePath ?? opts.cwd ?? DEFAULT_WORKSPACE;
+    this._workspace = spec.workspacePath ?? opts.cwd ?? DEFAULT_WORKSPACE;
     this._scratch = opts.scratch ?? DEFAULT_SCRATCH;
     this.factory = opts.clientFactory ?? defaultFactory;
   }
@@ -175,8 +179,7 @@ export class E2BSandbox implements Sandbox {
           );
         }
       } else {
-        const template =
-          this.spec.image ?? this.opts.template ?? "base";
+        const template = this.spec.image ?? this.opts.template ?? "base";
         try {
           this.client = await this.factory.create(template, {
             ...connectionOpts(this.opts),
@@ -219,10 +222,7 @@ export class E2BSandbox implements Sandbox {
     }
   }
 
-  async exec(
-    command: string,
-    opts: ExecOptions = {},
-  ): Promise<ExecResult> {
+  async exec(command: string, opts: ExecOptions = {}): Promise<ExecResult> {
     this.assertUsable();
     return this.execRaw(command, opts);
   }
@@ -370,10 +370,10 @@ export class E2BSandbox implements Sandbox {
     const workspace = this._workspace;
 
     if (this.spec.workspacePath) {
-      const present = await this.execRaw(
-        `test -d ${shq(workspace)}`,
-        { cwd: "/", timeoutSecs: 60 },
-      );
+      const present = await this.execRaw(`test -d ${shq(workspace)}`, {
+        cwd: "/",
+        timeoutSecs: 60,
+      });
       if (present.exitCode !== 0) {
         throw new Error(
           `workspacePath ${workspace} does not exist in the sandbox`,
@@ -381,10 +381,10 @@ export class E2BSandbox implements Sandbox {
       }
       // configureGit() runs in the workspace right after this; fail with the
       // path named rather than with a bare "git config failed".
-      const git = await this.execRaw(
-        `test -d ${shq(`${workspace}/.git`)}`,
-        { cwd: "/", timeoutSecs: 60 },
-      );
+      const git = await this.execRaw(`test -d ${shq(`${workspace}/.git`)}`, {
+        cwd: "/",
+        timeoutSecs: 60,
+      });
       if (git.exitCode !== 0) {
         throw new Error(
           `workspacePath ${workspace} is not a git repository — the adapter needs .git there for checkpoints and diffs`,
@@ -425,15 +425,15 @@ export class E2BSandbox implements Sandbox {
       cwd: "/",
       timeoutSecs: 60,
     });
-    const hasGit = await this.execRaw(
-      `test -d ${shq(`${workspace}/.git`)}`,
-      { cwd: "/", timeoutSecs: 60 },
-    );
+    const hasGit = await this.execRaw(`test -d ${shq(`${workspace}/.git`)}`, {
+      cwd: "/",
+      timeoutSecs: 60,
+    });
     if (hasGit.exitCode !== 0) {
-      const init = await this.execRaw(
-        `git init -q -b main ${shq(workspace)}`,
-        { cwd: "/", timeoutSecs: 120 },
-      );
+      const init = await this.execRaw(`git init -q -b main ${shq(workspace)}`, {
+        cwd: "/",
+        timeoutSecs: 120,
+      });
       if (init.exitCode !== 0) {
         throw new Error(`git init failed: ${init.output.trim()}`);
       }
@@ -528,26 +528,72 @@ export class E2BSandbox implements Sandbox {
     let stderr = "";
     let output = "";
 
+    // A cancelled run kills the guest process (E2B's timeoutMs is only a
+    // transport guard, not a kill) and resolves as `cancelled` promptly.
+    // The real run is started ONCE; the abort race only decides whether we
+    // keep waiting for it — losing the race must not re-execute a mutation.
+    const runOptions = {
+      cwd: "/",
+      envs,
+      // The guest-side `timeout` is the real kill; this is only a slightly
+      // longer transport guard so a wedged RPC cannot hang the run.
+      timeoutMs: (timeoutSecs + 30) * 1000,
+      ...(this.opts.user ? { user: this.opts.user } : {}),
+      onStdout: (data: string) => {
+        stdout += data;
+        output += data;
+      },
+      onStderr: (data: string) => {
+        stderr += data;
+        output += data;
+      },
+    } satisfies Parameters<typeof client.commands.run>[1];
+    const pending = client.commands.run(
+      e2bCommand(command, cwd, timeoutSecs),
+      runOptions,
+    );
+
+    const abortSignal = opts.signal;
+    let abortListener: (() => void) | undefined;
+    if (abortSignal) {
+      if (abortSignal.aborted) {
+        await killE2bCommand(client, command);
+        return {
+          exitCode: 130,
+          stdout,
+          stderr,
+          output: `${output}Command cancelled by signal after ${((Date.now() - startedAt) / 1000).toFixed(1)}s; the E2B process was killed.`,
+          timedOut: false,
+          durationMs: Date.now() - startedAt,
+          cancelled: true,
+        };
+      }
+      const raced = await Promise.race([
+        new Promise<"aborted">((resolve) => {
+          abortListener = () => resolve("aborted");
+          abortSignal.addEventListener("abort", abortListener, { once: true });
+        }),
+        pending.then(
+          () => "completed" as const,
+          () => "completed" as const,
+        ),
+      ]);
+      if (raced === "aborted") {
+        await killE2bCommand(client, command);
+        return {
+          exitCode: 130,
+          stdout,
+          stderr,
+          output: `${output}Command cancelled by signal after ${((Date.now() - startedAt) / 1000).toFixed(1)}s; the E2B process was killed.`,
+          timedOut: false,
+          durationMs: Date.now() - startedAt,
+          cancelled: true,
+        };
+      }
+    }
+
     try {
-      const result = await client.commands.run(
-        e2bCommand(command, cwd, timeoutSecs),
-        {
-          cwd: "/",
-          envs,
-          // The guest-side `timeout` is the real kill; this is only a slightly
-          // longer transport guard so a wedged RPC cannot hang the run.
-          timeoutMs: (timeoutSecs + 30) * 1000,
-          ...(this.opts.user ? { user: this.opts.user } : {}),
-          onStdout: (data) => {
-            stdout += data;
-            output += data;
-          },
-          onStderr: (data) => {
-            stderr += data;
-            output += data;
-          },
-        },
-      );
+      const result = await pending;
       return e2bResult(
         {
           exitCode: result.exitCode,
@@ -576,6 +622,9 @@ export class E2BSandbox implements Sandbox {
         error instanceof Error ? error.message : String(error),
         startedAt,
       );
+    } finally {
+      if (abortSignal && abortListener)
+        abortSignal.removeEventListener("abort", abortListener);
     }
   }
 }

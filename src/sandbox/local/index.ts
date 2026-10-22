@@ -154,7 +154,9 @@ export class LocalSandbox implements Sandbox {
     const timeoutSecs = clampTimeout(opts.timeoutSecs);
     const cwd = opts.cwd ?? this.workspace;
     const env = { ...this.spec.env, ...opts.env };
-    return this.run("bash", ["-c", command], cwd, env, timeoutSecs);
+    return this.run("bash", ["-c", command], cwd, env, timeoutSecs, {
+      signal: opts.signal,
+    });
   }
 
   async checkpoint(
@@ -265,6 +267,7 @@ export class LocalSandbox implements Sandbox {
     cwd: string,
     env: Record<string, string>,
     timeoutSecs: number,
+    abort: { signal?: AbortSignal } = {},
   ): Promise<ExecResult> {
     return new Promise((resolve) => {
       const startedAt = Date.now();
@@ -281,6 +284,7 @@ export class LocalSandbox implements Sandbox {
       let stderr = "";
       let output = "";
       let timedOut = false;
+      let cancelled = false;
 
       const killGroup = (signal: NodeJS.Signals) => {
         const pid = child.pid;
@@ -299,6 +303,22 @@ export class LocalSandbox implements Sandbox {
       }, timeoutSecs * 1000);
       let forceTimer: ReturnType<typeof setTimeout> | undefined;
 
+      // The caller's abort (a cancelled run) kills the whole group the same
+      // way the deadline does, but resolves as `cancelled` — promptly, not
+      // after the command's own deadline.
+      const onAbort = () => {
+        if (timedOut) return;
+        cancelled = true;
+        clearTimeout(timer);
+        killGroup("SIGTERM");
+        forceTimer = setTimeout(() => killGroup("SIGKILL"), KILL_GRACE_MS);
+      };
+      const signal = abort.signal;
+      if (signal) {
+        if (signal.aborted) onAbort();
+        else signal.addEventListener("abort", onAbort, { once: true });
+      }
+
       child.stdout.on("data", (chunk: Buffer) => {
         stdout += chunk.toString();
         output += chunk.toString();
@@ -311,6 +331,7 @@ export class LocalSandbox implements Sandbox {
       child.on("error", (err) => {
         clearTimeout(timer);
         if (forceTimer) clearTimeout(forceTimer);
+        signal?.removeEventListener("abort", onAbort);
         resolve({
           exitCode: -1,
           stdout,
@@ -318,17 +339,20 @@ export class LocalSandbox implements Sandbox {
           output: `${output}${err.message}\n`,
           timedOut,
           durationMs: Date.now() - startedAt,
+          ...(cancelled ? { cancelled } : {}),
         });
       });
 
-      child.on("close", (code, signal) => {
+      child.on("close", (code, signalName) => {
         clearTimeout(timer);
         if (forceTimer) clearTimeout(forceTimer);
+        signal?.removeEventListener("abort", onAbort);
         // Report timeout kills with the conventional shell codes:
         // 124 = timed out (SIGTERM), 137 = killed hard (128 + SIGKILL).
         let exitCode = code ?? -1;
         if (timedOut && code === null)
-          exitCode = signal === "SIGKILL" ? 137 : 124;
+          exitCode = signalName === "SIGKILL" ? 137 : 124;
+        if (cancelled && exitCode === 0) exitCode = 130; // 128 + SIGINT
         resolve({
           exitCode,
           stdout,
@@ -336,6 +360,7 @@ export class LocalSandbox implements Sandbox {
           output,
           timedOut,
           durationMs: Date.now() - startedAt,
+          ...(cancelled ? { cancelled } : {}),
         });
       });
     });

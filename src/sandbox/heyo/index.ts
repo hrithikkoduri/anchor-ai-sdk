@@ -36,12 +36,7 @@ import {
 
 /** VM size tiers (mirrors Heyo's size classes). */
 export type HeyoSizeClass =
-  | "micro"
-  | "mini"
-  | "small"
-  | "medium"
-  | "large"
-  | "xlarge";
+  "micro" | "mini" | "small" | "medium" | "large" | "xlarge";
 
 export interface HeyoSandboxConfig {
   token: string;
@@ -508,6 +503,7 @@ export class HeyoSandbox implements Sandbox {
         ...(opts.backgroundAfterSecs !== undefined
           ? { backgroundAfterSecs: opts.backgroundAfterSecs }
           : {}),
+        ...(opts.signal ? { signal: opts.signal } : {}),
       },
     );
     // A detached job only survives if the VM does. Make retention a property

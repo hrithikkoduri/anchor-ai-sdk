@@ -249,7 +249,10 @@ export class DockerSandbox implements Sandbox {
       const off = await this.cli(["network", "disconnect", network, this.id], {
         timeoutSecs: 60,
       });
-      if (off.exitCode !== 0 && !/not connected|is not connected/i.test(off.output)) {
+      if (
+        off.exitCode !== 0 &&
+        !/not connected|is not connected/i.test(off.output)
+      ) {
         throw new Error(
           `docker egress: could not disconnect ${this.id} from ${network}: ${off.output.trim()}`,
         );
@@ -290,7 +293,7 @@ export class DockerSandbox implements Sandbox {
         "-c",
         inner,
       ],
-      { timeoutSecs },
+      { timeoutSecs, signal: opts.signal },
     );
   }
 
@@ -359,7 +362,7 @@ export class DockerSandbox implements Sandbox {
   /** Run the docker CLI; the outer guard stops a wedged CLI itself. */
   private cli(
     args: string[],
-    opts: { timeoutSecs?: number } = {},
+    opts: { timeoutSecs?: number; signal?: AbortSignal } = {},
   ): Promise<ExecResult> {
     return new Promise((resolve) => {
       const startedAt = Date.now();
@@ -370,6 +373,24 @@ export class DockerSandbox implements Sandbox {
       let stderr = "";
       let output = "";
       let timedOut = false;
+      let cancelled = false;
+
+      // A cancelled run must also stop the GUEST command, not just the local
+      // CLI child: `docker exec` without `-t` cannot pass signals, so this
+      // issues a separate `docker exec … pkill -f` for the inner command
+      // text (the wrapper ran it as one argv element, quoted intact).
+      const killGuest = () => {
+        const inner = args[args.length - 1];
+        if (typeof inner !== "string") return;
+        const killer = spawn(this.dockerBin, [
+          "exec",
+          this.id,
+          "bash",
+          "-c",
+          `pkill -f ${shq(inner.slice(0, 200))} 2>/dev/null`,
+        ]);
+        killer.on("error", () => undefined);
+      };
 
       const guard = setTimeout(
         () => {
@@ -378,6 +399,19 @@ export class DockerSandbox implements Sandbox {
         },
         ((opts.timeoutSecs ?? 120) + 60) * 1000,
       );
+
+      const onAbort = () => {
+        if (timedOut) return;
+        cancelled = true;
+        clearTimeout(guard);
+        killGuest();
+        child.kill("SIGKILL");
+      };
+      const signal = opts.signal;
+      if (signal) {
+        if (signal.aborted) onAbort();
+        else signal.addEventListener("abort", onAbort, { once: true });
+      }
 
       child.stdout.on("data", (chunk: Buffer) => {
         stdout += chunk.toString();
@@ -390,6 +424,7 @@ export class DockerSandbox implements Sandbox {
 
       child.on("error", (err) => {
         clearTimeout(guard);
+        signal?.removeEventListener("abort", onAbort);
         resolve({
           exitCode: -1,
           stdout,
@@ -397,14 +432,16 @@ export class DockerSandbox implements Sandbox {
           output: `${output}${err.message}\n`,
           timedOut,
           durationMs: Date.now() - startedAt,
+          ...(cancelled ? { cancelled } : {}),
         });
       });
 
       child.on("close", (code) => {
         clearTimeout(guard);
+        signal?.removeEventListener("abort", onAbort);
         // The guest-side `timeout` reports 124 (SIGTERM) / 137 (SIGKILL) and
         // `docker exec` passes the command's exit code through.
-        const exitCode = code ?? -1;
+        const exitCode = code ?? (cancelled ? 130 : -1);
         resolve({
           exitCode,
           stdout,
@@ -412,6 +449,7 @@ export class DockerSandbox implements Sandbox {
           output,
           timedOut: timedOut || exitCode === 124 || exitCode === 137,
           durationMs: Date.now() - startedAt,
+          ...(cancelled ? { cancelled } : {}),
         });
       });
     });

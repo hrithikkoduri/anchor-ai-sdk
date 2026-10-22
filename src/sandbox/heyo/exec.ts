@@ -44,6 +44,13 @@ export interface ExecRunOptions {
    * keeps running; `poll`/`kill` address it later.
    */
   backgroundAfterSecs?: number;
+  /**
+   * Abort this job when the signal fires: kill the guest process and resolve
+   * promptly with `cancelled: true` instead of waiting for the guest deadline.
+   * A job that already detached (`backgroundAfterSecs`) owns its own lifetime
+   * and is NOT killed.
+   */
+  signal?: AbortSignal;
 }
 
 export function buildJobLaunch(
@@ -122,7 +129,9 @@ export class HeyoGuestExecutor {
     if (reply.exit_code !== 0)
       throw new Error(reply.output || "Could not read the guest job receipt");
     if (reply.stdout.trim() === "GONE")
-      throw new Error(`Guest job ${job.dir} is gone (receipt directory removed)`);
+      throw new Error(
+        `Guest job ${job.dir} is gone (receipt directory removed)`,
+      );
     if (reply.stdout.trim() === "RUNNING") return undefined;
     const match = /^DONE:(-?\d+)\r?\n([\s\S]*)$/.exec(reply.stdout);
     if (!match) throw new Error("Invalid guest job completion receipt");
@@ -231,6 +240,19 @@ export class HeyoGuestExecutor {
     };
   }
 
+  /** A synchronously awaited job stopped by the caller's AbortSignal. */
+  private cancelled(job: Job): ExecResult {
+    return {
+      exitCode: 130,
+      stdout: "",
+      stderr: `Command cancelled by signal after ${Math.round((this.now() - job.started) / 1000)}s; the guest job (${job.dir}) was killed.`,
+      output: `Command cancelled by signal after ${Math.round((this.now() - job.started) / 1000)}s; the guest job (${job.dir}) was killed.`,
+      timedOut: false,
+      durationMs: this.now() - job.started,
+      cancelled: true,
+    };
+  }
+
   /**
    * A job past its guest-side deadline can only be dead: the supervisor's
    * `timeout -k` already fired. Kill whatever survived (a leaked child can
@@ -305,27 +327,63 @@ export class HeyoGuestExecutor {
       opts.backgroundAfterSecs && opts.backgroundAfterSecs > 0
         ? opts.backgroundAfterSecs * 1000
         : undefined;
-    while (this.now() < job.deadline) {
-      if (detachAt !== undefined && this.now() - job.started >= detachAt) {
-        // Deliberately leave the job in the registry: it is still running and
-        // its receipt directory is the handle. Mutations ignore it.
-        return this.backgrounded(job, Math.round(detachAt / 1000));
-      }
-      try {
-        const completed = await this.observe(job);
-        if (completed) {
-          this.jobs.delete(job.dir);
-          return completed;
+    // A cancelled run kills the guest job (the VM may keep billing for the
+    // full timeout otherwise) and resolves as `cancelled`, not `timedOut`.
+    // Only the synchronously awaited job is killed: a job that already
+    // detached below is left to its own lifetime contract.
+    const abortSignal = opts.signal;
+    let abortListener: (() => void) | undefined;
+    let abortPromise: Promise<"aborted"> | undefined;
+    if (abortSignal) {
+      abortPromise = new Promise<"aborted">((resolve) => {
+        if (abortSignal.aborted) {
+          resolve("aborted");
+          return;
         }
-        readFailures = 0;
-      } catch (err) {
-        if (++readFailures >= 3)
-          return this.unknown(
-            job,
-            `Could not confirm command completion (${job.dir}). The guest-side deadline remains in force: ${String(err)}`,
-          );
+        abortListener = () => resolve("aborted");
+        abortSignal.addEventListener("abort", abortListener, { once: true });
+      });
+    }
+    try {
+      while (this.now() < job.deadline) {
+        if (detachAt !== undefined && this.now() - job.started >= detachAt) {
+          // Deliberately leave the job in the registry: it is still running and
+          // its receipt directory is the handle. Mutations ignore it.
+          return this.backgrounded(job, Math.round(detachAt / 1000));
+        }
+        if (abortPromise) {
+          const raced = await Promise.race([
+            abortPromise,
+            this.wait(500).then(() => "tick" as const),
+          ]);
+          if (raced === "aborted") {
+            // Kill the guest job, clear the slot, resolve promptly.
+            await this.killDir(job);
+            this.jobs.delete(job.dir);
+            return this.cancelled(job);
+          }
+        }
+        try {
+          const completed = await this.observe(job);
+          if (completed) {
+            this.jobs.delete(job.dir);
+            return completed;
+          }
+          readFailures = 0;
+        } catch (err) {
+          if (++readFailures >= 3)
+            return this.unknown(
+              job,
+              `Could not confirm command completion (${job.dir}). The guest-side deadline remains in force: ${String(err)}`,
+            );
+        }
+        await this.wait(500);
       }
-      await this.wait(500);
+    } finally {
+      // The loop can return while the abort listener is still attached; drop
+      // it so a later abort cannot leak a dangling waiter.
+      if (abortSignal && abortListener)
+        abortSignal.removeEventListener("abort", abortListener);
     }
     // The guest supervisor writes `exit` by timeoutSecs + 10. No receipt by
     // timeoutSecs + 25 means it never will: fail the command, but clear the

@@ -60,10 +60,7 @@ import {
 import { chatAgent } from "../agents/chat/index.js";
 import { codingAgent } from "../agents/coding/index.js";
 import type { EventSink, RevivalRequest } from "./events.js";
-import {
-  dispatchToolCalls,
-  type OperationRuntime,
-} from "./dispatch.js";
+import { dispatchToolCalls, type OperationRuntime } from "./dispatch.js";
 import {
   mintOperationId,
   reconcilePendingOperations,
@@ -178,6 +175,7 @@ async function runOne(
     ...(opts.backgroundAfterSecs !== undefined
       ? { backgroundAfterSecs: opts.backgroundAfterSecs }
       : {}),
+    ...(signal ? { signal } : {}),
   };
   /** Surface a detached command to the consumer that owns delivery. */
   const emitBackground = (
@@ -207,7 +205,10 @@ async function runOne(
   // Terminal intrinsic — with the consumer's handoff shape when configured
   // (EngineOptions.handoff). Never required to stop.
   let completionGate:
-    | ((summary: string, success: boolean) => Promise<{ ok: boolean; content: string }>)
+    | ((
+        summary: string,
+        success: boolean,
+      ) => Promise<{ ok: boolean; content: string }>)
     | undefined;
   let verified = false;
   let finishGateAttempts = 0;
@@ -257,9 +258,7 @@ async function runOne(
   const verifierConfig: VerifierConfig =
     verifierOn && typeof opts.verifier === "object" ? opts.verifier : {};
   const verifierLlm = verifierConfig.llm ?? opts.llm;
-  const verifierGates = new Set(
-    verifierConfig.gates ?? ["phase", "finish"],
-  );
+  const verifierGates = new Set(verifierConfig.gates ?? ["phase", "finish"]);
   const maxVerifierCalls = verifierConfig.maxCallsPerTask ?? 6;
   let verifierCalls = 0;
   let ledger = opts.ledger ?? (verifierOn ? prior?.ledger : undefined);
@@ -284,9 +283,11 @@ async function runOne(
       )
       .join("\n");
   };
-  const callVerifier = async (
-    phaseGoal: { id: string; goal: string; guidance?: string },
-  ) => {
+  const callVerifier = async (phaseGoal: {
+    id: string;
+    goal: string;
+    guidance?: string;
+  }) => {
     if (!verifierOn || !ledger || verifierCalls >= maxVerifierCalls) {
       return { allow: true } as const;
     }
@@ -306,8 +307,7 @@ async function runOne(
       emit({
         type: "advisory",
         kind: "verifier_failed",
-        detail:
-          error instanceof Error ? error.message : String(error),
+        detail: error instanceof Error ? error.message : String(error),
       });
       return {
         allow: verifierConfig.onError !== "block",
@@ -454,7 +454,8 @@ async function runOne(
           setRequirementStatus(
             ledger!,
             requirementId,
-            status as "open" | "in_progress" | "verified" | "blocked" | "waived",
+            status as
+              "open" | "in_progress" | "verified" | "blocked" | "waived",
           );
           return { ok: true, content: `status set to ${status}` };
         }
@@ -538,14 +539,15 @@ async function runOne(
   // Per-call output cap. The agent bundle may suggest one; an explicit engine
   // option wins, exactly like `strategy` and `tools` resolution.
   const outputTokenCap =
-    opts.maxOutputTokens ?? opts.agent?.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+    opts.maxOutputTokens ??
+    opts.agent?.maxOutputTokens ??
+    DEFAULT_MAX_OUTPUT_TOKENS;
   const maxOutputTokens =
     outputTokenCap === false
       ? undefined
       : positiveNumber("maxOutputTokens", outputTokenCap);
   // Explicit option wins over the bundle's suggestion, like maxOutputTokens.
-  const reasoningEffort =
-    opts.reasoningEffort ?? opts.agent?.reasoningEffort;
+  const reasoningEffort = opts.reasoningEffort ?? opts.agent?.reasoningEffort;
   const maxAssistantChars = threshold(
     "maxAssistantChars",
     opts.maxAssistantChars ?? DEFAULT_MAX_ASSISTANT_CHARS,
@@ -831,7 +833,7 @@ async function runOne(
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
-        ...(ledger ?? prior?.ledger
+        ...((ledger ?? prior?.ledger)
           ? { ledger: ledger ?? prior?.ledger }
           : {}),
       });
@@ -891,9 +893,7 @@ async function runOne(
       ...(budget.reasoningTokens !== undefined
         ? { reasoningTokens: budget.reasoningTokens }
         : {}),
-      ...(budget.cachedTokens > 0
-        ? { cachedTokens: budget.cachedTokens }
-        : {}),
+      ...(budget.cachedTokens > 0 ? { cachedTokens: budget.cachedTokens } : {}),
     };
     emit({
       type: "run_finished",
@@ -986,10 +986,7 @@ async function runOne(
    */
   const settleBeforeFinish = async (): Promise<boolean> => {
     if (outstanding.length === 0) return false;
-    if (
-      chain.hasPending &&
-      (await chain.hasPending().catch(() => false))
-    )
+    if (chain.hasPending && (await chain.hasPending().catch(() => false)))
       return false;
     const outcome = await waitForBackgroundJobs(opts.sandbox, outstanding, {
       ...(signal ? { signal } : {}),
@@ -1140,8 +1137,7 @@ async function runOne(
           tokensUsed >= budget.limits.maxTokens * (revivalWarnAt / 100);
         const stepsHit =
           budget.limits.maxSteps > 0 &&
-          stepsBefore + steps >=
-            budget.limits.maxSteps * (revivalWarnAt / 100);
+          stepsBefore + steps >= budget.limits.maxSteps * (revivalWarnAt / 100);
         const usdHit =
           budget.costsKnown &&
           budget.limits.maxUsd > 0 &&
@@ -1239,7 +1235,9 @@ async function runOne(
             type: "function",
             function: tool.definition,
           })),
-          ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
+          ...(maxOutputTokens !== undefined
+            ? { maxTokens: maxOutputTokens }
+            : {}),
           ...(opts.sampling?.temperature !== undefined
             ? { temperature: opts.sampling.temperature }
             : {}),
@@ -1348,7 +1346,10 @@ async function runOne(
               detail:
                 `step ${steps} hit the ${maxOutputTokens}-token output cap with no tool call — ` +
                 `asked to continue instead of ending`,
-              content: cappedReplyNudge(maxOutputTokens ?? 0, available.has("finish")),
+              content: cappedReplyNudge(
+                maxOutputTokens ?? 0,
+                available.has("finish"),
+              ),
             });
             continue;
           }
@@ -1519,8 +1520,7 @@ async function runOne(
           repeat.reset();
           await courseCorrect({
             kind: "repeated_call",
-            detail:
-              `step ${steps}: identical tool call repeated ${repeatLimit} times — the repeat was not executed`,
+            detail: `step ${steps}: identical tool call repeated ${repeatLimit} times — the repeat was not executed`,
             content: repeatedCallNudge(repeatLimit, available.has("finish")),
           });
           continue;
@@ -1592,12 +1592,25 @@ function usageDelta(
       : undefined;
   return {
     promptTokens: Math.max(0, now.promptTokens - before.promptTokens),
-    completionTokens: Math.max(0, now.completionTokens - before.completionTokens),
-    totalTokens: Math.max(0, now.totalTokens - (before.promptTokens + before.completionTokens)),
-    ...(now.costUsd !== undefined ? { costUsd: now.costUsd - before.costUsd } : {}),
+    completionTokens: Math.max(
+      0,
+      now.completionTokens - before.completionTokens,
+    ),
+    totalTokens: Math.max(
+      0,
+      now.totalTokens - (before.promptTokens + before.completionTokens),
+    ),
+    ...(now.costUsd !== undefined
+      ? { costUsd: now.costUsd - before.costUsd }
+      : {}),
     ...(reasoning !== undefined ? { reasoningTokens: reasoning } : {}),
     ...(now.cachedTokens !== undefined
-      ? { cachedTokens: Math.max(0, now.cachedTokens - (before.cachedTokens ?? 0)) }
+      ? {
+          cachedTokens: Math.max(
+            0,
+            now.cachedTokens - (before.cachedTokens ?? 0),
+          ),
+        }
       : {}),
   };
 }

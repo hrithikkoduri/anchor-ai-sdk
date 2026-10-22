@@ -55,6 +55,13 @@ export interface ToolContext {
   backgroundAllowed?: boolean;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
+  /**
+   * The run's merged abort signal. Tools forward it to `sandbox.exec` so a
+   * cancelled run stops the GUEST command, not just the tool call — the
+   * engine then concludes `cancelled` promptly instead of waiting out the
+   * command's deadline.
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -67,7 +74,11 @@ export interface ToolContext {
 export function execPolicy(
   ctx: ToolContext,
   explicitTimeoutSecs = 0,
-): { canBackground: boolean; timeoutSecs: number; backgroundAfterSecs?: number } {
+): {
+  canBackground: boolean;
+  timeoutSecs: number;
+  backgroundAfterSecs?: number;
+} {
   const threshold = ctx.backgroundAfterSecs;
   const canBackground =
     ctx.backgroundAllowed === true &&
@@ -78,7 +89,11 @@ export function execPolicy(
     1,
     Math.min(
       3600,
-      explicitTimeoutSecs > 0 ? explicitTimeoutSecs : canBackground ? 3600 : 120,
+      explicitTimeoutSecs > 0
+        ? explicitTimeoutSecs
+        : canBackground
+          ? 3600
+          : 120,
     ),
   );
   return {

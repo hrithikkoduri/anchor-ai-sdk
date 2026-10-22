@@ -36,8 +36,7 @@ export function e2bResult(
   startedAt: number,
   options: { output?: string } = {},
 ): ExecResult {
-  const exitCode =
-    typeof result.exitCode === "number" ? result.exitCode : -1;
+  const exitCode = typeof result.exitCode === "number" ? result.exitCode : -1;
   const stdout = result.stdout ?? "";
   const stderr = result.stderr ?? "";
   const output = options.output ?? `${stdout}${stderr}`;
@@ -73,4 +72,31 @@ export function e2bTransportFailure(
       message,
     },
   };
+}
+
+/**
+ * Best-effort guest kill for a cancelled command. E2B has no kill-by-PID
+ * API, so this pattern-kills by the command text (the run wraps it in
+ * `bash -c <shq(command)>` — the literal single-quoted text identifies the
+ * process). Fires-and-forget: a failure here must not mask the cancellation.
+ */
+export async function killE2bCommand(
+  sandbox: {
+    commands: {
+      run(command: string, opts?: unknown): unknown;
+    };
+  },
+  command: string,
+): Promise<void> {
+  try {
+    await Promise.resolve(
+      sandbox.commands.run(
+        `pkill -f ${shq(command.slice(0, 200))} 2>/dev/null; printf killed`,
+        { timeoutMs: 30_000 },
+      ),
+    );
+  } catch {
+    // The pattern-kill is best-effort; the guest-side `timeout -k` deadline
+    // remains in force even if this control call fails.
+  }
 }

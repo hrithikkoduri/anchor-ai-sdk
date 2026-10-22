@@ -60,7 +60,7 @@ export const editFileTool = defineTool(
     const sandbox = requireSandbox(ctx);
     const read = await sandbox.exec(
       `wc -c < ${shq(path)} && cat ${shq(path)}`,
-      { timeoutSecs: 60 },
+      { timeoutSecs: 60, ...(ctx.signal ? { signal: ctx.signal } : {}) },
     );
     if (read.exitCode !== 0) {
       return {
@@ -123,7 +123,7 @@ export const editFileTool = defineTool(
     const expectBytes = Buffer.byteLength(updated, "utf8");
     const write = await sandbox.exec(
       `printf %s ${shq(updated)} | tee ${shq(path)} > /dev/null && wc -c < ${shq(path)}`,
-      { timeoutSecs: 120 },
+      { timeoutSecs: 120, ...(ctx.signal ? { signal: ctx.signal } : {}) },
     );
     if (write.exitCode !== 0) {
       return {

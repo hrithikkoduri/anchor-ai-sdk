@@ -82,6 +82,7 @@ export const searchTool = defineTool(
     const r = await requireSandbox(ctx).exec(cmd, {
       timeoutSecs: 120,
       concurrent: true,
+      ...(ctx.signal ? { signal: ctx.signal } : {}),
     });
 
     // Split off the rc marker to learn the real exit code behind the pipe.

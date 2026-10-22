@@ -61,6 +61,7 @@ export const readFileTool = defineTool(
     const r = await requireSandbox(ctx).exec(cmd, {
       timeoutSecs: 120,
       concurrent: true,
+      ...(ctx.signal ? { signal: ctx.signal } : {}),
     });
     if (r.exitCode !== 0) {
       return {

@@ -301,4 +301,78 @@ describe("Heyo short-request execution", () => {
     expect(result.output).toContain("hello world");
     expect(result.output).toContain("problem");
   });
+
+  it("signal cancels a synchronously awaited job: kills the guest, resolves cancelled, clears the slot", async () => {
+    let clock = 0,
+      launches = 0,
+      kills = 0,
+      observations = 0;
+    const controller = new AbortController();
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.includes("pkill")) {
+          kills++;
+          return reply("killed");
+        }
+        observations++;
+        return reply("RUNNING");
+      },
+      async (ms) => {
+        clock += ms;
+        // Cancel the run after the first observation tick.
+        if (clock >= 500) controller.abort();
+      },
+      () => clock,
+    );
+    const result = await executor.run("sleep 9999", 3600, undefined, {
+      signal: controller.signal,
+    });
+    expect(result.cancelled).toBe(true);
+    expect(result.timedOut).toBe(false);
+    expect(result.exitCode).not.toBe(0);
+    expect(launches).toBe(1);
+    expect(kills).toBe(1);
+    expect(observations).toBe(0); // cancelled before the first observation tick — not at the deadline
+    // The slot is cleared: a later mutation is not gated by the dead job.
+    expect(executor.hasJobs()).toBe(false);
+  });
+
+  it("signal does NOT kill a job that already detached (background contract)", async () => {
+    let clock = 0,
+      launches = 0,
+      kills = 0;
+    const controller = new AbortController();
+    const executor = new HeyoGuestExecutor(
+      async (command) => {
+        if (isLaunch(command)) {
+          launches++;
+          return reply("");
+        }
+        if (command.includes("pkill")) {
+          kills++;
+          return reply("killed");
+        }
+        return reply("RUNNING");
+      },
+      async (ms) => {
+        clock += ms;
+        if (clock >= 1000) controller.abort();
+      },
+      () => clock,
+    );
+    const bg = await executor.run("long detached", 600, undefined, {
+      backgroundAfterSecs: 1,
+      signal: controller.signal,
+    });
+    // Detached first: the abort arrived AFTER backgroundAfterSecs, so the
+    // job keeps its own lifetime — no kill, no cancelled flag.
+    expect(bg.background).toBeDefined();
+    expect(bg.cancelled).toBeUndefined();
+    expect(kills).toBe(0);
+    expect(executor.hasJobs()).toBe(true);
+  });
 });

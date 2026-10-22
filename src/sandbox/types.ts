@@ -32,6 +32,13 @@ export interface ExecResult {
   timedOut: boolean;
   durationMs: number;
   /**
+   * True when the command was stopped by `ExecOptions.signal` (the run was
+   * cancelled, so the adapter killed the process instead of waiting for the
+   * command's own deadline). Distinct from `timedOut`: the deadline never
+   * fired; a human did.
+   */
+  cancelled?: boolean;
+  /**
    * Set when the command outlived `ExecOptions.backgroundAfterSecs` and was
    * LEFT RUNNING in the sandbox. This is not a failure: `exitCode` is -1 only
    * because no exit exists yet. Read the real result later with
@@ -67,11 +74,19 @@ export interface ExecOptions {
    * `ExecResult.background`). `timeoutSecs` remains the job's hard lifetime,
    * so it must be larger than this threshold.
    *
-   * The sandbox must outlive the turn: the caller is responsible for keeping
-   * it alive (retain/adopt) until it polls the job. Backends without detached
-   * jobs ignore the option and run normally.
+   * Backends without detached jobs ignore the option and run normally.
    */
   backgroundAfterSecs?: number;
+  /**
+   * Abort this command when the signal fires: kill the guest process (the
+   * whole process group where the provider allows it) and resolve the exec
+   * promptly with `cancelled: true` and a non-zero exit code — instead of
+   * waiting for the command's own deadline (up to 3600s). A deliberately
+   * detached job (`backgroundAfterSecs` already fired) keeps its own
+   * lifetime contract and is NOT killed. Without `signal`, behavior is
+   * unchanged.
+   */
+  signal?: AbortSignal;
 }
 
 export interface Checkpoint {
