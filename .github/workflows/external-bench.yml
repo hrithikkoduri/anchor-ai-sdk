@@ -136,7 +136,8 @@ jobs:
           )
           text = text.replace(
               'command = " ".join(cmd_parts)',
-              'command = "cd / && " + " ".join(cmd_parts)',
+              'command = "cd / && " + " ".join(cmd_parts) + '
+              '" --agent.model.per_instance_cost_limit=0 --agent.model.total_cost_limit=0"',
           )
           # SWE-agent's latest litellm imports mcp at runtime; Harbor's venv
           # install does not pull it, so the first model call dies before any
