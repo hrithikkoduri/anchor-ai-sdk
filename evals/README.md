@@ -10,7 +10,7 @@ imports**: its own config reader, the package, and nothing else.
 
 ```
 benchmarks/
-  swe-bench/       SWE-bench Lite (larger sets on demand) vs mini-swe-agent.
+  swe-bench/       SWE-bench Lite (larger sets on demand).
                    Data, results, and the full how-to live in its README.
   swe-bench-pro/   SWE-bench Pro V2, ten Harbor tasks, patch replay.
   terminal-bench/  Terminal-Bench 2.1, ten Harbor tasks, in-place verifier.
@@ -21,7 +21,7 @@ scripts/           run/build tooling: fetch tasks, prepull/prewarm images,
                    grade with the official harness, watch-and-grade, report.
 .eval-runs/        local, gitignored run artifacts (predictions, traces,
                    grading reports).
-.venv / .venv-mini host venvs: the official grader, and the mini baseline.
+.venv            host venv for the official SWE-bench grader.
 ```
 
 `src/runner.ts` is benchmark-agnostic by design: a benchmark contributes a

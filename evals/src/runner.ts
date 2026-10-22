@@ -101,7 +101,7 @@ export interface EvalRunOptions {
   onResult?: (result: EvalTaskResult) => Promise<void> | void;
   /** Every engine event of every task, tagged with its task. */
   onEvent?: (task: EvalTask, event: AgentEvent) => void;
-  /** Directory for side artifacts (mini's trajectories etc.). */
+  /** Directory for side artifacts (notes, traces, etc.). */
   artifactsDir?: string;
   log?: (line: string) => void;
 }
@@ -148,7 +148,7 @@ async function runChecks(
 
 /**
  * Carry the agent's notes file out of the sandbox at task end — the same
- * artifact seam mini's trajectories use — so every run leaves a per-task
+ * artifact seam — so every run leaves a per-task
  * reasoning trail next to the official verdict. Best-effort by design.
  */
 async function captureNotes(

@@ -3,7 +3,7 @@
  * Watch eval runs and grade every task the moment it finishes.
  *
  *   node scripts/watch-and-grade.mjs \
- *     --watch .eval-runs/mini-10-glm --watch .eval-runs/anchor-10-glm-tuned
+ *     --watch .eval-runs/anchor-10-glm
  *
  * Polls each run's results.jsonl; for each completed task not yet graded it
  * takes the LAST prediction for that instance, runs the official SWE-bench

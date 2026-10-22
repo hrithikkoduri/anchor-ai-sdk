@@ -22,7 +22,6 @@ import { heyo } from "anchor-ai-sdk/sandbox/heyo";
 import { docker } from "anchor-ai-sdk/sandbox/docker";
 import { anchorArm } from "./arms/anchor.js";
 import { evalsConfig, loadDotEnv } from "./config.js";
-import { miniSweArm } from "./arms/mini-swe.js";
 import { loadTasks, type EvalTask } from "./tasks.js";
 import { runEvalSuite, type EvalTaskResult } from "./runner.js";
 
@@ -30,7 +29,7 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
   --provider local|heyo|docker|e2b  sandbox backend (default local; docker = the
                           benchmark environment from task images; heyo/e2b = VMs)
   --e2b-template <name>   override E2B_TEMPLATE for repo-clone tasks
-  --arm anchor|mini       system under test (default anchor)
+  --arm anchor            system under test
   --bench <name>          benchmark label recorded in run.json (default: tasks basename)
   --variant <name>        harness variant recorded with the run (default baseline)
   --reasoning <effort>    minimal|low|medium|high|xhigh|max (anchor arm only)
@@ -120,8 +119,8 @@ if (
   say("--time-budget must be a positive number of seconds");
   process.exit(1);
 }
-if (armName !== "anchor" && armName !== "mini") {
-  say(`unknown arm "${armName}" — anchor or mini`);
+if (armName !== "anchor") {
+  say(`unknown arm "${armName}" — only anchor is wired here`);
   process.exit(1);
 }
 const providerName = String(args.get("provider") ?? "local");
@@ -238,8 +237,8 @@ const provider =
           )
         : local();
 
-// Mini has no token cap (250 steps, $3). 50M is this eval's fair ceiling,
-// not the package default. A flag still wins.
+// 50M is this eval's fair token ceiling, not the package default. A flag
+// still wins.
 const budgets: Partial<BudgetLimits> = { maxTokens: 50_000_000 };
 if (args.has("max-steps")) budgets.maxSteps = Number(args.get("max-steps"));
 if (args.has("max-usd")) budgets.maxUsd = Number(args.get("max-usd"));
@@ -383,18 +382,10 @@ const startedAt = Date.now();
 say(
   `anchor eval · ${armName}@${model} · ${llmName} · ${provider.name} · ${tasks.length} task(s)`,
 );
-// The anchor arm pins sampling through the engine. Mini brings its own loop
-// and its own sampling defaults, so this line must not claim otherwise.
-if (sampling && armName === "anchor") {
+// The anchor arm pins sampling through the engine.
+if (sampling) {
   say(
     `sampling: temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`,
-  );
-}
-if (armName === "mini") {
-  say(
-    sampling
-      ? `sampling: pinned through litellm — temperature ${sampling.temperature ?? "unset"} · seed ${sampling.seed ?? "unset"}`
-      : "sampling: mini's own defaults",
   );
 }
 say(
@@ -445,33 +436,10 @@ const report = (result: EvalTaskResult, index: number): void => {
   );
 };
 
-// Mini reaches the model through litellm: `openrouter/x` for the gateway,
-// `openai/x` plus a base URL for a direct OpenAI-compatible endpoint.
-const modelRef =
-  parasail
-    ? `openai/${model}`
-    : model.startsWith("openrouter/")
-      ? model
-      : `openrouter/${model}`;
-const arm =
-  armName === "mini"
-    ? miniSweArm({
-        model: modelRef,
-        dockerBin: process.env.DOCKER_BIN ?? "docker",
-        ...(parasail
-          ? { baseUrl, ...(apiKey ? { apiKey } : {}) }
-          : cfg.llm.apiKey
-            ? { apiKey: cfg.llm.apiKey }
-            : {}),
-        ...(sampling ? { sampling } : {}),
-        ...(args.has("max-usd")
-          ? { costLimitUsd: Number(args.get("max-usd")) }
-          : {}),
-      })
-    : anchorArm({
-        variant,
-        ...(reasoningEffort ? { engineOptions: { reasoningEffort } } : {}),
-      });
+const arm = anchorArm({
+  variant,
+  ...(reasoningEffort ? { engineOptions: { reasoningEffort } } : {}),
+});
 
 let finished = 0;
 /** Tool calls per task — the mechanism-activation signal. */
