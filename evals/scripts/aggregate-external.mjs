@@ -39,6 +39,43 @@ async function nearestMeta(file) {
   return { bench: "external", model: "?", variant: "external", agent: "?" };
 }
 
+async function findSweAgentStats(trialDir) {
+  const root = path.join(trialDir, "agent", "swe-agent-output");
+  const found = [];
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else if (entry.name.endsWith(".traj")) found.push(full);
+    }
+  }
+  await walk(root);
+  for (const file of found) {
+    try {
+      const data = JSON.parse(await readFile(file, "utf8"));
+      const stats = data?.info?.model_stats;
+      if (stats && (stats.tokens_sent || stats.tokens_received)) {
+        return {
+          promptTokens: Number(stats.tokens_sent ?? 0),
+          completionTokens: Number(stats.tokens_received ?? 0),
+          ...(Number(stats.instance_cost) > 0
+            ? { costUsd: Number(stats.instance_cost) }
+            : {}),
+        };
+      }
+    } catch {
+      // try the next trajectory
+    }
+  }
+  return undefined;
+}
+
 const groups = new Map();
 for (const file of await walk(root)) {
   const meta = await nearestMeta(file);
@@ -69,9 +106,20 @@ for (const file of await walk(root)) {
     const reward = values.length > 0 ? Math.max(...values) : 0;
     const started = trial.started_at ? Date.parse(trial.started_at) : NaN;
     const finished = trial.finished_at ? Date.parse(trial.finished_at) : NaN;
-    const inputTokens = trial.agent_result?.n_input_tokens ?? 0;
-    const outputTokens = trial.agent_result?.n_output_tokens ?? 0;
-    const cachedTokens = trial.agent_result?.n_cache_tokens ?? 0;
+    let inputTokens = trial.agent_result?.n_input_tokens ?? 0;
+    let outputTokens = trial.agent_result?.n_output_tokens ?? 0;
+    let cachedTokens = trial.agent_result?.n_cache_tokens ?? 0;
+    let reportedCost = trial.agent_result?.cost_usd;
+    // Harbour's SWE-agent adapter does not copy SWE-agent's model_stats into
+    // agent_result. The trajectory is authoritative when the adapter reports 0.
+    if (!inputTokens && trial.task_name) {
+      const stats = await findSweAgentStats(path.dirname(file));
+      if (stats) {
+        inputTokens = stats.promptTokens;
+        outputTokens = stats.completionTokens;
+        reportedCost = stats.costUsd;
+      }
+    }
     group.results.push({
       taskId: trial.task_name,
       status: trial.exception_info ? "failed" : trial.verifier_result ? "completed" : "failed",
@@ -84,9 +132,7 @@ for (const file of await walk(root)) {
         completionTokens: outputTokens,
         totalTokens: inputTokens + outputTokens,
         ...(cachedTokens > 0 ? { cachedTokens } : {}),
-        ...(trial.agent_result?.cost_usd != null
-          ? { costUsd: trial.agent_result.cost_usd }
-          : {}),
+        ...(reportedCost != null ? { costUsd: reportedCost } : {}),
       },
       wallMs: Number.isFinite(started) && Number.isFinite(finished) ? finished - started : 0,
     });
@@ -116,7 +162,9 @@ const rows = [...groups.values()].map((group) => {
     scored: scored.length,
     fullCredit: full,
     meanReward: mean,
-    costUsd: group.results.reduce((sum, r) => sum + (r.usage?.costUsd ?? 0), 0),
+    costUsd: group.results.some((r) => r.usage?.costUsd !== undefined)
+      ? group.results.reduce((sum, r) => sum + (r.usage?.costUsd ?? 0), 0)
+      : undefined,
     tokens,
     cacheHitRate: tokens.prompt > 0 ? tokens.cached / tokens.prompt : undefined,
     p50WallMs: walls.length ? walls[Math.floor(walls.length / 2)] : undefined,
@@ -139,7 +187,7 @@ const lines = [
   "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
   ...rows.map(
     (row) =>
-      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${tok(row.tokens.prompt)} | ${tok(row.tokens.completion)} | ${tok(row.tokens.cached)} | ${row.cacheHitRate == null ? "—" : `${(row.cacheHitRate * 100).toFixed(1)}%`} | ${money(row.costUsd)} | ${mins(row.p50WallMs)} | ${mins(row.p95WallMs)} |`,
+      `| ${row.bench} | \`${row.model}\` | ${row.agent} | ${row.tasks} | ${row.fullCredit}/${row.scored} (${pct(row.fullCredit, row.scored)}) | ${row.meanReward == null ? "—" : row.meanReward.toFixed(3)} | ${tok(row.tokens.prompt)} | ${tok(row.tokens.completion)} | ${tok(row.tokens.cached)} | ${row.cacheHitRate == null ? "—" : `${(row.cacheHitRate * 100).toFixed(1)}%`} | ${row.costUsd == null ? "—" : money(row.costUsd)} | ${mins(row.p50WallMs)} | ${mins(row.p95WallMs)} |`,
   ),
   "",
   "## Per task",
