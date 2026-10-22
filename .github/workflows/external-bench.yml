@@ -130,7 +130,10 @@ jobs:
           import harbor
           path = Path(harbor.__file__).parent / "agents/installed/swe_agent.py"
           text = path.read_text()
-          text = text.replace("$(pwd)", "/app")
+          text = text.replace(
+              "echo '--env.repo.path=$(pwd)'",
+              "echo '--env.repo.type=preexisting --env.repo.repo_name=/app'",
+          )
           text = text.replace(
               'command = " ".join(cmd_parts)',
               'command = "cd / && " + " ".join(cmd_parts)',
