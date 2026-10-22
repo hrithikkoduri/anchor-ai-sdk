@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anchor benchmarks</title>
+  <style>
+    :root { color-scheme: light dark; font: 15px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 2rem auto; max-width: 1200px; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+    .meta { opacity: .65; margin-bottom: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0 2rem; }
+    th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid #8884; vertical-align: top; }
+    th { font-weight: 600; background: #8881; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    code { font-size: .9em; }
+    .pass { color: #16803c; } .fail { color: #b42318; }
+    @media (prefers-color-scheme: dark) { .pass { color: #4ade80; } .fail { color: #f87171; } }
+  </style>
+</head>
+<body>
+  <h1>Anchor benchmarks</h1>
+  <div class="meta" id="meta">Loading latest summary…</div>
+  <div id="root"></div>
+  <script>
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+    const pct = (n, d) => d ? `${(100 * n / d).toFixed(1)}%` : "—";
+    const money = (n) => `$${Number(n ?? 0).toFixed(2)}`;
+    const mins = (ms) => ms == null ? "—" : `${Math.round(ms / 60000)}m`;
+    fetch("../latest/summary.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then((data) => {
+        document.getElementById("meta").textContent =
+          `generated ${data.generatedAt} · ${data.runs.length} runs · ${data.results.length} tasks`;
+        const rows = data.runs.map((r) => `
+          <tr>
+            <td>${esc(r.bench)}</td>
+            <td><code>${esc(r.model)}</code></td>
+            <td>${esc(r.variant)}</td>
+            <td class="num">${r.tasks}</td>
+            <td class="num">${r.fullCredit}/${r.scored} (${pct(r.fullCredit, r.scored)})</td>
+            <td class="num">${r.meanReward == null ? "—" : r.meanReward.toFixed(3)}</td>
+            <td class="num">${r.falseFinishes}</td>
+            <td class="num">${r.timeouts}</td>
+            <td class="num">${money(r.costUsd)}</td>
+            <td class="num">${mins(r.p50WallMs)}</td>
+          </tr>`).join("");
+        const tasks = data.results.map((r) => `
+          <tr>
+            <td>${esc(r.bench)}</td>
+            <td><code>${esc(r.model)}</code></td>
+            <td>${esc(r.variant)}</td>
+            <td><code>${esc(r.taskId)}</code></td>
+            <td class="num ${r.reward >= .95 ? "pass" : "fail"}">${r.reward == null ? "—" : r.reward.toFixed(2)}</td>
+            <td>${esc(r.status)}${r.falseFinish ? " · false finish" : ""}${r.timedOut ? " · timeout" : ""}</td>
+            <td class="num">${r.steps ?? "—"}</td>
+            <td class="num">${money(r.usage?.costUsd)}</td>
+          </tr>`).join("");
+        document.getElementById("root").innerHTML = `
+          <table>
+            <thead><tr><th>Bench</th><th>Model</th><th>Variant</th><th>Tasks</th><th>Full credit</th><th>Mean reward</th><th>False finish</th><th>Timeout</th><th>Cost</th><th>p50</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <h2>Per task</h2>
+          <table>
+            <thead><tr><th>Bench</th><th>Model</th><th>Variant</th><th>Task</th><th>Reward</th><th>Status</th><th>Steps</th><th>Cost</th></tr></thead>
+            <tbody>${tasks}</tbody>
+          </table>`;
+      })
+      .catch((error) => {
+        document.getElementById("meta").textContent = `Could not load latest/summary.json (${error.message}).`;
+      });
+  </script>
+</body>
+</html>

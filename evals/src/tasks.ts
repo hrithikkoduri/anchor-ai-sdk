@@ -15,6 +15,7 @@
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { parse as parseToml } from "smol-toml";
 
 /** One independently scored behavior in a local harness task. */
 export interface EvalCheck {
@@ -35,6 +36,24 @@ export interface EvalBudgets {
 export interface EvalTask {
   /** `instance_id` for SWE-bench; the fixture id for harness tasks. */
   id: string;
+  /**
+   * `harbor` tasks are the Harbor task-directory format used by SWE-bench Pro
+   * V2 and Terminal-Bench 2.1: task.toml + instruction.md + tests/. They are
+   * graded by the task's own verifier, not by a patch-to-SWE-bench adapter.
+   */
+  kind?: "harbor";
+  /** Host directory holding the task's verifier (`tests/`), Harbor only. */
+  testsDir?: string;
+  /** Verifier wall-clock ceiling from task.toml, Harbor only. */
+  verifierTimeoutSecs?: number;
+  /**
+   * `patch`: grade a captured git patch in a pristine container (SWE-bench
+   * Pro's locked protocol). `in-place`: run the verifier in the agent's
+   * container (Terminal-Bench's state-based tasks).
+   */
+  grading?: "patch" | "in-place";
+  /** Cut the agent sandbox's network (Harbor `agent.network_mode`). */
+  agentEgress?: "none";
   /** Cloneable git URL (a bare `owner/name` becomes a GitHub https URL). */
   repoUrl?: string;
   /** The commit the task starts from. */
@@ -227,16 +246,109 @@ export function taskFromHarnessRow(
   };
 }
 
+/**
+ * A Harbor task row points at a task directory. `task.toml` is the source of
+ * truth for the image and timeouts; the row may override them for a shard.
+ */
+async function harborTaskFromRow(
+  row: Record<string, unknown>,
+  baseDir: string,
+): Promise<EvalTask> {
+  const taskPath = String(row.path ?? "");
+  const id = String(row.id ?? taskPath);
+  if (!taskPath) throw new Error("harbor task row needs a path");
+  const dir = path.isAbsolute(taskPath)
+    ? taskPath
+    : path.resolve(baseDir, taskPath);
+  const toml = parseToml(await readFile(path.join(dir, "task.toml"), "utf8")) as {
+    task?: { name?: string };
+    environment?: {
+      docker_image?: string;
+      env?: Record<string, unknown>;
+    };
+    agent?: { timeout_sec?: number; network_mode?: string };
+    verifier?: { timeout_sec?: number };
+  };
+  const image = String(row.image ?? toml.environment?.docker_image ?? "");
+  if (!image) throw new Error(`harbor task ${id} has no docker_image`);
+  const problem = await readFile(path.join(dir, "instruction.md"), "utf8");
+  const agentTimeout = Number(
+    row.timeBudgetSecs ?? toml.agent?.timeout_sec ?? 900,
+  );
+  const verifierTimeout = Number(
+    row.verifierTimeoutSecs ?? toml.verifier?.timeout_sec ?? 900,
+  );
+  const grading = row.grading === "in-place" ? "in-place" : "patch";
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(toml.environment?.env ?? {})) {
+    if (typeof value === "string" || typeof value === "number") {
+      env[key] = String(value);
+    }
+  }
+  // SWE-bench Pro's verifier already applies the test patch and reads the
+  // fail-to-pass/pass-to-pass lists; the IDs are for the report, not the arm.
+  let failToPass: string[] | undefined;
+  let passToPass: string[] | undefined;
+  try {
+    const config = JSON.parse(
+      await readFile(path.join(dir, "tests", "config.json"), "utf8"),
+    ) as Record<string, unknown>;
+    const parseList = (value: unknown): string[] | undefined => {
+      if (Array.isArray(value)) return value.map(String);
+      if (typeof value === "string") {
+        try {
+          const parsed: unknown = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed.map(String) : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+      return undefined;
+    };
+    failToPass = parseList(config.fail_to_pass) ?? parseList(config.FAIL_TO_PASS);
+    passToPass = parseList(config.pass_to_pass) ?? parseList(config.PASS_TO_PASS);
+  } catch {
+    // A task without a public config is still runnable; the verifier owns it.
+  }
+  return {
+    id,
+    kind: "harbor",
+    problem,
+    image,
+    workspacePath: String(row.workspacePath ?? "/app"),
+    testsDir: path.join(dir, "tests"),
+    verifierTimeoutSecs:
+      Number.isFinite(verifierTimeout) && verifierTimeout > 0
+        ? verifierTimeout
+        : 900,
+    grading,
+    ...(toml.agent?.network_mode === "no-network"
+      ? { agentEgress: "none" }
+      : {}),
+    timeBudgetSecs:
+      Number.isFinite(agentTimeout) && agentTimeout > 0
+        ? agentTimeout
+        : 900,
+    ...(Object.keys(env).length > 0 ? { env } : {}),
+    ...(failToPass ? { failToPass } : {}),
+    ...(passToPass ? { passToPass } : {}),
+  };
+}
+
 export async function loadTasks(file: string): Promise<EvalTask[]> {
   const text = await readFile(file, "utf8");
   const baseDir = path.dirname(path.resolve(file));
-  return text
+  const rows = text
     .split("\n")
     .filter((line) => line.trim())
-    .map((line) => {
-      const row = JSON.parse(line) as Record<string, unknown>;
-      return row.path !== undefined || row.checks !== undefined
-        ? taskFromHarnessRow(row, baseDir)
-        : taskFromRow(row);
-    });
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+  return Promise.all(
+    rows.map((row) =>
+      row.kind === "harbor"
+        ? harborTaskFromRow(row, baseDir)
+        : row.path !== undefined || row.checks !== undefined
+          ? Promise.resolve(taskFromHarnessRow(row, baseDir))
+          : Promise.resolve(taskFromRow(row)),
+    ),
+  );
 }

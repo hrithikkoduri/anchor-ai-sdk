@@ -6,6 +6,7 @@ dist/
 !.env.example
 .venv*/
 .eval-runs/
+.bench-runs/
 traces/
 .DS_Store
 site/test-results/

@@ -24,6 +24,7 @@ import type {
   SandboxProvider,
 } from "anchor-ai-sdk";
 import type { EvalCheck, EvalTask } from "./tasks.js";
+import { runHarborTask } from "./harbor.js";
 
 export interface ArmOutcome {
   usage?: LLMUsage;
@@ -260,6 +261,13 @@ export async function runEvalSuite(
 ): Promise<EvalTaskResult[]> {
   const results: EvalTaskResult[] = [];
   for (const task of options.tasks) {
+    if (task.kind === "harbor") {
+      options.log?.(`→ ${task.id} (harbor ${task.grading})`);
+      const result = await runHarborTask(task, options);
+      results.push(result);
+      await options.onResult?.(result);
+      continue;
+    }
     const started = Date.now();
     options.log?.(`→ ${task.id}`);
     const sandbox = options.provider.create(

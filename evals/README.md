@@ -12,9 +12,8 @@ imports**: its own config reader, the package, and nothing else.
 benchmarks/
   swe-bench/       SWE-bench Lite (larger sets on demand) vs mini-swe-agent.
                    Data, results, and the full how-to live in its README.
-  terminal-bench/  planned: terminal-native tasks, per-task containers.
-  program-bench/   planned.
-  metr/            planned.
+  swe-bench-pro/   SWE-bench Pro V2, ten Harbor tasks, patch replay.
+  terminal-bench/  Terminal-Bench 2.1, ten Harbor tasks, in-place verifier.
 src/               the harness engine: the generic runner (tasks → sandbox →
                    arm → git diff, the future Anchor lift, deliberately one
                    isolated module), the config reader, the CLI, the arms.
@@ -38,12 +37,28 @@ Copy `.env.example` to `.env` and fill in `LLM_API_KEY` (and `E2B_API_KEY` for t
 
 | benchmark | status | docs |
 | --- | --- | --- |
-| **swe-bench** | Round 1 shipped (GLM 5.3) | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
-| **terminal-bench** | planned | [`benchmarks/terminal-bench/README.md`](benchmarks/terminal-bench/README.md) |
-| **program-bench** | planned | [`benchmarks/program-bench/README.md`](benchmarks/program-bench/README.md) |
-| **metr** | planned | [`benchmarks/metr/README.md`](benchmarks/metr/README.md) |
+| **swe-bench Lite** | Round 1 shipped (GLM 5.3); Docker + official test patches | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
+| **swe-bench Pro V2** | Ten Harbor tasks, patch replay | [`benchmarks/swe-bench-pro/README.md`](benchmarks/swe-bench-pro/README.md) |
+| **terminal-bench 2.1** | Ten Harbor tasks, in-place verifier | [`benchmarks/terminal-bench/README.md`](benchmarks/terminal-bench/README.md) |
 
 Results always live next to their benchmark: `benchmarks/<name>/results/`.
 
 The swe-bench runner also accepts `--provider e2b` (template-backed remote
 sandboxes); see the E2B section in its README.
+
+## GitHub Actions
+
+`.github/workflows/bench.yml` runs the whole matrix on `ubuntu-latest` with
+Docker: three benchmarks × two models × two variants, sharded to stay under
+the six-hour job limit. It needs one repository secret:
+
+- `LLM_API_KEY` — an OpenRouter key.
+
+The workflow writes raw results as artifacts and publishes:
+- `latest/summary.md` and `latest/summary.json` on the `bench-results` branch;
+- `dashboard/index.html` on the same branch (enable GitHub Pages from that
+  branch to view it).
+
+Trigger it from **Actions → bench → Run workflow**. `bench=all` runs the six
+baseline + six treatment logical runs; pick one benchmark or one variant to
+iterate cheaper.

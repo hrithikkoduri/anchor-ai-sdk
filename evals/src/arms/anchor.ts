@@ -68,22 +68,32 @@ export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
     name: "anchor",
     async run(task: EvalTask, ctx: EvalArmContext) {
       const localFixture = task.localPath !== undefined;
+      const harbor = task.kind === "harbor";
       const context = JSON.stringify(
         {
           ...(task.repoUrl ? { repository: task.repoUrl } : {}),
           workspace: ctx.sandbox.workspace,
           ...(task.baseRef ? { baseCommit: task.baseRef } : {}),
-          note: [
-            "A benchmark task: make the requested change in this workspace; the workspace diff is the deliverable (no remote, no publication).",
-            localFixture
-              ? "This is a local, dependency-free Node project. Run its checks with node; do not install packages."
-              : task.setup?.length
-                ? "The harness ran a setup step against the system Python. If a dependency is still missing, install it with pip; do not reinstall what is already present."
-                : "The environment is ALREADY provisioned: the project's dependencies live in a ready Python environment — try /opt/miniconda3/envs/testbed/bin/python first (bare python/pip may not see them). Do NOT reinstall the project.",
-            "The project's own tests are the source of truth. Find and run the tests that cover the reported behavior before and after your change — and run the relevant test FILES, not only your own repro: breaking neighboring behavior counts against you.",
-            "When the report shows an exact expected output or format, reproduce it verbatim in your repro and compare against it.",
-            "Re-read the report before finishing and cover EVERY requirement it names — including 'this was already added for X and should also apply to Y' style twins. Do not finish while any relevant test fails.",
-          ].join(" "),
+          note: harbor
+            ? [
+                task.grading === "patch"
+                  ? "A Harbor repository task: make the requested change in this workspace. Your final git diff is captured and replayed in a pristine container; leave the change in the working tree and do not modify the task verifier."
+                  : "A Harbor terminal task: make the requested change in this environment. The task's own verifier runs in this container after you finish; do not modify the verifier.",
+                "Inspect the actual environment first. The task instruction is the complete contract; use the shell to find the relevant files, reproduce the failure, and verify the result.",
+                "The project's own tests/verifier are the source of truth. Run the relevant checks before and after your change; a failing or missing check means the work is not done.",
+                "Re-read the instruction before finishing and cover every requirement it names. Do not finish while a relevant check fails.",
+              ].join(" ")
+            : [
+                "A benchmark task: make the requested change in this workspace; the workspace diff is the deliverable (no remote, no publication).",
+                localFixture
+                  ? "This is a local, dependency-free Node project. Run its checks with node; do not install packages."
+                  : task.setup?.length
+                    ? "The harness ran a setup step against the system Python. If a dependency is still missing, install it with pip; do not reinstall what is already present."
+                    : "The environment is ALREADY provisioned: the project's dependencies live in a ready Python environment — try /opt/miniconda3/envs/testbed/bin/python first (bare python/pip may not see them). Do NOT reinstall the project.",
+                "The project's own tests are the source of truth. Find and run the tests that cover the reported behavior before and after your change — and run the relevant test FILES, not only your own repro: breaking neighboring behavior counts against you.",
+                "When the report shows an exact expected output or format, reproduce it verbatim in your repro and compare against it.",
+                "Re-read the report before finishing and cover EVERY requirement it names — including 'this was already added for X and should also apply to Y' style twins. Do not finish while any relevant test fails.",
+              ].join(" "),
         },
         null,
         2,

@@ -31,6 +31,7 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
                           benchmark environment from task images; heyo/e2b = VMs)
   --e2b-template <name>   override E2B_TEMPLATE for repo-clone tasks
   --arm anchor|mini       system under test (default anchor)
+  --bench <name>          benchmark label recorded in run.json (default: tasks basename)
   --variant <name>        harness variant recorded with the run (default baseline)
   --reasoning <effort>    minimal|low|medium|high|xhigh|max (anchor arm only)
   --task-image            heyo: boot the task's own image (no repo clone)
@@ -81,6 +82,9 @@ if (args.has("help") || !args.has("tasks")) {
 }
 
 const tasksFile = String(args.get("tasks"));
+const bench = String(
+  args.get("bench") ?? path.basename(tasksFile).replace(/\.jsonl$/, ""),
+);
 const variant = String(args.get("variant") ?? "baseline");
 const armName = String(args.get("arm") ?? "anchor");
 const REASONING_EFFORTS = [
@@ -254,8 +258,8 @@ if (args.has("repeat")) {
     process.exit(1);
   }
   if (repeat > 1) {
-    if (!tasks.every((task) => task.checks?.length)) {
-      say("--repeat needs harness tasks with checks (no external grader)");
+    if (!tasks.every((task) => task.checks?.length || task.kind === "harbor")) {
+      say("--repeat needs harness tasks with checks or Harbor tasks");
       process.exit(1);
     }
     tasks = tasks.flatMap((task) =>
@@ -316,6 +320,25 @@ if (providerName === "heyo" && args.has("task-image")) {
       ...rest,
       ...(setup && setup.length > 0 ? { setup } : {}),
       ...(checks && checks.length > 0 ? { checks } : {}),
+    };
+  });
+}
+
+if (providerName === "docker") {
+  // SWE-bench rows carry the official test patch but no checks. In the Docker
+  // path the eval owns the verifier, so add the fail-to-pass tests as dense
+  // checks (Harbor tasks already have their own verifier).
+  tasks = tasks.map((task) => {
+    if (task.kind === "harbor" || task.checks?.length) return task;
+    const tests = task.failToPass;
+    if (!tests || tests.length === 0) return task;
+    return {
+      ...task,
+      checks: tests.map((test) => ({
+        id: test,
+        command: `python -m pytest -q ${JSON.stringify(test)}`,
+        timeoutSecs: 300,
+      })),
     };
   });
 }
@@ -549,6 +572,9 @@ await writeFile(
   path.join(outDir, "run.json"),
   `${JSON.stringify(
     {
+      bench,
+      tasksFile,
+      kind: tasks.every((task) => task.kind === "harbor") ? "harbor" : "mixed",
       arm: armName,
       variant,
       ...(reasoningEffort ? { reasoningEffort } : {}),
@@ -617,5 +643,9 @@ if (scored.length > 0) {
     } · ${falseFinishes} false finish(es) · ${timeouts} timeout(s)`,
   );
 }
-say(`predictions: ${path.join(outDir, "predictions.jsonl")}`);
-say("next: grade with the official swebench harness (Docker)");
+say(`results: ${path.join(outDir, "results.jsonl")}`);
+if (tasks.some((task) => task.kind === "harbor")) {
+  say("scored by each Harbor task's own verifier (Docker)");
+} else {
+  say("next: grade with the official swebench harness (Docker)");
+}

