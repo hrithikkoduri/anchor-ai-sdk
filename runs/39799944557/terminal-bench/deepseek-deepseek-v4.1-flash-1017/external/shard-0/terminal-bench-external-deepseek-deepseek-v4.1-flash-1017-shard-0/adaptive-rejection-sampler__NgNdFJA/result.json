@@ -1,0 +1,162 @@
+{
+    "id": "b0784912-8d15-4f28-8c9d-3f844fba97bc",
+    "task_name": "terminal-bench/adaptive-rejection-sampler",
+    "trial_name": "adaptive-rejection-sampler__NgNdFJA",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-0/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-0/adaptive-rejection-sampler__NgNdFJA",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/adaptive-rejection-sampler"
+    },
+    "source": "tasks",
+    "task_checksum": "77d51cf615a0f417dcbcf2458f5601af5be0d32d027e9343e594ba1bba58ea93",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/adaptive-rejection-sampler",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "adaptive-rejection-sampler__NgNdFJA",
+        "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-0/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "a08f001e-0efb-424a-b168-8f4e7045c53d",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "deepseek/deepseek-v4.1-flash-1017",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 388787,
+        "n_cache_tokens": 229888,
+        "n_output_tokens": 130693,
+        "cost_usd": 0.12367478299999998,
+        "model_usage": {
+            "deepseek/deepseek-v4.1-flash-1017": {
+                "n_input_tokens": 362948,
+                "n_cache_tokens": 214528,
+                "n_output_tokens": 130342,
+                "cost_usd": 0.12047507599999999
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 23,
+            "api_request_times_msec": [
+                1588.3464813232422,
+                1277.8103351593018,
+                1813.9967918395996,
+                3498.0647563934326,
+                176379.46152687073,
+                107996.50549888611,
+                130185.02259254456,
+                28569.128274917603,
+                107744.60458755493,
+                40230.857849121094,
+                62322.61157035828,
+                51105.58295249939,
+                9307.289838790894,
+                1318.7897205352783,
+                2539.435863494873,
+                10838.57011795044,
+                5448.937892913818,
+                12030.369520187378,
+                2272.541046142578,
+                1612.9615306854248,
+                16582.56459236145,
+                21883.38303565979,
+                2111.7963790893555
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": {
+        "exception_type": "AgentTimeoutError",
+        "exception_message": "Agent execution timed out after 900.0 seconds",
+        "exception_traceback": "Traceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1743, in run\n    await self._run_agent_loop(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1523, in _run_agent_loop\n    timeout_occurred, terminal_output = await self._execute_commands(\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1339, in _execute_commands\n    await session.send_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 817, in send_keys\n    await self._send_non_blocking_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 777, in _send_non_blocking_keys\n    await asyncio.sleep(min_timeout_sec - elapsed_time_sec)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 665, in sleep\n    return await future\n           ^^^^^^^^^^^^\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 651, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 76, in _run_agent\n    await self._run_agent_phase(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 660, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 900.0 seconds\n",
+        "occurred_at": "2026-10-22T15:14:06.172098Z"
+    },
+    "started_at": "2026-10-22T14:57:03.626139Z",
+    "finished_at": "2026-10-22T15:14:34.988082Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T14:57:03.669589Z",
+        "finished_at": "2026-10-22T14:57:07.468563Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T14:57:07.468619Z",
+        "finished_at": "2026-10-22T14:59:06.161091Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T14:59:06.161227Z",
+        "finished_at": "2026-10-22T15:14:06.170039Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T15:14:06.519903Z",
+        "finished_at": "2026-10-22T15:14:22.428853Z"
+    },
+    "step_results": null
+}
