@@ -54,7 +54,7 @@ describe("persistent process streams", () => {
     expect(docker({ image: "ubuntu:24.04" }).capabilities.processStream).toBe(
       true,
     );
-    expect(heyo(heyoConfig).capabilities.processStream).toBeUndefined();
+    expect(heyo(heyoConfig).capabilities.processStream).toBe(true);
     expect(e2b({ template: "base", quiet: true }).capabilities.processStream).toBe(true);
   });
 });

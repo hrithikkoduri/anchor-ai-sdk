@@ -13,9 +13,11 @@
  * The names: a "deployment" in Heyo's API *is* our sandbox (routes: [] means
  * private — reached only through exec; no HTTP traffic).
  */
-import { Hws } from "@heyocomputer/hws";
+import { randomUUID } from "node:crypto";
+import { Hws, type Shell } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./exec.js";
 import { upsertHeyoSecret } from "./secret.js";
+import { ByteQueue } from "../process.js";
 import type { ProviderHealth, SandboxProvider } from "../provider.js";
 import {
   checkpointVia,
@@ -32,6 +34,8 @@ import {
   type ExecResult,
   type Sandbox,
   type SandboxSpec,
+  type ProcessHandle,
+  type ProcessOptions,
 } from "../types.js";
 
 /** VM size tiers (mirrors Heyo's size classes). */
@@ -178,6 +182,7 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
       remoteCheckpoint: true,
       egressControl: false,
       localPath: false, // the VM is another machine
+      processStream: true,
     },
     create: (spec) => new HeyoSandbox(spec, cfg),
     adopt: (handle, spec = {}) =>
@@ -222,6 +227,7 @@ export class HeyoSandbox implements Sandbox {
 
   private readonly lb: Hws;
   private readonly executor: HeyoGuestExecutor;
+  private readonly processes = new Map<string, ProcessHandle>();
   private started = false;
   private destroyed = false;
 
@@ -379,6 +385,133 @@ export class HeyoSandbox implements Sandbox {
     return this.guest(command, { ...opts, cwd: opts.cwd ?? this.workspace });
   }
 
+  async openProcess(
+    command: string,
+    args: string[],
+    opts: ProcessOptions = {},
+  ): Promise<ProcessHandle> {
+    this.assertUsable();
+    if (this.processes.size >= 8) {
+      throw new Error("heyo sandbox process limit reached (8)");
+    }
+    const id = randomUUID();
+    const timeoutSecs = clampTimeout(opts.timeoutSecs ?? 3600);
+    const pidFile = `/tmp/anchor-proc-${id}.pid`;
+    const marker = `__ANCHOR_PROC_${id}__`;
+    const env = { ...this.spec.env, ...opts.env };
+    const envArgs = Object.entries(env).map(([key, value]) => shq(`${key}=${value}`));
+    const inner = `printf %s ${shq(marker)}; echo $$ > ${shq(pidFile)}; exec "$@"`;
+    const launch =
+      `exec env ${envArgs.join(" ")} sh -c ${shq(inner)} anchor ` +
+      [command, ...args].map(shq).join(" ");
+
+    const shell = await this.lb.shell(this.id, {
+      cwd: opts.cwd ?? this.workspace,
+      wake: true,
+    });
+    const stdout = new ByteQueue();
+    const stderr = new ByteQueue();
+    const pending: Array<string | Uint8Array> = [];
+    let started = false;
+    let endRequested = false;
+    let prefix = "";
+    let finished:
+      | { exitCode: number; signal?: string; timedOut: boolean }
+      | undefined;
+    let timedOut = false;
+
+    const finish = (exitCode: number) => {
+      if (finished) return finished;
+      clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", abort);
+      stdout.close();
+      stderr.close();
+      this.processes.delete(id);
+      finished = { exitCode, timedOut };
+      return finished;
+    };
+
+    shell.onData((data) => {
+      if (started) {
+        stdout.push(data);
+        return;
+      }
+      prefix += Buffer.from(data).toString("utf8");
+      const at = prefix.indexOf(marker);
+      if (at < 0) {
+        if (prefix.length > marker.length + 8192) {
+          prefix = prefix.slice(-marker.length);
+        }
+        return;
+      }
+      started = true;
+      const after = prefix.slice(at + marker.length);
+      prefix = "";
+      if (after) stdout.push(Buffer.from(after, "utf8"));
+      for (const data of pending.splice(0)) shell.write(data);
+      if (endRequested) shell.write("\x04");
+    });
+    shell.onError((message) => stderr.push(Buffer.from(message)));
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      void kill("SIGKILL");
+    }, timeoutSecs * 1000);
+    const abort = () => {
+      timedOut = true;
+      void kill("SIGKILL");
+    };
+    if (opts.signal) {
+      if (opts.signal.aborted) abort();
+      else opts.signal.addEventListener("abort", abort, { once: true });
+    }
+
+    const exitPromise = shell.exit
+      .then((exit) => finish(exit.clean ? exit.code : exit.code || -1))
+      .catch(() => finish(-1));
+
+    const kill = async (signal: "SIGTERM" | "SIGKILL" = "SIGTERM") => {
+      if (finished) return false;
+      const guestSignal = signal === "SIGKILL" ? "KILL" : "TERM";
+      await this.lb
+        .exec(
+          this.id,
+          `p=$(cat ${shq(pidFile)} 2>/dev/null) || exit 0; kill -${guestSignal} -$p 2>/dev/null || kill -${guestSignal} $p 2>/dev/null || true; rm -f ${shq(pidFile)}`,
+          { timeoutSecs: 10, patienceMs: 20_000 },
+        )
+        .catch(() => undefined);
+      await shell.close().catch(() => undefined);
+      return true;
+    };
+
+    const handle: ProcessHandle = {
+      id,
+      stdout,
+      stderr,
+      write: async (data) => {
+        if (!started) {
+          pending.push(data);
+          return;
+        }
+        shell.write(data);
+      },
+      endInput: async () => {
+        if (!started) {
+          endRequested = true;
+          return;
+        }
+        shell.write("\x04");
+      },
+      wait: () => exitPromise,
+      kill,
+    };
+    this.processes.set(id, handle);
+    // `stty -echo` keeps the launch line out of the command's stream; the
+    // marker lets us drop the shell prompt and any terminal setup chatter.
+    shell.write(`stty -echo\n${launch}\n`);
+    return handle;
+  }
+
   async pollJob(
     jobId: string,
     meta?: { startedAt?: number; timeoutSecs?: number },
@@ -423,6 +556,11 @@ export class HeyoSandbox implements Sandbox {
 
   async destroy(): Promise<void> {
     if (this.destroyed) return;
+    for (const handle of [...this.processes.values()]) {
+      await handle.kill("SIGKILL").catch(() => undefined);
+      await handle.wait().catch(() => undefined);
+    }
+    this.processes.clear();
     // Parking scales the VM to zero, which kills live processes. Wait for
     // background jobs to finish — the consumer parks the sandbox after its
     // last poll.

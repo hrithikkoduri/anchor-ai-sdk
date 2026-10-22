@@ -1040,11 +1040,14 @@ stdin/stdout/stderr, `write`/`endInput`, async output streams, `wait`, `kill`,
 `timeoutSecs`, and `AbortSignal`. `capabilities.processStream` says whether a
 backend implements it.
 
-Local, Docker, and E2B implement it. Docker runs `docker exec -i` and
+Local, Docker, E2B, and Heyo implement it. Docker runs `docker exec -i` and
 best-effort kills the guest PID. E2B uses its native background command handle
-with `stdin: true`. Heyo omits the capability: its current adapter has only
-one-shot `exec` requests and no persistent guest channel; faking it with
-repeated execs would break stdin/stream semantics. Sandbox `destroy()` closes
+with `stdin: true`. Heyo uses the Hws interactive PTY (`lb.shell`) as a real
+persistent channel: `stty -echo`, a marker, a guest PID file, and a one-shot
+guest `kill` on teardown. Heyo's PTY merges stderr into stdout and the
+WebSocket does not expose backpressure, so its `stderr` stream only carries
+session errors; callers that need strict stderr separation should use Local,
+Docker, or E2B. Sandbox `destroy()` closes
 every open process; each backend caps concurrent streams and rejects clearly
 above the cap.
 
