@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T07:34:41.264Z",
+  "generatedAt": "2026-10-22T07:35:55.050Z",
   "runs": [
     {
       "bench": "swe-lite",
@@ -12,7 +12,16 @@
       "falseFinishes": 1,
       "timeouts": 1,
       "costUsd": 0.181355745,
+      "tokens": {
+        "prompt": 7757285,
+        "completion": 238650,
+        "total": 7995935,
+        "cached": 0,
+        "reasoning": 184387
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 418989,
+      "p95WallMs": 941615,
       "runs": [
         {
           "bench": "swe-lite",
@@ -46,7 +55,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/django__django-10914"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/django__django-10914"
         },
         {
           "bench": "swe-lite",
@@ -80,7 +89,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/matplotlib__matplotlib-18869"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/matplotlib__matplotlib-18869"
         },
         {
           "bench": "swe-lite",
@@ -114,7 +123,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/mwaskom__seaborn-2848"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/mwaskom__seaborn-2848"
         },
         {
           "bench": "swe-lite",
@@ -148,7 +157,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pallets__flask-4045"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pallets__flask-4045"
         },
         {
           "bench": "swe-lite",
@@ -182,7 +191,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/psf__requests-1963"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/psf__requests-1963"
         },
         {
           "bench": "swe-lite",
@@ -216,7 +225,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pydata__xarray-3364"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pydata__xarray-3364"
         },
         {
           "bench": "swe-lite",
@@ -250,7 +259,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pylint-dev__pylint-5859"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pylint-dev__pylint-5859"
         },
         {
           "bench": "swe-lite",
@@ -284,7 +293,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pytest-dev__pytest-11143"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pytest-dev__pytest-11143"
         },
         {
           "bench": "swe-lite",
@@ -318,7 +327,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sphinx-doc__sphinx-10325"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sphinx-doc__sphinx-10325"
         },
         {
           "bench": "swe-lite",
@@ -352,7 +361,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sympy__sympy-11400"
+          "dir": "/tmp/anchor-final/bench-0/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sympy__sympy-11400"
         }
       ]
     },
@@ -367,7 +376,16 @@
       "falseFinishes": 0,
       "timeouts": 0,
       "costUsd": 0.5719968,
+      "tokens": {
+        "prompt": 7352960,
+        "completion": 51094,
+        "total": 7404054,
+        "cached": 0,
+        "reasoning": 0
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 179850,
+      "p95WallMs": 277281,
       "runs": [
         {
           "bench": "swe-lite",
@@ -394,7 +412,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/django__django-10914"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/django__django-10914"
         },
         {
           "bench": "swe-lite",
@@ -427,7 +445,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/matplotlib__matplotlib-18869"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/matplotlib__matplotlib-18869"
         },
         {
           "bench": "swe-lite",
@@ -460,7 +478,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/mwaskom__seaborn-2848"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/mwaskom__seaborn-2848"
         },
         {
           "bench": "swe-lite",
@@ -493,7 +511,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pallets__flask-4045"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pallets__flask-4045"
         },
         {
           "bench": "swe-lite",
@@ -526,7 +544,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/psf__requests-1963"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/psf__requests-1963"
         },
         {
           "bench": "swe-lite",
@@ -559,7 +577,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pydata__xarray-3364"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pydata__xarray-3364"
         },
         {
           "bench": "swe-lite",
@@ -592,7 +610,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pylint-dev__pylint-5859"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pylint-dev__pylint-5859"
         },
         {
           "bench": "swe-lite",
@@ -625,7 +643,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pytest-dev__pytest-11143"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pytest-dev__pytest-11143"
         },
         {
           "bench": "swe-lite",
@@ -658,7 +676,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sphinx-doc__sphinx-10325"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sphinx-doc__sphinx-10325"
         },
         {
           "bench": "swe-lite",
@@ -691,7 +709,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sympy__sympy-11400"
+          "dir": "/tmp/anchor-final/bench-1/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sympy__sympy-11400"
         }
       ]
     },
@@ -706,7 +724,16 @@
       "falseFinishes": 0,
       "timeouts": 0,
       "costUsd": 0.26896180468,
+      "tokens": {
+        "prompt": 12223332,
+        "completion": 676630,
+        "total": 12899962,
+        "cached": 0,
+        "reasoning": 574708
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 673857,
+      "p95WallMs": 1331670,
       "runs": [
         {
           "bench": "swe-pro",
@@ -740,7 +767,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+          "dir": "/tmp/anchor-final/bench-2/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
         },
         {
           "bench": "swe-pro",
@@ -774,7 +801,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
+          "dir": "/tmp/anchor-final/bench-2/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
         },
         {
           "bench": "swe-pro",
@@ -808,7 +835,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
+          "dir": "/tmp/anchor-final/bench-3/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
         },
         {
           "bench": "swe-pro",
@@ -842,7 +869,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
+          "dir": "/tmp/anchor-final/bench-3/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
         },
         {
           "bench": "swe-pro",
@@ -876,7 +903,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
+          "dir": "/tmp/anchor-final/bench-4/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
         },
         {
           "bench": "swe-pro",
@@ -910,7 +937,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
+          "dir": "/tmp/anchor-final/bench-4/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
         },
         {
           "bench": "swe-pro",
@@ -944,7 +971,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+          "dir": "/tmp/anchor-final/bench-5/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
         },
         {
           "bench": "swe-pro",
@@ -978,7 +1005,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
+          "dir": "/tmp/anchor-final/bench-5/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
         },
         {
           "bench": "swe-pro",
@@ -1012,7 +1039,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
+          "dir": "/tmp/anchor-final/bench-6/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
         },
         {
           "bench": "swe-pro",
@@ -1046,7 +1073,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+          "dir": "/tmp/anchor-final/bench-6/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
         }
       ]
     },
@@ -1060,207 +1087,18 @@
       "meanReward": 0.4,
       "falseFinishes": 1,
       "timeouts": 0,
-      "costUsd": 0.9855152399999999,
+      "costUsd": 0.98551524,
+      "tokens": {
+        "prompt": 12780387,
+        "completion": 84562,
+        "total": 12864949,
+        "cached": 0,
+        "reasoning": 0
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 344982,
+      "p95WallMs": 435599,
       "runs": [
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 0,
-          "meanReward": 0,
-          "falseFinishes": 1,
-          "timeouts": 0,
-          "checksPassed": 0,
-          "checksTotal": 1,
-          "totalUsd": 0.02949268,
-          "wallMsP50": 124120,
-          "wallMsP95": 124120,
-          "startedAt": "2026-10-22T06:16:14.157Z",
-          "finishedAt": "2026-10-22T06:18:18.642Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
-        },
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 0,
-          "meanReward": 0,
-          "falseFinishes": 0,
-          "timeouts": 0,
-          "checksPassed": 0,
-          "checksTotal": 1,
-          "totalUsd": 0.11927264000000003,
-          "wallMsP50": 395651,
-          "wallMsP95": 395651,
-          "startedAt": "2026-10-22T06:18:29.326Z",
-          "finishedAt": "2026-10-22T06:25:06.106Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
-        },
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 1,
-          "meanReward": 1,
-          "falseFinishes": 0,
-          "timeouts": 0,
-          "checksPassed": 1,
-          "checksTotal": 1,
-          "totalUsd": 0.08167836000000002,
-          "wallMsP50": 314933,
-          "wallMsP95": 314933,
-          "startedAt": "2026-10-22T06:15:16.343Z",
-          "finishedAt": "2026-10-22T06:20:31.644Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
-        },
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 1,
-          "meanReward": 1,
-          "falseFinishes": 0,
-          "timeouts": 0,
-          "checksPassed": 1,
-          "checksTotal": 1,
-          "totalUsd": 0.06063243999999999,
-          "wallMsP50": 320167,
-          "wallMsP95": 320167,
-          "startedAt": "2026-10-22T06:20:34.381Z",
-          "finishedAt": "2026-10-22T06:25:54.670Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
-        },
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 0,
-          "meanReward": 0,
-          "falseFinishes": 0,
-          "timeouts": 0,
-          "checksPassed": 0,
-          "checksTotal": 1,
-          "totalUsd": 0.14452699999999996,
-          "wallMsP50": 324885,
-          "wallMsP95": 324885,
-          "startedAt": "2026-10-22T06:15:04.307Z",
-          "finishedAt": "2026-10-22T06:20:29.959Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
-        },
-        {
-          "bench": "swe-pro",
-          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
-          "kind": "harbor",
-          "arm": "anchor",
-          "variant": "baseline",
-          "model": "qwen/qwen3-coder-next",
-          "llm": "openrouter",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "timeBudgetSecs": 3000,
-          "provider": "docker",
-          "tasks": 1,
-          "completed": 1,
-          "failed": 0,
-          "fullCredit": 1,
-          "meanReward": 1,
-          "falseFinishes": 0,
-          "timeouts": 0,
-          "checksPassed": 1,
-          "checksTotal": 1,
-          "totalUsd": 0.07561984000000002,
-          "wallMsP50": 401759,
-          "wallMsP95": 401759,
-          "startedAt": "2026-10-22T06:20:56.539Z",
-          "finishedAt": "2026-10-22T06:27:39.153Z",
-          "budgets": {
-            "maxTokens": 50000000,
-            "maxSteps": 50,
-            "maxUsd": 3
-          },
-          "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
-        },
         {
           "bench": "swe-pro",
           "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
@@ -1292,7 +1130,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+          "dir": "/tmp/anchor-final/bench-10/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
         },
         {
           "bench": "swe-pro",
@@ -1325,7 +1163,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
+          "dir": "/tmp/anchor-final/bench-10/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
         },
         {
           "bench": "swe-pro",
@@ -1358,7 +1196,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
+          "dir": "/tmp/anchor-final/bench-11/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
         },
         {
           "bench": "swe-pro",
@@ -1391,7 +1229,205 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+          "dir": "/tmp/anchor-final/bench-11/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 1,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.02949268,
+          "wallMsP50": 124120,
+          "wallMsP95": 124120,
+          "startedAt": "2026-10-22T06:16:14.157Z",
+          "finishedAt": "2026-10-22T06:18:18.642Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-7/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.11927264000000003,
+          "wallMsP50": 395651,
+          "wallMsP95": 395651,
+          "startedAt": "2026-10-22T06:18:29.326Z",
+          "finishedAt": "2026-10-22T06:25:06.106Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-7/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.08167836000000002,
+          "wallMsP50": 314933,
+          "wallMsP95": 314933,
+          "startedAt": "2026-10-22T06:15:16.343Z",
+          "finishedAt": "2026-10-22T06:20:31.644Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-8/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.06063243999999999,
+          "wallMsP50": 320167,
+          "wallMsP95": 320167,
+          "startedAt": "2026-10-22T06:20:34.381Z",
+          "finishedAt": "2026-10-22T06:25:54.670Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-8/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.14452699999999996,
+          "wallMsP50": 324885,
+          "wallMsP95": 324885,
+          "startedAt": "2026-10-22T06:15:04.307Z",
+          "finishedAt": "2026-10-22T06:20:29.959Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-9/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.07561984000000002,
+          "wallMsP50": 401759,
+          "wallMsP95": 401759,
+          "startedAt": "2026-10-22T06:20:56.539Z",
+          "finishedAt": "2026-10-22T06:27:39.153Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/tmp/anchor-final/bench-9/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
         }
       ]
     },
@@ -1406,7 +1442,16 @@
       "falseFinishes": 0,
       "timeouts": 2,
       "costUsd": 0.16325263992,
+      "tokens": {
+        "prompt": 6425571,
+        "completion": 387076,
+        "total": 6812647,
+        "cached": 0,
+        "reasoning": 314827
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 612466,
+      "p95WallMs": 1469499,
       "runs": [
         {
           "bench": "terminal-bench",
@@ -1439,7 +1484,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/adaptive-rejection-sampler"
+          "dir": "/tmp/anchor-final/bench-12/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/adaptive-rejection-sampler"
         },
         {
           "bench": "terminal-bench",
@@ -1472,7 +1517,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/chess-best-move"
+          "dir": "/tmp/anchor-final/bench-12/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/chess-best-move"
         },
         {
           "bench": "terminal-bench",
@@ -1505,7 +1550,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/bn-fit-modify"
+          "dir": "/tmp/anchor-final/bench-13/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/bn-fit-modify"
         },
         {
           "bench": "terminal-bench",
@@ -1538,7 +1583,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/circuit-fibsqrt"
+          "dir": "/tmp/anchor-final/bench-13/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/circuit-fibsqrt"
         },
         {
           "bench": "terminal-bench",
@@ -1571,7 +1616,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/break-filter-js-from-html"
+          "dir": "/tmp/anchor-final/bench-14/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/break-filter-js-from-html"
         },
         {
           "bench": "terminal-bench",
@@ -1604,7 +1649,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/cobol-modernization"
+          "dir": "/tmp/anchor-final/bench-14/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/cobol-modernization"
         },
         {
           "bench": "terminal-bench",
@@ -1637,7 +1682,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/build-cython-ext"
+          "dir": "/tmp/anchor-final/bench-15/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/build-cython-ext"
         },
         {
           "bench": "terminal-bench",
@@ -1670,7 +1715,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/code-from-image"
+          "dir": "/tmp/anchor-final/bench-15/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/code-from-image"
         },
         {
           "bench": "terminal-bench",
@@ -1703,7 +1748,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/cancel-async-tasks"
+          "dir": "/tmp/anchor-final/bench-16/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/cancel-async-tasks"
         },
         {
           "bench": "terminal-bench",
@@ -1736,7 +1781,7 @@
             "maxUsd": 3
           },
           "contextWindow": 1048576,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/compile-compcert"
+          "dir": "/tmp/anchor-final/bench-16/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/compile-compcert"
         }
       ]
     },
@@ -1751,7 +1796,16 @@
       "falseFinishes": 1,
       "timeouts": 0,
       "costUsd": 0.8046041199999999,
+      "tokens": {
+        "prompt": 9418881,
+        "completion": 163137,
+        "total": 9582018,
+        "cached": 0,
+        "reasoning": 0
+      },
+      "cacheHitRate": 0,
       "p50WallMs": 414393,
+      "p95WallMs": 1323099,
       "runs": [
         {
           "bench": "terminal-bench",
@@ -1783,7 +1837,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/adaptive-rejection-sampler"
+          "dir": "/tmp/anchor-final/bench-17/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/adaptive-rejection-sampler"
         },
         {
           "bench": "terminal-bench",
@@ -1815,7 +1869,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/chess-best-move"
+          "dir": "/tmp/anchor-final/bench-17/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/chess-best-move"
         },
         {
           "bench": "terminal-bench",
@@ -1847,7 +1901,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/bn-fit-modify"
+          "dir": "/tmp/anchor-final/bench-18/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/bn-fit-modify"
         },
         {
           "bench": "terminal-bench",
@@ -1879,7 +1933,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/circuit-fibsqrt"
+          "dir": "/tmp/anchor-final/bench-18/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/circuit-fibsqrt"
         },
         {
           "bench": "terminal-bench",
@@ -1911,7 +1965,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/break-filter-js-from-html"
+          "dir": "/tmp/anchor-final/bench-19/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/break-filter-js-from-html"
         },
         {
           "bench": "terminal-bench",
@@ -1943,7 +1997,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/cobol-modernization"
+          "dir": "/tmp/anchor-final/bench-19/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/cobol-modernization"
         },
         {
           "bench": "terminal-bench",
@@ -1975,7 +2029,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/build-cython-ext"
+          "dir": "/tmp/anchor-final/bench-20/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/build-cython-ext"
         },
         {
           "bench": "terminal-bench",
@@ -2007,7 +2061,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/code-from-image"
+          "dir": "/tmp/anchor-final/bench-20/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/code-from-image"
         },
         {
           "bench": "terminal-bench",
@@ -2039,7 +2093,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/cancel-async-tasks"
+          "dir": "/tmp/anchor-final/bench-21/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/cancel-async-tasks"
         },
         {
           "bench": "terminal-bench",
@@ -2071,7 +2125,7 @@
             "maxUsd": 3
           },
           "contextWindow": 262144,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/compile-compcert"
+          "dir": "/tmp/anchor-final/bench-21/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/compile-compcert"
         }
       ]
     }
@@ -3289,6 +3343,153 @@
       "bench": "swe-pro",
       "model": "qwen/qwen3-coder-next",
       "variant": "baseline",
+      "taskId": "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1218621,
+        "completionTokens": 6512,
+        "totalTokens": 1225133,
+        "costUsd": 0.09280092000000001,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch .github/workflows/integration-test.yml...\nChecking patch internal/cache/redis/client_test.go...\nChecking patch internal/config/config_test.go...\nChecking patch build/testing/integration.go...\nChecking patch internal/config/testdata/cache/redis-ca-bytes.yml...\nChecking patch internal/config/testdata/cache/redis-ca-invalid.yml...\nChecking patch internal/config/testdata/cache/redis-ca-path.yml...\nCh"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 17,
+        "read_file": 22,
+        "write_file": 2,
+        "edit_file": 9
+      },
+      "wallMs": 329439,
+      "patchChars": 4671
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1981309,
+        "completionTokens": 5093,
+        "totalTokens": 1986402,
+        "costUsd": 0.14627787999999997,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch tests/unit/components/test_blockutils.py...\nChecking patch tests/unit/utils/test_version.py...\nApplied patch tests/unit/components/test_blockutils.py cleanly.\nApplied patch tests/unit/utils/test_version.py cleanly.\nRequired tests: 49\nPassed tests: 48\nRequired tests that passed: 48\n\nRESULT: FAILED\nMissing tests: ['tests/unit/utils/test_version.py::TestModuleVersions::test_version_attribute[SIP_VER"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 3,
+        "search": 3,
+        "bash": 20,
+        "read_file": 20,
+        "set_phase": 3,
+        "edit_file": 1
+      },
+      "wallMs": 363909,
+      "patchChars": 764
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1443661,
+        "completionTokens": 17337,
+        "totalTokens": 1460998,
+        "costUsd": 0.11728651999999996,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch contrib/snmp2cpe/pkg/cpe/cpe_test.go...\nApplied patch contrib/snmp2cpe/pkg/cpe/cpe_test.go cleanly.\nRequired tests: 24\nPassed tests: 24\nRequired tests that passed: 24\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 16,
+        "read_file": 13,
+        "bash": 18,
+        "edit_file": 3
+      },
+      "wallMs": 435599,
+      "patchChars": 5985
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1548498,
+        "completionTokens": 8668,
+        "totalTokens": 1557166,
+        "costUsd": 0.11792696000000001,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/client/desktop/DesktopDownloadManagerTest.ts...\nChecking patch test/client/nodemocker.ts...\nApplied patch test/client/desktop/DesktopDownloadManagerTest.ts cleanly.\nApplied patch test/client/nodemocker.ts cleanly.\nRequired tests: 4\nPassed tests: 3\nRequired tests that passed: 3\n\nRESULT: FAILED\nMissing tests: ['test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::down"
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "search": 2,
+        "read_file": 14,
+        "bash": 26,
+        "run_tests": 2,
+        "act": 1,
+        "set_phase": 1,
+        "edit_file": 4
+      },
+      "wallMs": 344982,
+      "patchChars": 7180
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
       "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
       "arm": "anchor",
       "status": "completed",
@@ -3506,153 +3707,6 @@
       },
       "wallMs": 401759,
       "patchChars": 6347
-    },
-    {
-      "bench": "swe-pro",
-      "model": "qwen/qwen3-coder-next",
-      "variant": "baseline",
-      "taskId": "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
-      "arm": "anchor",
-      "status": "completed",
-      "steps": 50,
-      "reason": "max_steps",
-      "usage": {
-        "promptTokens": 1218621,
-        "completionTokens": 6512,
-        "totalTokens": 1225133,
-        "costUsd": 0.09280092000000001,
-        "reasoningTokens": 0
-      },
-      "reward": 0,
-      "checks": [
-        {
-          "id": "task-verifier",
-          "ok": false,
-          "weight": 1,
-          "exitCode": 1,
-          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch .github/workflows/integration-test.yml...\nChecking patch internal/cache/redis/client_test.go...\nChecking patch internal/config/config_test.go...\nChecking patch build/testing/integration.go...\nChecking patch internal/config/testdata/cache/redis-ca-bytes.yml...\nChecking patch internal/config/testdata/cache/redis-ca-invalid.yml...\nChecking patch internal/config/testdata/cache/redis-ca-path.yml...\nCh"
-        }
-      ],
-      "toolCalls": {
-        "set_phase": 1,
-        "bash": 17,
-        "read_file": 22,
-        "write_file": 2,
-        "edit_file": 9
-      },
-      "wallMs": 329439,
-      "patchChars": 4671
-    },
-    {
-      "bench": "swe-pro",
-      "model": "qwen/qwen3-coder-next",
-      "variant": "baseline",
-      "taskId": "instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
-      "arm": "anchor",
-      "status": "completed",
-      "steps": 50,
-      "reason": "max_steps",
-      "usage": {
-        "promptTokens": 1981309,
-        "completionTokens": 5093,
-        "totalTokens": 1986402,
-        "costUsd": 0.14627787999999997,
-        "reasoningTokens": 0
-      },
-      "reward": 0,
-      "checks": [
-        {
-          "id": "task-verifier",
-          "ok": false,
-          "weight": 1,
-          "exitCode": 1,
-          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch tests/unit/components/test_blockutils.py...\nChecking patch tests/unit/utils/test_version.py...\nApplied patch tests/unit/components/test_blockutils.py cleanly.\nApplied patch tests/unit/utils/test_version.py cleanly.\nRequired tests: 49\nPassed tests: 48\nRequired tests that passed: 48\n\nRESULT: FAILED\nMissing tests: ['tests/unit/utils/test_version.py::TestModuleVersions::test_version_attribute[SIP_VER"
-        }
-      ],
-      "toolCalls": {
-        "run_tests": 3,
-        "search": 3,
-        "bash": 20,
-        "read_file": 20,
-        "set_phase": 3,
-        "edit_file": 1
-      },
-      "wallMs": 363909,
-      "patchChars": 764
-    },
-    {
-      "bench": "swe-pro",
-      "model": "qwen/qwen3-coder-next",
-      "variant": "baseline",
-      "taskId": "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
-      "arm": "anchor",
-      "status": "completed",
-      "steps": 50,
-      "reason": "max_steps",
-      "usage": {
-        "promptTokens": 1443661,
-        "completionTokens": 17337,
-        "totalTokens": 1460998,
-        "costUsd": 0.11728651999999996,
-        "reasoningTokens": 0
-      },
-      "reward": 1,
-      "checks": [
-        {
-          "id": "task-verifier",
-          "ok": true,
-          "weight": 1,
-          "exitCode": 0,
-          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch contrib/snmp2cpe/pkg/cpe/cpe_test.go...\nApplied patch contrib/snmp2cpe/pkg/cpe/cpe_test.go cleanly.\nRequired tests: 24\nPassed tests: 24\nRequired tests that passed: 24\n\nRESULT: PASSED\n"
-        }
-      ],
-      "toolCalls": {
-        "run_tests": 16,
-        "read_file": 13,
-        "bash": 18,
-        "edit_file": 3
-      },
-      "wallMs": 435599,
-      "patchChars": 5985
-    },
-    {
-      "bench": "swe-pro",
-      "model": "qwen/qwen3-coder-next",
-      "variant": "baseline",
-      "taskId": "instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
-      "arm": "anchor",
-      "status": "completed",
-      "steps": 50,
-      "reason": "max_steps",
-      "usage": {
-        "promptTokens": 1548498,
-        "completionTokens": 8668,
-        "totalTokens": 1557166,
-        "costUsd": 0.11792696000000001,
-        "reasoningTokens": 0
-      },
-      "reward": 0,
-      "checks": [
-        {
-          "id": "task-verifier",
-          "ok": false,
-          "weight": 1,
-          "exitCode": 1,
-          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/client/desktop/DesktopDownloadManagerTest.ts...\nChecking patch test/client/nodemocker.ts...\nApplied patch test/client/desktop/DesktopDownloadManagerTest.ts cleanly.\nApplied patch test/client/nodemocker.ts cleanly.\nRequired tests: 4\nPassed tests: 3\nRequired tests that passed: 3\n\nRESULT: FAILED\nMissing tests: ['test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::down"
-        }
-      ],
-      "toolCalls": {
-        "understand": 1,
-        "search": 2,
-        "read_file": 14,
-        "bash": 26,
-        "run_tests": 2,
-        "act": 1,
-        "set_phase": 1,
-        "edit_file": 4
-      },
-      "wallMs": 344982,
-      "patchChars": 7180
     },
     {
       "bench": "terminal-bench",
