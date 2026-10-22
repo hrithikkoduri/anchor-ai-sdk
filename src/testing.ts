@@ -2,9 +2,9 @@
  * Sandbox conformance — the executable contract every provider must pass.
  *
  * Scenarios live here once and run against any `SandboxProvider`: exec
- * fidelity, self-containment, kill deadlines, env secrets, checkpoints,
- * destruction, retention/adoption — plus clone, fork, and host-path scenarios
- * where the provider honestly declares the capability. A provider that passes
+ * fidelity, self-containment, kill deadlines, env secrets, persistent process
+ * streams, checkpoints, destruction, retention/adoption — plus clone, fork,
+ * and host-path scenarios where the provider honestly declares the capability. A provider that passes
  * this file may call itself an adapter; one that fails has a bug, and one that
  * silently skips a capability it declares has a missing feature.
  *
@@ -90,6 +90,15 @@ async function exists(p: string): Promise<boolean> {
   );
 }
 
+/** Drain a ProcessHandle stream to a UTF-8 string. */
+async function readProcessStream(
+  stream: AsyncIterable<Uint8Array>,
+): Promise<string> {
+  let text = "";
+  for await (const chunk of stream) text += Buffer.from(chunk).toString("utf8");
+  return text;
+}
+
 /** A host repo with `main` (v1) and a `feature` branch (v1+feature). */
 async function buildCloneFixture(
   ctx: ConformanceContext,
@@ -128,6 +137,11 @@ const hasRepoAccess = (ctx: ConformanceContext): string | undefined =>
   ctx.options.repo || ctx.provider.capabilities.localPath
     ? undefined
     : "needs options.repo (this provider has no host-path access)";
+
+const hasProcessStream = (ctx: ConformanceContext): string | undefined =>
+  ctx.provider.capabilities.processStream
+    ? undefined
+    : "provider declares processStream: false";
 
 const SCENARIOS: Scenario[] = [
   {
@@ -199,6 +213,90 @@ const SCENARIOS: Scenario[] = [
           env: { EXTRA_VAR: "extra" },
         });
         expect(r.stdout.trim()).toBe("base/extra");
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
+
+  {
+    name: "process streams: stdin reaches stdout and exit status is reported",
+    skip: hasProcessStream,
+    run: async ({ provider }) => {
+      const sb = provider.create({});
+      await sb.start();
+      try {
+        if (!sb.openProcess)
+          throw new Error("processStream is declared but openProcess is missing");
+        const proc = await sb.openProcess("cat", []);
+        await proc.write("hello from stdin\n");
+        await proc.endInput();
+        const [stdout, exit] = await Promise.all([
+          readProcessStream(proc.stdout),
+          proc.wait(),
+        ]);
+        expect(stdout).toContain("hello from stdin");
+        expect(exit.exitCode).toBe(0);
+        expect(exit.timedOut).toBe(false);
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
+
+  {
+    name: "process streams: kill terminates a process and wait resolves",
+    skip: hasProcessStream,
+    run: async ({ provider }) => {
+      const sb = provider.create({});
+      await sb.start();
+      try {
+        if (!sb.openProcess)
+          throw new Error("processStream is declared but openProcess is missing");
+        const proc = await sb.openProcess("sleep", ["30"]);
+        expect(await proc.kill("SIGKILL")).toBe(true);
+        const exit = await proc.wait();
+        expect(exit.timedOut).toBe(false);
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
+
+  {
+    name: "process streams: timeout kills the process and reports timedOut",
+    skip: hasProcessStream,
+    run: async ({ provider }) => {
+      const sb = provider.create({});
+      await sb.start();
+      try {
+        if (!sb.openProcess)
+          throw new Error("processStream is declared but openProcess is missing");
+        const started = Date.now();
+        const proc = await sb.openProcess("sleep", ["30"], {
+          timeoutSecs: 1,
+        });
+        const exit = await proc.wait();
+        expect(exit.timedOut).toBe(true);
+        expect(Date.now() - started).toBeLessThan(15_000);
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
+
+  {
+    name: "process streams: destroy closes an open process",
+    skip: hasProcessStream,
+    run: async ({ provider }) => {
+      const sb = provider.create({});
+      await sb.start();
+      try {
+        if (!sb.openProcess)
+          throw new Error("processStream is declared but openProcess is missing");
+        const proc = await sb.openProcess("sleep", ["30"]);
+        await sb.destroy();
+        await proc.wait();
       } finally {
         await sb.destroy();
       }
