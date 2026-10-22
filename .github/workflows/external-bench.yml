@@ -193,9 +193,10 @@ jobs:
             git rm -rf . --quiet || true
           fi
           mkdir -p latest "runs/$GITHUB_RUN_ID"
-          cp external-results/summary.json latest/
-          cp external-results/summary.md latest/
-          cp -R external-results/. "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.json latest/
+          cp .bench-results/summary.md latest/
+          cp .bench-results/summary.json "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.md "runs/$GITHUB_RUN_ID/"
           git add latest runs
           git commit -m "external bench: run $GITHUB_RUN_ID" || true
           git push origin HEAD:external-bench-results

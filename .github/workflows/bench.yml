@@ -198,7 +198,8 @@ jobs:
           mkdir -p latest "runs/$GITHUB_RUN_ID"
           cp .bench-results/summary.json latest/
           cp .bench-results/summary.md latest/
-          cp -R .bench-results/. "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.json "runs/$GITHUB_RUN_ID/"
+          cp .bench-results/summary.md "runs/$GITHUB_RUN_ID/"
           mkdir -p dashboard
           cp -R /tmp/anchor-dashboard/. dashboard/
           git add latest runs dashboard
