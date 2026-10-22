@@ -120,6 +120,26 @@ jobs:
           PY="${PYTHON_BIN:-python}"
           "$PY" -m pip install --upgrade pip
           "$PY" -m pip install harbor
+          # Harbor 0.24's SWE-agent adapter has two bugs on these images:
+          #   1. the /app fallback emits a literal $(pwd);
+          #   2. it starts in the workspace, so Python 3.12 imports the old
+          #      vendored requests package from /testbed.
+          # Pin the repo path for /app tasks and start the agent from /.
+          "$PY" - <<'PY'
+          from pathlib import Path
+          import harbor
+          path = Path(harbor.__file__).parent / "agents/installed/swe_agent.py"
+          text = path.read_text()
+          text = text.replace(
+              'echo \'--env.repo.path=$(pwd)\'',
+              'echo "--env.repo.path=/app"',
+          )
+          text = text.replace(
+              'command = " ".join(cmd_parts)',
+              'command = "cd / && " + " ".join(cmd_parts)',
+          )
+          path.write_text(text)
+          PY
           sudo apt-get update && sudo apt-get install -y tmux
       - name: Free disk
         run: |
