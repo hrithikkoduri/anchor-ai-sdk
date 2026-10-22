@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T16:08:34.376Z",
+  "generatedAt": "2026-10-22T16:18:53.257Z",
   "runs": [
     {
       "bench": "swe-lite",
@@ -9,15 +9,15 @@
       "results": [
         {
           "taskId": "swe-bench-lite/psf__requests-1963",
-          "status": "completed",
+          "status": "failed",
           "reward": 0,
+          "error": "Agent setup timed out after 360.0 seconds",
           "usage": {
             "promptTokens": 0,
             "completionTokens": 0,
-            "totalTokens": 0,
-            "costUsd": 0
+            "totalTokens": 0
           },
-          "wallMs": 167370
+          "wallMs": 406075
         }
       ],
       "tasks": 1,
@@ -30,8 +30,8 @@
         "completion": 0,
         "cached": 0
       },
-      "p50WallMs": 167370,
-      "p95WallMs": 167370
+      "p50WallMs": 406075,
+      "p95WallMs": 406075
     }
   ]
 }

@@ -1,0 +1,5 @@
+Skipping image OS validation for swebench/sweb.eval.x86_64.psf_1776_requests-1963:latest: docker inspect returned 1
+Running command: apt-get update && apt-get install -y tmux
+Trial psf__requests-1963__JNwUpET failed: Agent setup timed out after 360.0 seconds
+Collecting main service artifacts
+Not retrying trial because the maximum number of retries has been reached
