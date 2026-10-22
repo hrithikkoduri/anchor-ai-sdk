@@ -1,0 +1,44 @@
+{
+    "id": "d05d6e82-3668-4578-92bd-fec0284ba94b",
+    "started_at": "2026-10-22T08:03:14.724687",
+    "updated_at": "2026-10-22T08:25:56.103530",
+    "finished_at": "2026-10-22T08:25:56.103530",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 1,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 1,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "adaptive-rejection-sampler__kG7BjDb",
+                            "chess-best-move__n5Nx8uK"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "adaptive-rejection-sampler__kG7BjDb"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": 1834374,
+        "n_cache_tokens": 1695648,
+        "n_output_tokens": 36259,
+        "cost_usd": 0.16434967999999997
+    }
+}

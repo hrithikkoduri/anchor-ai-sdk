@@ -1,0 +1,45 @@
+{
+    "id": "a96b2df6-93b5-46f0-afcc-ed6431cce905",
+    "started_at": "2026-10-22T08:03:42.636677",
+    "updated_at": "2026-10-22T08:10:48.374143",
+    "finished_at": "2026-10-22T08:10:48.374143",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_NodeBB__NodeBB-00c70ce7__makrwES",
+                            "instance_gravitational__teleport__6TKKdhM"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_NodeBB__NodeBB-00c70ce7__makrwES",
+                        "instance_gravitational__teleport__6TKKdhM"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

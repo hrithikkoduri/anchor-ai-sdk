@@ -1,0 +1,163 @@
+{
+    "id": "1a8bfcde-77a1-4d5f-83ce-706a5163bc6f",
+    "task_name": "terminal-bench/build-cython-ext",
+    "trial_name": "build-cython-ext__N48WCte",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-3/terminal-bench-external-qwen-qwen3-coder-next-shard-3/build-cython-ext__N48WCte",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/build-cython-ext"
+    },
+    "source": "tasks",
+    "task_checksum": "28a8276ce3f7d111a77b0c08832b723e43236c35c3452639093bff1a6f2c3727",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/build-cython-ext",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "build-cython-ext__N48WCte",
+        "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-3/terminal-bench-external-qwen-qwen3-coder-next-shard-3",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "8101ce97-46ef-4cad-a7fd-678180b85124",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 536854,
+        "n_cache_tokens": 474912,
+        "n_output_tokens": 7316,
+        "cost_usd": 0.046529680000000004,
+        "model_usage": {
+            "qwen/qwen3-coder-next": {
+                "n_input_tokens": 536854,
+                "n_cache_tokens": 474912,
+                "n_output_tokens": 7316,
+                "cost_usd": 0.046529680000000004
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 29,
+            "api_request_times_msec": [
+                2678.8294315338135,
+                2734.358549118042,
+                5644.836187362671,
+                2676.710844039917,
+                2305.335760116577,
+                3546.374797821045,
+                1503.4606456756592,
+                1879.744529724121,
+                3243.818521499634,
+                4452.924489974976,
+                3932.375907897949,
+                2965.2199745178223,
+                5077.297210693359,
+                3238.9297485351562,
+                5257.8325271606445,
+                6776.371717453003,
+                4109.165191650391,
+                4776.3831615448,
+                3023.167371749878,
+                3554.3813705444336,
+                6333.285331726074,
+                3052.3433685302734,
+                6114.877223968506,
+                6552.889347076416,
+                4443.315505981445,
+                4183.54344367981,
+                3540.022611618042,
+                3458.428144454956,
+                2044.9435710906982
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T08:21:29.752432Z",
+    "finished_at": "2026-10-22T08:31:13.732435Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:21:29.877819Z",
+        "finished_at": "2026-10-22T08:21:45.627564Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:21:45.627638Z",
+        "finished_at": "2026-10-22T08:21:52.926238Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:21:52.926368Z",
+        "finished_at": "2026-10-22T08:30:55.575148Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:30:55.913998Z",
+        "finished_at": "2026-10-22T08:31:01.488915Z"
+    },
+    "step_results": null
+}

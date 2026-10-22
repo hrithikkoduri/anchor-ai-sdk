@@ -1,0 +1,330 @@
+[?2004hroot@5b5477d607ca:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@5b5477d607ca:/app# clear
+[?2004l[H[J[3J[?2004hroot@5b5477d607ca:/app# ls -la /app
+[?2004ltotal 836
+drwxr-xr-x 1 root root   4096 Oct 31  2025 [0m[01;34m.[0m
+drwxr-xr-x 1 root root   4096 Oct 22 08:12 [01;34m..[0m
+-rw-r--r-- 1 root root 844949 Oct 31  2025 bn_sample_10k.csv
+[?2004hroot@5b5477d607ca:/app# head -5 /app/bn_sample_10k.csv
+[?2004l"U","Y","R","D","M"
+65.1595787086976,55.0497451938166,73.1506268775402,57.6615550291927,64.3384681778361
+44.6029054197735,43.600175682188,38.589412608575,45.9401940372555,21.2469494226791
+54.4564237284025,54.1307611128149,47.302573583304,41.8194189531508,52.392400251044
+57.3210008646862,61.0491365637276,48.9899101338243,54.4998895140635,52.223173316915
+[?2004hroot@5b5477d607ca:/app# python3 - <<'PY'
+[?2004l[?2004h> import pandas as pd, numpy as np
+[?2004l[?2004h> from scipy import stats
+[?2004l[?2004h> df=pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> print(df.shape)
+[?2004l[?2004h> print(df.columns.tolist())
+[?2004l[?2004h> print(df.describe().T)
+[?2004l[?2004h> print('\nCorrelation:')
+[?2004l[?2004h> print(df.corr().round(4))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'pandas'
+[?2004hroot@5b5477d607ca:/app# python3 --version && pip3 --version || true
+[?2004lPython 3.12.3
+python3 - <<'PY'
+mods=['numpy','scipy','sklearn','pgmpy','networkx','causallearn','statsmodels']
+for m in mods:
+    try:
+        __import__(m)
+        print(m,'OK')
+    except Exception as e:
+        print(m,'NO')
+PY
+pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)
+[?2004hroot@5b5477d607ca:/app# python3 - <<'PY'
+[?2004l[?2004h> mods=['numpy','scipy','sklearn','pgmpy','networkx','causallearn','statsmodels']
+[?2004l[?2004h> for m in mods:
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         __import__(m)
+[?2004l[?2004h>         print(m,'OK')
+[?2004l[?2004h>     except Exception as e:
+[?2004l[?2004h>         print(m,'NO')
+[?2004l[?2004h> PY
+[?2004lnumpy NO
+scipy NO
+sklearn NO
+pgmpy NO
+networkx NO
+causallearn NO
+statsmodels NO
+[?2004hroot@5b5477d607ca:/app# which R Rscript || true
+[?2004l/usr/bin/R
+/usr/bin/Rscript
+[?2004hroot@5b5477d607ca:/app# Rscript -e 'ip<-rownames(installed.packages()); cat(length(ip),"packages\n"); cat(ip, sep="\n")' | head -100
+[?2004l29 packages
+KernSmooth
+MASS
+Matrix
+base
+boot
+class
+cluster
+codetools
+compiler
+datasets
+foreign
+grDevices
+graphics
+grid
+lattice
+methods
+mgcv
+nlme
+nnet
+parallel
+rpart
+spatial
+splines
+stats
+stats4
+survival
+tcltk
+tools
+utils
+[?2004hroot@5b5477d607ca:/app# Rscript - <<'RS'
+[?2004l[?2004h> df <- read.csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> print(dim(df))
+[?2004l[?2004h> print(names(df))
+[?2004l[?2004h> print(round(cor(df),4))
+[?2004l[?2004h> RS
+[?2004l[1] 10000     5
+[1] "U" "Y" "R" "D" "M"
+       U      Y      R      D      M
+U 1.0000 0.6028 0.7044 0.5372 0.6620
+Y 0.6028 1.0000 0.4305 0.5395 0.3848
+R 0.7044 0.4305 1.0000 0.3816 0.5986
+D 0.5372 0.5395 0.3816 1.0000 0.3479
+M 0.6620 0.3848 0.5986 0.3479 1.0000
+[?2004hroot@5b5477d607ca:/app# Rscript - <<'RS'
+[?2004l[?2004h> df <- read.csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> V <- names(df)
+[?2004l[?2004h> n <- nrow(df)
+[?2004l[?2004h> S <- cov(df)
+[?2004l[?2004h> pc <- function(x,y,Z){
+[?2004l[?2004h>   idx <- c(x,y,Z)
+[?2004l[?2004h>   P <- tryCatch(solve(S[idx,idx]), error=function(e) NULL)
+[?2004l[?2004h>   if(is.null(P)) return(c(r=NA,p=NA))
+[?2004l[?2004h>   r <- -P[1,2]/sqrt(P[1,1]*P[2,2])
+[?2004l[?2004h>   k <- length(Z)
+[?2004l[?2004h>   z <- 0.5*log((1+r)/(1-r))*sqrt(n-k-3)
+[?2004l[?2004h>   p <- 2*pnorm(-abs(z))
+[?2004l[?2004h>   c(r=r,p=p)
+[?2004l[?2004h> }
+[?2004l[?2004h> for(i in 1:(length(V)-1)) for(j in (i+1):length(V)){
+[?2004l[?2004h>   x<-V[i]; y<-V[j]; others<-setdiff(V,c(x,y))
+[?2004l[?2004h>   cat('\nPAIR',x,y,'\n')
+[?2004l[?2004h>   for(k in 0:length(others)){
+[?2004l[?2004h>     combs <- if(k==0) list(character(0)) else combn(others,k,simplify=FALSE)
+[?2004l[?2004h>     for(Z in combs){
+[?2004l[?2004h>       res <- pc(x,y,Z)
+[?2004l[?2004h>       cat(sprintf('  cond {%s}: r=% .4f p=%.3g%s\n', paste(Z,collapse=','), res['r'], res['p'], ifelse(res['p']>0.01,' *','')))
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h> }
+[?2004l[?2004h> RS
+[?2004l
+PAIR U Y 
+  cond {}: r= 0.6028 p=0
+  cond {R}: r= 0.4675 p=0
+  cond {D}: r= 0.4407 p=0
+  cond {M}: r= 0.5031 p=0
+  cond {R,D}: r= 0.3479 p=1.76e-288
+  cond {R,M}: r= 0.4408 p=0
+  cond {D,M}: r= 0.3755 p=0
+  cond {R,D,M}: r= 0.3307 p=1.46e-258
+
+PAIR U R 
+  cond {}: r= 0.7044 p=0
+  cond {Y}: r= 0.6178 p=0
+  cond {D}: r= 0.6406 p=0
+  cond {M}: r= 0.5132 p=0
+  cond {Y,D}: r= 0.5973 p=0
+  cond {Y,M}: r= 0.4532 p=0
+  cond {D,M}: r= 0.4712 p=0
+  cond {Y,D,M}: r= 0.4397 p=0
+
+PAIR U D 
+  cond {}: r= 0.5372 p=0
+  cond {Y}: r= 0.3156 p=5.11e-234
+  cond {R}: r= 0.4091 p=0
+  cond {M}: r= 0.4367 p=0
+  cond {Y,R}: r= 0.2518 p=5.85e-146
+  cond {Y,M}: r= 0.2632 p=6.43e-160
+  cond {R,M}: r= 0.3811 p=0
+  cond {Y,R,M}: r= 0.2349 p=1.66e-126
+
+PAIR U M 
+  cond {}: r= 0.6620 p=0
+  cond {Y}: r= 0.5840 p=0
+  cond {R}: r= 0.4227 p=0
+  cond {D}: r= 0.6008 p=0
+  cond {Y,R}: r= 0.3913 p=0
+  cond {Y,D}: r= 0.5646 p=0
+  cond {R,D}: r= 0.3961 p=0
+  cond {Y,R,D}: r= 0.3817 p=0
+
+PAIR Y R 
+  cond {}: r= 0.4305 p=0
+  cond {U}: r= 0.0104 p=0.296 *
+  cond {D}: r= 0.2887 p=6.8e-194
+  cond {M}: r= 0.2708 p=1.19e-169
+  cond {U,D}: r= 0.0092 p=0.357 *
+  cond {U,M}: r= 0.0169 p=0.0908 *
+  cond {D,M}: r= 0.1891 p=1.19e-81
+  cond {U,D,M}: r= 0.0149 p=0.136 *
+
+PAIR Y D 
+  cond {}: r= 0.5395 p=0
+  cond {U}: r= 0.3205 p=7.83e-242
+  cond {R}: r= 0.4497 p=0
+  cond {M}: r= 0.4687 p=0
+  cond {U,R}: r= 0.3204 p=9.38e-242
+  cond {U,M}: r= 0.3203 p=1.59e-241
+  cond {R,M}: r= 0.4337 p=0
+  cond {U,R,M}: r= 0.3202 p=2.34e-241
+
+PAIR Y M 
+  cond {}: r= 0.3848 p=0
+  cond {U}: r=-0.0239 p=0.017 *
+  cond {R}: r= 0.1757 p=1.64e-70
+  cond {D}: r= 0.2497 p=1.86e-143
+  cond {U,R}: r=-0.0273 p=0.00629
+  cond {U,D}: r=-0.0210 p=0.0353 *
+  cond {R,D}: r= 0.1171 p=6.54e-32
+  cond {U,R,D}: r=-0.0241 p=0.016 *
+
+PAIR R D 
+  cond {}: r= 0.3816 p=0
+  cond {U}: r= 0.0054 p=0.592 *
+  cond {Y}: r= 0.1965 p=3.44e-88
+  cond {M}: r= 0.2309 p=3.65e-122
+  cond {U,Y}: r= 0.0021 p=0.832 *
+  cond {U,M}: r= 0.0087 p=0.385 *
+  cond {Y,M}: r= 0.1222 p=1.14e-34
+  cond {U,Y,M}: r= 0.0034 p=0.73 *
+
+PAIR R M 
+  cond {}: r= 0.5986 p=0
+  cond {U}: r= 0.2487 p=2.73e-142
+  cond {Y}: r= 0.5197 p=0
+  cond {D}: r= 0.5376 p=0
+  cond {U,Y}: r= 0.2490 p=1.14e-142
+  cond {U,D}: r= 0.2488 p=2.22e-142
+  cond {Y,D}: r= 0.5021 p=0
+  cond {U,Y,D}: r= 0.2490 p=1.14e-142
+
+PAIR D M 
+  cond {}: r= 0.3479 p=1.79e-288
+  cond {U}: r=-0.0123 p=0.221 *
+  cond {Y}: r= 0.1805 p=2.11e-74
+  cond {R}: r= 0.1613 p=1.65e-59
+  cond {U,Y}: r=-0.0049 p=0.627 *
+  cond {U,R}: r=-0.0140 p=0.161 *
+  cond {Y,R}: r= 0.0936 p=6.46e-21
+  cond {U,Y,R}: r=-0.0056 p=0.578 *
+[?2004hroot@5b5477d607ca:/app# Rscript - <<'RS'
+[?2004l[?2004h> df <- read.csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> fitU <- lm(U ~ 1, data=df)
+[?2004l[?2004h> fitY <- lm(Y ~ U, data=df)
+[?2004l[?2004h> fitR <- lm(R ~ U, data=df)
+[?2004l[?2004h> fitD <- lm(D ~ U + Y, data=df)
+[?2004l[?2004h> fitM <- lm(M ~ U + R, data=df)
+[?2004l[?2004h> cat('U mean/sd:', coef(fitU), summary(fitU)$sigma, '\n')
+[?2004l[?2004h> cat('Y ~ U:'); print(summary(fitY)$coefficients); cat('sigma=', summary(fitY)$sigma, '\n')
+[?2004l[?2004h> cat('R ~ U:'); print(summary(fitR)$coefficients); cat('sigma=', summary(fitR)$sigma, '\n')
+[?2004l[?2004h> cat('D ~ U + Y:'); print(summary(fitD)$coefficients); cat('sigma=', summary(fitD)$sigma, '\n')
+[?2004l[?2004h> cat('M ~ U + R:'); print(summary(fitM)$coefficients); cat('sigma=', summary(fitM)$sigma, '\n')
+[?2004l[?2004h> # BIC score for the fitted DAG (Gaussian likelihood)
+[?2004l[?2004h> ll <- sum(dnorm(df$U, mean=coef(fitU), sd=summary(fitU)$sigma, log=TRUE))
+[?2004l[?2004h> ll <- ll + sum(dnorm(df$Y, mean=fitted(fitY), sd=summary(fitY)$sigma, log=TRUE))
+[?2004l[?2004h> ll <- ll + sum(dnorm(df$R, mean=fitted(fitR), sd=summary(fitR)$sigma, log=TRUE))
+[?2004l[?2004h> ll <- ll + sum(dnorm(df$D, mean=fitted(fitD), sd=summary(fitD)$sigma, log=TRUE))
+[?2004l[?2004h> ll <- ll + sum(dnorm(df$M, mean=fitted(fitM), sd=summary(fitM)$sigma, log=TRUE))
+[?2004l[?2004h> k <- 1 + 2 + 2 + 3 + 3
+[?2004l[?2004h> cat('loglik=',ll,' BIC=', -2*ll + k*log(nrow(df)), '\n')
+[?2004l[?2004h> learned <- data.frame(to=c('Y','R','D','M','D','M'), from=c('U','U','U','U','Y','R'))
+[?2004l[?2004h> write.csv(learned, '/app/learned_dag.csv', row.names=FALSE, quote=FALSE)
+[?2004l[?2004h> cat('wrote learned_dag.csv\n')
+[?2004l[?2004h> cat(readLines('/app/learned_dag.csv'), sep='\n')
+[?2004l[?2004h> RS
+[?2004lU mean/sd: 50.47989 10.68515 
+Y ~ U:              Estimate  Std. Error  t value      Pr(>|t|)
+(Intercept) 12.4283907 0.513206767 24.21712 5.949673e-126
+U            0.7513157 0.009946202 75.53794  0.000000e+00
+sigma= 10.62714 
+R ~ U:              Estimate  Std. Error   t value     Pr(>|t|)
+(Intercept) -3.1974119 0.510999396 -6.257174 4.080825e-10
+U            0.9827893 0.009903423 99.237334 0.000000e+00
+sigma= 10.58143 
+D ~ U + Y:               Estimate Std. Error   t value      Pr(>|t|)
+(Intercept) -12.2965135 0.70018998 -17.56168  5.056897e-68
+U             0.5495886 0.01652917  33.24961 5.107599e-230
+Y             0.4485709 0.01326139  33.82533 1.459392e-237
+sigma= 14.09165 
+M ~ U + R:               Estimate Std. Error   t value      Pr(>|t|)
+(Intercept) -11.3570201 0.60396834 -18.80400  1.511824e-77
+U             0.7675166 0.01645928  46.63124  0.000000e+00
+R             0.3028659 0.01179746  25.67213 8.181262e-141
+sigma= 12.48215 
+loglik= -193553.9  BIC= 387209.1 
+wrote learned_dag.csv
+to,from
+Y,U
+R,U
+D,U
+M,U
+D,Y
+M,R
+[?2004hroot@5b5477d607ca:/app# Rscript - <<'RS'
+[?2004l[?2004h> df <- read.csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> fitU <- lm(U ~ 1, data=df)
+[?2004l[?2004h> fitR <- lm(R ~ U, data=df)
+[?2004l[?2004h> fitD <- lm(D ~ U + Y, data=df)
+[?2004l[?2004h> fitM <- lm(M ~ U + R, data=df)
+[?2004l[?2004h> 
+[?2004l[?2004h> intervened_edges <- data.frame(
+[?2004l[?2004h>   to = c('R','D','M','D','M'),
+[?2004l[?2004h>   from = c('U','U','U','Y','R')
+[?2004l[?2004h> )
+[?2004l[?2004h> write.csv(intervened_edges, '/app/intervened_dag.csv', row.names=FALSE, quote=FALSE)
+[?2004l[?2004h> cat('Intervened DAG edges:\n')
+[?2004l[?2004h> cat(readLines('/app/intervened_dag.csv'), sep='\n')
+[?2004l[?2004h> 
+[?2004l[?2004h> set.seed(123)
+[?2004l[?2004h> N <- 10000
+[?2004l[?2004h> U <- rnorm(N, mean=coef(fitU)[1], sd=summary(fitU)$sigma)
+[?2004l[?2004h> Y <- rep(0.0, N)
+[?2004l[?2004h> R <- coef(fitR)[1] + coef(fitR)[2]*U + rnorm(N, sd=summary(fitR)$sigma)
+[?2004l[?2004h> D <- coef(fitD)[1] + coef(fitD)[2]*U + coef(fitD)[3]*Y + rnorm(N, sd=summary(fitD)$sigma)
+[?2004l[?2004h> M <- coef(fitM)[1] + coef(fitM)[2]*U + coef(fitM)[3]*R + rnorm(N, sd=summary(fitM)$sigma)
+[?2004l[?2004h> final <- data.frame(U=U, Y=Y, R=R, D=D, M=M)
+[?2004l[?2004h> write.csv(final, '/app/final_bn_sample.csv', row.names=FALSE, quote=FALSE)
+[?2004l[?2004h> cat('\nfinal_bn_sample.csv dimensions:', dim(final), '\n')
+[?2004l[?2004h> print(head(final))
+[?2004l[?2004h> cat('Y summary:', summary(final$Y), '\n')
+[?2004l[?2004h> RS
+[?2004lIntervened DAG edges:
+to,from
+R,U
+D,U
+M,U
+D,Y
+M,R
+
+final_bn_sample.csv dimensions: 10000 5 
+         U Y        R          D        M
+1 44.49113 0 65.61365  0.3705037 40.24617
+2 48.02041 0 42.23142 10.9867223 41.51214
+3 67.13493 0 72.59065 -5.0419117 55.43609
+4 51.23329 0 41.14225 -7.6414402 25.70873
+5 51.86135 0 50.15314  0.7337893 54.87912
+6 68.80562 0 76.40204  2.0469256 64.38918
+Y summary: 0 0 0 0 0 0 
+[?2004hroot@5b5477d607ca:/app# 

@@ -1,0 +1,45 @@
+{
+    "id": "76699710-46f0-430b-8e7a-4f26c2d7ee00",
+    "started_at": "2026-10-22T08:01:16.933001",
+    "updated_at": "2026-10-22T08:06:01.567738",
+    "finished_at": "2026-10-22T08:06:01.567738",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__deepseek/deepseek-v4.1-flash-1017__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_future-architect__vuls__8FRj9Go",
+                            "instance_tutao__tutanota-5181821__kqm8nCy"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_future-architect__vuls__8FRj9Go",
+                        "instance_tutao__tutanota-5181821__kqm8nCy"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

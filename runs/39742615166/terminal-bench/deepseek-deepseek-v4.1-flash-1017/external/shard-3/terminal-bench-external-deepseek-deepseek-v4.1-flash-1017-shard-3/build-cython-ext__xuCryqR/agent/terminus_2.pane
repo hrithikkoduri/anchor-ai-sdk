@@ -1,0 +1,1842 @@
+[?2004hroot@c8081b6868e4:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@c8081b6868e4:/app# clear
+[?2004l[H[J[3J[?2004hroot@c8081b6868e4:/app# pwd && ls -la
+[?2004l/app
+total 8
+drwxr-xr-x 2 root root 4096 Aug 22  2025 .
+drwxr-xr-x 1 root root 4096 Oct 22 08:11 ..
+[?2004hroot@c8081b6868e4:/app# python3 --version && python3 -c 'import numpy; print(numpy.__version__)' && which gcc && which cython || true
+[?2004lPython 3.13.7
+2.3.0
+/usr/bin/gcc
+[?2004hroot@c8081b6868e4:/app# git clone --depth 1 --branch 0.5.3 https://github.com/SPOCKnots/pyknotid.git /app/pyknotid
+[?2004lCloning into '/app/pyknotid'...
+remote: Enumerating objects: 168, done.[K
+remote: Counting objects:   0% (1/168)[Kremote: Counting objects:   1% (2/168)[Kremote: Counting objects:   2% (4/168)[Kremote: Counting objects:   3% (6/168)[Kremote: Counting objects:   4% (7/168)[Kremote: Counting objects:   5% (9/168)[Kremote: Counting objects:   6% (11/168)[Kremote: Counting objects:   7% (12/168)[Kremote: Counting objects:   8% (14/168)[Kremote: Counting objects:   9% (16/168)[Kremote: Counting objects:  10% (17/168)[Kremote: Counting objects:  11% (19/168)[Kremote: Counting objects:  12% (21/168)[Kremote: Counting objects:  13% (22/168)[Kremote: Counting objects:  14% (24/168)[Kremote: Counting objects:  15% (26/168)[Kremote: Counting objects:  16% (27/168)[Kremote: Counting objects:  17% (29/168)[Kremote: Counting objects:  18% (31/168)[Kremote: Counting objects:  19% (32/168)[Kremote: Counting objects:  20% (34/168)[Kremote: Counting objects:  21% (36/168)[Kremote: Counting objects:  22% (37/168)[Kremote: Counting objects:  23% (39/168)[Kremote: Counting objects:  24% (41/168)[Kremote: Counting objects:  25% (42/168)[Kremote: Counting objects:  26% (44/168)[Kremote: Counting objects:  27% (46/168)[Kremote: Counting objects:  28% (48/168)[Kremote: Counting objects:  29% (49/168)[Kremote: Counting objects:  30% (51/168)[Kremote: Counting objects:  31% (53/168)[Kremote: Counting objects:  32% (54/168)[Kremote: Counting objects:  33% (56/168)[Kremote: Counting objects:  34% (58/168)[Kremote: Counting objects:  35% (59/168)[Kremote: Counting objects:  36% (61/168)[Kremote: Counting objects:  37% (63/168)[Kremote: Counting objects:  38% (64/168)[Kremote: Counting objects:  39% (66/168)[Kremote: Counting objects:  40% (68/168)[Kremote: Counting objects:  41% (69/168)[Kremote: Counting objects:  42% (71/168)[Kremote: Counting objects:  43% (73/168)[Kremote: Counting objects:  44% (74/168)[Kremote: Counting objects:  45% (76/168)[Kremote: Counting objects:  46% (78/168)[Kremote: Counting objects:  47% (79/168)[Kremote: Counting objects:  48% (81/168)[Kremote: Counting objects:  49% (83/168)[Kremote: Counting objects:  50% (84/168)[Kremote: Counting objects:  51% (86/168)[Kremote: Counting objects:  52% (88/168)[Kremote: Counting objects:  53% (90/168)[Kremote: Counting objects:  54% (91/168)[Kremote: Counting objects:  55% (93/168)[Kremote: Counting objects:  56% (95/168)[Kremote: Counting objects:  57% (96/168)[Kremote: Counting objects:  58% (98/168)[Kremote: Counting objects:  59% (100/168)[Kremote: Counting objects:  60% (101/168)[Kremote: Counting objects:  61% (103/168)[Kremote: Counting objects:  62% (105/168)[Kremote: Counting objects:  63% (106/168)[Kremote: Counting objects:  64% (108/168)[Kremote: Counting objects:  65% (110/168)[Kremote: Counting objects:  66% (111/168)[Kremote: Counting objects:  67% (113/168)[Kremote: Counting objects:  68% (115/168)[Kremote: Counting objects:  69% (116/168)[Kremote: Counting objects:  70% (118/168)[Kremote: Counting objects:  71% (120/168)[Kremote: Counting objects:  72% (121/168)[Kremote: Counting objects:  73% (123/168)[Kremote: Counting objects:  74% (125/168)[Kremote: Counting objects:  75% (126/168)[Kremote: Counting objects:  76% (128/168)[Kremote: Counting objects:  77% (130/168)[Kremote: Counting objects:  78% (132/168)[Kremote: Counting objects:  79% (133/168)[Kremote: Counting objects:  80% (135/168)[Kremote: Counting objects:  81% (137/168)[Kremote: Counting objects:  82% (138/168)[Kremote: Counting objects:  83% (140/168)[Kremote: Counting objects:  84% (142/168)[Kremote: Counting objects:  85% (143/168)[Kremote: Counting objects:  86% (145/168)[Kremote: Counting objects:  87% (147/168)[Kremote: Counting objects:  88% (148/168)[Kremote: Counting objects:  89% (150/168)[Kremote: Counting objects:  90% (152/168)[Kremote: Counting objects:  91% (153/168)[Kremote: Counting objects:  92% (155/168)[Kremote: Counting objects:  93% (157/168)[Kremote: Counting objects:  94% (158/168)[Kremote: Counting objects:  95% (160/168)[Kremote: Counting objects:  96% (162/168)[Kremote: Counting objects:  97% (163/168)[Kremote: Counting objects:  98% (165/168)[Kremote: Counting objects:  99% (167/168)[Kremote: Counting objects: 100% (168/168)[Kremote: Counting objects: 100% (168/168), done.[K
+remote: Compressing objects:   0% (1/160)[Kremote: Compressing objects:   1% (2/160)[Kremote: Compressing objects:   2% (4/160)[Kremote: Compressing objects:   3% (5/160)[Kremote: Compressing objects:   4% (7/160)[Kremote: Compressing objects:   5% (8/160)[Kremote: Compressing objects:   6% (10/160)[Kremote: Compressing objects:   7% (12/160)[Kremote: Compressing objects:   8% (13/160)[Kremote: Compressing objects:   9% (15/160)[Kremote: Compressing objects:  10% (16/160)[Kremote: Compressing objects:  11% (18/160)[Kremote: Compressing objects:  12% (20/160)[Kremote: Compressing objects:  13% (21/160)[Kremote: Compressing objects:  14% (23/160)[Kremote: Compressing objects:  15% (24/160)[Kremote: Compressing objects:  16% (26/160)[Kremote: Compressing objects:  17% (28/160)[Kremote: Compressing objects:  18% (29/160)[Kremote: Compressing objects:  19% (31/160)[Kremote: Compressing objects:  20% (32/160)[Kremote: Compressing objects:  21% (34/160)[Kremote: Compressing objects:  22% (36/160)[Kremote: Compressing objects:  23% (37/160)[Kremote: Compressing objects:  24% (39/160)[Kremote: Compressing objects:  25% (40/160)[Kremote: Compressing objects:  26% (42/160)[Kremote: Compressing objects:  27% (44/160)[Kremote: Compressing objects:  28% (45/160)[Kremote: Compressing objects:  29% (47/160)[Kremote: Compressing objects:  30% (48/160)[Kremote: Compressing objects:  31% (50/160)[Kremote: Compressing objects:  32% (52/160)[Kremote: Compressing objects:  33% (53/160)[Kremote: Compressing objects:  34% (55/160)[Kremote: Compressing objects:  35% (56/160)[Kremote: Compressing objects:  36% (58/160)[Kremote: Compressing objects:  37% (60/160)[Kremote: Compressing objects:  38% (61/160)[Kremote: Compressing objects:  39% (63/160)[Kremote: Compressing objects:  40% (64/160)[Kremote: Compressing objects:  41% (66/160)[Kremote: Compressing objects:  42% (68/160)[Kremote: Compressing objects:  43% (69/160)[Kremote: Compressing objects:  44% (71/160)[Kremote: Compressing objects:  45% (72/160)[Kremote: Compressing objects:  46% (74/160)[Kremote: Compressing objects:  47% (76/160)[Kremote: Compressing objects:  48% (77/160)[Kremote: Compressing objects:  49% (79/160)[Kremote: Compressing objects:  50% (80/160)[Kremote: Compressing objects:  51% (82/160)[Kremote: Compressing objects:  52% (84/160)[Kremote: Compressing objects:  53% (85/160)[Kremote: Compressing objects:  54% (87/160)[Kremote: Compressing objects:  55% (88/160)[Kremote: Compressing objects:  56% (90/160)[Kremote: Compressing objects:  57% (92/160)[Kremote: Compressing objects:  58% (93/160)[Kremote: Compressing objects:  59% (95/160)[Kremote: Compressing objects:  60% (96/160)[Kremote: Compressing objects:  61% (98/160)[Kremote: Compressing objects:  62% (100/160)[Kremote: Compressing objects:  63% (101/160)[Kremote: Compressing objects:  64% (103/160)[Kremote: Compressing objects:  65% (104/160)[Kremote: Compressing objects:  66% (106/160)[Kremote: Compressing objects:  67% (108/160)[Kremote: Compressing objects:  68% (109/160)[Kremote: Compressing objects:  69% (111/160)[Kremote: Compressing objects:  70% (112/160)[Kremote: Compressing objects:  71% (114/160)[Kremote: Compressing objects:  72% (116/160)[Kremote: Compressing objects:  73% (117/160)[Kremote: Compressing objects:  74% (119/160)[Kremote: Compressing objects:  75% (120/160)[Kremote: Compressing objects:  76% (122/160)[Kremote: Compressing objects:  77% (124/160)[Kremote: Compressing objects:  78% (125/160)[Kremote: Compressing objects:  79% (127/160)[Kremote: Compressing objects:  80% (128/160)[Kremote: Compressing objects:  81% (130/160)[Kremote: Compressing objects:  82% (132/160)[Kremote: Compressing objects:  83% (133/160)[Kremote: Compressing objects:  84% (135/160)[Kremote: Compressing objects:  85% (136/160)[Kremote: Compressing objects:  86% (138/160)[Kremote: Compressing objects:  87% (140/160)[Kremote: Compressing objects:  88% (141/160)[Kremote: Compressing objects:  89% (143/160)[Kremote: Compressing objects:  90% (144/160)[Kremote: Compressing objects:  91% (146/160)[Kremote: Compressing objects:  92% (148/160)[Kremote: Compressing objects:  93% (149/160)[Kremote: Compressing objects:  94% (151/160)[Kremote: Compressing objects:  95% (152/160)[Kremote: Compressing objects:  96% (154/160)[Kremote: Compressing objects:  97% (156/160)[Kremote: Compressing objects:  98% (157/160)[Kremote: Compressing objects:  99% (159/160)[Kremote: Compressing objects: 100% (160/160)[Kremote: Compressing objects: 100% (160/160), done.[K
+Receiving objects:   0% (1/168)Receiving objects:   1% (2/168)Receiving objects:   2% (4/168)Receiving objects:   3% (6/168)Receiving objects:   4% (7/168)Receiving objects:   5% (9/168)Receiving objects:   6% (11/168)Receiving objects:   7% (12/168)Receiving objects:   8% (14/168)Receiving objects:   9% (16/168)Receiving objects:  10% (17/168)Receiving objects:  11% (19/168)Receiving objects:  12% (21/168)Receiving objects:  13% (22/168)Receiving objects:  14% (24/168)Receiving objects:  15% (26/168)Receiving objects:  16% (27/168)Receiving objects:  17% (29/168)Receiving objects:  18% (31/168)Receiving objects:  19% (32/168)Receiving objects:  20% (34/168)Receiving objects:  21% (36/168)Receiving objects:  22% (37/168)Receiving objects:  23% (39/168)Receiving objects:  24% (41/168)Receiving objects:  25% (42/168)Receiving objects:  26% (44/168)Receiving objects:  27% (46/168)Receiving objects:  28% (48/168)Receiving objects:  29% (49/168)Receiving objects:  30% (51/168)Receiving objects:  31% (53/168)Receiving objects:  32% (54/168)Receiving objects:  33% (56/168)Receiving objects:  34% (58/168)Receiving objects:  35% (59/168)Receiving objects:  36% (61/168)Receiving objects:  37% (63/168)Receiving objects:  38% (64/168)Receiving objects:  39% (66/168)Receiving objects:  40% (68/168)Receiving objects:  41% (69/168)Receiving objects:  42% (71/168)Receiving objects:  43% (73/168)Receiving objects:  44% (74/168)Receiving objects:  45% (76/168)Receiving objects:  46% (78/168)Receiving objects:  47% (79/168)Receiving objects:  48% (81/168)Receiving objects:  49% (83/168)Receiving objects:  50% (84/168)Receiving objects:  51% (86/168)Receiving objects:  52% (88/168)Receiving objects:  53% (90/168)Receiving objects:  54% (91/168)Receiving objects:  55% (93/168)Receiving objects:  56% (95/168)Receiving objects:  57% (96/168)Receiving objects:  58% (98/168)Receiving objects:  59% (100/168)Receiving objects:  60% (101/168)Receiving objects:  61% (103/168)Receiving objects:  62% (105/168)Receiving objects:  63% (106/168)Receiving objects:  64% (108/168)Receiving objects:  65% (110/168)Receiving objects:  66% (111/168)Receiving objects:  67% (113/168)Receiving objects:  68% (115/168)Receiving objects:  69% (116/168)Receiving objects:  70% (118/168)Receiving objects:  71% (120/168)Receiving objects:  72% (121/168)Receiving objects:  73% (123/168)Receiving objects:  74% (125/168)Receiving objects:  75% (126/168)Receiving objects:  76% (128/168)Receiving objects:  77% (130/168)Receiving objects:  78% (132/168)Receiving objects:  79% (133/168)Receiving objects:  80% (135/168)Receiving objects:  81% (137/168)Receiving objects:  82% (138/168)Receiving objects:  83% (140/168)Receiving objects:  84% (142/168)Receiving objects:  85% (143/168)Receiving objects:  86% (145/168)Receiving objects:  87% (147/168)Receiving objects:  88% (148/168)Receiving objects:  89% (150/168)remote: Total 168 (delta 2), reused 125 (delta 1), pack-reused 0 (from 0)[K
+Receiving objects:  90% (152/168)Receiving objects:  91% (153/168)Receiving objects:  92% (155/168)Receiving objects:  93% (157/168)Receiving objects:  94% (158/168)Receiving objects:  95% (160/168)Receiving objects:  96% (162/168)Receiving objects:  97% (163/168)Receiving objects:  98% (165/168)Receiving objects:  99% (167/168)Receiving objects: 100% (168/168)Receiving objects: 100% (168/168), 1.74 MiB | 10.73 MiB/s, done.
+Resolving deltas:   0% (0/2)Resolving deltas:  50% (1/2)Resolving deltas: 100% (2/2)Resolving deltas: 100% (2/2), done.
+Note: switching to '441c807dbec2ee32e1da572e24e58d52a4eb7afa'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+[?2004hroot@c8081b6868e4:/app# cd /app/pyknotid && ls -la
+[?2004ltotal 48
+drwxr-xr-x 6 root root 4096 Oct 22 08:12 .
+drwxr-xr-x 1 root root 4096 Oct 22 08:12 ..
+drwxr-xr-x 8 root root 4096 Oct 22 08:12 .git
+-rw-r--r-- 1 root root   19 Oct 22 08:12 .gitignore
+-rw-r--r-- 1 root root   12 Oct 22 08:12 .projectile
+-rw-r--r-- 1 root root 1079 Oct 22 08:12 LICENSE.txt
+-rw-r--r-- 1 root root 2666 Oct 22 08:12 README.rst
+drwxr-xr-x 4 root root 4096 Oct 22 08:12 doc
+drwxr-xr-x 8 root root 4096 Oct 22 08:12 pyknotid
+-rw-r--r-- 1 root root 4600 Oct 22 08:12 setup.py
+drwxr-xr-x 2 root root 4096 Oct 22 08:12 tests
+[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,240p' setup.py
+[?2004lfrom setuptools import setup, find_packages
+from distutils.extension import Extension
+
+from os.path import join, sep, dirname
+from os import walk, environ
+import glob
+import re
+
+
+package_data = {}
+
+def recursively_include(results, directory, patterns):
+    for root, subfolders, files in walk(directory):
+        for fn in files:
+            if not any([glob.fnmatch.fnmatch(fn, pattern) for pattern in patterns]):
+                continue
+            filename = join(root, fn)
+            directory = 'pyknotid'
+            if directory not in results:
+                results[directory] = []
+            results[directory].append(join(*filename.split(sep)[1:]))
+
+recursively_include(package_data, 'pyknotid',
+                    ['*.tmpl', '*.pov', '*.pyx', '*.pxd',
+                     '*.py',
+                     ])
+
+# Build cython components if possible
+try:
+    from Cython.Build import cythonize
+    import numpy
+except ImportError:
+    print('Cython or numpy could not be imported, so cythonised calculation '
+          'functions will not be built. pyknotid will use Python-only '
+          'routines instead. These are slower, but will return the '
+          'same result.')
+    print('To build the cython components, install cython and numpy and rebuild '
+          'pyknotid.')
+    ext_modules = []
+    include_dirs = []
+else:
+    ext_modules = [
+            Extension("pyknotid.spacecurves.chelpers", ["pyknotid/spacecurves/chelpers.pyx"],
+                    libraries=["m"]),
+            Extension("pyknotid.spacecurves.ccomplexity", ["pyknotid/spacecurves/ccomplexity.pyx"],
+                    libraries=["m"]),
+            Extension("pyknotid.simplify.coctree", ["pyknotid/simplify/coctree.pyx"],
+                    libraries=["m"]),
+            Extension("pyknotid.cinvariants", ["pyknotid/cinvariants.pyx"],
+                    libraries=["m"]),
+            ]
+    ext_modules = cythonize(ext_modules)
+    include_dirs = [numpy.get_include()]
+
+pyknotid_init_filen = join(dirname(__file__), 'pyknotid', '__init__.py')
+version = None
+try:
+    with open(pyknotid_init_filen) as fileh:
+        lines = fileh.readlines()
+except IOError:
+    pass
+else:
+    for line in lines:
+        line = line.strip()
+        if line.startswith('__version__ = '):
+            matches = re.findall(r'["\'].+["\']', line)
+            if matches:
+                version = matches[0].strip("'").strip('"')
+                break
+if version is None:
+    raise Exception('Error: version could not be loaded from {}'.format(pyknotid_init_filen))
+
+if 'READTHEDOCS' in environ and environ['READTHEDOCS'] == 'True':
+    print('Installing for doc only')
+    install_requires=['numpy', 'peewee', 'vispy', 'sympy']
+else:
+    install_requires=['numpy', 'networkx', 'planarity',
+                      'peewee', 'vispy', 'sympy', 'appdirs',
+                      'requests', 'tqdm'],
+
+long_description = '''
+Pyknotid
+========
+
+Python (and optional Cython) modules for detecting and measuring
+knotting and linking. pyknotid can analyse space-curves, i.e. sets of
+points in three-dimensions, or can parse standard topological
+representations of knot diagrams.
+
+A graphical interface to some of these tools is available online at
+`Knot ID <http://inclem.net/knotidentifier>`__.
+
+pyknotid was developed as part of the Leverhulme Trust Research
+Programme Grant RP2013-K-009: Scientific Properties of Complex Knots
+(SPOCK), a collaboration between the University of Bristol and Durham
+University in the UK. For more information, see the `SPOCK homepage
+<http://www.maths.dur.ac.uk/spock/index.html/>`__.
+
+If you use pyknotid in your research, please `cite us
+<http://pyknotid.readthedocs.io/en/latest/sources/about.html#cite-us>`__.
+
+Questions or comments are welcome, please email alexander.taylor@bristol.ac.uk.
+
+Documentation
+-------------
+
+pyknotid is documented online at `readthedocs
+<http://pyknotid.readthedocs.io/en/latest/sources/overview.html>`__.
+'''
+
+setup(
+    name='pyknotid',
+    version=version,
+    description=('Tools for identifying and analysing knots, in space-curves '
+                 'or standard topological representations'),
+    long_description=long_description,
+    author='Alexander Taylor',
+    author_email='alexander.taylor@bristol.ac.uk',
+    install_requires=install_requires,
+    ext_modules=ext_modules,
+    include_dirs=include_dirs,
+    packages=find_packages(),
+    package_data=package_data,
+    entry_points={
+        'console_scripts': [
+            'analyse-knot-file = pyknotid.cli.analyse_knot_file:main',
+            'plot-knot = pyknotid.cli.plot_knot:main']
+        }
+)
+[?2004hroot@c8081b6868e4:/app/pyknotid# find . -maxdepth 2 -type f \( -name 'pyproject.toml' -o -name 'setup.cfg' -o -name 'requirements*.txt' \) -print -exec echo '--- {}' \; -exec sed -n '1,160p' {} \;
+[?2004l[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip --version && python3 -c 'import Cython; print(Cython.__version__)' 2>&1 || true
+[?2004lpip 25.2 from /usr/local/lib/python3.13/site-packages/pip (python 3.13)
+Traceback (most recent call last):
+  File [35m"<string>"[0m, line [35m1[0m, in [35m<module>[0m
+    [1;31mimport Cython[0m; print(Cython.__version__)
+    [1;31m^^^^^^^^^^^^^[0m
+[1;35mModuleNotFoundError[0m: [35mNo module named 'Cython'[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip --version
+[?2004lpip 25.2 from /usr/local/lib/python3.13/site-packages/pip (python 3.13)
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -c 'import Cython; print(Cython.__version__)' 2>&1 || true
+[?2004lTraceback (most recent call last):
+  File [35m"<string>"[0m, line [35m1[0m, in [35m<module>[0m
+    [1;31mimport Cython[0m; print(Cython.__version__)
+    [1;31m^^^^^^^^^^^^^[0m
+[1;35mModuleNotFoundError[0m: [35mNo module named 'Cython'[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# ls pyknotid/spacecurves/*.pyx pyknotid/simplify/*.pyx pyknotid/cinvariants.pyx 2>/dev/null
+[?2004lpyknotid/cinvariants.pyx  pyknotid/simplify/coctree.pyx  pyknotid/spacecurves/ccomplexity.pyx  pyknotid/spacecurves/chelpers.pyx
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.pyx' --include='*.pxd' -E 'numpy|np\.|complex|float128|int_t|uint|long_t|PyArray|import_array|import_numpy' pyknotid | head -n 200
+[?2004lpyknotid/spacecurves/chelpers.pyx:5:import numpy as n
+pyknotid/spacecurves/chelpers.pyx:6:cimport numpy as n
+pyknotid/spacecurves/ccomplexity.pyx:4:import numpy as np
+pyknotid/spacecurves/ccomplexity.pyx:5:cimport numpy as np
+pyknotid/spacecurves/ccomplexity.pyx:16:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/ccomplexity.pyx:44:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/ccomplexity.pyx:67:    return (writhe_1 / (2*np.pi)**2,
+pyknotid/spacecurves/ccomplexity.pyx:68:            writhe_2 / (2*np.pi)**2,
+pyknotid/spacecurves/ccomplexity.pyx:69:            writhe_3 / (2*np.pi)**2)
+pyknotid/spacecurves/ccomplexity.pyx:75:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/ccomplexity.pyx:108:    return (writhe_1 / (2*np.pi)**2,
+pyknotid/spacecurves/ccomplexity.pyx:109:            writhe_2 / (2*np.pi)**2,
+pyknotid/spacecurves/ccomplexity.pyx:110:            writhe_3 / (2*np.pi)**2)
+pyknotid/spacecurves/ccomplexity.pyx:130:#             n1 = np.cross(r13, r14)
+pyknotid/spacecurves/ccomplexity.pyx:131:#             n1 /= np.sqrt(np.sum(n1**2))
+pyknotid/spacecurves/ccomplexity.pyx:133:#             n2 = np.cross(r14, r24)
+pyknotid/spacecurves/ccomplexity.pyx:134:#             n2 /= np.sqrt(np.sum(n2**2))
+pyknotid/spacecurves/ccomplexity.pyx:136:#             n3 = np.cross(r24, r23)
+pyknotid/spacecurves/ccomplexity.pyx:137:#             if np.any(np.abs(n3) > 0.):
+pyknotid/spacecurves/ccomplexity.pyx:138:#                 n3 /= np.sqrt(np.sum(n3**2))
+pyknotid/spacecurves/ccomplexity.pyx:140:#             n4 = np.cross(r23, r13)
+pyknotid/spacecurves/ccomplexity.pyx:141:#             if np.any(np.abs(n4) > 0.):
+pyknotid/spacecurves/ccomplexity.pyx:142:#                 n4 /= np.sqrt(np.sum(n4**2))
+pyknotid/spacecurves/ccomplexity.pyx:144:#             if np.any(np.isnan(n1)):
+pyknotid/spacecurves/ccomplexity.pyx:148:#                 print('nan', r23, r13, np.cross(r23, r13))
+pyknotid/spacecurves/ccomplexity.pyx:153:#             t1, t2, t3, t4 = np.clip([n1.dot(n2),
+pyknotid/spacecurves/ccomplexity.pyx:159:#             writhe_contribution = (np.arcsin(t1) +
+pyknotid/spacecurves/ccomplexity.pyx:160:#                                    np.arcsin(t2) +
+pyknotid/spacecurves/ccomplexity.pyx:161:#                                    np.arcsin(t3) +
+pyknotid/spacecurves/ccomplexity.pyx:162:#                                    np.arcsin(t4))
+pyknotid/spacecurves/ccomplexity.pyx:164:#             if np.isnan(writhe_contribution):
+pyknotid/spacecurves/ccomplexity.pyx:169:#                 print(n1.dot(n2), np.arcsin(n1.dot(n2)))
+pyknotid/spacecurves/ccomplexity.pyx:170:#                 print(n2.dot(n3), np.arcsin(n2.dot(n3)))
+pyknotid/spacecurves/ccomplexity.pyx:171:#                 print(n3.dot(n4), np.arcsin(n3.dot(n4)))
+pyknotid/spacecurves/ccomplexity.pyx:172:#                 print(n4.dot(n1), np.arcsin(n4.dot(n1)))
+pyknotid/spacecurves/ccomplexity.pyx:174:#             writhe_contribution *= np.sign(np.cross(r34, r12).dot(r13))
+pyknotid/simplify/coctree.pyx:6:import numpy as n
+pyknotid/simplify/coctree.pyx:7:cimport numpy as n
+pyknotid/cinvariants.pyx:2:import numpy as n
+pyknotid/cinvariants.pyx:3:cimport numpy as n
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip install 'Cython>=3.0,<4'
+[?2004lCollecting Cython<4,>=3.0
+  Downloading cython-3.3.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (28 kB)
+Downloading cython-3.3.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.4 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/3.4 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m3.4/3.4 MB[0m [31m85.6 MB/s[0m  [33m0:00:00[0m
+[?25hInstalling collected packages: Cython
+Successfully installed Cython-3.3.0
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.[0m[33m
+[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m A new release of pip is available: [0m[31;49m25.2[0m[39;49m -> [0m[32;49m26.2.2[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m To update, run: [0m[32;49mpip install --upgrade pip[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' --include='*.pyx' --include='*.pxd' -E '\b(np|n)\s*\.\s*(int|float|complex|bool|object|str|long|unicode)\b' pyknotid | head -n 200
+[?2004lpyknotid/spacecurves/periodiccell.py:394:        steps_mins = np.floor((b2.mins - b1.maxs) / shape).astype(np.int) + 1
+pyknotid/spacecurves/periodiccell.py:395:        steps_maxs = np.floor((b2.maxs - b1.mins) / shape).astype(np.int)
+pyknotid/spacecurves/periodiccell.py:460:    line_closure = np.round(line_closure).astype(np.int)
+pyknotid/spacecurves/openknot.py:305:        alexs = n.round(polys[:, 2]).astype(n.int)
+pyknotid/spacecurves/openknot.py:480:        alexs = n.round(polys[:, 2]).astype(n.int)
+pyknotid/spacecurves/openknot.py:683:        self_linkings = n.round(self_linkings[:, 2]).astype(n.int)
+pyknotid/spacecurves/openknot.py:1127:            keeps = n.ones(len(cs), dtype=n.bool)
+pyknotid/spacecurves/openknot.py:1152:        alexs = n.round(polys[:, 2]).astype(n.int)
+pyknotid/spacecurves/openknot.py:1162:        self_linkings = n.round(self_linkings[:, 2]).astype(n.int)
+pyknotid/spacecurves/openknot.py:1214:            keeps = n.ones(len(cs), dtype=n.bool)
+pyknotid/spacecurves/openknot.py:1241:        return ck_fraction, pv_fraction, n.average(pv[:, -1].astype(n.bool) |
+pyknotid/spacecurves/openknot.py:1242:                                                   pk[:, -1].astype(n.bool))
+pyknotid/spacecurves/ccomplexity.pyx:16:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/ccomplexity.pyx:44:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/ccomplexity.pyx:75:    cdef long [:] indices = np.zeros(4, dtype=np.int)
+pyknotid/spacecurves/knot.py:315:        indices = n.linspace(0, len(points), num_samples).astype(n.int)
+pyknotid/spacecurves/spacecurve.py:83:        self.points = n.array(points).astype(n.float)
+pyknotid/spacecurves/spacecurve.py:638:        z = np.array(z).astype(np.float)
+pyknotid/spacecurves/spacecurve.py:990:        new_points = n.zeros((len(indices), 3), dtype=n.float)
+pyknotid/spacecurves/spacecurve.py:1083:        keep_points = np.ones(len(points), dtype=np.bool)
+pyknotid/simplify/octree.py:799:    keep = n.ones(len(points), dtype=n.bool)
+pyknotid/representations/dtnotation.py:55:            dt.append(n.array([int(number) for number in numbers], dtype=n.int))
+pyknotid/representations/dtnotation.py:73:        arr = n.zeros((len(dt) * 2, 2), dtype=n.int)
+pyknotid/representations/gausscode.py:123:            keep = n.ones(len(row), dtype=n.bool)
+pyknotid/representations/representation.py:500:            start_node = nodes_by_height[n.int(n.round(line[0, 1]))]
+pyknotid/representations/representation.py:501:            end_node = nodes_by_height[n.int(n.round(line[-1, 1]))]
+pyknotid/invariants.py:137:    dtype = n.complex if isinstance(variable, n.complex) else n.float
+pyknotid/invariants.py:177:    if not isinstance(poly_val, n.complex):
+pyknotid/invariants.py:978:    arrows = n.zeros((len(crossing_numbers), 3), dtype=n.long)
+pyknotid/make/periodic_knot.py:34:    end = n.zeros((30, 3), dtype=n.float)
+pyknotid/make/periodic_knot.py:41:    start = n.zeros((30, 3), dtype=n.float)
+[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,220p' pyknotid/spacecurves/ccomplexity.pyx
+[?2004lfrom __future__ import print_function
+import sys
+
+import numpy as np
+cimport numpy as np
+
+cimport cython
+
+from libc.math cimport abs, pow, sqrt as csqrt, floor
+
+cpdef cython_higher_order_writhe(double [:, :] points,
+                        double [:, :] contributions,
+                        long [:] order):
+
+    cdef long i1, i2, i3, i4
+    cdef long [:] indices = np.zeros(4, dtype=np.int)
+
+    cdef double writhe = 0.0
+
+    for i1 in range(len(points) - 3):
+        print('\rcython i1', i1, len(points) - 4, end='')
+        sys.stdout.flush()
+        indices[0] = i1
+        for i2 in range(i1 + 1, len(points) - 1):
+            indices[1] = i2
+            for i3 in range(i2 + 1, len(points) - 1):
+                indices[2] = i3
+                for i4 in range(i3 + 1, len(points) - 1):
+                    indices[3] = i4
+
+                    writhe += (contributions[indices[order[0]],
+                                             indices[order[1]]] *
+                               contributions[indices[order[2]],
+                                             indices[order[3]]])
+    print()
+
+    return writhe 
+
+
+cpdef cython_second_order_writhes(double [:, :] points,
+                                  double [:, :] contributions):
+
+    cdef long i1, i2, i3, i4
+    cdef long [:] indices = np.zeros(4, dtype=np.int)
+
+    cdef double writhe_1 = 0.0
+    cdef double writhe_2 = 0.0
+    cdef double writhe_3 = 0.0
+
+    for i1 in range(len(points) - 3):
+        if i1 % 5 == 0:
+            print('\rcython i1', i1, len(points) - 4, end='')
+        sys.stdout.flush()
+        indices[0] = i1
+        for i2 in range(i1 + 1, len(points) - 1):
+            indices[1] = i2
+            for i3 in range(i2 + 1, len(points) - 1):
+                indices[2] = i3
+                for i4 in range(i3 + 1, len(points) - 1):
+                    indices[3] = i4
+
+                    writhe_1 += contributions[i1, i2] * contributions[i3, i4]
+                    writhe_2 += contributions[i1, i3] * contributions[i2, i4]
+                    writhe_3 += contributions[i1, i4] * contributions[i2, i3]
+    print()
+
+    return (writhe_1 / (2*np.pi)**2,
+            writhe_2 / (2*np.pi)**2,
+            writhe_3 / (2*np.pi)**2)
+
+cpdef cython_second_order_writhes_no_basepoint(double [:, :] points,
+                                               double [:, :] contributions):
+
+    cdef long i1, i2, i3, i4
+    cdef long [:] indices = np.zeros(4, dtype=np.int)
+
+    cdef double writhe_1 = 0.0
+    cdef double writhe_2 = 0.0
+    cdef double writhe_3 = 0.0
+
+    for i1 in range(len(points) - 1):
+        if i1 % 5 == 0:
+            print('\rnbp cython i1', i1, len(points) - 4, end='')
+        sys.stdout.flush()
+        indices[0] = i1
+        possible_i2s = list(range(i1 + 1, len(points) - 1)) + list(range(i1 ))
+        for i2 in possible_i2s:
+            indices[1] = i2
+            if i2 > i1:
+                possible_i3s = list(range(i2 + 1, len(points) - 1)) + list(range(i1 ))
+            else:
+                possible_i3s = list(range(i2 + 1, i1 ))
+            for i3 in possible_i3s:
+                indices[2] = i3
+                if i3 > i1:
+                    possible_i4s = list(range(i3 + 1, len(points) - 1)) + list(range(i1 ))
+                else:
+                    possible_i4s = list(range(i3 + 1, i1 ))
+                for i4 in possible_i4s:
+                    # print('i1, i2, i3, i4 = {}, {}, {}, {}'.format(i1, i2, i3, i4))
+                    indices[3] = i4
+
+                    writhe_1 += contributions[i1, i2] * contributions[i3, i4]
+                    writhe_2 += contributions[i1, i3] * contributions[i2, i4]
+                    writhe_3 += contributions[i1, i4] * contributions[i2, i3]
+    print()
+
+    return (writhe_1 / (2*np.pi)**2,
+            writhe_2 / (2*np.pi)**2,
+            writhe_3 / (2*np.pi)**2)
+
+
+# cpdef writhing_matrix(double [:, :] points):
+#     for i1 in range(len(points) - 3):
+#         print('\ri = {} / {}'.format(i1, len(points) - 4), end='')
+#         sys.stdout.flush()
+#         p1 = points[i1]
+#         for i2 in range(i1 + 2, len(points) - 1):
+#             p2 = points[i2]
+
+#             p4 = points[i2 + 1]
+
+#             r12 = p2 - p1
+#             r13 = p3 - p1
+#             r14 = p4 - p1
+#             r23 = p3 - p2
+#             r24 = p4 - p2
+#             r34 = p4 - p3
+
+#             n1 = np.cross(r13, r14)
+#             n1 /= np.sqrt(np.sum(n1**2))
+
+#             n2 = np.cross(r14, r24)
+#             n2 /= np.sqrt(np.sum(n2**2))
+
+#             n3 = np.cross(r24, r23)
+#             if np.any(np.abs(n3) > 0.):
+#                 n3 /= np.sqrt(np.sum(n3**2))
+
+#             n4 = np.cross(r23, r13)
+#             if np.any(np.abs(n4) > 0.):
+#                 n4 /= np.sqrt(np.sum(n4**2))
+
+#             if np.any(np.isnan(n1)):
+#                 print('!!! nan')
+#                 print(i1, i2)
+#                 print(p1, p2, p3, p4)
+#                 print('nan', r23, r13, np.cross(r23, r13))
+
+#             # When the vectors are nearly the same, floating point
+#             # errors can sometimes make the output a tiny bit higher
+#             # than 1
+#             t1, t2, t3, t4 = np.clip([n1.dot(n2),
+#                                       n2.dot(n3),
+#                                       n3.dot(n4),
+#                                       n4.dot(n1)],
+#                                      -1, 1)
+
+#             writhe_contribution = (np.arcsin(t1) +
+#                                    np.arcsin(t2) +
+#                                    np.arcsin(t3) +
+#                                    np.arcsin(t4))
+
+#             if np.isnan(writhe_contribution):
+#                 print()
+#                 print('nan!')
+#                 print(i1, i2, n1, n2, n3, n4, writhe_contribution)
+#                 print(n1.dot(n2) > 1, n2.dot(n3) > 1, n3.dot(n4) > 1, n4.dot(n1) > 1)
+#                 print(n1.dot(n2), np.arcsin(n1.dot(n2)))
+#                 print(n2.dot(n3), np.arcsin(n2.dot(n3)))
+#                 print(n3.dot(n4), np.arcsin(n3.dot(n4)))
+#                 print(n4.dot(n1), np.arcsin(n4.dot(n1)))
+
+#             writhe_contribution *= np.sign(np.cross(r34, r12).dot(r13))
+    
+#             contributions[i1, i2] = writhe_contribution
+#             contributions[i2, i1] = writhe_contribution
+
+#     return contributions
+[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,200p' pyknotid/spacecurves/chelpers.pyx
+[?2004l'''
+Cython functions for space curve analysis.
+'''
+
+import numpy as n
+cimport numpy as n
+
+cimport cython
+
+from libc.math cimport abs, pow, sqrt as csqrt, floor
+
+cpdef find_crossings(double [:] v, double [:] dv,
+                     double [:, :] points,
+                     double [:] segment_lengths,
+                     long current_index,
+                     long comparison_index,
+                     double max_segment_length,
+                     long jump_mode=1
+                     ):
+    '''
+    Searches for crossings between the given vector and any other
+    vector in the
+    list of points, returning all of them as a list.
+                     
+    Parameters
+    ----------
+    v0 : ndarray
+        The current point, a 1D vector.
+    dv : ndarray
+        The vector connecting the current point to the next one
+    points : ndarray
+        The array or (x, y) values of all the other points
+    segment_lengths : ndarray
+        The length of each segment joining a point to the
+        next one.
+    current_index : long
+        The index of the point currently being tested.
+    comparison_index : long
+        The index of the first comparison point
+    jump_mode : int
+        1 to check every jump distance, 2 to jump based on
+        the maximum one, 3 to never jump and check the length
+        of every step.
+    '''
+
+    cdef list crossings = []
+    cdef double vx = v[0]
+    cdef double vy = v[1]
+    cdef double vz = v[2]
+    cdef double dvx = dv[0]
+    cdef double dvy = dv[1]
+    cdef double dvz = dv[2]
+
+    cdef double twice_max_segment_length = 2*max_segment_length
+
+    cdef int i = 0
+    cdef double distance, distance_travelled
+    cdef double [:] point
+    cdef double [:] next_point
+    cdef double jump_x, jump_y, jump_z
+    cdef double pz
+    cdef double dpz
+    cdef long intersect
+    cdef double intersect_i, intersect_j
+    cdef double crossing_sign
+    cdef double crossing_direction
+    cdef long jumps
+    cdef long num_jumps
+    cdef int already_jumped = 0
+
+    while i < len(points) - 1:
+        point = points[i]
+        distance = csqrt(pow(vx - point[0], 2) + pow(vy - point[1], 2))
+        if distance < twice_max_segment_length or already_jumped:
+            already_jumped = 0
+            next_point = points[i+1]
+            jump_x = next_point[0] - point[0]
+            jump_y = next_point[1] - point[1]
+            jump_z = next_point[2] - point[2]
+
+
+            intersect, intersect_i, intersect_j = do_vectors_intersect(
+                vx, vy, dvx, dvy, point[0], point[1],
+                jump_x, jump_y)
+
+            if intersect:
+                pz = point[2]
+                dpz = jump_z
+
+                crossing_sign = sign((vz + intersect_i * dvz) -
+                                     (pz + intersect_j * dpz))
+
+                crossing_direction = sign(cross_product(
+                    dvx, dvy, jump_x, jump_y))
+
+                crossings.append([<double>current_index + intersect_i,
+                                  (<double>comparison_index + intersect_j +
+                                   <double>i),
+                                  crossing_sign,
+                                  crossing_sign * crossing_direction])
+                crossings.append([(<double>comparison_index + intersect_j +
+                                   <double>i),
+                                  <double>current_index + intersect_i,
+                                  -1. * crossing_sign,
+                                  crossing_sign * crossing_direction])
+            i += 1
+
+        elif jump_mode == 3:
+            i += 1  # naive mode - check everything
+            already_jumped = 1
+        elif jump_mode == 2:
+            num_jumps = <long>(floor(distance / max_segment_length)) - 1
+            if num_jumps < 1:
+                num_jumps = 1
+            i += num_jumps
+            already_jumped = 1
+        else:  # Catch all other jump modes
+            distance_travelled = 0.
+            jumps = 0
+            while (distance_travelled < (distance - max_segment_length) and
+                   i < len(points)):
+                jumps += 1
+                distance_travelled += segment_lengths[i]
+                i += 1
+            if jumps > 1:
+                i -= 2
+            already_jumped = 1
+            # This keeps jumping until we might be close enough to intersect,
+            # without doing vector arithmetic at every step
+                                  
+    return crossings
+                                      
+
+
+
+cdef tuple do_vectors_intersect(double px, double py, double dpx, double dpy,
+                                double qx, double qy, double dqx, double dqy):
+    """Takes four vectors p, dp and q, dq, then tests whether they cross in
+    the dp/dq region. Returns this boolean, and the (fractional) point where
+    the crossing actually occurs.
+    """
+    cdef double t, u
+
+    if abs(cross_product(dpx, dpy, dqx, dqy)) < 0.000001:
+        return (0, 0., 0.)
+
+    t = cross_product(qx - px, qy - py, dqx, dqy) / cross_product(dpx, dpy,
+                                                                  dqx, dqy)
+    if t < 1.0 and t > 0.0:
+        u = cross_product(qx - px, qy - py, dpx, dpy) / cross_product(dpx, dpy,
+                                                                      dqx, dqy)
+        if u < 1.0 and u > 0.0:
+            return (1, t, u)
+    return (0, -1., -1.)
+        
+cpdef double cross_product(double px, double py, double qx, double qy):
+    '''Simple cython cross product for 2D vectors.'''
+    return px * qy - py * qx
+
+cpdef double sign(double a):
+    return (1. if a > 0. else (-1. if a < 0. else 0.))
+
+cpdef double mag_difference(double [:] a, double [:] b):
+    '''The magnitude of the vector joining a and b'''
+    return csqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
+[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,160p' pyknotid/cinvariants.pyx
+[?2004l
+import numpy as n
+cimport numpy as n
+cimport cython
+
+from pyknotid.utils import vprint
+
+cdef long crude_modulus(long val, long modulo):
+    if val < 0:
+        return val + modulo
+    return val
+    
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cpdef vassiliev_degree_3(long [:, :] arrows):
+    cdef long num_arrows = len(arrows)
+    cdef long num_crossings = len(arrows) * 2
+
+    cdef long a1s, a1e, a2s, a2e, a3s, a3e
+    cdef long [:] arrow1, arrow2, arrow3
+    cdef long i1, i2, i3
+    cdef long sign1, sign2, sign3
+
+    cdef set used_sets = set()
+    cdef long representations_sum_1 = 0
+    cdef long representations_sum_2 = 0
+    cdef tuple ordered_indices
+    for i1 in range(num_arrows):
+        arrow1 = arrows[i1]
+        a1s = arrow1[0]
+        a1e = arrow1[1]
+        sign1 = arrow1[2]
+
+        a1e = crude_modulus(a1e - a1s, num_crossings)
+
+        for i2 in range(num_arrows):
+            arrow2 = arrows[i2]
+            a2s = arrow2[0]
+            a2e = arrow2[1]
+            sign2 = arrow2[2]
+
+            a2s = crude_modulus(a2s - a1s, num_crossings)
+            a2e = crude_modulus(a2e - a1s, num_crossings)
+
+            for i3 in range(num_arrows):
+                arrow3 = arrows[i3]
+                a3s = arrow3[0]
+                a3e = arrow3[1]
+                sign3 = arrow3[2]
+
+                a3s = crude_modulus(a3s - a1s, num_crossings)
+                a3e = crude_modulus(a3e - a1s, num_crossings)
+
+                ordered_indices = tuple(sorted((i1, i2, i3)))
+                if ordered_indices in used_sets:
+                    continue
+
+                if (a2s < a1e and a3e < a1e and a3e > a2s and
+                    a3s > a1e and a2e > a3s):
+                    representations_sum_1 += sign1 * sign2 * sign3
+                    used_sets.add(ordered_indices)
+                if (a2e < a1e and a3s < a1e and a3s > a2e and
+                    a2s > a1e and a3e > a2s):
+                    representations_sum_2 += sign1 * sign2 * sign3
+                    used_sets.add(ordered_indices)
+
+                    
+    return representations_sum_1 / 2. + representations_sum_2
+
+    
+[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,120p' pyknotid/simplify/coctree.pyx
+[?2004l'''
+Cython functions for octree calculations.
+'''
+
+
+import numpy as n
+cimport numpy as n
+
+cimport cython
+
+from libc.math cimport abs, pow, sqrt as csqrt, floor, acos
+
+cpdef angle_exceeds(double [:, :] ps, double val=2*n.pi,
+                    long include_closure=1):
+    '''Returns True if the sum of angles along ps exceeds
+    val, else False.
+
+    If include_closure, includes the angles with the line closing
+    the end and start points.
+    '''
+    cdef double angle = 0.
+    cdef double [:] nex = ps[0]
+    cdef double [:] nex2 = ps[1]
+    cdef double [:] dv2 = n.zeros(3, dtype=n.double)
+    diff(dv2, nex, nex2)
+    divide(dv2, mag(dv2))
+    cdef double [:] cur
+    cdef double increment
+    cdef long lenps = len(ps)
+    cdef long [:] checks = n.arange(len(ps)) if include_closure else n.arange(len(ps)-2)
+    cdef int i
+    for i in checks:
+        cur = nex
+        nex = nex2
+        nex2 = ps[(i+2) % lenps]
+        dv = dv2
+        diff(dv2, nex, nex2)
+        divide(dv2, mag(dv2))
+        increment = angle_between(dv, dv2)
+        if n.isnan(increment):
+            return True
+        angle += increment
+        if angle > val:
+            return True
+    assert not n.isnan(angle)
+    return False
+
+cdef void diff(double [:] dv2, double [:] nex, double [:] nex2):
+    dv2[0] = nex2[0] - nex[0]
+    dv2[1] = nex2[1] - nex[1]
+    dv2[2] = nex2[2] - nex[2]
+
+cdef double angle_between(double [:] v1, double [:] v2):
+    '''Returns angle between v1 and v2, assuming they are normalised to 1.'''
+    # clip becaus v1.dot(v2) may exceed 1 due to floating point
+    cdef double value = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+    if value > 1.:
+        value = 1.
+    elif value < 0.:
+        value = 0.
+    return value
+
+cdef void divide(double [:] arr, double val):
+    arr[0] = arr[0] / val
+    arr[1] = arr[1] / val
+    arr[2] = arr[2] / val
+
+cdef void multiply(double [:] arr, double val):
+    arr[0] = arr[0] * val
+    arr[1] = arr[1] * val
+    arr[2] = arr[2] * val
+
+cdef double mag(double [:] v):
+    return pow(v[0], 2) + pow(v[1], 2) + pow(v[2], 2)
+
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+cpdef line_to_segments(line, cuts=None, join_ends=True):
+    '''Takes a line (set of points), a list of cut planes in
+    x, y, z, and a parameter to decide whether the line
+    joining the first and last point should also be cut.
+
+    Returns a list of shorter lines resulting from cutting at
+    all these cut planes.'''
+
+    cdef double [:, :] cy_line = line
+
+    cdef double cut_x, cut_y, cut_z
+    if cuts is None:
+        xmin, ymin, zmin = n.min(line, axis=0) - 1
+        xmax, ymax, zmax = n.max(line, axis=0) + 1
+        cut_x = (xmax + xmin) / 2.
+        cut_y = (ymax + ymin) / 2.
+        cut_z = (zmin + zmax) / 2.
+    else:
+        cut_x, cut_y, cut_z = cuts
+
+
+    cdef double [:] cy_dv = n.zeros(3, dtype=n.double)
+    cdef double [:] cy_nex
+    cdef double [:] cy_cur
+    cdef double dx, dy, dz
+    cdef double x_cut_pos, y_cut_pos, z_cut_pos
+        
+    # Cut the line wherever it passes through a quad cell boundary
+    cdef list segments = []
+    cdef long cut_i = 0
+    cdef long i
+    for i in range(len(line)-1):
+        cy_cur = cy_line[i]
+        cy_nex = cy_line[i+1]
+
+        diff(cy_dv, cy_cur, cy_nex)
+        dx = cy_dv[0]
+        dy = cy_dv[1]
+        dz = cy_dv[2]
+
+        cross_cut_x = sign(cy_cur[0] - cut_x) != sign(cy_nex[0] - cut_x)
+        cross_cut_y = sign(cy_cur[1] - cut_y) != sign(cy_nex[1] - cut_y)
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' --include='*.pyx' --include='*.pxd' -E '\b(np|n)\s*\.\s*(asscalar|cast|find_common_type|product|cumproduct|sometrue|alltrue|round_|msort|NaN|Inf|NINF|PINF|infty|issctype|maximum_sctype|sctypes|bool8|object0|str0|unicode0|int0|float0|complex0|longfloat|singlecomplex|cfloat|clongfloat|longcomplex|string_|unicode_)\b' pyknotid | head -n 200
+[?2004l[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> import re
+[?2004l[?2004h> mapping = {'int':'int', 'float':'float', 'complex':'complex', 'bool':'bool', 'long':'int'}
+[?2004l[?2004h> for path in list(Path('pyknotid').rglob('*.py')) + list(Path('pyknotid').rglob('*.pyx')) + list(Path('pyknotid').rglob('*.pxd')):
+[?2004l[?2004h>     text = path.read_text()
+[?2004l[?2004h>     new = text
+[?2004l[?2004h>     for alias, repl in mapping.items():
+[?2004l[?2004h>         new = re.sub(rf'\b(n|np)\.{alias}\b', repl, new)
+[?2004l[?2004h>     if new != text:
+[?2004l[?2004h>         path.write_text(new)
+[?2004l[?2004h>         print('patched', path)
+[?2004l[?2004h> PY
+[?2004lpatched pyknotid/invariants.py
+patched pyknotid/spacecurves/periodiccell.py
+patched pyknotid/spacecurves/openknot.py
+patched pyknotid/spacecurves/knot.py
+patched pyknotid/spacecurves/spacecurve.py
+patched pyknotid/simplify/octree.py
+patched pyknotid/representations/dtnotation.py
+patched pyknotid/representations/gausscode.py
+patched pyknotid/representations/representation.py
+patched pyknotid/make/periodic_knot.py
+patched pyknotid/spacecurves/ccomplexity.pyx
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' --include='*.pyx' --include='*.pxd' -E '\b(np|n)\s*\.\s*(int|float|complex|bool|long)\b' pyknotid || true
+[?2004l[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('setup.py')
+[?2004l[?2004h> text = p.read_text()
+[?2004l[?2004h> text = text.replace('from distutils.extension import Extension', 'from setuptools.extension import Extension')
+[?2004l[?2004h> text = text.replace("                      'requests', 'tqdm'],\n", "                      'requests', 'tqdm']\n")
+[?2004l[?2004h> p.write_text(text)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@c8081b6868e4:/app/pyknotid# sed -n '1,20p' setup.py && sed -n '65,80p' setup.py
+[?2004lfrom setuptools import setup, find_packages
+from setuptools.extension import Extension
+
+from os.path import join, sep, dirname
+from os import walk, environ
+import glob
+import re
+
+
+package_data = {}
+
+def recursively_include(results, directory, patterns):
+    for root, subfolders, files in walk(directory):
+        for fn in files:
+            if not any([glob.fnmatch.fnmatch(fn, pattern) for pattern in patterns]):
+                continue
+            filename = join(root, fn)
+            directory = 'pyknotid'
+            if directory not in results:
+                results[directory] = []
+        if line.startswith('__version__ = '):
+            matches = re.findall(r'["\'].+["\']', line)
+            if matches:
+                version = matches[0].strip("'").strip('"')
+                break
+if version is None:
+    raise Exception('Error: version could not be loaded from {}'.format(pyknotid_init_filen))
+
+if 'READTHEDOCS' in environ and environ['READTHEDOCS'] == 'True':
+    print('Installing for doc only')
+    install_requires=['numpy', 'peewee', 'vispy', 'sympy']
+else:
+    install_requires=['numpy', 'networkx', 'planarity',
+                      'peewee', 'vispy', 'sympy', 'appdirs',
+                      'requests', 'tqdm']
+
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 setup.py build_ext --inplace
+[?2004lTraceback (most recent call last):
+  File [35m"/app/pyknotid/setup.py"[0m, line [35m1[0m, in [35m<module>[0m
+    from setuptools import setup, find_packages
+[1;35mModuleNotFoundError[0m: [35mNo module named 'setuptools'[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip install setuptools
+[?2004lCollecting setuptools
+  Downloading setuptools-84.2.1-py3-none-any.whl.metadata (6.6 kB)
+Downloading setuptools-84.2.1-py3-none-any.whl (876 kB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/876.3 kB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m876.3/876.3 kB[0m [31m43.0 MB/s[0m  [33m0:00:00[0m
+[?25hInstalling collected packages: setuptools
+Successfully installed setuptools-84.2.1
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.[0m[33m
+[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m A new release of pip is available: [0m[31;49m25.2[0m[39;49m -> [0m[32;49m26.2.2[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m To update, run: [0m[32;49mpip install --upgrade pip[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 setup.py build_ext --inplace
+[?2004lCompiling pyknotid/spacecurves/chelpers.pyx because it changed.
+Compiling pyknotid/spacecurves/ccomplexity.pyx because it changed.
+Compiling pyknotid/simplify/coctree.pyx because it changed.
+Compiling pyknotid/cinvariants.pyx because it changed.
+[1/4] Cythonizing pyknotid/cinvariants.pyx
+[2/4] Cythonizing pyknotid/simplify/coctree.pyx
+[3/4] Cythonizing pyknotid/spacecurves/ccomplexity.pyx
+[4/4] Cythonizing pyknotid/spacecurves/chelpers.pyx
+running build_ext
+building 'pyknotid.spacecurves.chelpers' extension
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/lib/python3.13/site-packages/numpy/_core/include -I/usr/local/include/python3.13 -c pyknotid/spacecurves/chelpers.c -o build/temp.linux-x86_64-cpython-313/pyknotid/spacecurves/chelpers.o
+gcc -shared build/temp.linux-x86_64-cpython-313/pyknotid/spacecurves/chelpers.o -L/usr/local/lib -lm -o build/lib.linux-x86_64-cpython-313/pyknotid/spacecurves/chelpers.cpython-313-x86_64-linux-gnu.so
+building 'pyknotid.spacecurves.ccomplexity' extension
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/lib/python3.13/site-packages/numpy/_core/include -I/usr/local/include/python3.13 -c pyknotid/spacecurves/ccomplexity.c -o build/temp.linux-x86_64-cpython-313/pyknotid/spacecurves/ccomplexity.o
+gcc -shared build/temp.linux-x86_64-cpython-313/pyknotid/spacecurves/ccomplexity.o -L/usr/local/lib -lm -o build/lib.linux-x86_64-cpython-313/pyknotid/spacecurves/ccomplexity.cpython-313-x86_64-linux-gnu.so
+building 'pyknotid.simplify.coctree' extension
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/lib/python3.13/site-packages/numpy/_core/include -I/usr/local/include/python3.13 -c pyknotid/simplify/coctree.c -o build/temp.linux-x86_64-cpython-313/pyknotid/simplify/coctree.o
+[01m[Kpyknotid/simplify/coctree.c:21765:13:[m[K [01;35m[Kwarning: [m[K‘[01m[K__pyx_f_8pyknotid_8simplify_7coctree_multiply[m[K’ defined but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-function-Wunused-function]8;;[m[K]
+21765 | static void [01;35m[K__pyx_f_8pyknotid_8simplify_7coctree_multiply[m[K(__Pyx_memviewslice __pyx_v_arr, double __pyx_v_val) {
+      |             [01;35m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+gcc -shared build/temp.linux-x86_64-cpython-313/pyknotid/simplify/coctree.o -L/usr/local/lib -lm -o build/lib.linux-x86_64-cpython-313/pyknotid/simplify/coctree.cpython-313-x86_64-linux-gnu.so
+building 'pyknotid.cinvariants' extension
+gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/lib/python3.13/site-packages/numpy/_core/include -I/usr/local/include/python3.13 -c pyknotid/cinvariants.c -o build/temp.linux-x86_64-cpython-313/pyknotid/cinvariants.o
+gcc -shared build/temp.linux-x86_64-cpython-313/pyknotid/cinvariants.o -L/usr/local/lib -lm -o build/lib.linux-x86_64-cpython-313/pyknotid/cinvariants.cpython-313-x86_64-linux-gnu.so
+copying build/lib.linux-x86_64-cpython-313/pyknotid/spacecurves/chelpers.cpython-313-x86_64-linux-gnu.so -> pyknotid/spacecurves
+copying build/lib.linux-x86_64-cpython-313/pyknotid/spacecurves/ccomplexity.cpython-313-x86_64-linux-gnu.so -> pyknotid/spacecurves
+copying build/lib.linux-x86_64-cpython-313/pyknotid/simplify/coctree.cpython-313-x86_64-linux-gnu.so -> pyknotid/simplify
+copying build/lib.linux-x86_64-cpython-313/pyknotid/cinvariants.cpython-313-x86_64-linux-gnu.so -> pyknotid
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import pyknotid
+[?2004l[?2004h> from pyknotid.spacecurves import chelpers, ccomplexity
+[?2004l[?2004h> from pyknotid import cinvariants
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> k = sp.Knot(mk.three_twist(num_points=100))
+[?2004l[?2004h> out = k.alexander_polynomial(-1)
+[?2004l[?2004h> print('OUT:', out)
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File [35m"<stdin>"[0m, line [35m2[0m, in [35m<module>[0m
+  File [35m"/app/pyknotid/pyknotid/spacecurves/__init__.py"[0m, line [35m85[0m, in [35m<module>[0m
+    from pyknotid.spacecurves.spacecurve import SpaceCurve
+  File [35m"/app/pyknotid/pyknotid/spacecurves/spacecurve.py"[0m, line [35m39[0m, in [35m<module>[0m
+    from pyknotid.visualise import plot_line, plot_projection
+  File [35m"/app/pyknotid/pyknotid/visualise.py"[0m, line [35m23[0m, in [35m<module>[0m
+    import vispy
+[1;35mModuleNotFoundError[0m: [35mNo module named 'vispy'[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pytest --version 2>&1 || true
+[?2004l/usr/local/bin/python3: No module named pytest
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip install networkx planarity peewee vispy sympy appdirs requests tqdm pytest
+[?2004lCollecting networkx
+  Downloading networkx-3.7-py3-none-any.whl.metadata (6.7 kB)
+Collecting planarity
+  Downloading planarity-1.0.0.tar.gz (682 kB)
+[?25l     [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/682.5 kB[0m [31m?[0m eta [36m-:--:--[0m[2K     [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m682.5/682.5 kB[0m [31m24.6 MB/s[0m  [33m0:00:00[0m
+[?25h  Installing build dependencies ... [?25l- \ done
+[?25h  Getting requirements to build wheel ... [?25l- done
+[?25h  Preparing metadata (pyproject.toml) ... [?25l- done
+[?25hCollecting peewee
+  Downloading peewee-4.5.3-py3-none-any.whl.metadata (10 kB)
+Collecting vispy
+  Downloading vispy-0.17.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.6 kB)
+Collecting sympy
+  Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+Collecting appdirs
+  Downloading appdirs-1.4.4-py2.py3-none-any.whl.metadata (9.0 kB)
+Collecting requests
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting tqdm
+  Downloading tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+Collecting pytest
+  Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+Collecting freetype-py (from vispy)
+  Downloading freetype_py-2.5.1-py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl.metadata (6.3 kB)
+Collecting hsluv (from vispy)
+  Downloading hsluv-5.0.5-py3-none-any.whl.metadata (3.5 kB)
+Collecting kiwisolver (from vispy)
+  Downloading kiwisolver-1.5.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.2 kB)
+Requirement already satisfied: numpy in /usr/local/lib/python3.13/site-packages (from vispy) (2.3.0)
+Collecting packaging (from vispy)
+  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting mpmath<1.4,>=1.1.0 (from sympy)
+  Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+Collecting charset_normalizer<4,>=2 (from requests)
+  Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+Collecting idna<4,>=2.5 (from requests)
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests)
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2023.5.7 (from requests)
+  Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+Collecting iniconfig>=1.0.1 (from pytest)
+  Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+Collecting pluggy<2,>=1.5 (from pytest)
+  Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+Collecting pygments>=2.7.2 (from pytest)
+  Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+Downloading networkx-3.7-py3-none-any.whl (2.1 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/2.1 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m2.1/2.1 MB[0m [31m84.5 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading peewee-4.5.3-py3-none-any.whl (194 kB)
+Downloading vispy-0.17.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.1 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/3.1 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m3.1/3.1 MB[0m [31m147.8 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/6.3 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m6.3/6.3 MB[0m [31m175.6 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/536.2 kB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m536.2/536.2 kB[0m [31m135.4 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading appdirs-1.4.4-py2.py3-none-any.whl (9.6 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (254 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/1.3 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.3/1.3 MB[0m [31m324.6 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading freetype_py-2.5.1-py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (1.0 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/1.0 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.0/1.0 MB[0m [31m282.4 MB/s[0m  [33m0:00:00[0m
+[?25hDownloading hsluv-5.0.5-py3-none-any.whl (5.7 kB)
+Downloading kiwisolver-1.5.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+[?25l   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/1.5 MB[0m [31m?[0m eta [36m-:--:--[0m[2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.5/1.5 MB[0m [31m222.8 MB/s[0m  [33m0:00:00[0m
+[?25hBuilding wheels for collected packages: planarity
+  Building wheel for planarity (pyproject.toml) ... [?25l- \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / done
+[?25h  Created wheel for planarity: filename=planarity-1.0.0-cp313-cp313-linux_x86_64.whl size=1958191 sha256=5020439a39cee74ef1e49cb405b5568823e8ca4e59267650b06d3d22436c9faf
+  Stored in directory: /root/.cache/pip/wheels/3c/d7/31/315f744be83c3bcdc60f2af3f8208c3d0148c62a33d4fee3e7
+Successfully built planarity
+Installing collected packages: mpmath, appdirs, urllib3, tqdm, sympy, pygments, pluggy, planarity, peewee, packaging, networkx, kiwisolver, iniconfig, idna, hsluv, freetype-py, charset_normalizer, certifi, vispy, requests, pytest
+[?25l[2K   [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 0/21[0m [mpmath][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 4/21[0m [sympy][2K   [38;5;197m━━━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 5/21[0m [pygments][2K   [38;5;197m━━━━━━━━━[0m[38;5;197m╸[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 5/21[0m [pygments][2K   [38;5;197m━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m 8/21[0m [peewee][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━[0m [32m10/21[0m [networkx][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━[0m [32m10/21[0m [networkx][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━[0m [32m10/21[0m [networkx][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━[0m [32m10/21[0m [networkx][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━━━━━━━━━━━━━━━━[0m [32m10/21[0m [networkx][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━[0m [32m18/21[0m [vispy][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━[0m [32m18/21[0m [vispy][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━━━━━[0m [32m18/21[0m [vispy][2K   [38;5;197m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m[38;5;237m╺[0m[38;5;237m━[0m [32m20/21[0m [pytest][2K   [38;5;70m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m21/21[0m [pytest]
+[?25h[1A[2KSuccessfully installed appdirs-1.4.4 certifi-2026.10.19 charset_normalizer-3.5.2 freetype-py-2.5.1 hsluv-5.0.5 idna-3.20 iniconfig-2.3.1 kiwisolver-1.5.1 mpmath-1.3.0 networkx-3.7 packaging-26.3 peewee-4.5.3 planarity-1.0.0 pluggy-1.7.0 pygments-2.21.0 pytest-9.1.1 requests-2.34.2 sympy-1.14.0 tqdm-4.70.1 urllib3-2.8.0 vispy-0.17.0
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.[0m[33m
+[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m A new release of pip is available: [0m[31;49m25.2[0m[39;49m -> [0m[32;49m26.2.2[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m To update, run: [0m[32;49mpip install --upgrade pip[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> print('numpy', np.__version__)
+[?2004l[?2004h> import pyknotid
+[?2004l[?2004h> from pyknotid.spacecurves import chelpers, ccomplexity
+[?2004l[?2004h> from pyknotid import cinvariants
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> print('extensions imported:', chelpers.__file__, ccomplexity.__file__, cinvariants.__file__)
+[?2004l[?2004h> k = sp.Knot(mk.three_twist(num_points=100))
+[?2004l[?2004h> out = k.alexander_polynomial(-1)
+[?2004l[?2004h> print('OUT:', out)
+[?2004l[?2004h> PY
+[?2004lnumpy 2.3.0
+Traceback (most recent call last):
+  File [35m"<stdin>"[0m, line [35m6[0m, in [35m<module>[0m
+  File [35m"/app/pyknotid/pyknotid/make/__init__.py"[0m, line [35m13[0m, in [35m<module>[0m
+    from pyknotid.make.torus import torus_knot, torus_link
+  File [35m"/app/pyknotid/pyknotid/make/torus.py"[0m, line [35m14[0m, in [35m<module>[0m
+    from fractions import gcd
+[1;35mImportError[0m: [35mcannot import name 'gcd' from 'fractions' (/usr/local/lib/python3.13/fractions.py)[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' --include='*.pyx' -E 'from fractions import gcd|fractions\.gcd|collections\.(Mapping|MutableMapping|Sequence|Iterable|Callable)|inspect\.getargspec|time\.clock|np\.(int|float|complex|bool|long)\b' pyknotid | head -n 200
+[?2004lpyknotid/make/torus.py:14:from fractions import gcd
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> for path in Path('pyknotid').rglob('*.py'):
+[?2004l[?2004h>     text = path.read_text()
+[?2004l[?2004h>     new = text.replace('from fractions import gcd', 'from math import gcd')
+[?2004l[?2004h>     new = new.replace('fractions.gcd', 'math.gcd')
+[?2004l[?2004h>     if new != text:
+[?2004l[?2004h>         path.write_text(new)
+[?2004l[?2004h>         print('patched', path)
+[?2004l[?2004h> PY
+[?2004lpatched pyknotid/make/torus.py
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' --include='*.pyx' -E 'from fractions import gcd|fractions\.gcd' pyknotid || true
+[?2004l[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> print('numpy', np.__version__)
+[?2004l[?2004h> import pyknotid
+[?2004l[?2004h> from pyknotid.spacecurves import chelpers, ccomplexity
+[?2004l[?2004h> from pyknotid import cinvariants
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> print('extensions imported')
+[?2004l[?2004h> k = sp.Knot(mk.three_twist(num_points=100))
+[?2004l[?2004h> out = k.alexander_polynomial(-1)
+[?2004l[?2004h> print('OUT:', out)
+[?2004l[?2004h> PY
+[?2004lnumpy 2.3.0
+extensions imported
+Finding crossings
+i = 0 / 97
+7.0 crossings found
+
+Simplifying: initially 14 crossings
+-> 10 crossings after 1 runs-> 10 crossings after 2 runs
+OUT: 6.999999999999998
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip install . --no-build-isolation --force-reinstall --no-deps
+[?2004lProcessing /app/pyknotid
+  Preparing metadata (pyproject.toml) ... [?25l- done
+[?25hBuilding wheels for collected packages: pyknotid
+  Building wheel for pyknotid (pyproject.toml) ... [?25l- \ done
+[?25h  Created wheel for pyknotid: filename=pyknotid-0.5.3-cp313-cp313-linux_x86_64.whl size=2378210 sha256=6c9055908d5774dc2bb6124f85911017a003f9c340a9725d9bc8cab43f529b0e
+  Stored in directory: /tmp/pip-ephem-wheel-cache-k1ogrs8m/wheels/5e/f2/cb/b3080784954f43467934ff337ba823c57a3e1db3303f8227db
+Successfully built pyknotid
+Installing collected packages: pyknotid
+Successfully installed pyknotid-0.5.3
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.[0m[33m
+[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m A new release of pip is available: [0m[31;49m25.2[0m[39;49m -> [0m[32;49m26.2.2[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m To update, run: [0m[32;49mpip install --upgrade pip[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /tmp && python3 - <<'PY'
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> print('numpy', np.__version__)
+[?2004l[?2004h> import pyknotid
+[?2004l[?2004h> from pyknotid.spacecurves import chelpers, ccomplexity
+[?2004l[?2004h> from pyknotid import cinvariants
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> print('pyknotid:', pyknotid.__file__)
+[?2004l[?2004h> print('chelpers:', chelpers.__file__)
+[?2004l[?2004h> print('ccomplexity:', ccomplexity.__file__)
+[?2004l[?2004h> print('cinvariants:', cinvariants.__file__)
+[?2004l[?2004h> k = sp.Knot(mk.three_twist(num_points=100))
+[?2004l[?2004h> out = k.alexander_polynomial(-1)
+[?2004l[?2004h> print('OUT:', out)
+[?2004l[?2004h> PY
+[?2004lnumpy 2.3.0
+pyknotid: /usr/local/lib/python3.13/site-packages/pyknotid/__init__.py
+chelpers: /usr/local/lib/python3.13/site-packages/pyknotid/spacecurves/chelpers.cpython-313-x86_64-linux-gnu.so
+ccomplexity: /usr/local/lib/python3.13/site-packages/pyknotid/spacecurves/ccomplexity.cpython-313-x86_64-linux-gnu.so
+cinvariants: /usr/local/lib/python3.13/site-packages/pyknotid/cinvariants.cpython-313-x86_64-linux-gnu.so
+Finding crossings
+i = 0 / 97
+7.0 crossings found
+
+Simplifying: initially 14 crossings
+-> 10 crossings after 1 runs-> 10 crossings after 2 runs
+OUT: 6.999999999999998
+[?2004hroot@c8081b6868e4:/tmp# cd /app/pyknotid && python3 -m pytest -q --ignore=tests/test_random_curves.py --ignore=tests/test_catalogue.py
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                                                                                                                                       [100%][0m
+=========================================================================== FAILURES ===========================================================================
+[31m[1m________________________________________________________________ test_reconstructed_space_curve ________________________________________________________________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mnew_func[39;49;00m():[90m[39;49;00m
+>       [94mreturn[39;49;00m func(sp.SpaceCurve(mk.trefoil()))[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_spacecurve.py[0m:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_spacecurve.py[0m:73: in test_reconstructed_space_curve
+    [0mk2 = k.reconstructed_space_curve()[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mpyknotid/spacecurves/spacecurve.py[0m:756: in reconstructed_space_curve
+    [0m[94mreturn[39;49;00m SpaceCurve(r.space_curve())[90m[39;49;00m
+                      ^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mpyknotid/representations/representation.py[0m:495: in space_curve
+    [0mg, lines, node_labels, nodes_by_height, xlims, first_edge, heights, extra_x_shifts = [96mself[39;49;00m._construct_planar_graph()[90m[39;49;00m
+                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = 1+a,2-a,3+a,1-a,2+a,3-a
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92m_construct_planar_graph[39;49;00m([96mself[39;49;00m):[90m[39;49;00m
+        pd = [96mself[39;49;00m.planar_diagram()[90m[39;49;00m
+        g, duplicates, heights, first_edge = pd.as_networkx_extended()[90m[39;49;00m
+    [90m[39;49;00m
+        [94mimport[39;49;00m[90m [39;49;00m[04m[96mplanarity[39;49;00m[90m[39;49;00m
+    [90m[39;49;00m
+        pg = planarity.PGraph(g)[90m[39;49;00m
+        pg.embed_drawplanar()[90m[39;49;00m
+        g = planarity.networkx_graph(pg)[90m[39;49;00m
+    [90m[39;49;00m
+    [90m[39;49;00m
+        node_labels = {}[90m[39;49;00m
+        xs = [][90m[39;49;00m
+        ys = [][90m[39;49;00m
+    [90m[39;49;00m
+        nodes_by_height = {}[90m[39;49;00m
+        node_xs_by_y = {}[90m[39;49;00m
+        node_xs_ys = {}[90m[39;49;00m
+        node_lefts_rights = {}[90m[39;49;00m
+    [90m[39;49;00m
+        [94mfor[39;49;00m node, data [95min[39;49;00m g.nodes(data=[94mTrue[39;49;00m):[90m[39;49;00m
+>           y = data[[33m'[39;49;00m[33mpos[39;49;00m[33m'[39;49;00m][90m[39;49;00m
+                ^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE           KeyError: 'pos'[0m
+
+[1m[31mpyknotid/representations/representation.py[0m:338: KeyError
+--------------------------------------------------------------------- Captured stdout call ---------------------------------------------------------------------
+Finding crossings
+i = 0 / 97
+3.0 crossings found
+
+Simplifying: initially 6 crossings
+-> 6 crossings after 1 runs
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mFAILED[0m tests/test_spacecurve.py::[1mtest_reconstructed_space_curve[0m - KeyError: 'pos'
+[31m[31m[1m1 failed[0m, [32m17 passed[0m[31m in 1.05s[0m[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && sed -n '300,380p' pyknotid/representations/representation.py && sed -n '460,520p' pyknotid/representations/representation.py
+[?2004l        ax.imshow(array, interpolation='none', cmap='jet')
+
+        ticks = range(length + 1)
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        ax.set_xticklabels([str(t) for t in ticks])
+        ax.set_yticklabels([str(t) for t in ticks])
+
+        ax.plot([0, length+1], [0, length+1], color='black', linewidth=2)
+        ax.set_xlim(-0.5, length+0.5)
+        ax.set_ylim(length+0.5, -0.5)
+
+        
+        fig.show()
+
+        return array, fig, ax
+
+    def _construct_planar_graph(self):
+        pd = self.planar_diagram()
+        g, duplicates, heights, first_edge = pd.as_networkx_extended()
+
+        import planarity
+
+        pg = planarity.PGraph(g)
+        pg.embed_drawplanar()
+        g = planarity.networkx_graph(pg)
+
+
+        node_labels = {}
+        xs = []
+        ys = []
+
+        nodes_by_height = {}
+        node_xs_by_y = {}
+        node_xs_ys = {}
+        node_lefts_rights = {}
+
+        for node, data in g.nodes(data=True):
+            y = data['pos']
+            xb = data['start']
+            xe = data['end']
+            x = int((xe + xb) / 2.)
+
+            node_labels[node] = (x, y)
+            xs.extend([xb, xe])
+            ys.append(y)
+
+            nodes_by_height[data['pos']] = node
+            node_xs_by_y[data['pos']] = x
+            node_xs_ys[node] = (x, y)
+            node_lefts_rights[node] = (xb, xe)
+
+        lines = []
+
+        rightmost_x = n.max(xs)
+        leftmost_x = n.min(xs)
+        x_span = rightmost_x - leftmost_x
+        safe_yshift = 0.5 / x_span
+
+        extra_x_shifts = []
+        
+        for n1, n2, data in g.edges(data=True):
+            x = data['pos']
+            yb = data['start']
+            ye = data['end']
+
+            start_node = nodes_by_height[yb]
+            end_node = nodes_by_height[ye]
+            if start_node >= len(self) and end_node >= len(self):
+                continue
+
+            start_left, start_right = node_lefts_rights[start_node]
+            end_left, end_right = node_lefts_rights[end_node]
+
+            start_frac = n.abs((x - start_left) / (start_right - start_left) - 0.5)
+            start_frac = 0.5 - start_frac
+            if True:  # ye < ys:  # This always evaluated to True - a bug?
+                start_frac *= -1
+            start_shift = start_frac
+
+            end_frac = n.abs((x - end_left) / (end_right - end_left) - 0.5)
+            xb = data['start']
+            xe = data['end']
+            x = int((xe + xb) / 2.)
+            patches.append(Circle((x, y), 0.25))
+        
+        plt.ion()
+
+        fig, ax = plt.subplots()
+        p = PatchCollection(patches, facecolor='none')
+        ax.add_collection(p)
+        # plt.axis('equal')
+
+        for node, (x, y) in node_labels.items():
+            plt.text(x, y, node,
+                     horizontalalignment='center',
+                     verticalalignment='center')
+
+        for line in lines:
+            ax.plot(line[:, 0], line[:, 1], linewidth=1)
+        
+        ax.set_xlim(leftmost_x - 1, rightmost_x + 1)
+        fig.show()
+        
+    def space_curve(self, **kwargs):
+        from pyknotid.spacecurves import Knot
+        self.simplify()
+
+        if len(self) == 0:
+            thetas = n.linspace(0, 2*n.pi, 10)
+            xs = n.sin(thetas) * 3
+            ys = n.cos(thetas) * 3
+            zs = n.zeros(10)
+            return Knot(n.vstack((xs, ys, zs)).T)
+        
+        # self.draw_planar_graph()
+        g, lines, node_labels, nodes_by_height, xlims, first_edge, heights, extra_x_shifts = self._construct_planar_graph()
+        leftmost_x, rightmost_x = xlims
+
+        cg = CrossingGraph()
+        for line in lines:
+            start_node = nodes_by_height[int(n.round(line[0, 1]))]
+            end_node = nodes_by_height[int(n.round(line[-1, 1]))]
+            cl = CrossingLine(start_node, end_node, line)
+            cg[start_node].append(cl)
+            cg[end_node].append(cl.reversed())
+
+        cg.assert_four_valency()
+
+        cg.align_nodes()
+        first_node = 0
+        next_node = 1
+
+        points = cg.retrieve_space_curve(
+            first_edge[0], first_edge[1], first_edge[2], heights)
+
+        for shift in extra_x_shifts:
+            for i in range(len(points)):
+                cur_x = points[i, 0]
+                if cur_x > shift:
+                    points[i, 0] += 1.
+
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import planarity, inspect
+[?2004l[?2004h> print('planarity', planarity.__file__)
+[?2004l[?2004h> print('version', getattr(planarity, '__version__', None))
+[?2004l[?2004h> for name in ['PGraph', 'networkx_graph']:
+[?2004l[?2004h>     obj = getattr(planarity, name, None)
+[?2004l[?2004h>     print(name, obj)
+[?2004l[?2004h>     if obj is not None:
+[?2004l[?2004h>         try:
+[?2004l[?2004h>             print(inspect.signature(obj))
+[?2004l[?2004h>         except Exception as e:
+[?2004l[?2004h>             print('signature error', e)
+[?2004l[?2004h>         try:
+[?2004l[?2004h>             print(inspect.getsource(obj)[:3000])
+[?2004l[?2004h>         except Exception as e:
+[?2004l[?2004h>             print('source error', e)
+[?2004l[?2004h> PY
+[?2004lplanarity /usr/local/lib/python3.13/site-packages/planarity/__init__.py
+version 1.0.0
+PGraph <class 'planarity.classic.planarity.PGraph'>
+signature error no signature found for builtin type <class 'planarity.classic.planarity.PGraph'>
+source error source code not available
+networkx_graph <function networkx_graph at 0x7fb62b2bac00>
+(pgraph)
+def networkx_graph(pgraph):
+    """Return NetworkX graph built from planarity pgraph."""
+    try:
+        import networkx as nx
+    except ImportError:
+        raise ImportError("NetworkX required for networkx_graph()")
+    graph = nx.Graph()
+    graph.add_nodes_from(pgraph.nodes(include_drawplanar_vertex_info=True))
+    graph.add_edges_from(pgraph.edges(include_drawplanar_edge_info=True))
+    return graph
+
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pip index versions planarity 2>&1 | head -n 50
+[?2004lplanarity (1.0.0)
+Available versions: 1.0.0, 0.6, 0.5, 0.4.1, 0.4, 0.3.1, 0.3
+  INSTALLED: 1.0.0
+  LATEST:    1.0.0
+
+[notice] A new release of pip is available: 25.2 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && sed -n '1,110p' tests/test_spacecurve.py
+[?2004l
+
+import pyknotid.spacecurves.spacecurve as sp
+import pyknotid.make as mk
+
+from functools import wraps
+import os
+from os import path
+
+import numpy as np
+
+import pytest
+
+def pass_trefoil(func):
+    def new_func():
+        return func(sp.SpaceCurve(mk.trefoil()))
+    return new_func
+
+
+@pass_trefoil
+def test_init(k):
+    pass
+
+@pass_trefoil
+def test_copy(k):
+    k2 = k.copy()
+    assert np.all(k2.points == k.points)
+    assert k2.points is not k.points
+
+@pass_trefoil
+def test_points(k):
+    assert isinstance(k.points, np.ndarray)
+
+@pass_trefoil
+def test_translate(k):
+    pos = k.points[0]
+    k.translate([10., 20., 30.])
+    new_pos = k.points[0]
+
+    assert new_pos[0] - pos[0] == 10.
+    assert new_pos[1] - pos[1] == 20.
+    assert new_pos[2] - pos[2] == 30.
+
+
+@pass_trefoil
+def test_zero_centroid(k):
+    k.points += np.random.random(size=3) * np.random.random() * 10
+
+    k.zero_centroid()
+
+    assert np.all(np.average(k.points, axis=0) < 0.00001)
+
+@pass_trefoil
+def test_rotate(k):
+    k.rotate()
+
+@pass_trefoil
+def test_planar_writhe(k):
+    assert np.abs(k.planar_writhe()) == 3
+
+@pass_trefoil
+def test_writhe(k):
+    k.rotate()
+    w = k.writhe(100)
+    assert -3.6 < w < -3.4 
+
+@pass_trefoil
+def test_gauss_code(k):
+    assert str(k.gauss_code(recalculate=True)) == '1+a,2-a,3+a,1-a,2+a,3-a'
+
+@pass_trefoil
+def test_reconstructed_space_curve(k):
+    k2 = k.reconstructed_space_curve()
+
+    assert k.planar_writhe() == k2.planar_writhe()
+
+@pass_trefoil
+def test_write_load(k):
+    k.to_json('test_trefoil.json')
+    k2 = sp.SpaceCurve.from_json('test_trefoil.json')
+
+    assert k2.planar_writhe() == k2.planar_writhe()
+
+    os.unlink('test_trefoil.json')
+
+
+@pass_trefoil
+def test_octree_simplify(k):
+    k.octree_simplify(runs=2)
+
+
+@pass_trefoil
+def test_arclength(k):
+    assert np.isclose(k.arclength(), 31.8512, atol=0.01)
+
+@pass_trefoil
+def test_rog(k):
+    assert np.isclose(k.radius_of_gyration(), 2.244798, atol=0.01)
+
+@pass_trefoil
+def test_smooth(k):
+    k.smooth()
+
+@pass_trefoil
+def test_compiled_vs_python_find_crossings(k):
+    try:
+        import pyknotid.spacecurves.chelpers
+    except ImportError:
+        return  # chelpers not installed
+
+[?2004hroot@c8081b6868e4:/app/pyknotid# grep -RIn --include='*.py' -E 'as_networkx_extended|embed_drawplanar|networkx_graph|drawplanar' pyknotid tests | head -n 100
+[?2004lpyknotid/representations/planardiagram.py:86:    def as_networkx_extended(self):
+pyknotid/representations/representation.py:319:        g, duplicates, heights, first_edge = pd.as_networkx_extended()
+pyknotid/representations/representation.py:324:        pg.embed_drawplanar()
+pyknotid/representations/representation.py:325:        g = planarity.networkx_graph(pg)
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> import planarity
+[?2004l[?2004h> k = sp.Knot(mk.trefoil())
+[?2004l[?2004h> print('knot points', k.points.shape)
+[?2004l[?2004h> r = k.representation
+[?2004l[?2004h> pd = r.planar_diagram()
+[?2004l[?2004h> g, duplicates, heights, first_edge = pd.as_networkx_extended()
+[?2004l[?2004h> print('before networkx nodes', list(g.nodes(data=True))[:5])
+[?2004l[?2004h> print('before networkx edges', list(g.edges(data=True))[:5])
+[?2004l[?2004h> pg = planarity.PGraph(g)
+[?2004l[?2004h> pg.embed_drawplanar()
+[?2004l[?2004h> print('pg nodes method')
+[?2004l[?2004h> try:
+[?2004l[?2004h>     print(list(pg.nodes(include_drawplanar_vertex_info=True))[:5])
+[?2004l[?2004h> except Exception as e:
+[?2004l[?2004h>     print('nodes err', type(e), e)
+[?2004l[?2004h> print('pg edges method')
+[?2004l[?2004h> try:
+[?2004l[?2004h>     print(list(pg.edges(include_drawplanar_edge_info=True))[:5])
+[?2004l[?2004h> except Exception as e:
+[?2004l[?2004h>     print('edges err', type(e), e)
+[?2004l[?2004h> g2 = planarity.networkx_graph(pg)
+[?2004l[?2004h> print('after nodes', list(g2.nodes(data=True))[:5])
+[?2004l[?2004h> print('after edges', list(g2.edges(data=True))[:5])
+[?2004l[?2004h> PY
+[?2004lknot points (100, 3)
+Traceback (most recent call last):
+  File [35m"<stdin>"[0m, line [35m7[0m, in [35m<module>[0m
+[1;35mAttributeError[0m: [35m'function' object has no attribute 'planar_diagram'[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && sed -n '1,150p' pyknotid/representations/planardiagram.py
+[?2004l'''
+PlanarDiagram
+=============
+
+Classes for working with planar diagram notation of knot diagrams.
+
+See individual class documentation for more details.
+
+API documentation
+~~~~~~~~~~~~~~~~~
+'''
+
+from __future__ import print_function
+
+import numpy as n
+
+
+class PlanarDiagram(list):
+    '''A class for containing and manipulating planar diagrams.
+
+    Just provides convenient display and conversion methods for now.
+    In the future, will support simplification.
+
+    Shorthand input may be of the form ``X_1,4,2,5 X_3,6,4,1 X_5,2,6,3``.
+    This is (should be?) the same as returned by repr.
+
+    Parameters
+    ----------
+    crossings : array-like or string or GaussCode
+        The list of crossings in the diagram, which will be converted
+        to an internal planar diagram representation. Currently these are
+        mostly converted via a GaussCode instance, so in addition to the
+        shorthand any array-like supported by
+        :class:`~pyknotid.representations.gausscode.GaussCode` may be used.
+    '''
+
+    def __init__(self, crossings=''):
+        from pyknotid.representations import gausscode
+        if isinstance(crossings, str):
+            self.extend(shorthand_to_crossings(crossings))
+        elif isinstance(crossings, gausscode.GaussCode):
+            self.extend(gausscode_to_crossings(crossings))
+        else:
+            self.extend(gausscode_to_crossings(
+                gausscode.GaussCode(crossings)))
+
+    def __str__(self):
+        lenstr = 'PD with {0}: '.format(len(self))
+        return lenstr + ' '.join([str(crossing) for crossing in self])
+
+    def __repr__(self):
+        return self.__str__()
+
+    def as_mathematica(self):
+        '''
+        Returns a mathematica code representation of self, usable in the
+        mathematica knot tools.
+        '''
+        s = 'PD['
+        s = s + ', '.join(crossing.as_mathematica() for crossing in self)
+        return s + ']'
+
+    def as_spherogram(self):
+        '''
+        Get a planar diagram class from the Spherogram module, which
+        can be used to access SnapPy's manifold tools.
+
+        This method requires that spherogram and SnapPy are installed.
+        '''
+        from snappy import Link
+        from spherogram import Crossing, Link
+        scs = [Crossing() for crossing in self]
+
+        indices = {}
+        for i in range(len(self)):
+            c = self[i]
+            for j in range(len(c)):
+                number = c[j]
+                if number in indices:
+                    otheri, otherj = indices.pop(number)
+                    scs[i][j] = scs[otheri][otherj]
+                else:
+                    indices[number] = (i, j)
+        return Link(scs)
+
+    def as_networkx_extended(self):
+        '''(internal use only) Returns a networkx Graph along with extra
+        information about the crossings.
+        '''
+        # print('pd is', self)
+        import networkx as nx
+        edges = []
+        cache = {}
+        heights = {}
+        edge_directions = []
+        from collections import defaultdict
+        intermediate_edges_by_node = defaultdict(lambda : [None, None, None, None])
+        intermediate_node_index = len(self)
+        for node_index, crossing in enumerate(self):
+            for crossing_index, arc_number in enumerate(crossing):
+                if arc_number in cache:
+                    other_node_index, other_height, other_crossing_index = cache[arc_number]
+                    # edges.append([other_node_index, node_index])
+                    edges.append([other_node_index, intermediate_node_index])
+                    edges.append([node_index, intermediate_node_index])
+
+                    height = index_height(crossing_index)
+
+                    if crossing.is_outgoing(arc_number):
+                        # heights[node_index, other_node_index, arc_number] = (height, other_height)
+                        heights[node_index, intermediate_node_index, arc_number] = (height, 0.)
+                        heights[intermediate_node_index, other_node_index, arc_number] = (0., other_height)
+
+                        # edge_directions.append((node_index, other_node_index, arc_number))
+                        edge_directions.append((node_index, intermediate_node_index, arc_number))
+                        edge_directions.append((intermediate_node_index, other_node_index, arc_number))
+                    else:
+                        # heights[other_node_index, node_index, arc_number] = (other_height, height)
+                        heights[other_node_index, intermediate_node_index, arc_number] = (other_height, 0.)
+                        heights[intermediate_node_index, node_index, arc_number] = (0., height)
+
+                        # edge_directions.append((other_node_index, node_index, arc_number))
+                        edge_directions.append((other_node_index, intermediate_node_index, arc_number))
+                        edge_directions.append((intermediate_node_index, node_index, arc_number))
+
+                    intermediate_edges_by_node[node_index][crossing_index] = intermediate_node_index
+                    intermediate_edges_by_node[other_node_index][other_crossing_index] = intermediate_node_index
+
+                    intermediate_node_index += 1 
+                    
+                else:
+                    cache[arc_number] = (node_index, index_height(crossing_index), crossing_index)
+
+        for node, intermediate_nodes in intermediate_edges_by_node.items():
+            for i, intermediate in enumerate(intermediate_nodes):
+                next_intermediate = intermediate_nodes[(i+1) % 4]
+                edges.append([intermediate, next_intermediate])
+
+        # print('intermediates are', intermediate_edges_by_node)
+        g = nx.Graph()
+        g.add_nodes_from(list(range(len(self)))*3)
+        g.add_edges_from(edges)
+
+        # print('possible heights:')
+        # for key, value in sorted(heights.items()):
+        #     print(key, value)
+
+
+        seen = set()
+        duplicates = list()
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 - <<'PY'
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> import planarity
+[?2004l[?2004h> k = sp.Knot(mk.trefoil())
+[?2004l[?2004h> r = k.representation()
+[?2004l[?2004h> print(type(r))
+[?2004l[?2004h> pd = r.planar_diagram()
+[?2004l[?2004h> g, duplicates, heights, first_edge = pd.as_networkx_extended()
+[?2004l[?2004h> print('before nodes')
+[?2004l[?2004h> for node, data in list(g.nodes(data=True))[:8]: print(node, data)
+[?2004l[?2004h> print('before edges')
+[?2004l[?2004h> for e in list(g.edges(data=True))[:8]: print(e)
+[?2004l[?2004h> pg = planarity.PGraph(g)
+[?2004l[?2004h> pg.embed_drawplanar()
+[?2004l[?2004h> print('raw pg node data')
+[?2004l[?2004h> try:
+[?2004l[?2004h>     for item in list(pg.nodes(include_drawplanar_vertex_info=True))[:8]: print(item)
+[?2004l[?2004h> except Exception as e: print('nodes err', type(e), e)
+[?2004l[?2004h> print('raw pg edge data')
+[?2004l[?2004h> try:
+[?2004l[?2004h>     for item in list(pg.edges(include_drawplanar_edge_info=True))[:8]: print(item)
+[?2004l[?2004h> except Exception as e: print('edges err', type(e), e)
+[?2004l[?2004h> g2 = planarity.networkx_graph(pg)
+[?2004l[?2004h> print('after nodes')
+[?2004l[?2004h> for node, data in list(g2.nodes(data=True))[:8]: print(node, data)
+[?2004l[?2004h> print('after edges')
+[?2004l[?2004h> for e in list(g2.edges(data=True))[:8]: print(e)
+[?2004l[?2004h> PY
+[?2004lFinding crossings
+i = 0 / 97
+3.0 crossings found
+
+<class 'pyknotid.representations.representation.Representation'>
+before nodes
+0 {}
+1 {}
+2 {}
+3 {}
+4 {}
+5 {}
+6 {}
+7 {}
+before edges
+(0, 3, {})
+(0, 4, {})
+(0, 5, {})
+(0, 6, {})
+(1, 3, {})
+(1, 4, {})
+(1, 7, {})
+(1, 8, {})
+raw pg node data
+(0, {'vertex_position': 0, 'vertex_start': 0, 'vertex_end': 20})
+(1, {'vertex_position': 7, 'vertex_start': 2, 'vertex_end': 17})
+(2, {'vertex_position': 4, 'vertex_start': 6, 'vertex_end': 12})
+(3, {'vertex_position': 8, 'vertex_start': 1, 'vertex_end': 20})
+(4, {'vertex_position': 6, 'vertex_start': 0, 'vertex_end': 14})
+(5, {'vertex_position': 3, 'vertex_start': 3, 'vertex_end': 8})
+(6, {'vertex_position': 1, 'vertex_start': 7, 'vertex_end': 19})
+(7, {'vertex_position': 2, 'vertex_start': 11, 'vertex_end': 18})
+raw pg edge data
+(0, 4, {'edge_position': 0, 'edge_start': 0, 'edge_end': 6})
+(0, 5, {'edge_position': 3, 'edge_start': 0, 'edge_end': 3})
+(0, 6, {'edge_position': 7, 'edge_start': 0, 'edge_end': 1})
+(0, 3, {'edge_position': 20, 'edge_start': 0, 'edge_end': 8})
+(1, 3, {'edge_position': 17, 'edge_start': 7, 'edge_end': 8})
+(1, 7, {'edge_position': 16, 'edge_start': 2, 'edge_end': 7})
+(1, 8, {'edge_position': 15, 'edge_start': 5, 'edge_end': 7})
+(1, 4, {'edge_position': 2, 'edge_start': 6, 'edge_end': 7})
+after nodes
+0 {'vertex_position': 0, 'vertex_start': 0, 'vertex_end': 20}
+1 {'vertex_position': 7, 'vertex_start': 2, 'vertex_end': 17}
+2 {'vertex_position': 4, 'vertex_start': 6, 'vertex_end': 12}
+3 {'vertex_position': 8, 'vertex_start': 1, 'vertex_end': 20}
+4 {'vertex_position': 6, 'vertex_start': 0, 'vertex_end': 14}
+5 {'vertex_position': 3, 'vertex_start': 3, 'vertex_end': 8}
+6 {'vertex_position': 1, 'vertex_start': 7, 'vertex_end': 19}
+7 {'vertex_position': 2, 'vertex_start': 11, 'vertex_end': 18}
+after edges
+(0, 4, {'edge_position': 0, 'edge_start': 0, 'edge_end': 6})
+(0, 5, {'edge_position': 3, 'edge_start': 0, 'edge_end': 3})
+(0, 6, {'edge_position': 7, 'edge_start': 0, 'edge_end': 1})
+(0, 3, {'edge_position': 20, 'edge_start': 0, 'edge_end': 8})
+(1, 3, {'edge_position': 17, 'edge_start': 7, 'edge_end': 8})
+(1, 7, {'edge_position': 16, 'edge_start': 2, 'edge_end': 7})
+(1, 8, {'edge_position': 15, 'edge_start': 5, 'edge_end': 7})
+(1, 4, {'edge_position': 2, 'edge_start': 6, 'edge_end': 7})
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && python3 - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('pyknotid/representations/representation.py')
+[?2004l[?2004h> text = p.read_text()
+[?2004l[?2004h> old = """        pg = planarity.PGraph(g)\n        pg.embed_drawplanar()\n        g = planarity.networkx_graph(pg)\n"""
+[?2004l[?2004h> new = """        pg = planarity.PGraph(g)\n        pg.embed_drawplanar()\n        g = planarity.networkx_graph(pg)\n\n        # Planarity >= 1.0 uses names such as vertex_position/edge_position,\n        # while older versions used pos/start/end. Support both APIs.\n        for node, data in g.nodes(data=True):\n            if 'pos' not in data and 'vertex_position' in data:\n                data['pos'] = data['vertex_position']\n            if 'start' not in data and 'vertex_start' in data:\n                data['start'] = data['vertex_start']\n            if 'end' not in data and 'vertex_end' in data:\n                data['end'] = data['vertex_end']\n        for n1, n2, data in g.edges(data=True):\n            if 'pos' not in data and 'edge_position' in data:\n                data['pos'] = data['edge_position']\n            if 'start' not in data and 'edge_start' in data:\n                data['start'] = data['edge_start']\n            if 'end' not in data and 'edge_end' in data:\n                data['end'] = data['edge_end']\n"""
+[?2004l[?2004h> if old not in text:
+[?2004l[?2004h>     raise SystemExit('target block not found')
+[?2004l[?2004h> p.write_text(text.replace(old, new, 1))
+[?2004l[?2004h> print('patched representation.py')
+[?2004l[?2004h> PY
+[?2004lpatched representation.py
+[?2004hroot@c8081b6868e4:/app/pyknotid# python3 -m pytest -q tests/test_spacecurve.py::test_reconstructed_space_curve
+[?2004l[32m.[0m[32m                                                                                                                                                        [100%][0m
+[32m[32m[1m1 passed[0m[32m in 0.49s[0m[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && python3 -m pip install . --no-build-isolation --force-reinstall --no-deps
+[?2004lProcessing /app/pyknotid
+  Preparing metadata (pyproject.toml) ... [?25l- done
+[?25hBuilding wheels for collected packages: pyknotid
+  Building wheel for pyknotid (pyproject.toml) ... [?25l- \ done
+[?25h  Created wheel for pyknotid: filename=pyknotid-0.5.3-cp313-cp313-linux_x86_64.whl size=2378382 sha256=2853424818aa4854a2d4406f498486723e2a21decf7faf3eb8a0e7df84416c81
+  Stored in directory: /tmp/pip-ephem-wheel-cache-0ytm_pq2/wheels/5e/f2/cb/b3080784954f43467934ff337ba823c57a3e1db3303f8227db
+Successfully built pyknotid
+Installing collected packages: pyknotid
+  Attempting uninstall: pyknotid
+    Found existing installation: pyknotid 0.5.3
+    Uninstalling pyknotid-0.5.3:
+      Successfully uninstalled pyknotid-0.5.3
+Successfully installed pyknotid-0.5.3
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.[0m[33m
+[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m A new release of pip is available: [0m[31;49m25.2[0m[39;49m -> [0m[32;49m26.2.2[0m
+[1m[[0m[34;49mnotice[0m[1;39;49m][0m[39;49m To update, run: [0m[32;49mpip install --upgrade pip[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /app/pyknotid && python3 -m pytest -q --ignore=tests/test_random_curves.py --ignore=tests/test_catalogue.py
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                       [100%][0m
+[32m[32m[1m18 passed[0m[32m in 0.91s[0m[0m
+[?2004hroot@c8081b6868e4:/app/pyknotid# cd /tmp && python3 - <<'PY'
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> print('numpy', np.__version__)
+[?2004l[?2004h> import pyknotid
+[?2004l[?2004h> from pyknotid.spacecurves import chelpers, ccomplexity
+[?2004l[?2004h> from pyknotid import cinvariants
+[?2004l[?2004h> import pyknotid.make as mk
+[?2004l[?2004h> import pyknotid.spacecurves as sp
+[?2004l[?2004h> print('pyknotid:', pyknotid.__file__)
+[?2004l[?2004h> print('chelpers:', chelpers.__file__)
+[?2004l[?2004h> print('ccomplexity:', ccomplexity.__file__)
+[?2004l[?2004h> print('cinvariants:', cinvariants.__file__)
+[?2004l[?2004h> k = sp.Knot(mk.three_twist(num_points=100))
+[?2004l[?2004h> out = k.alexander_polynomial(-1)
+[?2004l[?2004h> print('OUT:', out)
+[?2004l[?2004h> PY
+[?2004lnumpy 2.3.0
+pyknotid: /usr/local/lib/python3.13/site-packages/pyknotid/__init__.py
+chelpers: /usr/local/lib/python3.13/site-packages/pyknotid/spacecurves/chelpers.cpython-313-x86_64-linux-gnu.so
+ccomplexity: /usr/local/lib/python3.13/site-packages/pyknotid/spacecurves/ccomplexity.cpython-313-x86_64-linux-gnu.so
+cinvariants: /usr/local/lib/python3.13/site-packages/pyknotid/cinvariants.cpython-313-x86_64-linux-gnu.so
+Finding crossings
+i = 0 / 97
+7.0 crossings found
+
+Simplifying: initially 14 crossings
+-> 10 crossings after 1 runs-> 10 crossings after 2 runs
+OUT: 6.999999999999998
+[?2004hroot@c8081b6868e4:/tmp# 

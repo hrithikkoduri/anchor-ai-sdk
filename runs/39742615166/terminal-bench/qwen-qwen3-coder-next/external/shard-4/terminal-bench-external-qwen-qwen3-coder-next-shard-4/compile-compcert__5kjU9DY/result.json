@@ -1,0 +1,216 @@
+{
+    "id": "1833287c-6b98-4c46-9926-82a0c2bf3dbf",
+    "task_name": "terminal-bench/compile-compcert",
+    "trial_name": "compile-compcert__5kjU9DY",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-4/terminal-bench-external-qwen-qwen3-coder-next-shard-4/compile-compcert__5kjU9DY",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/compile-compcert"
+    },
+    "source": "tasks",
+    "task_checksum": "9b1454e45a4bd7f722e6c5969b3b17d28a9aac826cd8ceccf742d8426a8f1c21",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/compile-compcert",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "compile-compcert__5kjU9DY",
+        "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-4/terminal-bench-external-qwen-qwen3-coder-next-shard-4",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "0cc28886-7a71-435e-a886-c6d6f9128248",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 2546270,
+        "n_cache_tokens": 2432768,
+        "n_output_tokens": 11195,
+        "cost_usd": 0.19286999999999996,
+        "model_usage": {
+            "qwen/qwen3-coder-next": {
+                "n_input_tokens": 2493080,
+                "n_cache_tokens": 2380000,
+                "n_output_tokens": 11127,
+                "cost_usd": 0.18907119999999997
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 77,
+            "api_request_times_msec": [
+                2962.4571800231934,
+                3804.6927452087402,
+                2379.0621757507324,
+                2843.7864780426025,
+                1210.9336853027344,
+                2790.1315689086914,
+                2950.3865242004395,
+                3080.475091934204,
+                3322.054386138916,
+                4133.235216140747,
+                3437.499523162842,
+                3335.825204849243,
+                3924.8733520507812,
+                2110.180616378784,
+                2986.872911453247,
+                1667.2897338867188,
+                2602.4303436279297,
+                1444.1795349121094,
+                1829.3609619140625,
+                4464.55979347229,
+                1479.2075157165527,
+                2019.5801258087158,
+                1373.3546733856201,
+                3083.803176879883,
+                4505.0389766693115,
+                4382.7574253082275,
+                4828.279495239258,
+                4741.641044616699,
+                3128.8394927978516,
+                1862.837791442871,
+                2000.0030994415283,
+                3120.8624839782715,
+                2384.2685222625732,
+                3042.475461959839,
+                2685.6014728546143,
+                5659.111499786377,
+                3554.5718669891357,
+                2319.4234371185303,
+                2721.2088108062744,
+                2423.86794090271,
+                3232.372522354126,
+                2134.186267852783,
+                2336.10463142395,
+                2852.7729511260986,
+                2111.54842376709,
+                2696.9428062438965,
+                2153.482437133789,
+                1985.3401184082031,
+                1977.6194095611572,
+                2773.8726139068604,
+                2889.327049255371,
+                2869.6978092193604,
+                3449.2108821868896,
+                3473.0679988861084,
+                2879.5502185821533,
+                2669.525146484375,
+                2000.4239082336426,
+                3466.7716026306152,
+                3422.544002532959,
+                2626.5666484832764,
+                2445.578098297119,
+                2480.320930480957,
+                2033.6241722106934,
+                2041.6796207427979,
+                3028.939962387085,
+                2443.451166152954,
+                1340.7504558563232,
+                1681.4050674438477,
+                2052.3629188537598,
+                1624.9406337738037,
+                1659.99174118042,
+                1245.0494766235352,
+                1867.0201301574707,
+                1463.0613327026367,
+                1785.9899997711182,
+                1434.3154430389404,
+                2422.6810932159424
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": {
+        "exception_type": "AgentTimeoutError",
+        "exception_message": "Agent execution timed out after 2400.0 seconds",
+        "exception_traceback": "Traceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1743, in run\n    await self._run_agent_loop(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1523, in _run_agent_loop\n    timeout_occurred, terminal_output = await self._execute_commands(\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 1339, in _execute_commands\n    await session.send_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 817, in send_keys\n    await self._send_non_blocking_keys(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 777, in _send_non_blocking_keys\n    await asyncio.sleep(min_timeout_sec - elapsed_time_sec)\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 665, in sleep\n    return await future\n           ^^^^^^^^^^^^\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 651, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 76, in _run_agent\n    await self._run_agent_phase(\n  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py\", line 660, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 2400.0 seconds\n",
+        "occurred_at": "2026-10-22T09:02:45.818089Z"
+    },
+    "started_at": "2026-10-22T08:22:24.358207Z",
+    "finished_at": "2026-10-22T09:03:06.054876Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:22:24.360232Z",
+        "finished_at": "2026-10-22T08:22:27.062113Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:22:27.062147Z",
+        "finished_at": "2026-10-22T08:22:45.758672Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:22:45.758769Z",
+        "finished_at": "2026-10-22T09:02:45.816192Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T09:02:46.164163Z",
+        "finished_at": "2026-10-22T09:02:52.328616Z"
+    },
+    "step_results": null
+}

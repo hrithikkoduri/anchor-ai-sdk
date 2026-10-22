@@ -1,0 +1,44 @@
+{
+    "id": "17ade9ca-5678-465b-af3b-cf51d4bfbf31",
+    "started_at": "2026-10-22T08:17:52.131302",
+    "updated_at": "2026-10-22T09:31:40.492716",
+    "finished_at": "2026-10-22T09:31:40.492716",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 1,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 1,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "bn-fit-modify__zEHPgap",
+                            "circuit-fibsqrt__gBx86Pd"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "circuit-fibsqrt__gBx86Pd"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": 6609085,
+        "n_cache_tokens": 6365344,
+        "n_output_tokens": 81029,
+        "cost_usd": 0.5396462
+    }
+}

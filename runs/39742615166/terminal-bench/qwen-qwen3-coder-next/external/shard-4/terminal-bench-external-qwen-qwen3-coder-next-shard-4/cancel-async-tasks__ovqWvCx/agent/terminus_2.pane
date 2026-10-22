@@ -1,0 +1,425 @@
+[?2004hroot@4979d46305c5:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@4979d46305c5:/app# clear
+[?2004l[H[J[3J[?2004hroot@4979d46305c5:/app# cat > /app/run.py << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from typing import Callable, Awaitable, List
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _task_wrapper(task: Callable[[], Awaitable[None]], semaphore: asyncio.Semaphore) -> None:
+[?2004l[?2004h>     """Wrap a task with semaphore acquisition and release."""
+[?2004l[?2004h>     async with semaphore:
+[?2004l[?2004h>         await task()
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _run_tasks_async(tasks: List[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """Internal async function to run all tasks with concurrency control."""
+[?2004l[?2004h>     if max_concurrent <= 0:
+[?2004l[?2004h>         raise ValueError("max_concurrent must be positive")
+[?2004l[?2004h>     
+[?2004l[?2004h>     semaphore = asyncio.Semaphore(max_concurrent)
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Create wrapped tasks
+[?2004l[?2004h>     wrapped_tasks = [_task_wrapper(task, semaphore) for task in tasks]
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Run all tasks concurrently and wait for all to complete
+[?2004l[?2004h>     await asyncio.gather(*wrapped_tasks)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """
+[?2004l[?2004h>     Run async tasks with a maximum concurrency limit.
+[?2004l[?2004h>     
+[?2004l[?2004h>     Args:
+[?2004l[?2004h>         tasks: List of async tasks to run
+[?2004l[?2004h>         max_concurrent: Maximum number of tasks that can run concurrently
+[?2004l[?2004h>     
+[?2004l[?2004h>     This function ensures that cleanup code in tasks runs even on KeyboardInterrupt.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         asyncio.run(_run_tasks_async(tasks, max_concurrent))
+[?2004l[?2004h>     except KeyboardInterrupt:
+[?2004l[?2004h>         # Allow cleanup code in tasks to run by cancelling the main task
+[?2004l[?2004h>         # asyncio.run will handle the cancellation and wait for cleanup
+[?2004l[?2004h>         pass
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@4979d46305c5:/app# cat /app/run.py
+[?2004limport asyncio
+from typing import Callable, Awaitable, List
+
+
+async def _task_wrapper(task: Callable[[], Awaitable[None]], semaphore: asyncio.Semaphore) -> None:
+    """Wrap a task with semaphore acquisition and release."""
+    async with semaphore:
+        await task()
+
+
+async def _run_tasks_async(tasks: List[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+    """Internal async function to run all tasks with concurrency control."""
+    if max_concurrent <= 0:
+        raise ValueError("max_concurrent must be positive")
+    
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    # Create wrapped tasks
+    wrapped_tasks = [_task_wrapper(task, semaphore) for task in tasks]
+    
+    # Run all tasks concurrently and wait for all to complete
+    await asyncio.gather(*wrapped_tasks)
+
+
+def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+    """
+    Run async tasks with a maximum concurrency limit.
+    
+    Args:
+        tasks: List of async tasks to run
+        max_concurrent: Maximum number of tasks that can run concurrently
+    
+    This function ensures that cleanup code in tasks runs even on KeyboardInterrupt.
+    """
+    try:
+        asyncio.run(_run_tasks_async(tasks, max_concurrent))
+    except KeyboardInterrupt:
+        # Allow cleanup code in tasks to run by cancelling the main task
+        # asyncio.run will handle the cancellation and wait for cleanup
+        pass
+[?2004hroot@4979d46305c5:/app# python3 -c "from run import run_tasks; print('Import successful')"
+[?2004lImport successful
+[?2004hroot@4979d46305c5:/app# python3 << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> async def task1():
+[?2004l[?2004h>     print("Task 1 starting")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(2)
+[?2004l[?2004h>         print("Task 1 done")
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         print("Task 1 cleanup")
+[?2004l[?2004h> 
+[?2004l[?2004h> async def task2():
+[?2004l[?2004h>     print("Task 2 starting")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(2)
+[?2004l[?2004h>         print("Task 2 done")
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         print("Task 2 cleanup")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Test basic functionality
+[?2004l[?2004h> print("Testing basic run...")
+[?2004l[?2004h> run_tasks([task1, task2], max_concurrent=2)
+[?2004l[?2004h> print("All tasks completed")
+[?2004l[?2004h> EOF
+[?2004lTesting basic run...
+Task 1 starting
+Task 2 starting
+Task 1 done
+Task 1 cleanup
+Task 2 done
+Task 2 cleanup
+All tasks completed
+[?2004hroot@4979d46305c5:/app# cat > /app/run.py << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> import signal
+[?2004l[?2004h> from typing import Callable, Awaitable, List
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _task_wrapper(task: Callable[[], Awaitable[None]], semaphore: asyncio.Semaphore) -> None:
+[?2004l[?2004h>     """Wrap a task with semaphore acquisition and release, handling cancellation."""
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         async with semaphore:
+[?2004l[?2004h>             await task()
+[?2004l[?2004h>     except asyncio.CancelledError:
+[?2004l[?2004h>         # Re-raise to allow proper cancellation
+[?2004l[?2004h>         raise
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _run_tasks_async(tasks: List[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """Internal async function to run all tasks with concurrency control."""
+[?2004l[?2004h>     if max_concurrent <= 0:
+[?2004l[?2004h>         raise ValueError("max_concurrent must be positive")
+[?2004l[?2004h>     
+[?2004l[?2004h>     semaphore = asyncio.Semaphore(max_concurrent)
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Create wrapped tasks
+[?2004l[?2004h>     wrapped_tasks = [_task_wrapper(task, semaphore) for task in tasks]
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Run all tasks concurrently and wait for all to complete
+[?2004l[?2004h>     await asyncio.gather(*wrapped_tasks)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """
+[?2004l[?2004h>     Run async tasks with a maximum concurrency limit.
+[?2004l[?2004h>     
+[?2004l[?2004h>     Args:
+[?2004l[?2004h>         tasks: List of async tasks to run
+[?2004l[?2004h>         max_concurrent: Maximum number of tasks that can run concurrently
+[?2004l[?2004h>     
+[?2004l[?2004h>     This function ensures that cleanup code in tasks runs even on KeyboardInterrupt.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         asyncio.run(_run_tasks_async(tasks, max_concurrent))
+[?2004l[?2004h>     except KeyboardInterrupt:
+[?2004l[?2004h>         # The KeyboardInterrupt will cause CancelledError in pending tasks,
+[?2004l[?2004h>         # which allows try/finally blocks and async context managers to run cleanup.
+[?2004l[?2004h>         pass
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@4979d46305c5:/app# cat > /app/run.py << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from typing import Callable, Awaitable, List
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _task_wrapper(task: Callable[[], Awaitable[None]], semaphore: asyncio.Semaphore) -> None:
+[?2004l[?2004h>     """Wrap a task with semaphore acquisition and release, handling cancellation."""
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         async with semaphore:
+[?2004l[?2004h>             await task()
+[?2004l[?2004h>     except asyncio.CancelledError:
+[?2004l[?2004h>         # Re-raise to allow proper cancellation
+[?2004l[?2004h>         raise
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> async def _run_tasks_async(tasks: List[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """Internal async function to run all tasks with concurrency control."""
+[?2004l[?2004h>     if max_concurrent <= 0:
+[?2004l[?2004h>         raise ValueError("max_concurrent must be positive")
+[?2004l[?2004h>     
+[?2004l[?2004h>     semaphore = asyncio.Semaphore(max_concurrent)
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Create wrapped tasks
+[?2004l[?2004h>     wrapped_tasks = [_task_wrapper(task, semaphore) for task in tasks]
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Run all tasks concurrently and wait for all to complete
+[?2004l[?2004h>     await asyncio.gather(*wrapped_tasks)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+[?2004l[?2004h>     """
+[?2004l[?2004h>     Run async tasks with a maximum concurrency limit.
+[?2004l[?2004h>     
+[?2004l[?2004h>     Args:
+[?2004l[?2004h>         tasks: List of async tasks to run
+[?2004l[?2004h>         max_concurrent: Maximum number of tasks that can run concurrently
+[?2004l[?2004h>     
+[?2004l[?2004h>     This function ensures that cleanup code in tasks runs even on KeyboardInterrupt.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         asyncio.run(_run_tasks_async(tasks, max_concurrent))
+[?2004l[?2004h>     except KeyboardInterrupt:
+[?2004l[?2004h>         # The KeyboardInterrupt will cause CancelledError in pending tasks,
+[?2004l[?2004h>         # which allows try/finally blocks and async context managers to run cleanup.
+[?2004l[?2004h>         pass
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@4979d46305c5:/app# python3 -c "from run import run_tasks; print('Import successful')"
+[?2004lImport successful
+[?2004hroot@4979d46305c5:/app# timeout 2 python3 << 'EOF' || echo 'Test interrupted as expected'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> cleanup_ran = False
+[?2004l[?2004h> 
+[?2004l[?2004h> async def long_task():
+[?2004l[?2004h>     global cleanup_ran
+[?2004l[?2004h>     print("Starting long task")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(10)  # Long running task
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         cleanup_ran = True
+[?2004l[?2004h>         print("Cleanup executed!")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Start in a separate thread so we can interrupt it
+[?2004l[?2004h> import threading
+[?2004l[?2004h> import time
+[?2004l[?2004h> 
+[?2004l[?2004h> def run_in_thread():
+[?2004l[?2004h>     run_tasks([long_task], max_concurrent=1)
+[?2004l[?2004h> 
+[?2004l[?2004h> thread = threading.Thread(target=run_in_thread)
+[?2004l[?2004h> thread.start()
+[?2004l[?2004h> time.sleep(0.5)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Simulate keyboard interrupt
+[?2004l[?2004h> import os
+[?2004l[?2004h> import signal
+[?2004l[?2004h> os.kill(os.getpid(), signal.SIGINT)
+[?2004l[?2004h> 
+[?2004l[?2004h> thread.join(timeout=2)
+[?2004l[?2004h> print(f"Cleanup ran: {cleanup_ran}")
+[?2004l[?2004h> EOF
+[?2004lStarting long task
+Traceback (most recent call last):
+  File [35m"<stdin>"[0m, line [35m29[0m, in [35m<module>[0m
+[1;35mKeyboardInterrupt[0m
+Test interrupted as expected
+[?2004hroot@4979d46305c5:/app# python3 << 'TESTEOF' &
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> cleanup_ran = False
+[?2004l[?2004h> 
+[?2004l[?2004h> async def task():
+[?2004l[?2004h>     global cleanup_ran
+[?2004l[?2004h>     print("Task starting")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(10)
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         cleanup_ran = True
+[?2004l[?2004h>         print("Cleanup ran!")
+[?2004l[?2004h> 
+[?2004l[?2004h> run_tasks([task], max_concurrent=1)
+[?2004l[?2004h> print(f"Cleanup ran: {cleanup_ran}")
+[?2004l[?2004h> TESTEOF
+[?2004l[1] 670
+[?2004hroot@4979d46305c5:/app# Task starting
+sleep 0.5 && kill -INT $!
+[?2004l[?2004hroot@4979d46305c5:/app# Cleanup ran!
+Cleanup ran: True
+python3 << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> import time
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> async def task(n):
+[?2004l[?2004h>     print(f"Task {n} started")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(0.1)
+[?2004l[?2004h>         print(f"Task {n} done")
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         print(f"Task {n} cleanup")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Test with more tasks than max_concurrent
+[?2004l[?2004h> print("Testing with 5 tasks, max_concurrent=2:")
+[?2004l[?2004h> start = time.time()
+[?2004l[?2004h> run_tasks([task(i) for i in range(5)], max_concurrent=2)
+[?2004l[?2004h> print(f"Total time: {time.time() - start:.2f}s")
+[?2004l[?2004h> print("Done!")
+[?2004l[?2004h> EOF
+[?2004lTesting with 5 tasks, max_concurrent=2:
+Traceback (most recent call last):
+  File [35m"<stdin>"[0m, line [35m16[0m, in [35m<module>[0m
+  File [35m"/app/run.py"[0m, line [35m40[0m, in [35mrun_tasks[0m
+    [31masyncio.run[0m[1;31m(_run_tasks_async(tasks, max_concurrent))[0m
+    [31m~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/usr/local/lib/python3.13/asyncio/runners.py"[0m, line [35m195[0m, in [35mrun[0m
+    return [31mrunner.run[0m[1;31m(main)[0m
+           [31m~~~~~~~~~~[0m[1;31m^^^^^^[0m
+  File [35m"/usr/local/lib/python3.13/asyncio/runners.py"[0m, line [35m118[0m, in [35mrun[0m
+    return [31mself._loop.run_until_complete[0m[1;31m(task)[0m
+           [31m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^[0m
+  File [35m"/usr/local/lib/python3.13/asyncio/base_events.py"[0m, line [35m725[0m, in [35mrun_until_complete[0m
+    return [31mfuture.result[0m[1;31m()[0m
+           [31m~~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/app/run.py"[0m, line [35m26[0m, in [35m_run_tasks_async[0m
+    await asyncio.gather(*wrapped_tasks)
+  File [35m"/app/run.py"[0m, line [35m9[0m, in [35m_task_wrapper[0m
+    await [31mtask[0m[1;31m()[0m
+          [31m~~~~[0m[1;31m^^[0m
+[1;35mTypeError[0m: [35m'coroutine' object is not callable[0m
+<sys>:0: RuntimeWarning: coroutine 'task' was never awaited
+[1]+  Done                    python3 <<'TESTEOF'
+import asyncio
+from run import run_tasks
+
+cleanup_ran = False
+
+async def task():
+    global cleanup_ran
+    print("Task starting")
+    try:
+        await asyncio.sleep(10)
+    finally:
+        cleanup_ran = True
+        print("Cleanup ran!")
+
+run_tasks([task], max_concurrent=1)
+print(f"Cleanup ran: {cleanup_ran}")
+TESTEOF
+
+[?2004hroot@4979d46305c5:/app# python3 << 'EOF'
+[?2004l[?2004h> import asyncio
+[?2004l[?2004h> import time
+[?2004l[?2004h> from run import run_tasks
+[?2004l[?2004h> 
+[?2004l[?2004h> async def task_body(n):
+[?2004l[?2004h>     print(f"Task {n} started")
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         await asyncio.sleep(0.1)
+[?2004l[?2004h>         print(f"Task {n} done")
+[?2004l[?2004h>     finally:
+[?2004l[?2004h>         print(f"Task {n} cleanup")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Test with more tasks than max_concurrent
+[?2004l[?2004h> # Each task must be a callable that returns an awaitable
+[?2004l[?2004h> print("Testing with 5 tasks, max_concurrent=2:")
+[?2004l[?2004h> start = time.time()
+[?2004l[?2004h> run_tasks([lambda n=i: task_body(n) for i in range(5)], max_concurrent=2)
+[?2004l[?2004h> print(f"Total time: {time.time() - start:.2f}s")
+[?2004l[?2004h> print("Done!")
+[?2004l[?2004h> EOF
+[?2004lTesting with 5 tasks, max_concurrent=2:
+Task 0 started
+Task 1 started
+Task 0 done
+Task 0 cleanup
+Task 1 done
+Task 1 cleanup
+Task 2 started
+Task 3 started
+Task 2 done
+Task 2 cleanup
+Task 3 done
+Task 3 cleanup
+Task 4 started
+Task 4 done
+Task 4 cleanup
+Total time: 0.30s
+Done!
+[?2004hroot@4979d46305c5:/app# cat /app/run.py
+[?2004limport asyncio
+from typing import Callable, Awaitable, List
+
+
+async def _task_wrapper(task: Callable[[], Awaitable[None]], semaphore: asyncio.Semaphore) -> None:
+    """Wrap a task with semaphore acquisition and release, handling cancellation."""
+    try:
+        async with semaphore:
+            await task()
+    except asyncio.CancelledError:
+        # Re-raise to allow proper cancellation
+        raise
+
+
+async def _run_tasks_async(tasks: List[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+    """Internal async function to run all tasks with concurrency control."""
+    if max_concurrent <= 0:
+        raise ValueError("max_concurrent must be positive")
+    
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    # Create wrapped tasks
+    wrapped_tasks = [_task_wrapper(task, semaphore) for task in tasks]
+    
+    # Run all tasks concurrently and wait for all to complete
+    await asyncio.gather(*wrapped_tasks)
+
+
+def run_tasks(tasks: list[Callable[[], Awaitable[None]]], max_concurrent: int) -> None:
+    """
+    Run async tasks with a maximum concurrency limit.
+    
+    Args:
+        tasks: List of async tasks to run
+        max_concurrent: Maximum number of tasks that can run concurrently
+    
+    This function ensures that cleanup code in tasks runs even on KeyboardInterrupt.
+    """
+    try:
+        asyncio.run(_run_tasks_async(tasks, max_concurrent))
+    except KeyboardInterrupt:
+        # The KeyboardInterrupt will cause CancelledError in pending tasks,
+        # which allows try/finally blocks and async context managers to run cleanup.
+        pass
+[?2004hroot@4979d46305c5:/app# 

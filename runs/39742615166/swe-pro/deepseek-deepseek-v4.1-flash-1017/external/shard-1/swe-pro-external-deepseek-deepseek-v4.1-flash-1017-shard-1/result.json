@@ -1,0 +1,45 @@
+{
+    "id": "1e8fdffb-d4f5-444e-8b9d-b597f6f86dfa",
+    "started_at": "2026-10-22T08:13:42.863745",
+    "updated_at": "2026-10-22T08:17:15.982134",
+    "finished_at": "2026-10-22T08:17:15.982134",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__deepseek/deepseek-v4.1-flash-1017__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_ansible__ansible-0ea40e__ZH4h3nP",
+                            "instance_internetarchive__openli__xmadfJG"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_ansible__ansible-0ea40e__ZH4h3nP",
+                        "instance_internetarchive__openli__xmadfJG"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

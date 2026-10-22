@@ -1,0 +1,60 @@
+{
+    "id": "69f75683-8e96-4025-b99b-2b3ad1a0bb4b",
+    "started_at": "2026-10-22T07:53:45.267438",
+    "updated_at": "2026-10-22T10:20:06.704774",
+    "finished_at": "2026-10-22T10:20:06.704774",
+    "n_total_trials": 10,
+    "stats": {
+        "n_completed_trials": 10,
+        "n_errored_trials": 7,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 10,
+                "n_errors": 7,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "django__django-10914__rAuNYau",
+                            "matplotlib__matplotlib-18869__pomGnLx",
+                            "mwaskom__seaborn-2848__EyatkuN",
+                            "pallets__flask-4045__tWiaVgQ",
+                            "psf__requests-1963__QuDTkMJ",
+                            "pydata__xarray-3364__RG9PBSp",
+                            "pylint-dev__pylint-5859__Pwxxdm7",
+                            "pytest-dev__pytest-11143__ti72459",
+                            "sphinx-doc__sphinx-10325__yriXQ9U",
+                            "sympy__sympy-11400__VPsFkXT"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "django__django-10914__rAuNYau",
+                        "pallets__flask-4045__tWiaVgQ",
+                        "pydata__xarray-3364__RG9PBSp",
+                        "pylint-dev__pylint-5859__Pwxxdm7",
+                        "pytest-dev__pytest-11143__ti72459",
+                        "sympy__sympy-11400__VPsFkXT"
+                    ],
+                    "NonZeroAgentExitCodeError": [
+                        "psf__requests-1963__QuDTkMJ"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": 0,
+        "n_cache_tokens": null,
+        "n_output_tokens": 0,
+        "cost_usd": 0.0
+    }
+}

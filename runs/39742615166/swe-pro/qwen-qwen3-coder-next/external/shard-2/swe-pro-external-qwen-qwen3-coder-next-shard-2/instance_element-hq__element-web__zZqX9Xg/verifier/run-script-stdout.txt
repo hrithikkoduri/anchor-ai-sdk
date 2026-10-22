@@ -1,0 +1,941 @@
+Running selected tests: test/unit-tests/components/views/rooms/wysiwyg_composer/utils/autocomplete-test.ts test/unit-tests/components/views/messages/MStickerBody-test.ts test/unit-tests/vector/platform/WebPlatform-test.ts test/unit-tests/components/views/spaces/SpaceTreeLevel-test.ts test/unit-tests/components/views/settings/devices/DeviceDetails-test.ts test/unit-tests/components/views/spaces/useUnreadThreadRooms-test.ts test/unit-tests/components/views/elements/SettingsField-test.ts test/unit-tests/theme-test.ts test/unit-tests/utils/PinningUtils-test.ts test/unit-tests/utils/AutoDiscoveryUtils-test.ts test/unit-tests/components/views/messages/MVideoBody-test.ts test/unit-tests/components/views/settings/encryption/RecoveryPanel-test.ts test/unit-tests/components/structures/TimelinePanel-test.ts test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.ts test/unit-tests/accessibility/RovingTabIndex-test.ts test/unit-tests/components/views/polls/pollHistory/PollHistory-test.ts test/unit-tests/components/views/settings/EventIndexPanel-test.ts test/unit-tests/components/views/settings/tabs/room/SecurityRoomSettingsTab-test.ts test/unit-tests/utils/local-room-test.ts test/unit-tests/editor/diff-test.ts test/unit-tests/components/views/dialogs/security/CreateKeyBackupDialog-test.ts test/unit-tests/utils/leave-behaviour-test.ts test/unit-tests/utils/permalinks/MatrixToPermalinkConstructor-test.ts test/unit-tests/components/views/spaces/SpacePanel-test.ts test/unit-tests/components/views/rooms/SendMessageComposer-test.ts test/unit-tests/hooks/useNotificationSettings-test.ts test/unit-tests/components/views/rooms/wysiwyg_composer/components/LinkModal-test.ts test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx test/unit-tests/components/views/settings/Notifications-test.ts test/unit-tests/settings/SettingsStore-test.ts test/unit-tests/components/views/rooms/UserIdentityWarning-test.ts test/unit-tests/components/views/messages/DateSeparator-test.ts test/unit-tests/components/views/emojipicker/EmojiPicker-test.ts test/unit-tests/components/views/rooms/NotificationDecoration-test.ts test/unit-tests/Rooms-test.ts test/unit-tests/components/views/room_settings/RoomProfileSettings-test.ts test/unit-tests/components/views/dialogs/AccessSecretStorageDialog-test.ts test/unit-tests/SupportedBrowser-test.ts test/unit-tests/stores/SpaceStore-test.ts
+Browserslist: browsers data (caniuse-lite) is 18 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+(node:5961) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 accountData listeners added to [EventEmitter]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5961) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 Event.decrypted listeners added to [EventEmitter]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+FAIL test/unit-tests/stores/SpaceStore-test.ts (35.584 s)
+  SpaceStore
+    ✓ should add new DM Invites to the People Space Notification State (2 ms)
+    ✓ does not race with lazy loading (3 ms)
+    ✓ test user flow (8 ms)
+    ✓ correctly emits events for metaspace changes during onReady (1 ms)
+    ✓ Favourites and People meta spaces should not be returned when the feature_new_room_list labs flag is enabled
+    static hierarchy resolution tests
+      ✓ handles no spaces (30 ms)
+      ✓ handles 3 joined top level spaces (5 ms)
+      ✓ handles a basic hierarchy (8 ms)
+      ✓ handles a sub-space existing in multiple places in the space tree (13 ms)
+      ✓ handles full cycles (4 ms)
+      ✓ handles partial cycles (3 ms)
+      ✓ handles partial cycles with additional spaces coming off them (4 ms)
+      ✓ invite to a subspace is only shown at the top level (2 ms)
+      test fixture 1
+        ✓ dms are only added to Notification States for only the People Space (9 ms)
+        ✓ orphan rooms are added to Notification States for only the Home Space (16 ms)
+        ✓ favourites are added to Notification States for all spaces containing the room inc Home (9 ms)
+        ✓ other rooms are added to Notification States for all spaces containing the room exc Home (62 ms)
+        ✓ honours m.space.parent if sender has permission in parent space (9 ms)
+        ✓ does not honour m.space.parent if sender does not have permission in parent space (19 ms)
+        isRoomInSpace()
+          ✓ home space contains orphaned rooms (16 ms)
+          ✓ home space does not contain all favourites (50 ms)
+          ✓ home space contains dm rooms (9 ms)
+          ✓ home space contains invites (17 ms)
+          ✓ home space contains invites even if they are also shown in a space (7 ms)
+          ✓ all rooms space does contain rooms/low priority even if they are also shown in a space (57 ms)
+          ✓ favourites space does contain favourites even if they are also shown in a space (8 ms)
+          ✓ people space does contain people even if they are also shown in a space (8 ms)
+          ✓ orphans space does contain orphans even if they are also shown in all rooms (17 ms)
+          ✓ home space doesn't contain rooms/low priority if they are also shown in a space (13 ms)
+          ✓ video room space contains all video rooms (56 ms)
+          ✓ updates the video room space when the room type changes (13 ms)
+          ✓ space contains child rooms (22 ms)
+          ✓ returns true for all sub-space child rooms when includeSubSpaceRooms is undefined (11 ms)
+          ✓ returns true for all sub-space child rooms when includeSubSpaceRooms is true (17 ms)
+          ✓ returns false for all sub-space child rooms when includeSubSpaceRooms is false (34 ms)
+          ✓ space contains all sub-space's child rooms (16 ms)
+          ✓ space contains child favourites (8 ms)
+          ✓ space contains child invites (17 ms)
+          ✓ spaces contain dms which you have with members of that space (9 ms)
+          ✓ uses cached aggregated rooms (54 ms)
+    hierarchy resolution update tests
+      ✓ updates state when spaces are joined (1 ms)
+      ✓ updates state when spaces are left (1 ms)
+      ✓ updates state when space invite comes in (1 ms)
+      ✓ updates state when space invite is accepted (1 ms)
+      ✓ updates state when space invite is rejected (2 ms)
+      ✓ room invite gets added to relevant space filters (2 ms)
+      onRoomsUpdate()
+        ✓ emits events for parent spaces when child room is added (18 ms)
+        ✓ updates rooms state when a child room is added (38 ms)
+        ✓ emits events for parent spaces when a member is added (9 ms)
+        ✓ updates users state when a member is added (16 ms)
+    active space switching tests
+      ✓ switch to home space (3 ms)
+      ✓ switch to invited space (3 ms)
+      ✓ switch to top level space (3 ms)
+      ✓ switch to subspace (12 ms)
+      ✓ switch to unknown space is a nop (3 ms)
+    context switching tests
+      ✓ last viewed room in target space is the current viewed and in both spaces (4 ms)
+      ✓ last viewed room in target space is in the current space (4 ms)
+      ✓ last viewed room in target space is not in the current space (3 ms)
+      ✓ last viewed room is target space is not known (36 ms)
+      ✓ last viewed room is target space is no longer in that space (12 ms)
+      ✓ no last viewed room in target space (3 ms)
+      ✓ no last viewed room in home space (3 ms)
+      ✕ routes through getLastSelectedRoomIdForSpace when switching spaces with contextSwitch (2 ms)
+    space auto switching tests
+      ✓ no switch required, room is in current space (4 ms)
+      ✓ switch to canonical parent space for room (5 ms)
+      ✓ switch to first containing space for room (3 ms)
+      ✓ switch to other rooms for orphaned room (13 ms)
+      ✓ switch to first valid space when selected metaspace is disabled (4 ms)
+      ✓ when switching rooms in the all rooms home space don't switch to related space (49 ms)
+    traverseSpace
+      ✓ avoids cycles (3 ms)
+      ✓ including rooms (4 ms)
+      ✓ excluding rooms (12 ms)
+    when feature_dynamic_room_predecessors is not enabled
+      ✓ passes that value in calls to getVisibleRooms and getRoomUpgradeHistory during startup (2 ms)
+      ✓ passes that value in calls to getVisibleRooms during getSpaceFilteredRoomIds (1 ms)
+    when feature_dynamic_room_predecessors is enabled
+      ✓ passes that value in calls to getVisibleRooms and getRoomUpgradeHistory during startup (2 ms)
+      ✓ passes that value in calls to getVisibleRooms during getSpaceFilteredRoomIds (7 ms)
+    getLastSelectedRoomIdForSpace
+      ✕ returns the room id stored in localStorage for the given space (1 ms)
+      ✕ returns null when no room has been stored for the given space (1 ms)
+    setActiveRoomInSpace
+      ✓ should work with Home as all rooms space (3 ms)
+
+  ● SpaceStore › context switching tests › routes through getLastSelectedRoomIdForSpace when switching spaces with contextSwitch
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      1150 |             store.setActiveSpace(space1, false);
+      1151 |             viewRoom(room1);
+    > 1152 |             const spy = jest.spyOn(store, "getLastSelectedRoomIdForSpace");
+           |                              ^
+      1153 |             store.setActiveSpace(space2); // contextSwitch=true by default
+      1154 |             jest.runOnlyPendingTimers();
+      1155 |             expect(spy).toHaveBeenCalledWith(space2);
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1152:30)
+
+  ● SpaceStore › getLastSelectedRoomIdForSpace › returns the room id stored in localStorage for the given space
+
+    TypeError: store.getLastSelectedRoomIdForSpace is not a function
+
+      1517 |         it("returns the room id stored in localStorage for the given space", () => {
+      1518 |             localStorage.setItem(`mx_space_context_${space1}`, room1);
+    > 1519 |             expect(store.getLastSelectedRoomIdForSpace(space1)).toBe(room1);
+           |                          ^
+      1520 |         });
+      1521 |
+      1522 |         it("returns null when no room has been stored for the given space", () => {
+
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1519:26)
+
+  ● SpaceStore › getLastSelectedRoomIdForSpace › returns null when no room has been stored for the given space
+
+    TypeError: store.getLastSelectedRoomIdForSpace is not a function
+
+      1521 |
+      1522 |         it("returns null when no room has been stored for the given space", () => {
+    > 1523 |             expect(store.getLastSelectedRoomIdForSpace(space1)).toBeNull();
+           |                          ^
+      1524 |         });
+      1525 |     });
+      1526 |
+
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1523:26)
+
+(node:5961) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
+PASS test/unit-tests/components/views/settings/Notifications-test.tsx (6.392 s)
+  <Notifications />
+    ✓ renders spinner while loading (57 ms)
+    ✓ renders error message when fetching push rules fails (96 ms)
+    ✓ renders error message when fetching pushers fails (19 ms)
+    ✓ renders error message when fetching threepids fails (18 ms)
+    main notification switches
+      ✓ renders only enable notifications switch when notifications are disabled (28 ms)
+      ✓ renders switches correctly (85 ms)
+      ✓ toggles master switch correctly (239 ms)
+      ✓ toggles and sets settings correctly (107 ms)
+      email switches
+        ✓ renders email switches correctly when email 3pids exist (73 ms)
+        ✓ renders email switches correctly when notifications are on for email (80 ms)
+        ✓ enables email notification when toggling on (116 ms)
+        ✓ displays error when pusher update fails (240 ms)
+        ✓ enables email notification when toggling off (141 ms)
+    individual notification level settings
+      ✓ renders categories correctly (87 ms)
+      ✓ renders radios correctly (104 ms)
+      ✓ updates notification level when changed (161 ms)
+      ✓ adds an error message when updating notification level fails (138 ms)
+      ✓ clears error message for notification rule on retry (161 ms)
+      synced rules
+        ✓ succeeds when no synced rules exist for user (63 ms)
+        ✓ updates synced rules when they exist for user (89 ms)
+        ✓ does not update synced rules when main rule update fails (100 ms)
+        ✓ sets the UI toggle to rule value when no synced rule exist for the user (71 ms)
+        ✓ sets the UI toggle to the loudest synced rule value (70 ms)
+    keywords
+      ✓ updates individual keywords content rules when keywords rule is toggled (79 ms)
+      ✓ renders an error when updating keywords fails (89 ms)
+      ✓ adds a new keyword (147 ms)
+      ✓ adds a new keyword with same actions as existing rules when keywords rule is off (184 ms)
+      ✓ removes keyword (114 ms)
+    clear all notifications
+      ✓ clears all notifications (103 ms)
+
+PASS test/unit-tests/components/structures/TimelinePanel-test.tsx
+  TimelinePanel
+    ✓ should scroll event into view when props.eventId changes (109 ms)
+    ✓ paginates (71 ms)
+    ✓ unpaginates (77 ms)
+    ✓ renders when the last message is an undecryptable thread root (289 ms)
+    ✓ should dump debug logs on Action.DumpDebugLogs (79 ms)
+    read receipts and markers
+      ✓ when there is no event, it should not send any receipt (63 ms)
+      when there is a non-threaded timeline
+        and reading the timeline
+          ✓ should send a fully read marker and a public receipt (56 ms)
+          and reading the timeline again
+            ✓ should not send receipts again (52 ms)
+            ✓ and forgetting the read markers, should send the stored marker again (49 ms)
+        and sending receipts is disabled
+          ✓ should send a fully read marker and a private receipt (71 ms)
+      and there is a thread timeline
+        ✓ should send receipts but no fully_read when reading the thread timeline (12 ms)
+    onRoomTimeline
+      ✓ ignores events for other timelines (29 ms)
+      ✓ ignores timeline updates without a live event (72 ms)
+      ✓ ignores timeline where toStartOfTimeline is true (35 ms)
+      ✓ advances the timeline window (82 ms)
+    when a thread updates
+      ✓ updates thread previews (85 ms)
+      ✓ ignores thread updates for unknown threads (42 ms)
+
+FAIL test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx
+  RoomListViewModel
+    ✓ should return a list of rooms (9 ms)
+    ✓ should update list of rooms on event from room list store (11 ms)
+    Filters
+      ✓ should provide list of available filters (5 ms)
+      ✓ should get filtered rooms from RLS on toggle (5 ms)
+      ✓ should change active property on toggle (29 ms)
+      ✓ should select all activity as default secondary filter (4 ms)
+      ✓ should be able to filter using secondary filters (6 ms)
+      ✓ primary filters are applied on top of secondary filers (7 ms)
+      ✓ should return the current active primary filter (13 ms)
+      ✓ should remove any active primary filters when secondary filter is changed (4 ms)
+      ✓ should remove all filters when active space is changed (7 ms)
+      For secondary filter: Mentions only
+        ✓ should unapply incompatible primary filter that is already active: Unreads (4 ms)
+        ✓ should hide incompatible primary filter: Unreads (3 ms)
+      For secondary filter: Invites only
+        ✓ should unapply incompatible primary filter that is already active: Unreads (55 ms)
+        ✓ should hide incompatible primary filter: Unreads (3 ms)
+        ✓ should unapply incompatible primary filter that is already active: Favourites (3 ms)
+        ✓ should hide incompatible primary filter: Favourites (4 ms)
+      For secondary filter: Low priority
+        ✓ should unapply incompatible primary filter that is already active: Favourites (12 ms)
+        ✓ should hide incompatible primary filter: Favourites (3 ms)
+    Sorting
+      ✓ should change sort order (3 ms)
+      ✓ should set activeSortOption based on value from settings (3 ms)
+    message preview toggle
+      ✓ should return shouldShowMessagePreview based on setting (8 ms)
+      ✓ should change setting on toggle (58 ms)
+    Create room and chat
+      ✓ should be canCreateRoom=false if hasCreateRoomRights=false (1 ms)
+      ✓ should be canCreateRoom=true if hasCreateRoomRights=true (2 ms)
+      ✓ should call createRoom (1 ms)
+      ✓ should dispatch Action.CreateChat (1 ms)
+    Sticky room and active index
+      ✕ active index is calculated with the last opened room in a space (4 ms)
+      ✓ active room and active index are retained on order change (5 ms)
+      ✓ active room and active index are updated when another room is opened (11 ms)
+      ✓ active room and active index are updated when active index spills out of rooms array bounds (5 ms)
+      ✓ active room and active index are retained when rooms that appear after the active room are deleted (4 ms)
+      ✓ active room index becomes undefined when active room is deleted (3 ms)
+      ✓ active room index is initially undefined (10 ms)
+      ✕ activeIndex is undefined when space switches and the last active room for that space is not in the rooms list (4 ms)
+      ✕ active index is inferred from the currently viewed room when switching to a space with no stored last room (3 ms)
+
+  ● RoomListViewModel › Sticky room and active index › active index is calculated with the last opened room in a space
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      382 |             // Let's say that room[6] is active in space 2
+      383 |             const activeRoomIdInSpace2 = rooms[6].roomId;
+    > 384 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
+          |                  ^
+      385 |                 () => activeRoomIdInSpace2,
+      386 |             );
+      387 |             act(() => {
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:384:18)
+
+  ● RoomListViewModel › Sticky room and active index › activeIndex is undefined when space switches and the last active room for that space is not in the rooms list
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      536 |             // Switch to space2; the last stored room for space2 is rooms[5] which is NOT in space2.
+      537 |             currentSpace = "!space2:matrix.org";
+    > 538 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
+          |                  ^
+      539 |                 () => rooms[5].roomId,
+      540 |             );
+      541 |             act(() => {
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:538:18)
+
+  ● RoomListViewModel › Sticky room and active index › active index is inferred from the currently viewed room when switching to a space with no stored last room
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      570 |             // viewed room and its position in the new space is picked up in the same pass.
+      571 |             currentSpace = "!space2:matrix.org";
+    > 572 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(() => null);
+          |                  ^
+      573 |             act(() => {
+      574 |                 RoomListStoreV3.instance.emit(LISTS_UPDATE_EVENT);
+      575 |             });
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:572:18)
+
+PASS test/unit-tests/components/views/rooms/SendMessageComposer-test.tsx
+  <SendMessageComposer/>
+    ✓ should call prepareToEncrypt when the user is typing (132 ms)
+    createMessageContent
+      ✓ sends plaintext messages correctly (6 ms)
+      ✓ sends markdown messages correctly (20 ms)
+      ✓ strips /me from messages and marks them as m.emote accordingly (2 ms)
+      ✓ allows emoting with non-text parts (5 ms)
+      ✓ allows sending double-slash escaped slash commands correctly (1 ms)
+    attachMentions
+      ✓ no mentions (1 ms)
+      ✓ test user mentions (1 ms)
+      ✓ test reply
+      ✓ test room mention (1 ms)
+      ✓ test reply to room mention
+      ✓ test broken mentions (1 ms)
+      attachMentions with edit
+        ✓ no mentions
+        ✓ mentions do not propagate (1 ms)
+        ✓ test user mentions (1 ms)
+        ✓ test prev user mentions
+        ✓ test room mention
+        ✓ test prev room mention (1 ms)
+        ✓ test broken mentions
+    functions correctly mounted
+      ✓ renders text and placeholder correctly (57 ms)
+      ✓ correctly persists state to and from localStorage (70 ms)
+      ✓ persists state correctly without replyToEvent onbeforeunload (17 ms)
+      ✓ persists to session history upon sending (25 ms)
+      ✓ correctly sends a message (63 ms)
+      ✓ correctly sends a reply using a slash command (30 ms)
+      ✓ shows chat effects on message sending (24 ms)
+      ✓ not to send chat effects on message sending for threads (69 ms)
+    isQuickReaction
+      ✓ correctly detects quick reaction (1 ms)
+      ✓ correctly detects quick reaction with space (2 ms)
+      ✓ correctly rejects quick reaction with extra text (3 ms)
+
+PASS test/unit-tests/components/views/rooms/UserIdentityWarning-test.tsx
+  UserIdentityWarning
+    ✓ displays a warning when a user's identity needs approval (38 ms)
+    ✓ displays a warning when a user's identity is in verification violation (57 ms)
+    ✓ Should not display a warning if the user was verified and is still verified (18 ms)
+    ✓ displays pending warnings when encryption is enabled (26 ms)
+    ✓ updates the display when identity changes (64 ms)
+    ✓ displays the next user when the current user's identity is approved (11 ms)
+    ✓ displays the next user when the verification requirement is withdrawn (19 ms)
+    Warnings are displayed in consistent order
+      ✓ Ensure lexicographic order for prompt (6 ms)
+      ✓ Ensure existing prompt stays even if a new violation with lower lexicographic order detected (10 ms)
+    updates the display when a member joins/leaves
+      ✓ when invited users can see encrypted messages (24 ms)
+      ✓ when invited users cannot see encrypted messages (30 ms)
+      ✓ when member leaves immediately after component is loaded (16 ms)
+      ✓ when member leaves immediately after joining (25 ms)
+
+PASS test/unit-tests/components/views/polls/pollHistory/PollHistory-test.tsx
+  <PollHistory />
+    ✓ throws when room is not found (16 ms)
+    ✓ renders a loading message while poll history is fetched (15 ms)
+    ✓ fetches poll history until end of timeline is reached while within time limit (18 ms)
+    ✓ fetches poll history until event older than history period is reached (42 ms)
+    ✓ renders a no polls message when there are no active polls in the room (9 ms)
+    ✓ renders a no polls message and a load more button when not at end of timeline (16 ms)
+    ✓ renders a no past polls message when there are no past polls in the room (12 ms)
+    ✓ renders a list of active polls when there are polls in the room (154 ms)
+    ✓ updates when new polls are added to the room (129 ms)
+    ✓ filters ended polls (199 ms)
+    Poll detail
+      ✓ displays poll detail on active poll list item click (136 ms)
+      ✓ links to the poll start event from an active poll detail (133 ms)
+      ✓ navigates in app when clicking view in timeline button (149 ms)
+      ✓ doesnt navigate in app when view in timeline link is ctrl + clicked (161 ms)
+      ✓ navigates back to poll list from detail view on header click (210 ms)
+      ✓ displays poll detail on past poll list item click (181 ms)
+      ✓ links to the poll end events from a ended poll detail (126 ms)
+
+PASS test/unit-tests/components/views/settings/tabs/room/SecurityRoomSettingsTab-test.tsx
+  <SecurityRoomSettingsTab />
+    join rule
+      ✓ warns when trying to make an encrypted room public (107 ms)
+      ✓ updates join rule (19 ms)
+      ✓ handles error when updating join rule fails (80 ms)
+      ✓ displays advanced section toggle when join rule is public (12 ms)
+      ✓ does not display advanced section toggle when join rule is not public (12 ms)
+    guest access
+      ✓ uses forbidden by default when room has no guest access event (61 ms)
+      ✓ updates guest access on toggle (34 ms)
+      ✓ logs error and resets state when updating guest access fails (72 ms)
+    history visibility
+      ✓ does not render section when RoomHistorySettings feature is disabled (14 ms)
+      ✓ uses shared as default history visibility when no state event found (60 ms)
+      ✓ does not render world readable option when room is encrypted (20 ms)
+      ✓ renders world readable option when room is encrypted and history is already set to world readable (10 ms)
+      ✓ updates history visibility (20 ms)
+      ✓ handles error when updating history visibility (61 ms)
+    encryption
+      ✓ displays encryption as enabled (26 ms)
+      ✓ asks users to confirm when setting room to encrypted (105 ms)
+      ✓ enables encryption after confirmation (90 ms)
+      ✓ renders world readable option when room is encrypted and history is already set to world readable (10 ms)
+      ✓ updates history visibility (17 ms)
+      ✓ handles error when updating history visibility (66 ms)
+      when encryption is force disabled by e2ee well-known config
+        ✓ displays encrypted rooms as encrypted (26 ms)
+        ✓ displays unencrypted rooms with toggle disabled (64 ms)
+
+PASS test/unit-tests/utils/AutoDiscoveryUtils-test.tsx
+  AutoDiscoveryUtils
+    buildValidatedConfigFromDiscovery()
+      ✓ throws an error when discovery result is falsy (5 ms)
+      ✓ throws an error when discovery result does not include homeserver config (1 ms)
+      ✓ throws an error when identity server config has fail error and recognised error string (1 ms)
+      ✓ throws an error when homeserver config has fail error and recognised error string (1 ms)
+      ✓ throws an error with fallback message identity server config has fail error (1 ms)
+      ✓ throws an error when error is ERROR_INVALID_HOMESERVER
+      ✓ throws an error when homeserver base_url is falsy (1 ms)
+      ✓ throws an error when homeserver base_url is not a valid URL (1 ms)
+      ✓ uses hs url hostname when serverName is falsy in args and config (7 ms)
+      ✓ uses serverName from props (5 ms)
+      ✓ ignores liveliness error when checking syntax only (3 ms)
+      ✓ handles homeserver too old error (34 ms)
+      ✓ should validate delegated oidc auth (18 ms)
+    authComponentStateForError
+      ✓ should return expected error for the registration page (1 ms)
+
+PASS test/unit-tests/accessibility/RovingTabIndex-test.tsx
+  RovingTabIndex
+    ✓ RovingTabIndexProvider renders children as expected (4 ms)
+    ✓ RovingTabIndexProvider works as expected with useRovingTabIndex (8 ms)
+    ✓ RovingTabIndexProvider provides a ref to the dom element (2 ms)
+    ✓ RovingTabIndexProvider works as expected with RovingTabIndexWrapper (3 ms)
+    reducer functions as expected
+      ✓ SetFocus works as expected
+      ✓ Unregister works as expected (1 ms)
+      ✓ Register works as expected (10 ms)
+    handles arrow keys
+      ✓ should handle up/down arrow keys work when handleUpDown=true (29 ms)
+      ✓ should call scrollIntoView if specified (21 ms)
+
+PASS test/unit-tests/components/views/messages/DateSeparator-test.tsx
+  DateSeparator
+    ✓ renders the date separator correctly (12 ms)
+    ✓ formats date correctly when current time is the exact same moment (3 ms)
+    ✓ formats date correctly when current time is same day as current day (2 ms)
+    ✓ formats date correctly when current time is day before the current day (2 ms)
+    ✓ formats date correctly when current time is 2 days ago (2 ms)
+    ✓ formats date correctly when current time is 144 hours ago (2 ms)
+    ✓ formats date correctly when current time is 6 days ago, but less than 144h (1 ms)
+    ✓ renders invalid date separator correctly (4 ms)
+    when forExport is true
+      ✓ formats date in full when current time is the exact same moment (2 ms)
+      ✓ formats date in full when current time is same day as current day (2 ms)
+      ✓ formats date in full when current time is day before the current day (2 ms)
+      ✓ formats date in full when current time is 2 days ago (2 ms)
+      ✓ formats date in full when current time is 144 hours ago (2 ms)
+      ✓ formats date in full when current time is 6 days ago, but less than 144h (2 ms)
+    when Settings.TimelineEnableRelativeDates is falsy
+      ✓ formats date in full when current time is the exact same moment (2 ms)
+      ✓ formats date in full when current time is same day as current day (2 ms)
+      ✓ formats date in full when current time is day before the current day (2 ms)
+      ✓ formats date in full when current time is 2 days ago (2 ms)
+      ✓ formats date in full when current time is 144 hours ago (2 ms)
+      ✓ formats date in full when current time is 6 days ago, but less than 144h (2 ms)
+    when feature_jump_to_date is enabled
+      ✓ renders the date separator correctly (34 ms)
+      ✓ can jump to last week (21 ms)
+      ✓ can jump to last month (14 ms)
+      ✓ can jump to the beginning (14 ms)
+      ✓ should not jump to date if we already switched to another room (13 ms)
+      ✓ should not show jump to date error if we already switched to another room (14 ms)
+      ✓ should show error dialog with submit debug logs option when non-networking error occurs (67 ms)
+      ✓ should show error dialog without submit debug logs option when networking error (ConnectionError) occurs (65 ms)
+      ✓ should show error dialog without submit debug logs option when networking error (Error) occurs (33 ms)
+      ✓ should show error dialog without submit debug logs option when networking error (M_FAKE_ERROR_CODE) occurs (56 ms)
+
+PASS test/unit-tests/utils/PinningUtils-test.ts
+  PinningUtils
+    isUnpinnable
+      ✓ should return true for pinnable event types (22 ms)
+      ✓ should return true for pinnable event types (2 ms)
+      ✓ should return true for pinnable event types (2 ms)
+      ✓ should return false for a non pinnable event type (2 ms)
+      ✓ should return true for a redacted event (1 ms)
+    isPinnable
+      ✓ should return true for pinnable event types (2 ms)
+      ✓ should return true for pinnable event types (1 ms)
+      ✓ should return true for pinnable event types (2 ms)
+      ✓ should return false for a redacted event (2 ms)
+    isPinned
+      ✓ should return false if no room (2 ms)
+      ✓ should return false if no pinned event (3 ms)
+      ✓ should return false if pinned events do not contain the event id (2 ms)
+      ✓ should return true if pinned events contains the event id (2 ms)
+    canPin & canUnpin
+      canPin
+        ✓ should return false if event is not actionable (2 ms)
+        ✓ should return false if no room (8 ms)
+        ✓ should return false if client cannot send state event (2 ms)
+        ✓ should return false if event is not pinnable (2 ms)
+        ✓ should return true if all conditions are met (2 ms)
+      canUnpin
+        ✓ should return false if event is not unpinnable (1 ms)
+        ✓ should return true if all conditions are met (1 ms)
+        ✓ should return true if the event is redacted (1 ms)
+    pinOrUnpinEvent
+      ✓ should do nothing if no room (2 ms)
+      ✓ should do nothing if no event id (1 ms)
+      ✓ should pin the event if not pinned (2 ms)
+      ✓ should unpin the event if already pinned (54 ms)
+    userHasPinOrUnpinPermission
+      ✓ should return true if user can pin or unpin (1 ms)
+      ✓ should return false if client cannot send state event (14 ms)
+    unpinAllEvents
+      ✓ should unpin all events in the given room (1 ms)
+
+PASS test/unit-tests/components/views/rooms/wysiwyg_composer/utils/autocomplete-test.ts
+  buildQuery
+    ✓ returns an empty string for a falsy argument (1 ms)
+    ✓ returns an empty string when keyChar is falsy
+    ✓ combines the keyChar and text of the suggestion in the query (1 ms)
+  getRoomFromCompletion
+    ✓ calls getRoom with completionId if present in the completion (1 ms)
+    ✓ calls getRoom with completion if present and correct format (1 ms)
+    ✓ calls getRooms if no completionId is present and completion starts with # (1 ms)
+  getMentionDisplayText
+    ✓ returns an empty string if we are not handling a user, room or at-room type (1 ms)
+    ✓ returns the completion if we are handling a user (1 ms)
+    ✓ returns the room name when the room has a valid completionId (1 ms)
+    ✓ falls back to the completion for a room if completion starts with #
+    ✓ returns the completion if we are handling an at-room completion
+  getMentionAttributes
+    ✓ returns an empty map for completion types other than room, user or at-room
+    user mentions
+      ✓ returns an empty map when no member can be found (1 ms)
+      ✓ returns expected attributes when avatar url is not default
+      ✓ returns expected style attributes when avatar url matches default (1 ms)
+    room mentions
+      ✓ returns expected attributes when avatar url for room is truthy
+      ✓ returns expected style attributes when avatar url for room is falsy (1 ms)
+    at-room mentions
+      ✓ returns expected attributes when avatar url for room is truthyf
+      ✓ returns expected style attributes when avatar url for room is falsy (1 ms)
+
+PASS test/unit-tests/vector/platform/WebPlatform-test.ts
+  WebPlatform
+    ✓ returns human readable name (2 ms)
+    ✓ registers service worker (1 ms)
+    ✓ should call reload on window location object (1 ms)
+    ✓ should call reload to install update (1 ms)
+    ✓ should return config from config.json (5 ms)
+    ✓ should re-render favicon when setting error status (13 ms)
+    getDefaultDeviceDisplayName
+      ✓ https://develop.element.io/#/room/!foo:bar & Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 = develop.element.io: Chrome on macOS (5 ms)
+    notification support
+      ✓ supportsNotifications returns false when platform does not support notifications (1 ms)
+      ✓ supportsNotifications returns true when platform supports notifications (1 ms)
+      ✓ maySendNotifications returns true when notification permissions are not granted
+      ✓ maySendNotifications returns true when notification permissions are granted (1 ms)
+      ✓ requests notification permissions and returns result (1 ms)
+    app version
+      ✓ should return true from canSelfUpdate() (1 ms)
+      ✓ getAppVersion returns normalized app version (1 ms)
+      pollForUpdate()
+        ✓ should return not available and call showNoUpdate when current version matches most recent version (3 ms)
+        ✓ should strip v prefix from versions before comparing (2 ms)
+        ✓ should return ready and call showUpdate when current version differs from most recent version (2 ms)
+        ✓ should return ready without showing update when user registered in last 24 (1 ms)
+        ✓ should return error when version check fails (2 ms)
+
+PASS test/unit-tests/theme-test.ts
+  theme
+    setTheme
+      ✓ should switch theme on onload call (9 ms)
+      ✓ should switch to dark (2 ms)
+      ✓ should reject promise on onerror call (1 ms)
+      ✓ should switch theme if CSS are preloaded (2 ms)
+      ✓ should switch theme if CSS is loaded during pooling (2 ms)
+      ✓ should reject promise if pooling maximum value is reached (2 ms)
+      ✓ applies a custom Compound theme (8 ms)
+      ✓ should handle 4-char rgba hex strings (3 ms)
+      ✓ should handle 6-char rgb hex strings (2 ms)
+    enumerateThemes
+      ✓ should return a list of themes (1 ms)
+      ✓ should be robust to malformed custom_themes values
+    getOrderedThemes
+      ✓ should return a list of themes in the correct order (1 ms)
+
+PASS test/unit-tests/components/views/settings/EventIndexPanel-test.tsx
+  <EventIndexPanel />
+    when event index is initialised
+      ✓ renders event index information (12 ms)
+      ✓ opens event index management dialog (357 ms)
+    when event indexing is fully supported and enabled but not initialised
+      ✓ displays an error when no event index is found and enabling not in progress (5 ms)
+      ✓ displays an error from the event index (4 ms)
+      ✓ asks for confirmation when resetting seshat (46 ms)
+      ✓ resets seshat (55 ms)
+    when event indexing is supported but not enabled
+      ✓ renders enable text (4 ms)
+      ✓ enables event indexing on enable button click (9 ms)
+    when event indexing is supported but not installed
+      ✓ renders link to install seshat (7 ms)
+    when event indexing is not supported
+      ✓ renders link to download a desktop client (5 ms)
+
+PASS test/unit-tests/components/views/spaces/SpacePanel-test.tsx
+  <SpacePanel />
+    ✓ should show all activated MetaSpaces in the correct order (211 ms)
+    ✓ should allow rearranging via drag and drop (525 ms)
+    create new space button
+      ✓ renders create space button when UIComponent.CreateSpaces component should be shown (125 ms)
+      ✓ does not render create space button when UIComponent.CreateSpaces component should not be shown (106 ms)
+      ✓ opens context menu on create space button click (250 ms)
+
+PASS test/unit-tests/components/views/messages/MVideoBody-test.tsx
+  MVideoBody
+    ✓ does not crash when given a portrait image (465 ms)
+    ✓ should show poster for encrypted media before downloading it (6 ms)
+    with video previews/thumbnails disabled
+      ✓ should not download video (7 ms)
+      ✓ should render video poster after user consent (64 ms)
+
+PASS test/unit-tests/hooks/useNotificationSettings-test.tsx
+  useNotificationSettings
+    ✓ correctly parses model (55 ms)
+    ✓ correctly generates change calls (60 ms)
+
+PASS test/unit-tests/components/views/spaces/useUnreadThreadRooms-test.tsx
+  useUnreadThreadRooms
+    ✓ has no notifications with no rooms (5 ms)
+    ✓ an activity notification is ignored by default (9 ms)
+    ✓ an activity notification is displayed with the setting enabled (3 ms)
+    ✓ a notification and a highlight summarise to a highlight (5 ms)
+    updates
+      ✓ updates on decryption within 1s (4 ms)
+
+PASS test/unit-tests/utils/local-room-test.ts
+  local-room
+    doMaybeLocalRoomAction
+      ✓ should invoke the callback for a non-local room (4 ms)
+      ✓ should invoke the callback with the new room ID for a created room (2 ms)
+      for a local room
+        ✓ dispatch a local_room_event (1 ms)
+        ✓ should resolve the promise after invoking the callback (1 ms)
+    waitForRoomReadyAndApplyAfterCreateCallbacks
+      for an immediate ready room
+        ✓ should invoke the callbacks, set the room state to created and return the actual room id (1 ms)
+      for a room running into the create timeout
+        ✓ should invoke the callbacks, set the room state to created and return the actual room id (2 ms)
+      for a room that is ready after a while
+        ✓ should invoke the callbacks, set the room state to created and return the actual room id (2 ms)
+
+PASS test/unit-tests/SupportedBrowser-test.ts
+  SupportedBrowser
+    ✓ should warn for mobile browsers (6 ms)
+    ✓ should warn for mobile browsers (1 ms)
+    ✓ should warn for mobile browsers (1 ms)
+    ✓ should warn for unsupported desktop browsers (6 ms)
+    ✓ should warn for unsupported desktop browsers (10 ms)
+    ✓ should warn for unsupported desktop browsers (2 ms)
+    ✓ should warn for unsupported desktop browsers (1 ms)
+    ✓ should warn for unsupported desktop browsers (1 ms)
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for supported browsers
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for supported browsers (1 ms)
+    ✓ should not warn for Element Desktop
+    ✓ should handle unknown user agent sanely (24 ms)
+    ✓ should not warn for unsupported browser if user accepted already (3 ms)
+
+PASS test/unit-tests/utils/leave-behaviour-test.ts
+  leaveRoomBehaviour
+    ✓ returns to the home page after leaving a room outside of a space that was being viewed (10 ms)
+    ✓ returns to the parent space after leaving a room inside of a space that was being viewed (14 ms)
+    ✓ returns to the home page after leaving a top-level space that was being viewed (8 ms)
+    ✓ returns to the parent space after leaving a subspace that was being viewed (4 ms)
+    If the feature_dynamic_room_predecessors is not enabled
+      ✓ Passes through the dynamic predecessor setting (2 ms)
+    If the feature_dynamic_room_predecessors is enabled
+      ✓ Passes through the dynamic predecessor setting (2 ms)
+
+PASS test/unit-tests/components/views/dialogs/AccessSecretStorageDialog-test.tsx
+  AccessSecretStorageDialog
+    ✓ Closes the dialog when the form is submitted with a valid key (60 ms)
+    ✓ Notifies the user if they input an invalid Recovery Key (74 ms)
+    ✓ Notifies the user if they input an invalid passphrase (34 ms)
+    ✓ Can reset secret storage (448 ms)
+
+PASS test/unit-tests/editor/diff-test.ts
+  editor/diff
+    diffDeletion
+      with a single character removed
+        ✓ at start of string (1 ms)
+        ✓ in middle of string (1 ms)
+        ✓ in middle of string with duplicate character
+        ✓ at end of string
+      with a multiple removed
+        ✓ at start of string (1 ms)
+        ✓ removing whole string
+        ✓ in middle of string
+        ✓ in middle of string with duplicate character (1 ms)
+        ✓ at end of string
+    diffAtCaret
+      ✓ insert at start
+      ✓ insert at end
+      ✓ insert in middle (1 ms)
+      ✓ replace at start
+      ✓ replace at end (1 ms)
+      ✓ replace in middle (11 ms)
+      ✓ remove at start of string (1 ms)
+      ✓ removing whole string
+      ✓ remove in middle of string
+      ✓ forwards remove in middle of string (1 ms)
+      ✓ forwards remove in middle of string with duplicate character
+      ✓ remove at end of string (1 ms)
+
+PASS test/unit-tests/components/views/settings/devices/DeviceDetails-test.tsx
+  <DeviceDetails />
+    ✓ renders device without metadata (10 ms)
+    ✓ renders device with metadata (8 ms)
+    ✓ renders a verified device (5 ms)
+    ✓ disables sign out button while sign out is pending (5 ms)
+    ✓ renders the push notification section when a pusher exists (5 ms)
+    ✓ hides the push notification section when no pusher (8 ms)
+    ✓ disables the checkbox when there is no server support (39 ms)
+    ✓ changes the pusher status when clicked (6 ms)
+    ✓ changes the local notifications settings status when clicked (5 ms)
+
+PASS test/unit-tests/settings/SettingsStore-test.ts
+  SettingsStore
+    getValueAt
+      ✓ should return the value "platform"."Electron.showTrayIcon" (1 ms)
+      ✓ supportedLevelsAreOrdered correctly overrides setting (1 ms)
+      ✓ supportedLevelsAreOrdered doesn't incorrectly override setting
+    runMigrations
+      ✓ migrates URL previews setting for e2ee rooms (3 ms)
+      ✓ does not migrate e2ee URL previews on a fresh login (2 ms)
+      ✓ does not migrate if the device is flagged as migrated (1 ms)
+
+PASS test/unit-tests/components/views/rooms/NotificationDecoration-test.tsx
+  <NotificationDecoration />
+    ✓ should not render if RoomNotificationState.hasAnyNotificationOrActivity=true (11 ms)
+    ✓ should render the unset message decoration (6 ms)
+    ✓ should render the invitation decoration (5 ms)
+    ✓ should render the mention decoration (5 ms)
+    ✓ should render the notification decoration (5 ms)
+    ✓ should render the notification decoration without count (3 ms)
+    ✓ should render the activity decoration (27 ms)
+    ✓ should render the muted decoration (5 ms)
+    ✓ should render the video decoration (14 ms)
+
+PASS test/unit-tests/components/views/spaces/SpaceTreeLevel-test.tsx
+  SpaceButton
+    real space
+      ✓ activates the space on click (30 ms)
+      ✓ navigates to the space home on click if already active (4 ms)
+    metaspace
+      ✓ activates the metaspace on click (2 ms)
+      ✓ does nothing on click if already active (1 ms)
+      ✓ should render notificationState if one is provided (6 ms)
+
+PASS test/unit-tests/components/views/rooms/wysiwyg_composer/components/LinkModal-test.tsx
+  LinkModal
+    ✓ Should create a link (70 ms)
+    ✓ Should create a link with text (61 ms)
+    ✓ Should remove the link (22 ms)
+    ✓ Should display the link in editing (29 ms)
+
+PASS test/unit-tests/Rooms-test.ts
+  setDMRoom
+    when logged in as a guest and marking a room as DM
+      ✓ should not update the account data (2 ms)
+    when adding a new room to an existing DM relation
+      ✓ should update the account data accordingly (1 ms)
+    when adding a new DM room
+      ✓ should update the account data accordingly (2 ms)
+    when removing an existing DM
+      ✓ should update the account data accordingly (1 ms)
+    when the direct event is undefined
+      ✓ should update the account data accordingly (1 ms)
+    when the current content is undefined
+      ✓ should update the account data accordingly (1 ms)
+
+PASS test/unit-tests/components/views/emojipicker/EmojiPicker-test.tsx
+  EmojiPicker
+    ✓ should not mangle default order after filtering (223 ms)
+    ✓ sort emojis by shortcode and size (3 ms)
+    ✓ should allow keyboard navigation using arrow keys (510 ms)
+
+PASS test/unit-tests/components/views/room_settings/RoomProfileSettings-test.tsx
+  RoomProfileSetting
+    ✓ handles uploading a room avatar (108 ms)
+    ✓ removes a room avatar (215 ms)
+    ✓ cancels changes (151 ms)
+
+PASS test/unit-tests/components/views/dialogs/security/CreateKeyBackupDialog-test.tsx
+  CreateKeyBackupDialog
+    ✓ should display the spinner when creating backup (15 ms)
+    ✓ should display an error message when backup creation failed (48 ms)
+    ✓ should display an error message when there is no Crypto available (11 ms)
+    ✓ should display the success dialog when the key backup is finished (26 ms)
+
+PASS test/unit-tests/components/views/messages/MStickerBody-test.tsx
+  <MStickerBody/>
+    ✓ should show a tooltip on hover (404 ms)
+
+PASS test/unit-tests/components/views/settings/encryption/RecoveryPanel-test.tsx
+  <RecoveryPanel />
+    ✓ should be in loading state when checking the recovery key and the cached keys (33 ms)
+    ✓ should ask to set up a recovery key when there is no recovery key (40 ms)
+    ✓ should allow to change the recovery key when everything is good (27 ms)
+
+PASS test/unit-tests/utils/permalinks/MatrixToPermalinkConstructor-test.ts
+  MatrixToPermalinkConstructor
+    parsePermalink
+      ✓ should raise an error for empty URL (3 ms)
+      ✓ should raise an error for something that is not an URL
+      ✓ should raise an error for should raise an error for a non-matrix.to URL (23 ms)
+      ✓ should parse an MXID (https) (1 ms)
+      ✓ should parse an MXID (http)
+      ✓ should parse an MXID without protocol
+    forRoom
+      ✓ constructs a link given a room ID and via servers (1 ms)
+    forEvent
+      ✓ constructs a link given an event ID, room ID and via servers
+
+PASS test/unit-tests/components/views/elements/SettingsField-test.tsx
+  <SettingsField />
+    ✓ should render with the default label (9 ms)
+    ✓ should call onChange when saving a change (387 ms)
+
+Summary of all failing tests
+FAIL test/unit-tests/stores/SpaceStore-test.ts (35.584 s)
+  ● SpaceStore › context switching tests › routes through getLastSelectedRoomIdForSpace when switching spaces with contextSwitch
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      1150 |             store.setActiveSpace(space1, false);
+      1151 |             viewRoom(room1);
+    > 1152 |             const spy = jest.spyOn(store, "getLastSelectedRoomIdForSpace");
+           |                              ^
+      1153 |             store.setActiveSpace(space2); // contextSwitch=true by default
+      1154 |             jest.runOnlyPendingTimers();
+      1155 |             expect(spy).toHaveBeenCalledWith(space2);
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1152:30)
+
+  ● SpaceStore › getLastSelectedRoomIdForSpace › returns the room id stored in localStorage for the given space
+
+    TypeError: store.getLastSelectedRoomIdForSpace is not a function
+
+      1517 |         it("returns the room id stored in localStorage for the given space", () => {
+      1518 |             localStorage.setItem(`mx_space_context_${space1}`, room1);
+    > 1519 |             expect(store.getLastSelectedRoomIdForSpace(space1)).toBe(room1);
+           |                          ^
+      1520 |         });
+      1521 |
+      1522 |         it("returns null when no room has been stored for the given space", () => {
+
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1519:26)
+
+  ● SpaceStore › getLastSelectedRoomIdForSpace › returns null when no room has been stored for the given space
+
+    TypeError: store.getLastSelectedRoomIdForSpace is not a function
+
+      1521 |
+      1522 |         it("returns null when no room has been stored for the given space", () => {
+    > 1523 |             expect(store.getLastSelectedRoomIdForSpace(space1)).toBeNull();
+           |                          ^
+      1524 |         });
+      1525 |     });
+      1526 |
+
+      at Object.<anonymous> (test/unit-tests/stores/SpaceStore-test.ts:1523:26)
+
+FAIL test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx
+  ● RoomListViewModel › Sticky room and active index › active index is calculated with the last opened room in a space
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      382 |             // Let's say that room[6] is active in space 2
+      383 |             const activeRoomIdInSpace2 = rooms[6].roomId;
+    > 384 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
+          |                  ^
+      385 |                 () => activeRoomIdInSpace2,
+      386 |             );
+      387 |             act(() => {
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:384:18)
+
+  ● RoomListViewModel › Sticky room and active index › activeIndex is undefined when space switches and the last active room for that space is not in the rooms list
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      536 |             // Switch to space2; the last stored room for space2 is rooms[5] which is NOT in space2.
+      537 |             currentSpace = "!space2:matrix.org";
+    > 538 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(
+          |                  ^
+      539 |                 () => rooms[5].roomId,
+      540 |             );
+      541 |             act(() => {
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:538:18)
+
+  ● RoomListViewModel › Sticky room and active index › active index is inferred from the currently viewed room when switching to a space with no stored last room
+
+    Property `getLastSelectedRoomIdForSpace` does not exist in the provided object
+
+      570 |             // viewed room and its position in the new space is picked up in the same pass.
+      571 |             currentSpace = "!space2:matrix.org";
+    > 572 |             jest.spyOn(SpaceStore.instance, "getLastSelectedRoomIdForSpace").mockImplementation(() => null);
+          |                  ^
+      573 |             act(() => {
+      574 |                 RoomListStoreV3.instance.emit(LISTS_UPDATE_EVENT);
+      575 |             });
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:731:13)
+      at Object.<anonymous> (test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx:572:18)
+
+
+Test Suites: 2 failed, 36 passed, 38 total
+Tests:       6 failed, 513 passed, 519 total
+Snapshots:   40 passed, 40 total
+Time:        108.541 s
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+npm notice
+npm notice New major version of npm available! 10.9.2 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

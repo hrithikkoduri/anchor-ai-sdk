@@ -1,0 +1,45 @@
+{
+    "id": "cbbe69e6-f245-40c2-9a65-fbcaea15949b",
+    "started_at": "2026-10-22T08:01:43.582605",
+    "updated_at": "2026-10-22T08:10:14.966709",
+    "finished_at": "2026-10-22T08:10:14.966709",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__deepseek/deepseek-v4.1-flash-1017__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_flipt-io__flipt-02e2163__dzcrcNA",
+                            "instance_qutebrowser__qutebrowse__s3weJFp"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_flipt-io__flipt-02e2163__dzcrcNA",
+                        "instance_qutebrowser__qutebrowse__s3weJFp"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

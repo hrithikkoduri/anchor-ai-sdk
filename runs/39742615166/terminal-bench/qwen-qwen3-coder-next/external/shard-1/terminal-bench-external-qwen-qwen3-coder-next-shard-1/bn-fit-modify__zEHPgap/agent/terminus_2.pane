@@ -1,0 +1,1202 @@
+[?2004hroot@8e39b79c6366:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@8e39b79c6366:/app# clear
+[?2004l[H[J[3J[?2004hroot@8e39b79c6366:/app# ls -la
+[?2004ltotal 836
+drwxr-xr-x 1 root root   4096 Oct 31  2025 [0m[01;34m.[0m
+drwxr-xr-x 1 root root   4096 Oct 22 08:18 [01;34m..[0m
+-rw-r--r-- 1 root root 844949 Oct 31  2025 bn_sample_10k.csv
+[?2004hroot@8e39b79c6366:/app# head -20 /app/bn_sample_10k.csv
+[?2004l"U","Y","R","D","M"
+65.1595787086976,55.0497451938166,73.1506268775402,57.6615550291927,64.3384681778361
+44.6029054197735,43.600175682188,38.589412608575,45.9401940372555,21.2469494226791
+54.4564237284025,54.1307611128149,47.302573583304,41.8194189531508,52.392400251044
+57.3210008646862,61.0491365637276,48.9899101338243,54.4998895140635,52.223173316915
+54.8933295917574,61.5962301422769,58.2214432134545,24.9614445370898,50.9315002616816
+49.4729576391084,48.6902126997417,28.3704316928405,50.0536877752844,23.3813564189702
+66.6523636128015,67.0986831902259,70.5195767499515,64.3760816368758,53.0660810930049
+49.5947210120529,69.3426615704978,32.0050448251388,62.2354560766512,54.8234795284054
+72.0356598413742,71.7380098874994,77.1068499934543,73.2179890075619,58.5668142551726
+49.9339762680633,45.9287569893273,43.9973854741504,40.9875965115527,52.9393159959432
+64.4577157278534,60.4450922701484,78.1393877482104,42.387023391916,78.3788488916068
+74.8841740704858,87.0306505184187,57.0570181262451,74.7389001718958,66.2873832386314
+35.850299354187,33.9986684938571,26.7183998912491,22.0090250821641,-0.0474637794086572
+47.6392632963995,62.5450208936839,45.8532627886926,62.2218097420345,22.739046005961
+49.1841274074994,28.2105925686326,48.168061749979,51.9225568370145,27.6193847843547
+57.3537932275042,68.2193956636205,38.2548873747227,60.2763409829804,42.7619126314083
+47.5812339745613,43.5062326996327,42.6260577605047,25.2947482037948,52.7588938784698
+22.3884434299913,37.8430064692539,2.33891139887459,28.4216324376872,19.7222984324936
+24.682241218528,33.8566006833202,26.5678851395346,20.9939683264083,3.17767608378212
+[?2004hroot@8e39b79c6366:/app# wc -l /app/bn_sample_10k.csv
+[?2004l10001 /app/bn_sample_10k.csv
+[?2004hroot@8e39b79c6366:/app# python3 -c "import pgmpy; print(pgmpy.__version__)"
+[?2004lTraceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'pgmpy'
+[?2004hroot@8e39b79c6366:/app# pip install pgmpy -q
+[?2004l[1;31merror[0m: [1mexternally-managed-environment[0m
+
+[31m×[0m This environment is externally managed
+[31m╰─>[0m To install Python packages system-wide, try apt install
+[31m   [0m python3-xyz, where xyz is the package you are trying to
+[31m   [0m install.
+[31m   [0m 
+[31m   [0m If you wish to install a non-Debian-packaged Python package,
+[31m   [0m create a virtual environment using python3 -m venv path/to/venv.
+[31m   [0m Then use path/to/venv/bin/python and path/to/venv/bin/pip. Make
+[31m   [0m sure you have python3-full installed.
+[31m   [0m 
+[31m   [0m If you wish to install a non-Debian packaged Python application,
+[31m   [0m it may be easiest to use pipx install xyz, which will manage a
+[31m   [0m virtual environment for you. Make sure you have pipx installed.
+[31m   [0m 
+[31m   [0m See /usr/share/doc/python3.12/README.venv for more information.
+
+[1;35mnote[0m: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+[1;36mhint[0m: See PEP 668 for the detailed specification.
+[?2004hroot@8e39b79c6366:/app# pip install pgmpy --break-system-packages -q
+[?2004l[33mWARNING: Skipping /usr/lib/python3.12/dist-packages/asciinema-2.4.0.dist-info due to invalid metadata entry 'name'[0m[33m
+[0m[33mWARNING: Skipping /usr/lib/python3.12/dist-packages/asciinema-2.4.0.dist-info due to invalid metadata entry 'name'[0m[33m
+[0m[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv[0m[33m
+[0m[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.models import BayesianNetwork
+[?2004l[?2004h> from pgmpy.estimators import MaximumLikelihoodEstimator, BayesianEstimator
+[?2004l[?2004h> from pgmpy.sampling import BayesianModelSampling
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch, K2Score
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> print("Data shape:", data.shape)
+[?2004l[?2004h> print("Columns:", list(data.columns))
+[?2004l[?2004h> print("\nFirst few rows:")
+[?2004l[?2004h> print(data.head())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check for any missing values
+[?2004l[?2004h> print("\nMissing values:")
+[?2004l[?2004h> print(data.isnull().sum())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check correlation matrix
+[?2004l[?2004h> print("\nCorrelation matrix:")
+[?2004l[?2004h> print(data.corr())
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+ImportError: cannot import name 'K2Score' from 'pgmpy.estimators' (/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.models import BayesianNetwork
+[?2004l[?2004h> from pgmpy.estimators import MaximumLikelihoodEstimator, BayesianEstimator
+[?2004l[?2004h> from pgmpy.sampling import BayesianModelSampling
+[?2004l[?2004h> from pgmpy.structure_score import K2Score
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> print("Data shape:", data.shape)
+[?2004l[?2004h> print("Columns:", list(data.columns))
+[?2004l[?2004h> print("\nFirst few rows:")
+[?2004l[?2004h> print(data.head())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check for any missing values
+[?2004l[?2004h> print("\nMissing values:")
+[?2004l[?2004h> print(data.isnull().sum())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check correlation matrix
+[?2004l[?2004h> print("\nCorrelation matrix:")
+[?2004l[?2004h> print(data.corr())
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+ImportError: cannot import name 'K2Score' from 'pgmpy.structure_score' (/usr/local/lib/python3.12/dist-packages/pgmpy/structure_score/__init__.py)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pgmpy
+[?2004l[?2004h> print("pgmpy version:", pgmpy.__version__)
+[?2004l[?2004h> print("\nAvailable in pgmpy:")
+[?2004l[?2004h> print(dir(pgmpy))
+[?2004l[?2004h> 
+[?2004l[?2004h> import pgmpy.estimators
+[?2004l[?2004h> print("\nAvailable in estimators:")
+[?2004l[?2004h> print(dir(pgmpy.estimators))
+[?2004l[?2004h> 
+[?2004l[?2004h> import pgmpy.models
+[?2004l[?2004h> print("\nAvailable in models:")
+[?2004l[?2004h> print(dir(pgmpy.models))
+[?2004l[?2004h> EOF
+[?2004lpgmpy version: 1.1.2
+
+Available in pgmpy:
+['__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', 'config', 'global_vars', 'logger', 'version']
+/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+
+Available in estimators:
+['AIC', 'AICCondGauss', 'AICGauss', 'BDeu', 'BDs', 'BIC', 'BICCondGauss', 'BICGauss', 'BaseConstraintEstimator', 'BaseEstimator', 'BayesianEstimator', 'CITests', 'EM', 'ExhaustiveSearch', 'ExpectationMaximization', 'ExpertInLoop', 'ExpertKnowledge', 'GES', 'HillClimbSearch', 'IVEstimator', 'K2', 'LinearModel', 'LogLikelihoodCondGauss', 'LogLikelihoodGauss', 'MLE', 'MarginalEstimator', 'MaximumLikelihoodEstimator', 'MirrorDescentEstimator', 'MmhcEstimator', 'PC', 'ParameterEstimator', 'SEMEstimator', 'ScoreCache', 'StructureEstimator', 'StructureScore', 'TreeSearch', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__warningregistry__', 'base', 'expert']
+
+Available in models:
+['BayesianNetwork', 'ClusterGraph', 'DiscreteBayesianNetwork', 'DiscreteMarkovNetwork', 'DynamicBayesianNetwork', 'FactorGraph', 'FunctionalBayesianNetwork', 'JunctionTree', 'LinearGaussianBayesianNetwork', 'MarkovChain', 'MarkovNetwork', 'NaiveBayes', 'SEM', 'SEMAlg', 'SEMGraph', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pgmpy
+[?2004l[?2004h> print("Checking structure_search module:")
+[?2004l[?2004h> try:
+[?2004l[?2004h>     from pgmpy import structure_search
+[?2004l[?2004h>     print("structure_search available:", dir(structure_search))
+[?2004l[?2004h> except Exception as e:
+[?2004l[?2004h>     print("Error:", e)
+[?2004l[?2004h> 
+[?2004l[?2004h> try:
+[?2004l[?2004h>     from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h>     print("\nHillClimbSearch available")
+[?2004l[?2004h>     print(dir(HillClimbSearch))
+[?2004l[?2004h> except Exception as e:
+[?2004l[?2004h>     print("Error:", e)
+[?2004l[?2004h> EOF
+[?2004lChecking structure_search module:
+Error: cannot import name 'structure_search' from 'pgmpy' (/usr/local/lib/python3.12/dist-packages/pgmpy/__init__.py)
+/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+
+HillClimbSearch available
+['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_legal_operations', 'estimate', 'state_counts']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch, BIC
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> print("Data shape:", data.shape)
+[?2004l[?2004h> print("Columns:", list(data.columns))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the variables
+[?2004l[?2004h> variables = list(data.columns)
+[?2004l[?2004h> print("Variables:", variables)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Learn the DAG structure
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> print("\nLearned edges:")
+[?2004l[?2004h> for edge in model.edges():
+[?2004l[?2004h>     print(f"  {edge[0]} -> {edge[1]}")
+[?2004l[?2004h> 
+[?2004l[?2004h> print("\nAll edges in model:")
+[?2004l[?2004h> print(model.edges())
+[?2004l[?2004h> print("\nAll nodes:")
+[?2004l[?2004h> print(model.nodes())
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Data shape: (10000, 5)
+Columns: ['U', 'Y', 'R', 'D', 'M']
+Variables: ['U', 'Y', 'R', 'D', 'M']
+<stdin>:15: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<32:12:44,  8.62it/s]  0%|                                                                                                                    | 6/1000000 [00:00<9:55:33, 27.98it/s]
+
+Learned edges:
+  U -> M
+  U -> Y
+  U -> D
+  Y -> D
+  R -> U
+  R -> M
+
+All edges in model:
+[('U', 'M'), ('U', 'Y'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+All nodes:
+['U', 'Y', 'R', 'D', 'M']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch, BIC
+[?2004l[?2004h> from pgmpy.models import BayesianNetwork
+[?2004l[?2004h> from pgmpy.estimators import MaximumLikelihoodEstimator
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the variables
+[?2004l[?2004h> variables = list(data.columns)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> print("Learned edges:")
+[?2004l[?2004h> for edge in model.edges():
+[?2004l[?2004h>     print(f"  {edge[0]} -> {edge[1]}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV - format is "to,from" meaning edge goes from 'from' to 'to'
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("\nSaved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Now learn the BN parameters
+[?2004l[?2004h> bn = BayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data, estimator=MaximumLikelihoodEstimator)
+[?2004l[?2004h> print("\nFitted Bayesian Network")
+[?2004l[?2004h> print("CPDs:")
+[?2004l[?2004h> for cpd in bn.get_cpds():
+[?2004l[?2004h>     print(cpd)
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:14: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<28:31:03,  9.74it/s]  0%|                                                                                                                    | 6/1000000 [00:00<8:52:31, 31.30it/s]
+Learned edges:
+  U -> M
+  U -> Y
+  U -> D
+  Y -> D
+  R -> U
+  R -> M
+
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+Traceback (most recent call last):
+  File "<stdin>", line 29, in <module>
+  File "/usr/local/lib/python3.12/dist-packages/pgmpy/models/BayesianNetwork.py", line 3, in __init__
+    raise ImportError("`BayesianNetwork` is deprecated. Please use `DiscreteBayesianNetwork` instead.")
+ImportError: `BayesianNetwork` is deprecated. Please use `DiscreteBayesianNetwork` instead.
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import DiscreteBayesianNetwork
+[?2004l[?2004h> from pgmpy.estimators import MaximumLikelihoodEstimator
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the variables
+[?2004l[?2004h> variables = list(data.columns)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV - format is "to,from" meaning edge goes from 'from' to 'to'
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN using DiscreteBayesianNetwork
+[?2004l[?2004h> bn = DiscreteBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data, estimator=MaximumLikelihoodEstimator)
+[?2004l[?2004h> print("\nFitted Bayesian Network")
+[?2004l[?2004h> print("CPDs:")
+[?2004l[?2004h> for cpd in bn.get_cpds():
+[?2004l[?2004h>     print(cpd)
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:14: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<31:28:51,  8.82it/s]  0%|                                                                                                                    | 6/1000000 [00:00<9:57:42, 27.88it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+Traceback (most recent call last):
+  File "<stdin>", line 26, in <module>
+  File "/usr/local/lib/python3.12/dist-packages/pgmpy/models/DiscreteBayesianNetwork.py", line 644, in fit
+    raise TypeError(
+TypeError: Estimator should be an instance of a discrete parameter estimator. Pass an initialized estimator, for example `DiscreteMLE()`.
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import DiscreteBayesianNetwork
+[?2004l[?2004h> from pgmpy.estimators import DiscreteMLE
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the variables
+[?2004l[?2004h> variables = list(data.columns)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV - format is "to,from" meaning edge goes from 'from' to 'to'
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN using DiscreteBayesianNetwork
+[?2004l[?2004h> bn = DiscreteBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data, estimator=DiscreteMLE)
+[?2004l[?2004h> print("\nFitted Bayesian Network")
+[?2004l[?2004h> print("CPDs:")
+[?2004l[?2004h> for cpd in bn.get_cpds():
+[?2004l[?2004h>     print(cpd)
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+ImportError: cannot import name 'DiscreteMLE' from 'pgmpy.estimators' (/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pgmpy.estimators
+[?2004l[?2004h> print("Available estimators:")
+[?2004l[?2004h> print([x for x in dir(pgmpy.estimators) if 'MLE' in x or 'MLE' in x])
+[?2004l[?2004h> print()
+[?2004l[?2004h> print("Available in estimators:")
+[?2004l[?2004h> print(dir(pgmpy.estimators))
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Available estimators:
+['MLE']
+
+Available in estimators:
+['AIC', 'AICCondGauss', 'AICGauss', 'BDeu', 'BDs', 'BIC', 'BICCondGauss', 'BICGauss', 'BaseConstraintEstimator', 'BaseEstimator', 'BayesianEstimator', 'CITests', 'EM', 'ExhaustiveSearch', 'ExpectationMaximization', 'ExpertInLoop', 'ExpertKnowledge', 'GES', 'HillClimbSearch', 'IVEstimator', 'K2', 'LinearModel', 'LogLikelihoodCondGauss', 'LogLikelihoodGauss', 'MLE', 'MarginalEstimator', 'MaximumLikelihoodEstimator', 'MirrorDescentEstimator', 'MmhcEstimator', 'PC', 'ParameterEstimator', 'SEMEstimator', 'ScoreCache', 'StructureEstimator', 'StructureScore', 'TreeSearch', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__warningregistry__', 'base', 'expert']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV - format is "to,from" meaning edge goes from 'from' to 'to'
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN using LinearGaussianBayesianNetwork
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted Linear Gaussian Bayesian Network")
+[?2004l[?2004h> print("CPDs:")
+[?2004l[?2004h> for cpd in bn.get_cpds():
+[?2004l[?2004h>     print(cpd)
+[?2004l[?2004h> 
+[?2004l[?2004h> print("\nModel edges:")
+[?2004l[?2004h> print(bn.edges())
+[?2004l[?2004h> print("\nModel nodes:")
+[?2004l[?2004h> print(bn.nodes())
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:10: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<31:35:47,  8.79it/s]  0%|                                                                                                                   | 6/1000000 [00:00<10:13:39, 27.16it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+
+Fitted Linear Gaussian Bayesian Network
+CPDs:
+P(U | R) = N(0.505*R + 27.045; 7.584)
+P(M | U, R) = N(0.768*U + 0.303*R + -11.357; 12.482)
+P(Y | U) = N(0.751*U + 12.428; 10.627)
+P(D | U, Y) = N(0.55*U + 0.449*Y + -12.297; 14.092)
+P(R) = N(46.414; 14.907)
+
+Model edges:
+[('U', 'M'), ('U', 'Y'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+Model nodes:
+['U', 'M', 'Y', 'D', 'R']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.inference import LinearGaussianBayesianNetworkInference
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> # In LinearGaussianBN, we use do-calculus to intervene
+[?2004l[?2004h> print("\nIntervening on Y=0.0")
+[?2004l[?2004h> 
+[?2004l[?2004h> # The intervened model will have Y with no parents (we cut incoming edges)
+[?2004l[?2004h> # and Y is set to a constant value (or very small variance)
+[?2004l[?2004h> intervened_bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> intervened_bn.fit(data)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Set Y to 0.0 using do operation
+[?2004l[?2004h> # We need to create a new network where Y has no parents and is fixed to 0
+[?2004l[?2004h> # First remove edges into Y
+[?2004l[?2004h> edges_no_y_parents = [(s, t) for s, t in model.edges() if t != 'Y']
+[?2004l[?2004h> print("\nEdges without Y parents:", edges_no_y_parents)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create intervened model - Y has no parents now
+[?2004l[?2004h> intervened_model = LinearGaussianBayesianNetwork(edges_no_y_parents)
+[?2004l[?2004h> 
+[?2004l[?2004h> # For the intervened model, Y becomes a root node with a point mass at 0
+[?2004l[?2004h> # We need to handle this specially - set Y's CPD to a delta function at 0
+[?2004l[?2004h> # For LinearGaussianBN, we can set a very small variance
+[?2004l[?2004h> print("\nSetting Y to 0.0 with small variance")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the intervened DAG edges for saving
+[?2004l[?2004h> edges_list_intervened = [(to, from_) for (from_, to) in edges_no_y_parents]
+[?2004l[?2004h> df_edges_intervened = pd.DataFrame(edges_list_intervened, columns=['to', 'from'])
+[?2004l[?2004h> df_edges_intervened.to_csv('/app/intervened_dag.csv', index=False)
+[?2004l[?2004h> print("\nSaved intervened_dag.csv")
+[?2004l[?2004h> print(df_edges_intervened)
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+ImportError: cannot import name 'LinearGaussianBayesianNetworkInference' from 'pgmpy.inference' (/usr/local/lib/python3.12/dist-packages/pgmpy/inference/__init__.py)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pgmpy.inference
+[?2004l[?2004h> print("Available in inference:")
+[?2004l[?2004h> print(dir(pgmpy.inference))
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Available in inference:
+['ApproxInference', 'BeliefPropagation', 'BeliefPropagationWithMessagePassing', 'CausalInference', 'DBNInference', 'EliminationOrder', 'ExactInference', 'Inference', 'Mplp', 'VariableElimination', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', 'base', 'dbn_inference', 'mplp']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> from pgmpy.inference import CausalInference
+[?2004l[?2004h> import pgmpy.models
+[?2004l[?2004h> print("CausalInference:", CausalInference)
+[?2004l[?2004h> print("Dir CausalInference:", dir(CausalInference))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check LinearGaussianBayesianNetwork for do operation
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> print("\nLinearGaussianBayesianNetwork methods:")
+[?2004l[?2004h> print([m for m in dir(LinearGaussianBayesianNetwork) if not m.startswith('_')])
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+CausalInference: <class 'pgmpy.inference.CausalInference.CausalInference'>
+Dir CausalInference: ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_iv_transformations', '_nearest_separator', '_simple_decision', 'estimate_ate', 'get_all_backdoor_adjustment_sets', 'get_all_frontdoor_adjustment_sets', 'get_conditional_ivs', 'get_ivs', 'get_minimal_adjustment_set', 'get_proper_backdoor_graph', 'get_scaling_indicators', 'get_total_conditional_ivs', 'identification_method', 'is_valid_adjustment_set', 'is_valid_backdoor_adjustment_set', 'is_valid_frontdoor_adjustment_set', 'query']
+
+LinearGaussianBayesianNetwork methods:
+['active_trail_nodes', 'add_cpds', 'add_edge', 'add_edges_from', 'add_node', 'add_nodes_from', 'add_weighted_edges_from', 'adj', 'adjacency', 'adjlist_inner_dict_factory', 'adjlist_outer_dict_factory', 'check_model', 'clear', 'clear_edges', 'copy', 'degree', 'do', 'edge_attr_dict_factory', 'edge_strength', 'edge_subgraph', 'edges', 'exposures', 'fit', 'from_dagitty', 'from_lavaan', 'get_ancestors', 'get_ancestral_graph', 'get_cardinality', 'get_children', 'get_cpds', 'get_edge_data', 'get_immoralities', 'get_independencies', 'get_leaves', 'get_markov_blanket', 'get_parents', 'get_random', 'get_random_cpds', 'get_role', 'get_role_dict', 'get_roles', 'get_roots', 'get_stats', 'graph_attr_dict_factory', 'has_edge', 'has_node', 'has_predecessor', 'has_role', 'has_successor', 'in_degree', 'in_degree_iter', 'in_edges', 'is_dconnected', 'is_directed', 'is_iequivalent', 'is_imap', 'is_multigraph', 'is_valid_causal_structure', 'latents', 'load', 'local_independencies', 'log_likelihood', 'minimal_dseparator', 'moralize', 'name', 'nbunch_iter', 'neighbors', 'node_attr_dict_factory', 'node_dict_factory', 'nodes', 'number_of_edges', 'number_of_nodes', 'observed', 'order', 'out_degree', 'out_degree_iter', 'out_edges', 'outcomes', 'pred', 'predecessors', 'predict', 'predict_probability', 'remove_cpds', 'remove_edge', 'remove_edges_from', 'remove_node', 'remove_nodes_from', 'reverse', 'save', 'simulate', 'size', 'subgraph', 'succ', 'successors', 'to_daft', 'to_dagitty', 'to_directed', 'to_directed_class', 'to_graphviz', 'to_joint_gaussian', 'to_lavaan', 'to_markov_model', 'to_pdag', 'to_undirected', 'to_undirected_class', 'update', 'with_role', 'without_role']
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> # The do() method returns a new network with the intervention applied
+[?2004l[?2004h> intervened_bn = bn.do(['Y'], values={0.0})
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(intervened_bn.edges())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save intervened DAG edges
+[?2004l[?2004h> edges_list_intervened = [(to, from_) for (from_, to) in intervened_bn.edges()]
+[?2004l[?2004h> df_edges_intervened = pd.DataFrame(edges_list_intervened, columns=['to', 'from'])
+[?2004l[?2004h> df_edges_intervened.to_csv('/app/intervened_dag.csv', index=False)
+[?2004l[?2004h> print("\nSaved intervened_dag.csv")
+[?2004l[?2004h> print(df_edges_intervened)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Sample 10k points from the intervened BN
+[?2004l[?2004h> sampled_data = intervened_bn.simulate(n_samples=10000, show_progress=False)
+[?2004l[?2004h> print("\nSampled data shape:", sampled_data.shape)
+[?2004l[?2004h> print("First 5 rows:")
+[?2004l[?2004h> print(sampled_data.head())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save to CSV
+[?2004l[?2004h> sampled_data.to_csv('/app/final_bn_sample.csv', index=False)
+[?2004l[?2004h> print("\nSaved final_bn_sample.csv")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:10: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 2/1000000 [00:00<15:16:27, 18.19it/s]  0%|                                                                                                                    | 6/1000000 [00:00<8:25:40, 32.96it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+
+Fitted BN
+Traceback (most recent call last):
+  File "<stdin>", line 27, in <module>
+TypeError: DAG.do() got an unexpected keyword argument 'values'
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> import inspect
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check the do method signature
+[?2004l[?2004h> print("do() method signature:")
+[?2004l[?2004h> print(inspect.signature(LinearGaussianBayesianNetwork.do))
+[?2004l[?2004h> print()
+[?2004l[?2004h> print("do() docstring:")
+[?2004l[?2004h> print(LinearGaussianBayesianNetwork.do.__doc__)
+[?2004l[?2004h> EOF
+[?2004ldo() method signature:
+(self, nodes: 'Hashable | Iterable[Hashable] | tuple[Hashable, Hashable]', inplace=False)
+
+do() docstring:
+
+        Applies the do operator to the graph and returns a new DAG with the
+        transformed graph.
+
+        The do-operator, do(X = x) has the effect of removing all edges from
+        the parents of X and setting X to the given value x.
+
+        Parameters
+        ----------
+        nodes : list, array-like
+            The names of the nodes to apply the do-operator for.
+
+        inplace: boolean (default: False)
+            If inplace=True, makes the changes to the current object,
+            otherwise returns a new instance.
+
+        Returns
+        -------
+        Modified DAG: pgmpy.base.DAG
+            A new instance of DAG modified by the do-operator
+
+        Examples
+        --------
+        Initialize a DAG
+
+        >>> graph = DAG()
+        >>> graph.add_edges_from([("X", "A"), ("A", "Y"), ("A", "B")])
+        >>> # Applying the do-operator will return a new DAG with the desired structure.
+        >>> graph_do_A = graph.do("A")
+        >>> # Which we can verify is missing the edges we would expect.
+        >>> sorted(graph_do_A.edges)
+        [('A', 'B'), ('A', 'Y')]
+
+        References
+        ----------
+        Causality: Models, Reasoning, and Inference, Judea Pearl (2000). p.70.
+        
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> # The do() method removes incoming edges to Y
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(list(intervened_bn.edges()))
+[?2004l[?2004h> 
+[?2004l[?2004h> # For LinearGaussianBN, Y now has no parents but we need to set it to 0
+[?2004l[?2004h> # We need to modify the CPD for Y to be a constant 0
+[?2004l[?2004h> # Let's check what CPDs exist
+[?2004l[?2004h> print("\nOriginal CPDs:")
+[?2004l[?2004h> for cpd in bn.get_cpds():
+[?2004l[?2004h>     print(f"{cpd.variable}: {cpd}")
+[?2004l[?2004h> 
+[?2004l[?2004h> print("\nIntervened CPDs:")
+[?2004l[?2004h> for cpd in intervened_bn.get_cpds():
+[?2004l[?2004h>     print(f"{cpd.variable}: {cpd}")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:10: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<28:47:01,  9.65it/s]  0%|                                                                                                                    | 6/1000000 [00:00<8:48:29, 31.54it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+
+Fitted BN
+
+Intervened BN edges:
+[('U', 'M'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+Original CPDs:
+U: P(U | R) = N(0.505*R + 27.045; 7.584)
+M: P(M | U, R) = N(0.768*U + 0.303*R + -11.357; 12.482)
+Y: P(Y | U) = N(0.751*U + 12.428; 10.627)
+D: P(D | U, Y) = N(0.55*U + 0.449*Y + -12.297; 14.092)
+R: P(R) = N(46.414; 14.907)
+
+Intervened CPDs:
+U: P(U | R) = N(0.505*R + 27.045; 7.584)
+M: P(M | U, R) = N(0.768*U + 0.303*R + -11.357; 12.482)
+Y: P(Y | U) = N(0.751*U + 12.428; 10.627)
+D: P(D | U, Y) = N(0.55*U + 0.449*Y + -12.297; 14.092)
+R: P(R) = N(46.414; 14.907)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.factors.continuous import GaussianFactor
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(list(intervened_bn.edges()))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the size of all variables
+[?2004l[?2004h> print("\nVariable sizes:")
+[?2004l[?2004h> for var in intervened_bn.nodes():
+[?2004l[?2004h>     print(f"{var}: {intervened_bn.get_cardinality(var)}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # For LinearGaussianBN, I need to manually set Y's CPD to a constant
+[?2004l[?2004h> # Let's get the CPD for Y and modify it
+[?2004l[?2004h> # First, let me check the structure of the CPD objects
+[?2004l[?2004h> cpd_y = bn.get_cpds('Y')
+[?2004l[?2004h> print("\nY CPD structure:")
+[?2004l[?2004h> print(f"Type: {type(cpd_y)}")
+[?2004l[?2004h> print(f"Variables: {cpd_y.variables}")
+[?2004l[?2004h> print(f"Cardinality: {cpd_y.cardinality}")
+[?2004l[?2004h> print(f"Phi: {cpd_y.phi}")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+ImportError: cannot import name 'GaussianFactor' from 'pgmpy.factors.continuous' (/usr/local/lib/python3.12/dist-packages/pgmpy/factors/continuous/__init__.py)
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pgmpy.factors.continuous
+[?2004l[?2004h> print("Continuous factors:")
+[?2004l[?2004h> print(dir(pgmpy.factors.continuous))
+[?2004l[?2004h> 
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check the CPD for Y in intervened BN
+[?2004l[?2004h> cpd_y = intervened_bn.get_cpds('Y')
+[?2004l[?2004h> print("\nY CPD in intervened BN:")
+[?2004l[?2004h> print(f"Type: {type(cpd_y)}")
+[?2004l[?2004h> print(f"Variables: {cpd_y.variables}")
+[?2004l[?2004h> print(f"Cardinality: {cpd_y.cardinality}")
+[?2004l[?2004h> print(f"Phi: {cpd_y.phi}")
+[?2004l[?2004h> print(f"Variable names: {cpd_y.variable_names}")
+[?2004l[?2004h> print(f"Scope: {cpd_y.scope}")
+[?2004l[?2004h> EOF
+[?2004lContinuous factors:
+['LinearGaussianCPD', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__']
+/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+Traceback (most recent call last):
+  File "<stdin>", line 9, in <module>
+NameError: name 'pd' is not defined. Did you mean: 'id'?
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pgmpy.factors.continuous
+[?2004l[?2004h> print("Continuous factors:")
+[?2004l[?2004h> print(dir(pgmpy.factors.continuous))
+[?2004l[?2004h> 
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.factors.continuous import LinearGaussianCPD
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(list(intervened_bn.edges()))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check the CPD for Y in intervened BN
+[?2004l[?2004h> cpd_y = intervened_bn.get_cpds('Y')
+[?2004l[?2004h> print("\nY CPD in intervened BN:")
+[?2004l[?2004h> print(f"Type: {type(cpd_y)}")
+[?2004l[?2004h> print(f"Variable: {cpd_y.variable}")
+[?2004l[?2004h> print(f"Scope: {cpd_y.scope}")
+[?2004l[?2004h> print(f"Beta: {cpd_y.beta}")
+[?2004l[?2004h> print(f"Variance: {cpd_y.variance}")
+[?2004l[?2004h> print(f"Function: {cpd_y.function}")
+[?2004l[?2004h> EOF
+[?2004lContinuous factors:
+['LinearGaussianCPD', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__']
+/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:15: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 2/1000000 [00:00<15:18:44, 18.14it/s]  0%|                                                                                                                    | 6/1000000 [00:00<8:30:33, 32.64it/s]
+
+Fitted BN
+
+Intervened BN edges:
+[('U', 'M'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+Y CPD in intervened BN:
+Type: <class 'pgmpy.factors.continuous.LinearGaussianCPD.LinearGaussianCPD'>
+Variable: Y
+Traceback (most recent call last):
+  File "<stdin>", line 33, in <module>
+AttributeError: 'LinearGaussianCPD' object has no attribute 'scope'. Did you mean: 'copy'?
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.factors.continuous import LinearGaussianCPD
+[?2004l[?2004h> import inspect
+[?2004l[?2004h> 
+[?2004l[?2004h> print("LinearGaussianCPD signature:")
+[?2004l[?2004h> print(inspect.signature(LinearGaussianCPD.__init__))
+[?2004l[?2004h> print()
+[?2004l[?2004h> print("LinearGaussianCPD docstring:")
+[?2004l[?2004h> print(LinearGaussianCPD.__init__.__doc__)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(list(intervened_bn.edges()))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check all CPDs
+[?2004l[?2004h> cpds = intervened_bn.get_cpds()
+[?2004l[?2004h> print("\nAll CPDs in intervened BN:")
+[?2004l[?2004h> for cpd in cpds:
+[?2004l[?2004h>     print(f"{cpd.variable}: {cpd}")
+[?2004l[?2004h>     print(f"  beta: {cpd.beta}")
+[?2004l[?2004h>     print(f"  variance: {cpd.variance}")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+LinearGaussianCPD signature:
+(self, variable, beta, std, evidence=[])
+
+LinearGaussianCPD docstring:
+None
+<stdin>:18: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<29:18:36,  9.48it/s]  0%|                                                                                                                    | 6/1000000 [00:00<9:10:27, 30.28it/s]
+
+Fitted BN
+
+Intervened BN edges:
+[('U', 'M'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+All CPDs in intervened BN:
+U: P(U | R) = N(0.505*R + 27.045; 7.584)
+  beta: [27.04506495  0.50491205]
+Traceback (most recent call last):
+  File "<stdin>", line 37, in <module>
+AttributeError: 'LinearGaussianCPD' object has no attribute 'variance'. Did you mean: 'variable'?
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.factors.continuous import LinearGaussianCPD
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> print("\nIntervened BN edges:")
+[?2004l[?2004h> print(list(intervened_bn.edges()))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Check all CPDs
+[?2004l[?2004h> cpds = intervened_bn.get_cpds()
+[?2004l[?2004h> print("\nAll CPDs in intervened BN:")
+[?2004l[?2004h> for cpd in cpds:
+[?2004l[?2004h>     print(f"{cpd.variable}: {cpd}")
+[?2004l[?2004h>     print(f"  beta: {cpd.beta}")
+[?2004l[?2004h>     print(f"  std: {cpd.std}")
+[?2004l[?2004h>     print(f"  evidence: {cpd.evidence}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Manually update Y's CPD to be a constant 0
+[?2004l[?2004h> # Y is now a root node with no parents, we set it to 0 with very small variance
+[?2004l[?2004h> # Create new CPD for Y: N(0.0, 1e-9)
+[?2004l[?2004h> new_cpd_y = LinearGaussianCPD('Y', beta=[0.0], std=1e-9, evidence=[])
+[?2004l[?2004h> print("\nNew Y CPD:", new_cpd_y)
+[?2004l[?2004h> print(f"  beta: {new_cpd_y.beta}")
+[?2004l[?2004h> print(f"  std: {new_cpd_y.std}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Remove old Y CPD and add new one
+[?2004l[?2004h> intervened_bn.remove_cpds('Y')
+[?2004l[?2004h> intervened_bn.add_cpds(new_cpd_y)
+[?2004l[?2004h> 
+[?2004l[?2004h> print("\nUpdated CPDs in intervened BN:")
+[?2004l[?2004h> for cpd in intervened_bn.get_cpds():
+[?2004l[?2004h>     print(f"{cpd.variable}: {cpd}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the intervened DAG edges for saving
+[?2004l[?2004h> edges_list_intervened = [(to, from_) for (from_, to) in list(intervened_bn.edges())]
+[?2004l[?2004h> df_edges_intervened = pd.DataFrame(edges_list_intervened, columns=['to', 'from'])
+[?2004l[?2004h> df_edges_intervened.to_csv('/app/intervened_dag.csv', index=False)
+[?2004l[?2004h> print("\nSaved intervened_dag.csv")
+[?2004l[?2004h> print(df_edges_intervened)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Sample 10k points from the intervened BN
+[?2004l[?2004h> sampled_data = intervened_bn.simulate(n_samples=10000, show_progress=False)
+[?2004l[?2004h> print("\nSampled data shape:", sampled_data.shape)
+[?2004l[?2004h> print("First 5 rows:")
+[?2004l[?2004h> print(sampled_data.head())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save to CSV
+[?2004l[?2004h> sampled_data.to_csv('/app/final_bn_sample.csv', index=False)
+[?2004l[?2004h> print("\nSaved final_bn_sample.csv")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+<stdin>:11: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 2/1000000 [00:00<15:19:14, 18.13it/s]  0%|                                                                                                                    | 6/1000000 [00:00<8:23:58, 33.07it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+
+Fitted BN
+
+Intervened BN edges:
+[('U', 'M'), ('U', 'D'), ('Y', 'D'), ('R', 'U'), ('R', 'M')]
+
+All CPDs in intervened BN:
+U: P(U | R) = N(0.505*R + 27.045; 7.584)
+  beta: [27.04506495  0.50491205]
+  std: 7.584412716977557
+  evidence: ['R']
+M: P(M | U, R) = N(0.768*U + 0.303*R + -11.357; 12.482)
+  beta: [-11.35702009   0.76751662   0.30286591]
+  std: 12.482149687636516
+  evidence: ['U', 'R']
+Y: P(Y | U) = N(0.751*U + 12.428; 10.627)
+  beta: [12.4283907   0.75131566]
+  std: 10.627136947847998
+  evidence: ['U']
+D: P(D | U, Y) = N(0.55*U + 0.449*Y + -12.297; 14.092)
+  beta: [-12.29651352   0.54958864   0.44857086]
+  std: 14.09164929505755
+  evidence: ['U', 'Y']
+R: P(R) = N(46.414; 14.907)
+  beta: [46.41368494]
+  std: 14.907438628944597
+  evidence: []
+
+New Y CPD: P(Y) = N(0.0; 0.0)
+  beta: [0.]
+  std: 1e-09
+
+Updated CPDs in intervened BN:
+U: P(U | R) = N(0.505*R + 27.045; 7.584)
+M: P(M | U, R) = N(0.768*U + 0.303*R + -11.357; 12.482)
+D: P(D | U, Y) = N(0.55*U + 0.449*Y + -12.297; 14.092)
+R: P(R) = N(46.414; 14.907)
+Y: P(Y) = N(0.0; 0.0)
+
+Saved intervened_dag.csv
+  to from
+0  M    U
+1  D    U
+2  D    Y
+3  U    R
+4  M    R
+Traceback (most recent call last):
+  File "<stdin>", line 64, in <module>
+TypeError: LinearGaussianBayesianNetwork.simulate() got an unexpected keyword argument 'show_progress'
+[?2004hroot@8e39b79c6366:/app# python3 << 'EOF'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> from pgmpy.estimators import HillClimbSearch
+[?2004l[?2004h> from pgmpy.models import LinearGaussianBayesianNetwork
+[?2004l[?2004h> from pgmpy.factors.continuous import LinearGaussianCPD
+[?2004l[?2004h> import inspect
+[?2004l[?2004h> 
+[?2004l[?2004h> print("simulate signature:")
+[?2004l[?2004h> print(inspect.signature(LinearGaussianBayesianNetwork.simulate))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Load data
+[?2004l[?2004h> data = pd.read_csv('/app/bn_sample_10k.csv')
+[?2004l[?2004h> 
+[?2004l[?2004h> # Use HillClimbSearch to learn the structure
+[?2004l[?2004h> est = HillClimbSearch(data)
+[?2004l[?2004h> model = est.estimate()
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save learned DAG to CSV
+[?2004l[?2004h> edges_list = [(to, from_) for (from_, to) in model.edges()]
+[?2004l[?2004h> df_edges = pd.DataFrame(edges_list, columns=['to', 'from'])
+[?2004l[?2004h> df_edges.to_csv('/app/learned_dag.csv', index=False)
+[?2004l[?2004h> print("Saved learned_dag.csv")
+[?2004l[?2004h> print(df_edges)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Create and fit the BN
+[?2004l[?2004h> bn = LinearGaussianBayesianNetwork(model.edges())
+[?2004l[?2004h> bn.fit(data)
+[?2004l[?2004h> print("\nFitted BN")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Perform causal intervention on Y=0.0
+[?2004l[?2004h> intervened_bn = bn.do(['Y'])
+[?2004l[?2004h> 
+[?2004l[?2004h> # Manually update Y's CPD to be a constant 0
+[?2004l[?2004h> new_cpd_y = LinearGaussianCPD('Y', beta=[0.0], std=1e-9, evidence=[])
+[?2004l[?2004h> intervened_bn.remove_cpds('Y')
+[?2004l[?2004h> intervened_bn.add_cpds(new_cpd_y)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Get the intervened DAG edges for saving
+[?2004l[?2004h> edges_list_intervened = [(to, from_) for (from_, to) in list(intervened_bn.edges())]
+[?2004l[?2004h> df_edges_intervened = pd.DataFrame(edges_list_intervened, columns=['to', 'from'])
+[?2004l[?2004h> df_edges_intervened.to_csv('/app/intervened_dag.csv', index=False)
+[?2004l[?2004h> print("Saved intervened_dag.csv")
+[?2004l[?2004h> print(df_edges_intervened)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Sample 10k points from the intervened BN
+[?2004l[?2004h> sampled_data = intervened_bn.simulate(n_samples=10000)
+[?2004l[?2004h> print("\nSampled data shape:", sampled_data.shape)
+[?2004l[?2004h> print("\nFirst 5 rows:")
+[?2004l[?2004h> print(sampled_data.head())
+[?2004l[?2004h> print("\nColumn names:", list(sampled_data.columns))
+[?2004l[?2004h> 
+[?2004l[?2004h> # Save to CSV
+[?2004l[?2004h> sampled_data.to_csv('/app/final_bn_sample.csv', index=False)
+[?2004l[?2004h> print("\nSaved final_bn_sample.csv")
+[?2004l[?2004h> EOF
+[?2004l/usr/local/lib/python3.12/dist-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+  from .StructureScore import (
+simulate signature:
+(self, n_samples: 'int' = 1000, do: 'dict[str, float] | None' = None, evidence: 'dict[str, float] | None' = None, virtual_intervention: 'list[LinearGaussianCPD] | None' = None, include_latents: 'bool' = False, seed: 'int | None' = None, missing_prob=None) -> 'pd.DataFrame'
+<stdin>:15: FutureWarning: HillClimbSearch is deprecated and will be removed in v1.3.0. Please use
+            pgmpy.causal_discovery.HillClimbSearch instead.
+  0%|                                                                                                                              | 0/1000000 [00:00<?, ?it/s]  0%|                                                                                                                   | 1/1000000 [00:00<29:01:51,  9.57it/s]  0%|                                                                                                                    | 6/1000000 [00:00<9:04:47, 30.59it/s]
+Saved learned_dag.csv
+  to from
+0  M    U
+1  Y    U
+2  D    U
+3  D    Y
+4  U    R
+5  M    R
+
+Fitted BN
+Saved intervened_dag.csv
+  to from
+0  M    U
+1  D    U
+2  D    Y
+3  U    R
+4  M    R
+
+Sampled data shape: (10000, 5)
+
+First 5 rows:
+     Y          R          U          M          D
+0  0.0  97.676843  71.808458  74.930988  29.789784
+1  0.0  29.120505  45.979788   9.398560  19.853493
+2  0.0  33.272103  41.353607  24.500683  13.244193
+3  0.0  67.014323  60.162001  57.860957  15.731964
+4  0.0  28.214576  35.180163  26.880897   3.824911
+
+Column names: ['Y', 'R', 'U', 'M', 'D']
+
+Saved final_bn_sample.csv
+[?2004hroot@8e39b79c6366:/app# echo "=== learned_dag.csv ==="
+[?2004l=== learned_dag.csv ===
+[?2004hroot@8e39b79c6366:/app# cat /app/learned_dag.csv
+[?2004lto,from
+M,U
+Y,U
+D,U
+D,Y
+U,R
+M,R
+[?2004hroot@8e39b79c6366:/app# echo ""
+[?2004l
+[?2004hroot@8e39b79c6366:/app# echo "=== intervened_dag.csv ==="
+[?2004l=== intervened_dag.csv ===
+[?2004hroot@8e39b79c6366:/app# cat /app/intervened_dag.csv
+[?2004lto,from
+M,U
+D,U
+D,Y
+U,R
+M,R
+[?2004hroot@8e39b79c6366:/app# echo ""
+[?2004l
+[?2004hroot@8e39b79c6366:/app# echo "=== final_bn_sample.csv (first 10 rows) ==="
+[?2004l=== final_bn_sample.csv (first 10 rows) ===
+[?2004hroot@8e39b79c6366:/app# head -10 /app/final_bn_sample.csv
+[?2004lY,R,U,M,D
+0.0,97.676843265169,71.80845790208659,74.93098790055956,29.78978411983154
+0.0,29.12050501426156,45.97978798359272,9.398559772366568,19.853493429641272
+0.0,33.27210269763849,41.35360697333642,24.500682582660833,13.244192637144478
+0.0,67.01432292867953,60.16200129948625,57.8609567222438,15.731963794273568
+0.0,28.214576161969443,35.18016306179624,26.880897082870554,3.8249114050136583
+0.0,69.62403187139063,65.58499964444515,32.9353459010334,26.48918524474382
+0.0,83.72323246625886,61.156143660851086,51.67161240837357,8.787620083345873
+0.0,37.416065971489644,40.31618803049467,30.967074360563714,26.59325167642109
+0.0,31.9458064545517,52.11296798407702,30.67560936183781,4.990901925861323
+[?2004hroot@8e39b79c6366:/app# echo ""
+[?2004l
+[?2004hroot@8e39b79c6366:/app# echo "=== final_bn_sample.csv shape ==="
+[?2004l=== final_bn_sample.csv shape ===
+[?2004hroot@8e39b79c6366:/app# wc -l /app/final_bn_sample.csv
+[?2004l10001 /app/final_bn_sample.csv
+[?2004hroot@8e39b79c6366:/app# 

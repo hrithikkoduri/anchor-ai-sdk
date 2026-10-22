@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/circuit-fibsqrt",
+        "source": "tasks"
+    },
+    "trial_name": "circuit-fibsqrt__gBx86Pd",
+    "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-1/terminal-bench-external-qwen-qwen3-coder-next-shard-1",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/qwen/qwen3-coder-next",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "17ade9ca-5678-465b-af3b-cf51d4bfbf31"
+}

@@ -1,0 +1,45 @@
+{
+    "id": "f816f342-192b-46c6-aa85-e0feeceb00e3",
+    "started_at": "2026-10-22T08:09:01.984399",
+    "updated_at": "2026-10-22T08:15:55.988039",
+    "finished_at": "2026-10-22T08:15:55.988039",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "swe-agent__qwen/qwen3-coder-next__tasks": {
+                "n_trials": 2,
+                "n_errors": 2,
+                "metrics": [
+                    {
+                        "mean": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "instance_flipt-io__flipt-02e2163__YAdjy9z",
+                            "instance_qutebrowser__qutebrowse__u6zJia2"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "NonZeroAgentExitCodeError": [
+                        "instance_flipt-io__flipt-02e2163__YAdjy9z",
+                        "instance_qutebrowser__qutebrowse__u6zJia2"
+                    ]
+                }
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

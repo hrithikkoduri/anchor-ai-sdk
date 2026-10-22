@@ -1,0 +1,69 @@
+👋 INFO     This is SWE-agent version 1.1.0 (hash='unavailable') with SWE-ReX   
+            version 1.4.0 (rex_hash='unavailable').                             
+/testbed/requests/packages/urllib3/connectionpool.py:447: SyntaxWarning: invalid escape sequence '\*'
+  :param \**response_kw:
+/testbed/requests/packages/urllib3/connectionpool.py:673: SyntaxWarning: invalid escape sequence '\*'
+  :param \**kw:
+Traceback (most recent call last):
+  File "/testbed/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py", line 3, in <module>
+    from ssl import CertificateError, match_hostname
+ImportError: cannot import name 'match_hostname' from 'ssl' (/root/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/ssl.py)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/testbed/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py", line 7, in <module>
+    from backports.ssl_match_hostname import CertificateError, match_hostname
+ModuleNotFoundError: No module named 'backports'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run.py", line 147, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run.py", line 90, in main
+    from sweagent.run.run_single import run_from_cli as run_single_main
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/run/run_single.py", line 39, in <module>
+    from sweagent.agent.agents import AbstractAgent, AgentConfig, get_agent_from_config
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/agents.py", line 21, in <module>
+    from sweagent.agent.action_sampler import AbstractActionSampler, ActionSamplerConfig
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/action_sampler.py", line 8, in <module>
+    from sweagent.agent.models import AbstractModel
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/sweagent/agent/models.py", line 15, in <module>
+    import litellm
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/__init__.py", line 1356, in <module>
+    from .main import *
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/main.py", line 79, in <module>
+    from litellm.litellm_core_utils.chat_completion_agentic_loop import (
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/litellm_core_utils/chat_completion_agentic_loop.py", line 16, in <module>
+    from litellm.litellm_core_utils.litellm_logging import Logging as LiteLLMLoggingObject
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/litellm_core_utils/litellm_logging.py", line 60, in <module>
+    from litellm.integrations.agentops import AgentOps
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/integrations/agentops/__init__.py", line 1, in <module>
+    from .agentops import AgentOps
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/integrations/agentops/agentops.py", line 9, in <module>
+    from litellm.integrations.opentelemetry import OpenTelemetry, OpenTelemetryConfig
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/integrations/opentelemetry.py", line 34, in <module>
+    from litellm.integrations.otel.plumbing.otlp_tls import resolve_otlp_http_tls
+  File "/opt/sweagent-venv/lib/python3.12/site-packages/litellm/integrations/otel/plumbing/otlp_tls.py", line 5, in <module>
+    import requests
+  File "/testbed/requests/__init__.py", line 58, in <module>
+    from . import utils
+  File "/testbed/requests/utils.py", line 25, in <module>
+    from .compat import parse_http_list as _parse_list_header
+  File "/testbed/requests/compat.py", line 7, in <module>
+    from .packages import chardet
+  File "/testbed/requests/packages/__init__.py", line 3, in <module>
+    from . import urllib3
+  File "/testbed/requests/packages/urllib3/__init__.py", line 16, in <module>
+    from .connectionpool import (
+  File "/testbed/requests/packages/urllib3/connectionpool.py", line 31, in <module>
+    from .packages.ssl_match_hostname import CertificateError
+  File "/testbed/requests/packages/urllib3/packages/__init__.py", line 3, in <module>
+    from . import ssl_match_hostname
+  File "/testbed/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py", line 10, in <module>
+    from _implementation import CertificateError, match_hostname
+ModuleNotFoundError: No module named '_implementation'

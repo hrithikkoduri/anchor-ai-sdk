@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | mimeTypeFromFile Based on File.type",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | \u2715 Based on mimetypeFromExtension() (4 ms) Fallback to application/octet-stream",
+      "status": "PASSED"
+    },
+    {
+      "name": "src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | \u2715 treats HEIC and JXL as supported images on Safari 17 on macOS (1 ms) does not treat HEIC and JXL as supported images on Chrome",
+      "status": "PASSED"
+    }
+  ]
+}

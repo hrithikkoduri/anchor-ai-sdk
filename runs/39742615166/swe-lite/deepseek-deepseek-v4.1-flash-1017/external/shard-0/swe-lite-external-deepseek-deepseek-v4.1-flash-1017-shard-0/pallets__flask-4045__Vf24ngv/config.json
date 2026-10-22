@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/pallets__flask-4045",
+        "source": "tasks"
+    },
+    "trial_name": "pallets__flask-4045__Vf24ngv",
+    "trials_dir": "external-runs/swe-lite/deepseek-deepseek-v4.1-flash-1017/external/shard-0/swe-lite-external-deepseek-deepseek-v4.1-flash-1017-shard-0",
+    "agent": {
+        "name": "swe-agent",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "b04a71b7-773a-43b5-9302-707f06c0f5f4"
+}

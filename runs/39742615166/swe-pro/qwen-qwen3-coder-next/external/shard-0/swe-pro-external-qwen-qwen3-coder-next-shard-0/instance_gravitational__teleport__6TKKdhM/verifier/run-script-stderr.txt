@@ -1,0 +1,12 @@
+# github.com/gravitational/teleport/lib/backend/pgbk [github.com/gravitational/teleport/lib/backend/pgbk.test]
+lib/backend/pgbk/wal2json_test.go:34:11: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:38:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:46:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:54:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:62:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:70:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:78:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:86:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:93:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:99:9: undefined: wal2jsonColumn
+lib/backend/pgbk/wal2json_test.go:99:9: too many errors

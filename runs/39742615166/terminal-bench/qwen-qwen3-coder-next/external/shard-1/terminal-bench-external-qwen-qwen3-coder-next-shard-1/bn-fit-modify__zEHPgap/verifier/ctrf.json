@@ -1,0 +1,107 @@
+{
+    "results": {
+        "tool": {
+            "name": "pytest",
+            "version": "8.4.1"
+        },
+        "summary": {
+            "tests": 9,
+            "passed": 7,
+            "failed": 2,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0,
+            "start": 1792657856.193022,
+            "stop": 1792657858.3064094
+        },
+        "tests": [
+            {
+                "name": "test_outputs.py::test_bn_sample_exists",
+                "status": "passed",
+                "duration": 0.0003675269999803277,
+                "start": 1792657858.2229247,
+                "stop": 1792657858.2234824,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_learned_dag_structure_exists",
+                "status": "passed",
+                "duration": 0.00023012200006178318,
+                "start": 1792657858.2235937,
+                "stop": 1792657858.2239,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_learned_dag_structure_csv_col_names",
+                "status": "passed",
+                "duration": 0.001518420999900627,
+                "start": 1792657858.2239847,
+                "stop": 1792657858.2255857,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_learned_dag_structure",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 0.0011400769999454496,
+                "start": 1792657858.2256866,
+                "stop": 1792657858.293658,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_learned_dag_structure():\n        \"\"\"Test that the learned DAG structure matches the true DAG structure\"\"\"\n        learned_dag_path = Path(\"/app/learned_dag.csv\")\n    \n        # Load the learned DAG structure\n        learned_dag = pandas.read_csv(learned_dag_path)\n    \n        learned_edges = {(row[\"from\"], row[\"to\"]) for _, row in learned_dag.iterrows()}\n        true_dag = {(\"U\", \"M\"), (\"U\", \"Y\"), (\"U\", \"D\"), (\"U\", \"R\"), (\"Y\", \"D\"), (\"R\", \"M\")}\n>       assert learned_edges == true_dag, (\n            \"Learned DAG structure does not match the expected structure.\"\n        )\nE       AssertionError: Learned DAG structure does not match the expected structure.\nE       assert {('R', 'M'), ...), ('Y', 'D')} == {('R', 'M'), ...), ('Y', 'D')}\nE         \nE         Extra items in the left set:\nE         ('R', 'U')\nE         Extra items in the right set:\nE         ('U', 'R')\nE         Use -v to get more diff\n\n/tests/test_outputs.py:53: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_intervened_dag_structure_exists",
+                "status": "passed",
+                "duration": 0.00024938000012753037,
+                "start": 1792657858.2937956,
+                "stop": 1792657858.294113,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_intervened_dag_structure_csv_col_names",
+                "status": "passed",
+                "duration": 0.0009531180000976747,
+                "start": 1792657858.2941923,
+                "stop": 1792657858.2952225,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_intervened__data_structure",
+                "status": "failed",
+                "raw_status": "call_failed",
+                "duration": 0.0008608599999888611,
+                "start": 1792657858.295315,
+                "stop": 1792657858.297572,
+                "retries": 0,
+                "file_path": "test_outputs.py",
+                "trace": "def test_intervened__data_structure():\n        \"\"\"Test that the intervened DAG structure matches the true DAG structure\"\"\"\n        intervened_dag_path = Path(\"/app/intervened_dag.csv\")\n    \n        # Load the learned DAG structure\n        intervened_dag = pandas.read_csv(intervened_dag_path)\n    \n        intervened_edges = {\n            (row[\"from\"], row[\"to\"]) for _, row in intervened_dag.iterrows()\n        }\n        true_dag = {(\"U\", \"M\"), (\"U\", \"D\"), (\"U\", \"R\"), (\"Y\", \"D\"), (\"R\", \"M\")}\n>       assert intervened_edges == true_dag, (\n            \"Learned DAG structure does not match the expected structure.\"\n        )\nE       AssertionError: Learned DAG structure does not match the expected structure.\nE       assert {('R', 'M'), ...), ('Y', 'D')} == {('R', 'M'), ...), ('Y', 'D')}\nE         \nE         Extra items in the left set:\nE         ('R', 'U')\nE         Extra items in the right set:\nE         ('U', 'R')\nE         Use -v to get more diff\n\n/tests/test_outputs.py:93: AssertionError",
+                "message": "The test failed in the call phase due to an assertion error"
+            },
+            {
+                "name": "test_outputs.py::test_sampled_csv_col_names",
+                "status": "passed",
+                "duration": 0.003698933999885412,
+                "start": 1792657858.2976677,
+                "stop": 1792657858.3014576,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            },
+            {
+                "name": "test_outputs.py::test_sampled_data",
+                "status": "passed",
+                "duration": 0.004627334999895538,
+                "start": 1792657858.3015618,
+                "stop": 1792657858.3062787,
+                "retries": 0,
+                "file_path": "test_outputs.py"
+            }
+        ]
+    }
+}

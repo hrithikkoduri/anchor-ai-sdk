@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/cancel-async-tasks",
+        "source": "tasks"
+    },
+    "trial_name": "cancel-async-tasks__ovqWvCx",
+    "trials_dir": "external-runs/terminal-bench/qwen-qwen3-coder-next/external/shard-4/terminal-bench-external-qwen-qwen3-coder-next-shard-4",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/qwen/qwen3-coder-next",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "0cc28886-7a71-435e-a886-c6d6f9128248"
+}

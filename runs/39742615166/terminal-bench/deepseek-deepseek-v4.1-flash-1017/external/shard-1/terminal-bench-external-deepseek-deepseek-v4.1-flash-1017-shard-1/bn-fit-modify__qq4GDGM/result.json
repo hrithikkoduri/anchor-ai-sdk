@@ -1,0 +1,143 @@
+{
+    "id": "9a388f22-766d-4301-b8cf-cb30283ab79c",
+    "task_name": "terminal-bench/bn-fit-modify",
+    "trial_name": "bn-fit-modify__qq4GDGM",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-1/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-1/bn-fit-modify__qq4GDGM",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/bn-fit-modify"
+    },
+    "source": "tasks",
+    "task_checksum": "3dde3e3434e714bc5d0c83c5c62ac81bf83db0fbde2285007e4eb552d56c03fb",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/bn-fit-modify",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "bn-fit-modify__qq4GDGM",
+        "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-1/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-1",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "b21d3e27-1fd4-450e-ab2e-4cafc250b6b3",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "deepseek/deepseek-v4.1-flash-1017",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 39168,
+        "n_cache_tokens": 27136,
+        "n_output_tokens": 10420,
+        "cost_usd": 0.009893088000000001,
+        "model_usage": {
+            "deepseek/deepseek-v4.1-flash-1017": {
+                "n_input_tokens": 39168,
+                "n_cache_tokens": 27136,
+                "n_output_tokens": 10420,
+                "cost_usd": 0.009893088000000001
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 9,
+            "api_request_times_msec": [
+                1319.413423538208,
+                5003.16596031189,
+                1451.5960216522217,
+                4052.286148071289,
+                4368.256568908691,
+                23215.643405914307,
+                8702.881336212158,
+                2273.2388973236084,
+                6933.258533477783
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T08:12:31.780925Z",
+    "finished_at": "2026-10-22T08:14:23.917413Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:12:31.816391Z",
+        "finished_at": "2026-10-22T08:12:42.773110Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:12:42.773163Z",
+        "finished_at": "2026-10-22T08:12:52.033457Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:12:52.033583Z",
+        "finished_at": "2026-10-22T08:13:58.239302Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:13:58.547143Z",
+        "finished_at": "2026-10-22T08:14:11.762387Z"
+    },
+    "step_results": null
+}

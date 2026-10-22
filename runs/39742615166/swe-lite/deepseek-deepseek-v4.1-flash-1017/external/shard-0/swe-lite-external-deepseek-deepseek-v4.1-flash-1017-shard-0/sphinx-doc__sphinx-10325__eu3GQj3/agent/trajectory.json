@@ -1,0 +1,25 @@
+{
+  "schema_version": "ATIF-v1.5",
+  "session_id": "c4f04d3f-7c51-4da5-bea8-6331c271854c",
+  "agent": {
+    "name": "swe-agent",
+    "version": "1.1.0",
+    "model_name": "unknown",
+    "extra": {
+      "original_format": "swe-agent-traj",
+      "environment": "main"
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-10-22T10:08:25.304583+00:00",
+      "source": "agent",
+      "model_name": "unknown",
+      "message": "Exit due to unknown error: No module named 'mcp'",
+      "reasoning_content": "Exit due to unknown error: No module named 'mcp'"
+    }
+  ],
+  "notes": "Converted from SWE-agent .traj format to ATIF",
+  "final_metrics": {}
+}

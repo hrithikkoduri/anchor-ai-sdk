@@ -1,0 +1,24 @@
+{
+    "job_name": "swe-pro-external-deepseek-deepseek-v4.1-flash-1017-shard-1",
+    "jobs_dir": "external-runs/swe-pro/deepseek-deepseek-v4.1-flash-1017/external/shard-1",
+    "n_concurrent_trials": 1,
+    "agents": [
+        {
+            "name": "swe-agent",
+            "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ]
+        }
+    ],
+    "datasets": [
+        {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-pro/data/tasks",
+            "task_names": [
+                "instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+                "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
+            ]
+        }
+    ]
+}

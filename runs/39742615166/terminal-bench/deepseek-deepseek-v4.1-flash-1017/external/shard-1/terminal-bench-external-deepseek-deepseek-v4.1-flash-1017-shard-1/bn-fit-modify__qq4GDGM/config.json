@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/terminal-bench/data/tasks/bn-fit-modify",
+        "source": "tasks"
+    },
+    "trial_name": "bn-fit-modify__qq4GDGM",
+    "trials_dir": "external-runs/terminal-bench/deepseek-deepseek-v4.1-flash-1017/external/shard-1/terminal-bench-external-deepseek-deepseek-v4.1-flash-1017-shard-1",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        "extra_allowed_hosts": [
+            "openrouter.ai",
+            "api.openrouter.ai"
+        ]
+    },
+    "job_id": "b21d3e27-1fd4-450e-ab2e-4cafc250b6b3"
+}

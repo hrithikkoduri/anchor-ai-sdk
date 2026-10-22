@@ -1,0 +1,710 @@
+Running selected tests: applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+Running test file in proton-drive workspace: applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts
+----------------------------------------------------------------|---------|----------|---------|---------|-------------------
+File                                                            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------------------------------------------------------|---------|----------|---------|---------|-------------------
+All files                                                       |    0.16 |     0.15 |    0.12 |    0.17 |                   
+ app                                                            |       0 |        0 |       0 |       0 |                   
+  App.tsx                                                       |       0 |        0 |       0 |       0 | 38-81             
+  UrlsApp.tsx                                                   |       0 |        0 |       0 |       0 | 27-66             
+  bootstrap.ts                                                  |       0 |        0 |       0 |       0 | 25-125            
+  config.ts                                                     |       0 |      100 |     100 |       0 | 1-13              
+  index.tsx                                                     |       0 |        0 |     100 |       0 | 9-10              
+  style.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components                                                 |       0 |        0 |       0 |       0 |                   
+  AppErrorBoundary.tsx                                          |       0 |        0 |       0 |       0 | 24-63             
+  SignatureAlert.tsx                                            |       0 |        0 |       0 |       0 | 28-133            
+  SignatureIcon.tsx                                             |       0 |        0 |       0 |       0 | 12-20             
+  useOpenPreview.ts                                             |       0 |      100 |       0 |       0 | 4-13              
+  useSpotlight.tsx                                              |       0 |        0 |       0 |       0 | 10-77             
+ app/components/DriveBreadcrumbs                                |       0 |        0 |       0 |       0 |                   
+  DriveBreadcrumbs.tsx                                          |       0 |        0 |       0 |       0 | 22-140            
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/FileBrowser                                     |       0 |        0 |       0 |       0 |                   
+  FileBrowser.tsx                                               |       0 |        0 |       0 |       0 | 39-98             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+ app/components/FileBrowser/GridView                            |       0 |        0 |       0 |       0 |                   
+  GridHeader.tsx                                                |       0 |        0 |       0 |       0 | 28-92             
+  GridView.tsx                                                  |       0 |        0 |       0 |       0 | 28-136            
+  ItemCell.tsx                                                  |       0 |        0 |       0 |       0 | 26-59             
+  utils.ts                                                      |       0 |        0 |       0 |       0 | 3-22              
+ app/components/FileBrowser/ListView                            |       0 |        0 |       0 |       0 |                   
+  ItemRow.tsx                                                   |       0 |        0 |       0 |       0 | 26-104            
+  ListHeader.tsx                                                |       0 |        0 |       0 |       0 | 30-140            
+  ListView.tsx                                                  |       0 |        0 |       0 |       0 | 41-197            
+ app/components/FileBrowser/ListView/Cells                      |       0 |        0 |       0 |       0 |                   
+  CheckboxCell.tsx                                              |       0 |        0 |       0 |       0 | 23-74             
+  ContextMenuCell.tsx                                           |       0 |        0 |       0 |       0 | 10-31             
+  DescriptiveTypeCell.tsx                                       |       0 |        0 |       0 |       0 | 10-13             
+  LocationCell.tsx                                              |       0 |        0 |       0 |       0 | 13-35             
+  MimeTypeCell.tsx                                              |       0 |      100 |       0 |       0 | 5-6               
+  NameCell.tsx                                                  |       0 |      100 |       0 |       0 | 3-4               
+  SizeCell.tsx                                                  |       0 |      100 |       0 |       0 | 9-11              
+  TimeCell.tsx                                                  |       0 |      100 |       0 |       0 | 9-10              
+  UserNameCell.tsx                                              |       0 |      100 |       0 |       0 | 3-6               
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/FileBrowser/hooks                               |       0 |        0 |       0 |       0 |                   
+  useContextMenuControls.ts                                     |       0 |        0 |       0 |       0 | 3-52              
+  useDragAndDrop.tsx                                            |       0 |        0 |       0 |       0 | 20-63             
+  useFileBrowserCheckbox.ts                                     |       0 |        0 |       0 |       0 | 5-36              
+  useFileBrowserItem.tsx                                        |       0 |        0 |       0 |       0 | 6-128             
+  useSelectionControls.ts                                       |       0 |        0 |       0 |       0 | 11-102            
+ app/components/FileBrowser/state                               |       0 |        0 |       0 |       0 |                   
+  index.tsx                                                     |       0 |      100 |       0 |       0 | 4-5               
+  useItemContextMenu.tsx                                        |       0 |        0 |       0 |       0 | 19-40             
+  useSelection.tsx                                              |       0 |        0 |       0 |       0 | 23-41             
+ app/components/FolderTree                                      |       0 |        0 |       0 |       0 |                   
+  ExpandableRow.tsx                                             |       0 |        0 |       0 |       0 | 24-72             
+  FloatingEllipsis.tsx                                          |       0 |      100 |       0 |       0 | 5-16              
+  FloatingEllipsisContext.ts                                    |       0 |      100 |       0 |       0 | 5-7               
+  FolderTree.tsx                                                |       0 |        0 |       0 |       0 | 19-54             
+ app/components/FolderTree/hooks                                |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useFloatingEllipsisContext.ts                                 |       0 |        0 |       0 |       0 | 15-58             
+  useFloatingEllipsisEventBasedUpdater.ts                       |       0 |        0 |       0 |       0 | 6-45              
+ app/components/PortalPreview                                   |       0 |        0 |       0 |       0 |                   
+  PortalPreview.tsx                                             |       0 |        0 |       0 |       0 | 25-92             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/ResolveLockedVolumes                            |       0 |        0 |       0 |       0 |                   
+  LockedVolumesBanner.tsx                                       |       0 |        0 |       0 |       0 | 17-70             
+ app/components/ResolveLockedVolumes/FileRecovery               |       0 |        0 |       0 |       0 |                   
+  FileRecoveryIcon.tsx                                          |       0 |        0 |       0 |       0 | 12-27             
+ app/components/ResolveLockedVolumes/KeyReactivation            |       0 |        0 |       0 |       0 |                   
+  interfaces.tsx                                                |       0 |        0 |       0 |       0 |                   
+  useResolveLockedSharesFlow.tsx                                |       0 |        0 |       0 |       0 | 18-69             
+ app/components/SharedPage                                      |       0 |        0 |       0 |       0 |                   
+  LoadingPage.tsx                                               |       0 |      100 |       0 |       0 | 8                 
+  SharedFilePage.tsx                                            |       0 |        0 |       0 |       0 | 24-29             
+  SharedPageLayout.tsx                                          |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+ app/components/SharedPage/Layout                               |       0 |        0 |       0 |       0 |                   
+  Breadcrumbs.tsx                                               |       0 |        0 |       0 |       0 | 18-57             
+  DownloadButton.tsx                                            |       0 |        0 |       0 |       0 | 34-89             
+  HeaderSecureLabel.tsx                                         |       0 |      100 |       0 |       0 | 9-10              
+  HeaderSize.tsx                                                |       0 |      100 |       0 |       0 | 6-9               
+  ReportAbuseButton.tsx                                         |       0 |      100 |       0 |       0 | 18-31             
+  SharedPageFooter.tsx                                          |       0 |        0 |       0 |       0 | 8-27              
+  SharedPageHeader.tsx                                          |       0 |        0 |       0 |       0 | 20-59             
+  SharedPageLayout.tsx                                          |       0 |        0 |       0 |       0 | 24-34             
+  useDownloadNotifications.tsx                                  |       0 |        0 |       0 |       0 | 16-64             
+ app/components/SharedPage/PasswordPage                         |       0 |      100 |       0 |       0 |                   
+  PasswordPage.tsx                                              |       0 |      100 |       0 |       0 | 18-26             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/SharedPage/SharedFolderPage                     |       0 |        0 |       0 |       0 |                   
+  CellComponents.tsx                                            |       0 |        0 |       0 |       0 | 14-159            
+  EmptyPlaceholder.tsx                                          |       0 |      100 |       0 |       0 | 9-10              
+  FileBrowser.tsx                                               |       0 |        0 |       0 |       0 | 32-61             
+  SharedFolderPage.tsx                                          |       0 |        0 |       0 |       0 | 53-198            
+ app/components/SharedPage/SharedPageError                      |       0 |      100 |       0 |       0 |                   
+  SharedPageError.tsx                                           |       0 |      100 |       0 |       0 | 12                
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/SharedPage/TransferModal                        |       0 |        0 |       0 |       0 |                   
+  ReportVirusButton.tsx                                         |       0 |      100 |       0 |       0 | 20-35             
+  SharedPageTransferManager.tsx                                 |       0 |        0 |       0 |       0 | 28-459            
+  Spinner.tsx                                                   |       0 |      100 |       0 |       0 | 3-4               
+ app/components/TransferManager                                 |       0 |        0 |       0 |       0 |                   
+  Buttons.tsx                                                   |       0 |        0 |       0 |       0 | 7-14              
+  DownloadLogsButton.tsx                                        |       0 |      100 |       0 |       0 | 6-8               
+  Header.tsx                                                    |       0 |        0 |       0 |       0 | 29-192            
+  HeaderButtons.tsx                                             |       0 |        0 |       0 |       0 | 28-106            
+  ProgressBar.tsx                                               |       0 |        0 |       0 |       0 | 18-19             
+  TransferControls.tsx                                          |       0 |        0 |       0 |       0 | 19-102            
+  TransferItem.tsx                                              |       0 |        0 |       0 |       0 | 31-49             
+  TransferManager.tsx                                           |       0 |        0 |       0 |       0 | 33-345            
+  TransferStateIndicator.tsx                                    |       0 |        0 |       0 |       0 | 21-95             
+  interfaces.ts                                                 |       0 |        0 |       0 |       0 |                   
+  transfer.ts                                                   |       0 |        0 |       0 |       0 | 36-118            
+  useTransferControls.tsx                                       |       0 |        0 |       0 |       0 | 13-110            
+ app/components/drawer                                          |       0 |      100 |       0 |       0 |                   
+  DriveQuickSettings.tsx                                        |       0 |      100 |       0 |       0 | 11-14             
+ app/components/layout                                          |       0 |        0 |       0 |       0 |                   
+  DriveEmptyView.tsx                                            |       0 |        0 |       0 |       0 | 17-59             
+  DriveHeader.tsx                                               |       0 |        0 |       0 |       0 | 27-62             
+  DriveWindow.tsx                                               |       0 |        0 |       0 |       0 | 39-95             
+  drawerPermissions.ts                                          |       0 |      100 |       0 |       0 | 3-4               
+ app/components/layout/search                                   |       0 |        0 |       0 |       0 |                   
+  ClearSearchDataButton.tsx                                     |       0 |        0 |       0 |       0 | 12-28             
+  SearchDropdown.tsx                                            |       0 |        0 |       0 |       0 | 21-27             
+  SearchField.tsx                                               |       0 |        0 |       0 |       0 | 20-145            
+  SearchIndexingProgress.tsx                                    |       0 |        0 |       0 |       0 | 10-43             
+  useSearchParams.tsx                                           |       0 |      100 |       0 |       0 | 7-16              
+ app/components/layout/sidebar/ActionMenu                       |       0 |        0 |       0 |       0 |                   
+  ActionMenuButton.tsx                                          |       0 |        0 |       0 |       0 | 28-72             
+ app/components/layout/sidebar/ActionMenu/ActionMenuButtons     |       0 |      100 |       0 |       0 |                   
+  CreateNewFolderButton.tsx                                     |       0 |      100 |       0 |       0 | 8-9               
+  UploadFileButton.tsx                                          |       0 |      100 |       0 |       0 | 9-10              
+  UploadFolderButton.tsx                                        |       0 |      100 |       0 |       0 | 9-10              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/layout/sidebar/DriveSidebar                     |       0 |        0 |       0 |       0 |                   
+  DriveSidebar.tsx                                              |       0 |        0 |       0 |       0 | 23-44             
+  DriveSidebarFooter.tsx                                        |       0 |      100 |       0 |       0 | 5                 
+  DriveSidebarList.tsx                                          |       0 |        0 |       0 |       0 | 19-34             
+  DriveSidebarListItem.tsx                                      |       0 |        0 |       0 |       0 | 29-62             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  utils.ts                                                      |       0 |        0 |       0 |       0 | 1-2               
+ app/components/layout/sidebar/DriveSidebar/DriveSidebarDevices |       0 |        0 |       0 |       0 |                   
+  SidebarDeviceItem.tsx                                         |       0 |        0 |       0 |       0 | 11-44             
+  SidebarDevices.tsx                                            |       0 |      100 |       0 |       0 | 6-13              
+  SidebarDevicesList.tsx                                        |       0 |        0 |       0 |       0 | 4-29              
+  SidebarDevicesRoot.tsx                                        |       0 |        0 |       0 |       0 | 17-35             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/layout/sidebar/DriveSidebar/DriveSidebarFolders |       0 |        0 |       0 |       0 |                   
+  DriveSidebarFolders.tsx                                       |       0 |      100 |       0 |       0 | 15-21             
+  DriveSidebarFoldersRoot.tsx                                   |       0 |        0 |       0 |       0 | 20-40             
+  DriveSidebarSubfolder.tsx                                     |       0 |        0 |       0 |       0 | 23-39             
+  DriveSidebarSubfolders.tsx                                    |       0 |        0 |       0 |       0 | 14-33             
+  ExpandButton.tsx                                              |       0 |        0 |       0 |       0 | 15-21             
+  useSubfolderLoading.ts                                        |       0 |        0 |       0 |       0 | 6-21              
+ app/components/modals                                          |       0 |        0 |       0 |       0 |                   
+  ConflictModal.tsx                                             |       0 |        0 |       0 |       0 | 55-201            
+  CreateFileModal.tsx                                           |       0 |        0 |       0 |       0 | 28-101            
+  CreateFolderModal.tsx                                         |       0 |        0 |       0 |       0 | 29-107            
+  DeleteLockedVolumesConfirmModal.tsx                           |       0 |        0 |       0 |       0 | 26-84             
+  DetailsModal.tsx                                              |       0 |        0 |       0 |       0 | 32-350            
+  DownloadIsTooBigModal.tsx                                     |       0 |        0 |       0 |       0 | 19-57             
+  DriveOnboardingModal.tsx                                      |       0 |        0 |       0 |       0 | 27-103            
+  DriveStartupModals.tsx                                        |       0 |        0 |       0 |       0 | 14-42             
+  FileThresholdModal.tsx                                        |       0 |        0 |       0 |       0 | 14-62             
+  FilesDetailsModal.tsx                                         |       0 |        0 |       0 |       0 | 26-76             
+  KeyReactivationModal.tsx                                      |       0 |        0 |       0 |       0 | 27-125            
+  ModalContentLoader.tsx                                        |       0 |      100 |       0 |       0 | 5-6               
+  RenameModal.tsx                                               |       0 |        0 |       0 |       0 | 29-116            
+  SignatureIssueModal.tsx                                       |       0 |        0 |       0 |       0 | 44-132            
+  UnlockDriveConfirmationDialog.tsx                             |       0 |        0 |       0 |       0 | 21-63             
+ app/components/modals/FilesRecoveryModal                       |       0 |      100 |       0 |       0 |                   
+  FilesRecoveryModal.tsx                                        |       0 |      100 |       0 |       0 | 9-38              
+  FilesRecoveryState.tsx                                        |       0 |      100 |       0 |       0 | 13-16             
+ app/components/modals/MoveToFolderModal                        |       0 |        0 |       0 |       0 |                   
+  EmptyFileTreePlaceholder.tsx                                  |       0 |      100 |       0 |       0 | 10-12             
+  ModalContent.tsx                                              |       0 |        0 |       0 |       0 | 18-76             
+  MoveToFolderModal.tsx                                         |       0 |        0 |       0 |       0 | 21-142            
+ app/components/modals/RemoveDeviceModal                        |       0 |        0 |       0 |       0 |                   
+  RemoveDeviceModal.tsx                                         |       0 |        0 |       0 |       0 | 29-106            
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/modals/RenameDeviceModal                        |       0 |        0 |       0 |       0 |                   
+  RenameDeviceModal.tsx                                         |       0 |        0 |       0 |       0 | 29-97             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/modals/ReportAbuseModal                         |       0 |        0 |       0 |       0 |                   
+  FileCard.tsx                                                  |       0 |        0 |       0 |       0 | 14-15             
+  ReportAbuseModal.tsx                                          |       0 |        0 |       0 |       0 | 30-190            
+  types.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/modals/RevisionsModal                           |       0 |        0 |       0 |       0 |                   
+  RevisionsModal.tsx                                            |       0 |        0 |       0 |       0 | 27-86             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/modals/SelectLinkToShareModal                   |       0 |        0 |       0 |       0 |                   
+  EmptyFileTreePlaceholder.tsx                                  |       0 |      100 |       0 |       0 | 5-8               
+  ModalContent.tsx                                              |       0 |        0 |       0 |       0 | 10-37             
+  SelectLinkToShareModal.tsx                                    |       0 |        0 |       0 |       0 | 19-80             
+ app/components/modals/ShareLinkModal                           |       0 |        0 |       0 |       0 |                   
+  DateTime.tsx                                                  |       0 |        0 |       0 |       0 | 12-13             
+  ErrorState.tsx                                                |       0 |      100 |       0 |       0 | 13                
+  ExpirationTimeDatePicker.tsx                                  |       0 |        0 |       0 |       0 | 17-79             
+  GeneratedLinkState.tsx                                        |       0 |        0 |       0 |       0 |                   
+  ShareLinkModal.tsx                                            |       0 |        0 |       0 |       0 | 49-143            
+  ShareLinkSettingsModal.tsx                                    |       0 |        0 |       0 |       0 | 42-227            
+  ShareWithAnyone.tsx                                           |       0 |        0 |       0 |       0 | 16-36             
+ app/components/modals/ShareLinkModal/DirectSharing             |       0 |        0 |       0 |       0 |                   
+  DirectSharing.tsx                                             |       0 |        0 |       0 |       0 | 20-56             
+  DirectSharingAutocomplete.tsx                                 |       0 |        0 |       0 |       0 | 34-127            
+  DirectSharingListInvitation.tsx                               |       0 |        0 |       0 |       0 | 28-61             
+  DirectSharingListing.tsx                                      |       0 |        0 |       0 |       0 | 24-135            
+  MemberPermissionsSelect.tsx                                   |       0 |        0 |       0 |       0 | 28-85             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useShareInvitees.ts                                           |       0 |        0 |       0 |       0 | 23-145            
+ app/components/modals/ShareLinkModal/DirectSharing/helpers     |       0 |        0 |       0 |       0 |                   
+  ShareInviteeValidationError.ts                                |       0 |        0 |       0 |       0 | 14-42             
+  endsWithProtonInternalDomain.ts                               |       0 |      100 |       0 |       0 | 2-6               
+  getAddressInputItemAttributes.tsx                             |       0 |        0 |       0 |       0 | 11-31             
+  getGroupsWithContactsMap.ts                                   |       0 |        0 |       0 |       0 | 8-20              
+  transformers.ts                                               |       0 |      100 |       0 |       0 | 5-14              
+ app/components/modals/ShareLinkModal/_legacy                   |       0 |        0 |       0 |       0 |                   
+  DateTimeLEGACY.tsx                                            |       0 |        0 |       0 |       0 | 12-13             
+  ErrorStateLEGACY.tsx                                          |       0 |      100 |       0 |       0 | 13                
+  ExpirationTimeDatePickerLEGACY.tsx                            |       0 |        0 |       0 |       0 | 15-77             
+  GeneratedLinkStateLEGACY.tsx                                  |       0 |        0 |       0 |       0 | 28-293            
+  ShareLinkModalLEGACY.tsx                                      |       0 |        0 |       0 |       0 | 25-132            
+ app/components/modals/UpsellFloatingModal                      |       0 |        0 |       0 |       0 |                   
+  UpsellFloatingModal.tsx                                       |       0 |        0 |       0 |       0 | 28-139            
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/onboarding                                      |       0 |        0 |       0 |       0 |                   
+  GiftFloatingButton.tsx                                        |       0 |        0 |       0 |       0 | 33-286            
+  useChecklist.ts                                               |       0 |        0 |       0 |       0 | 11-40             
+ app/components/revisions                                       |       0 |        0 |       0 |       0 |                   
+  RevisionList.tsx                                              |       0 |        0 |       0 |       0 | 13-36             
+  RevisionListItem.tsx                                          |       0 |        0 |       0 |       0 | 14-61             
+  RevisionsItemContextMenu.tsx                                  |       0 |        0 |       0 |       0 | 34-50             
+  RevisionsProvider.tsx                                         |       0 |        0 |       0 |       0 | 31-196            
+  getCategorizedRevisions.ts                                    |       0 |        0 |       0 |       0 | 15-90             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/revisions/ContextMenuButtons                    |       0 |      100 |       0 |       0 |                   
+  RevisionDeleteButton.tsx                                      |       0 |      100 |       0 |       0 | 13-19             
+  RevisionDetailsButton.tsx                                     |       0 |      100 |       0 |       0 | 14-20             
+  RevisionDownloadButton.tsx                                    |       0 |      100 |       0 |       0 | 13-19             
+  RevisionPreviewButton.tsx                                     |       0 |      100 |       0 |       0 | 13-19             
+  RevisionRestoreButton.tsx                                     |       0 |      100 |       0 |       0 | 13-19             
+  RevisionSaveAsCopyButton.tsx                                  |       0 |      100 |       0 |       0 | 9-10              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections                                        |       0 |        0 |       0 |       0 |                   
+  SortDropdown.tsx                                              |       0 |      100 |       0 |       0 | 29-88             
+  helpers.tsx                                                   |       0 |        0 |       0 |       0 | 8-238             
+  useIsEditEnabled.tsx                                          |       0 |        0 |       0 |       0 | 5-6               
+ app/components/sections/ContextMenu                            |       0 |        0 |       0 |       0 |                   
+  ContextMenuButton.tsx                                         |       0 |      100 |       0 |       0 | 13-22             
+  ItemContextMenu.tsx                                           |       0 |        0 |       0 |       0 | 8-21              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/ContextMenu/buttons                    |       0 |        0 |       0 |       0 |                   
+  CopyLinkButton.tsx                                            |       0 |        0 |       0 |       0 | 12-24             
+  DetailsButton.tsx                                             |       0 |        0 |       0 |       0 | 15-25             
+  DownloadButton.tsx                                            |       0 |      100 |       0 |       0 | 11-23             
+  PreviewButton.tsx                                             |       0 |      100 |       0 |       0 | 12-20             
+  RenameButton.tsx                                              |       0 |      100 |       0 |       0 | 13-19             
+  RevisionsButton.tsx                                           |       0 |      100 |       0 |       0 | 15-21             
+  ShareFileButton.tsx                                           |       0 |        0 |       0 |       0 | 15-21             
+  ShareLinkButton.tsx                                           |       0 |        0 |       0 |       0 | 15-21             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/ContextMenu/buttons/_legacy            |       0 |        0 |       0 |       0 |                   
+  ShareFileButtonLEGACY.tsx                                     |       0 |      100 |       0 |       0 | 14-20             
+  ShareLinkButtonLEGACY.tsx                                     |       0 |        0 |       0 |       0 | 14-22             
+ app/components/sections/Devices                                |       0 |        0 |       0 |       0 |                   
+  Devices.tsx                                                   |       0 |        0 |       0 |       0 | 26-79             
+  DevicesView.tsx                                               |       0 |      100 |       0 |       0 | 11-17             
+  EmptyDevices.tsx                                              |       0 |        0 |       0 |       0 | 14-32             
+  constants.ts                                                  |       0 |      100 |       0 |       0 | 3                 
+  headerCells.tsx                                               |       0 |      100 |       0 |       0 | 3-13              
+ app/components/sections/Devices/ContextMenu                    |       0 |        0 |       0 |       0 |                   
+  DevicesContextMenu.tsx                                        |       0 |        0 |       0 |       0 | 18-26             
+ app/components/sections/Devices/ContextMenu/buttons            |       0 |      100 |       0 |       0 |                   
+  RemoveButton.tsx                                              |       0 |      100 |       0 |       0 | 13-19             
+  RenameButton.tsx                                              |       0 |      100 |       0 |       0 | 13-19             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Devices/Toolbar                        |       0 |        0 |       0 |       0 |                   
+  DevicesToolbar.tsx                                            |       0 |        0 |       0 |       0 | 16-43             
+ app/components/sections/Devices/Toolbar/buttons                |       0 |        0 |       0 |       0 |                   
+  RemoveButton.tsx                                              |       0 |        0 |       0 |       0 | 13-27             
+  RenameButton.tsx                                              |       0 |        0 |       0 |       0 | 13-27             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Drive                                  |       0 |        0 |       0 |       0 |                   
+  Drive.tsx                                                     |       0 |        0 |       0 |       0 | 50-163            
+  DriveContextMenu.tsx                                          |       0 |        0 |       0 |       0 | 46-67             
+  DriveToolbar.tsx                                              |       0 |        0 |       0 |       0 | 42-120            
+  DriveView.tsx                                                 |       0 |        0 |       0 |       0 | 20-54             
+  EmptyDeviceRoot.tsx                                           |       0 |      100 |       0 |       0 | 11-12             
+  EmptyFolder.tsx                                               |       0 |        0 |       0 |       0 | 13-44             
+  FolderContextMenu.tsx                                         |       0 |        0 |       0 |       0 | 34-84             
+ app/components/sections/Drive/ContextMenuButtons               |       0 |      100 |       0 |       0 |                   
+  CreateNewFileButton.tsx                                       |       0 |      100 |       0 |       0 | 10-11             
+  CreateNewFolderButton.tsx                                     |       0 |      100 |       0 |       0 | 10-11             
+  MoveToFolderButton.tsx                                        |       0 |      100 |       0 |       0 | 14-20             
+  MoveToTrashButton.tsx                                         |       0 |      100 |       0 |       0 | 11-19             
+  UploadFileButton.tsx                                          |       0 |      100 |       0 |       0 | 10-11             
+  UploadFolderButton.tsx                                        |       0 |      100 |       0 |       0 | 10-11             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Drive/ToolbarButtons                   |       0 |        0 |       0 |       0 |                   
+  ActionsDropdown.tsx                                           |       0 |        0 |       0 |       0 | 31-127            
+  CreateNewFileButton.tsx                                       |       0 |      100 |       0 |       0 | 7-15              
+  CreateNewFolderButton.tsx                                     |       0 |      100 |       0 |       0 | 7-15              
+  MoveToFolderButton.tsx                                        |       0 |      100 |       0 |       0 | 13-21             
+  MoveToTrashButton.tsx                                         |       0 |      100 |       0 |       0 | 12-21             
+  UploadFileButton.tsx                                          |       0 |      100 |       0 |       0 | 8-16              
+  UploadFolderButton.tsx                                        |       0 |      100 |       0 |       0 | 8-16              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/FileBrowser                            |       0 |        0 |       0 |       0 |                   
+  CopyLinkIcon.tsx                                              |       0 |        0 |       0 |       0 | 19-55             
+  GridViewItem.tsx                                              |       0 |        0 |       0 |       0 | 15-72             
+  GridViewItemDevice.tsx                                        |       0 |      100 |       0 |       0 | 8-10              
+  GridViewItemLink.tsx                                          |       0 |        0 |       0 |       0 | 11-27             
+  contentCells.tsx                                              |       0 |        0 |       0 |       0 | 20-195            
+  headerCells.tsx                                               |       0 |      100 |       0 |       0 | 5-95              
+  utils.tsx                                                     |       0 |        0 |       0 |       0 | 3-14              
+ app/components/sections/Photos                                 |       0 |        0 |       0 |       0 |                   
+  EmptyPhotos.tsx                                               |       0 |      100 |       0 |       0 | 17-18             
+  PhotosGrid.tsx                                                |       0 |        0 |       0 |       0 | 23-199            
+  PhotosView.tsx                                                |       0 |        0 |       0 |       0 | 22-181            
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Photos/components                      |       0 |      100 |       0 |       0 |                   
+  PhotosClearSelectionButton.tsx                                |       0 |      100 |       0 |       0 | 11-12             
+ app/components/sections/Photos/components/PhotosRecoveryBanner |       0 |        0 |       0 |       0 |                   
+  PhotosRecoveryBanner.tsx                                      |       0 |        0 |       0 |       0 | 13-81             
+ app/components/sections/Photos/grid                            |       0 |        0 |       0 |       0 |                   
+  PhotosCard.tsx                                                |       0 |        0 |       0 |       0 | 32-124            
+  PhotosGroup.tsx                                               |       0 |        0 |       0 |       0 | 17-33             
+  formatVideoDuration.ts                                        |       0 |        0 |       0 |       0 | 3-24              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Photos/hooks                           |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  usePhotosSelection.ts                                         |       0 |        0 |       0 |       0 | 9-132             
+ app/components/sections/Photos/toolbar                         |       0 |        0 |       0 |       0 |                   
+  PhotosDetailsButton.tsx                                       |       0 |        0 |       0 |       0 | 13-35             
+  PhotosDownloadButton.tsx                                      |       0 |        0 |       0 |       0 | 17-26             
+  PhotosPreviewButton.tsx                                       |       0 |      100 |       0 |       0 | 11-12             
+  PhotosShareLinkButton.tsx                                     |       0 |        0 |       0 |       0 | 14-46             
+  PhotosToolbar.tsx                                             |       0 |        0 |       0 |       0 | 23-34             
+  PhotosTrashButton.tsx                                         |       0 |      100 |       0 |       0 | 12-21             
+  PhotosUploadButton.tsx                                        |       0 |      100 |       0 |       0 | 14-17             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Search                                 |       0 |        0 |       0 |       0 |                   
+  NoSearchResultsView.tsx                                       |       0 |        0 |       0 |       0 | 12-50             
+  Search.tsx                                                    |       0 |        0 |       0 |       0 | 43-134            
+  SearchItemContextMenu.tsx                                     |       0 |        0 |       0 |       0 | 16-20             
+  SearchView.tsx                                                |       0 |        0 |       0 |       0 | 18-27             
+ app/components/sections/Search/ContextMenuButtons              |       0 |      100 |       0 |       0 |                   
+  GoToParent.tsx                                                |       0 |      100 |       0 |       0 | 13-20             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/SharedLinks                            |       0 |        0 |       0 |       0 |                   
+  EmptyShared.tsx                                               |       0 |        0 |       0 |       0 | 16-26             
+  ShareFileSidebarButton.tsx                                    |       0 |        0 |       0 |       0 | 13-24             
+  SharedLinks.tsx                                               |       0 |        0 |       0 |       0 | 48-154            
+  SharedLinksItemContextMenu.tsx                                |       0 |        0 |       0 |       0 | 24-41             
+  SharedLinksToolbar.tsx                                        |       0 |        0 |       0 |       0 | 26-63             
+  SharedLinksView.tsx                                           |       0 |      100 |       0 |       0 | 14-22             
+ app/components/sections/SharedLinks/ContextMenuButtons         |       0 |      100 |       0 |       0 |                   
+  StopSharingButton.tsx                                         |       0 |      100 |       0 |       0 | 12-18             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/SharedLinks/ToolbarButtons             |       0 |        0 |       0 |       0 |                   
+  StopSharingButton.tsx                                         |       0 |        0 |       0 |       0 | 12-24             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/SharedWithMe                           |       0 |        0 |       0 |       0 |                   
+  EmptySharedWithMe.tsx                                         |       0 |      100 |       0 |       0 | 7-8               
+  SharedWithMe.tsx                                              |       0 |        0 |       0 |       0 | 52-148            
+  SharedWithMeItemContextMenu.tsx                               |       0 |        0 |       0 |       0 | 22-34             
+  SharedWithMeToolbar.tsx                                       |       0 |      100 |       0 |       0 | 16-35             
+  SharedWithMeView.tsx                                          |       0 |      100 |       0 |       0 | 14-22             
+ app/components/sections/SharedWithMe/ContextMenuButtons        |       0 |      100 |       0 |       0 |                   
+  RemoveMeButton.tsx                                            |       0 |      100 |       0 |       0 | 13-34             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/ToolbarButtons                         |       0 |        0 |       0 |       0 |                   
+  DesktopDownloadDropdown.tsx                                   |       0 |        0 |       0 |       0 | 20-51             
+  DetailsButton.tsx                                             |       0 |        0 |       0 |       0 | 14-34             
+  DownloadButton.tsx                                            |       0 |        0 |       0 |       0 | 13-29             
+  LayoutButton.tsx                                              |       0 |        0 |       0 |       0 | 8-24              
+  PreviewButton.tsx                                             |       0 |        0 |       0 |       0 | 14-32             
+  RenameButton.tsx                                              |       0 |        0 |       0 |       0 | 13-25             
+  ShareButton.tsx                                               |       0 |      100 |       0 |       0 | 12-22             
+  ShareLinkButton.tsx                                           |       0 |        0 |       0 |       0 | 13-27             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  utils.ts                                                      |       0 |      100 |       0 |       0 | 2-10              
+ app/components/sections/ToolbarButtons/_legacy                 |       0 |        0 |       0 |       0 |                   
+  ShareLinkButtonLEGACY.tsx                                     |       0 |        0 |       0 |       0 | 13-34             
+ app/components/sections/ToolbarRow                             |       0 |      100 |       0 |       0 |                   
+  ToolbarRow.tsx                                                |       0 |      100 |       0 |       0 | 10-11             
+ app/components/sections/Trash                                  |       0 |        0 |       0 |       0 |                   
+  EmptyTrash.tsx                                                |       0 |      100 |       0 |       0 | 11-12             
+  Trash.tsx                                                     |       0 |        0 |       0 |       0 | 41-141            
+  TrashItemContextMenu.tsx                                      |       0 |        0 |       0 |       0 | 21-32             
+  TrashToolbar.tsx                                              |       0 |        0 |       0 |       0 | 16-42             
+  TrashView.tsx                                                 |       0 |      100 |       0 |       0 | 15-23             
+ app/components/sections/Trash/ContextMenuButtons               |       0 |      100 |       0 |       0 |                   
+  DeletePermanentlyButton.tsx                                   |       0 |      100 |       0 |       0 | 12-18             
+  RestoreFromTrashButton.tsx                                    |       0 |      100 |       0 |       0 | 12-18             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Trash/EmptyTrashNotification           |       0 |      100 |       0 |       0 |                   
+  EmptyTrashNotification.tsx                                    |       0 |      100 |       0 |       0 | 12-19             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sections/Trash/ToolbarButtons                   |       0 |      100 |       0 |       0 |                   
+  DeletePermanentlyButton.tsx                                   |       0 |      100 |       0 |       0 | 11-19             
+  RestoreFromTrashButton.tsx                                    |       0 |      100 |       0 |       0 | 12-21             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/components/sharing                                         |       0 |      100 |       0 |       0 |                   
+  ShareInvitationContextMenu.tsx                                |       0 |      100 |       0 |       0 | 19                
+ app/components/sharing/ContextMenuButtons                      |       0 |      100 |       0 |       0 |                   
+  CopyShareInvitationLinkButton.tsx                             |       0 |      100 |       0 |       0 | 15-24             
+ app/components/uploads/UploadDragDrop                          |       0 |        0 |       0 |       0 |                   
+  UploadDragDrop.tsx                                            |       0 |        0 |       0 |       0 | 23-194            
+ app/containers                                                 |       0 |        0 |       0 |       0 |                   
+  DevicesContainer.tsx                                          |       0 |      100 |       0 |       0 | 5-6               
+  DriveDummyContainer.tsx                                       |       0 |        0 |       0 |       0 |                   
+  FolderContainer.tsx                                           |       0 |        0 |       0 |       0 | 16-96             
+  MainContainer.tsx                                             |       0 |        0 |       0 |       0 | 45-134            
+  PhotosContainer.tsx                                           |       0 |      100 |       0 |       0 | 6-7               
+  PreviewContainer.tsx                                          |       0 |        0 |       0 |       0 | 22-199            
+  PublicSharedLinkContainer.tsx                                 |       0 |        0 |       0 |       0 | 14-94             
+  SearchContainer.tsx                                           |       0 |      100 |       0 |       0 | 3-4               
+  SharedLinksContainer.tsx                                      |       0 |      100 |       0 |       0 | 5-6               
+  SharedWithMeContainer.tsx                                     |       0 |      100 |       0 |       0 | 5-6               
+  TrashContainer.tsx                                            |       0 |      100 |       0 |       0 | 5-6               
+  VolumeLinkContainer.tsx                                       |       0 |        0 |       0 |       0 | 13-61             
+ app/hooks/drive                                                |       0 |        0 |       0 |       0 |                   
+  useActiveShare.tsx                                            |       0 |        0 |       0 |       0 | 13-60             
+  useDebug.tsx                                                  |       0 |      100 |       0 |       0 | 6-8               
+  useDesktopDownloads.tsx                                       |       0 |        0 |       0 |       0 | 16-55             
+  useDriveDragMove.tsx                                          |       0 |        0 |       0 |       0 | 20-119            
+  useFolderContainerTitle.tsx                                   |       0 |        0 |       0 |       0 | 4-12              
+  useNavigate.ts                                                |       0 |      100 |       0 |       0 | 13-74             
+  usePublicToken.tsx                                            |       0 |      100 |       0 |       0 | 5-9               
+ app/hooks/util                                                 |       0 |        0 |       0 |       0 |                   
+  useOnScrollEnd.ts                                             |       0 |        0 |       0 |       0 | 5-37              
+  useQueuedFunction.ts                                          |       0 |        0 |       0 |       0 | 9-61              
+  useShiftKey.ts                                                |       0 |        0 |       0 |       0 | 3-26              
+ app/redux-store                                                |       0 |        0 |       0 |       0 |                   
+  hooks.ts                                                      |       0 |      100 |     100 |       0 | 7-8               
+  listener.ts                                                   |       0 |      100 |       0 |       0 | 5-6               
+  rootReducer.ts                                                |       0 |      100 |     100 |       0 | 5                 
+  store.ts                                                      |       0 |        0 |       0 |       0 | 11-46             
+  thunk.ts                                                      |       0 |      100 |     100 |       0 | 5                 
+ app/store                                                      |       0 |      100 |       0 |       0 |                   
+  DriveProvider.tsx                                             |       0 |      100 |       0 |       0 | 21-47             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/store/_actions                                             |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useActions.tsx                                                |       0 |        0 |       0 |       0 | 29-454            
+  useListNotifications.tsx                                      |       0 |        0 |       0 |       0 | 9-210             
+  useSharedWithMeActions.tsx                                    |       0 |      100 |       0 |       0 | 9-37              
+ app/store/_api                                                 |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  transformers.ts                                               |       0 |        0 |       0 |       0 | 31-283            
+  useDebouncedRequest.ts                                        |       0 |      100 |       0 |       0 | 6-19              
+  usePublicAuth.ts                                              |       0 |        0 |       0 |       0 | 21-115            
+  usePublicSession.tsx                                          |       0 |        0 |       0 |       0 | 15-146            
+ app/store/_crypto                                              |       0 |        0 |       0 |       0 |                   
+  driveCrypto.ts                                                |       0 |        0 |       0 |       0 | 19-135            
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useDriveCrypto.ts                                             |       0 |        0 |       0 |       0 | 22-116            
+ app/store/_devices                                             |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useDevicesActions.ts                                          |       0 |        0 |       0 |       0 | 10-41             
+  useDevicesApi.ts                                              |       0 |        0 |       0 |       0 | 8-26              
+  useDevicesListing.tsx                                         |       0 |        0 |       0 |       0 | 16-152            
+ app/store/_downloads                                           |       0 |        0 |       0 |       0 |                   
+  ThumbnailDownloadProvider.tsx                                 |       0 |        0 |       0 |       0 | 27-149            
+  constants.ts                                                  |       0 |      100 |     100 |       0 | 5-49              
+  index.tsx                                                     |       0 |        0 |       0 |       0 | 14-67             
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useDownload.ts                                                |       0 |        0 |       0 |       0 | 38-299            
+  useDownloadScanFeatureFlag.ts                                 |       0 |        0 |       0 |       0 | 3-8               
+  usePublicDownload.ts                                          |       0 |        0 |       0 |       0 | 27-151            
+ app/store/_downloads/DownloadProvider                          |       0 |        0 |       0 |       0 |                   
+  DownloadProvider.tsx                                          |       0 |        0 |       0 |       0 | 24-79             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |      100 |       0 |       0 | 58-59             
+  useDownloadControl.ts                                         |       0 |        0 |       0 |       0 | 25-162            
+  useDownloadProvider.tsx                                       |       0 |        0 |       0 |       0 | 31-198            
+  useDownloadQueue.ts                                           |       0 |        0 |       0 |       0 | 24-208            
+  useDownloadScanIssue.tsx                                      |       0 |        0 |       0 |       0 | 9-36              
+  useDownloadSignatureIssue.tsx                                 |       0 |        0 |       0 |       0 | 13-161            
+ app/store/_downloads/download                                  |       0 |        0 |       0 |       0 |                   
+  archiveGenerator.ts                                           |       0 |        0 |       0 |       0 | 11-119            
+  concurrentIterator.ts                                         |       0 |        0 |       0 |       0 | 24-100            
+  download.ts                                                   |       0 |        0 |       0 |       0 | 21-135            
+  downloadBlock.ts                                              |       0 |        0 |       0 |       0 | 18-94             
+  downloadBlocks.ts                                             |       0 |        0 |       0 |       0 | 73-438            
+  downloadLinkFile.ts                                           |       0 |        0 |       0 |       0 | 29-158            
+  downloadLinkFolder.ts                                         |       0 |        0 |       0 |       0 | 39-205            
+  downloadLinks.ts                                              |       0 |        0 |       0 |       0 | 27-115            
+  downloadThumbnail.ts                                          |       0 |      100 |       0 |       0 | 14-37             
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+ app/store/_downloads/fileSaver                                 |       0 |        0 |       0 |       0 |                   
+  downloadSW.ts                                                 |       0 |        0 |       0 |       0 | 10-158            
+  fileSaver.ts                                                  |       0 |        0 |       0 |       0 | 19-89             
+ app/store/_events                                              |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useDriveEventManager.tsx                                      |       0 |        0 |       0 |       0 | 14-252            
+ app/store/_links                                               |       0 |        0 |       0 |       0 |                   
+  extendedAttributes.ts                                         |       0 |        0 |       0 |       0 | 77-345            
+  index.tsx                                                     |       0 |      100 |       0 |       0 | 17-27             
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  link.ts                                                       |       0 |        0 |       0 |       0 | 6-94              
+  useLink.ts                                                    |       0 |        0 |       0 |       0 | 29-730            
+  useLinkActions.ts                                             |       0 |        0 |       0 |       0 | 28-240            
+  useLinks.ts                                                   |       0 |        0 |       0 |       0 | 10-57             
+  useLinksActions.ts                                            |       0 |        0 |       0 |       0 | 29-452            
+  useLinksKeys.tsx                                              |       0 |        0 |       0 |       0 | 35-111            
+  useLinksQueue.ts                                              |       0 |        0 |       0 |       0 | 13-87             
+  useLinksState.tsx                                             |       0 |        0 |       0 |       0 | 39-615            
+  validation.ts                                                 |       0 |        0 |       0 |       0 | 6-33              
+ app/store/_links/useLinksListing                               |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useLinksListing.tsx                                           |       0 |        0 |       0 |       0 | 71-352            
+  useLinksListingHelpers.tsx                                    |       0 |        0 |       0 |       0 | 48-300            
+  usePublicLinksListing.tsx                                     |       0 |        0 |       0 |       0 | 31-146            
+  useSharedLinksListing.tsx                                     |       0 |        0 |       0 |       0 | 26-165            
+  useSharedWithMeLinksListing.tsx                               |       0 |        0 |       0 |       0 | 26-148            
+  useTrashedLinksListing.tsx                                    |       0 |        0 |       0 |       0 | 26-168            
+ app/store/_photos                                              |       0 |        0 |       0 |       0 |                   
+  PhotosProvider.tsx                                            |       0 |        0 |       0 |       0 | 10-99             
+  exifInfo.ts                                                   |       0 |        0 |       0 |       0 | 10-80             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  usePhotosFeatureFlag.ts                                       |       0 |      100 |       0 |       0 | 3                 
+  usePhotosRecovery.ts                                          |       0 |        0 |       0 |       0 | 25-215            
+ app/store/_photos/utils                                        |       0 |        0 |       0 |       0 |                   
+  convertSubjectAreaToSubjectCoordinates.ts                     |       0 |        0 |       0 |       0 | 1-20              
+  formatExifDateTime.ts                                         |       0 |        0 |       0 |       0 | 1-12              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  isDecryptedLink.ts                                            |       0 |        0 |       0 |       0 | 4-5               
+  isPhotoGroup.ts                                               |       0 |      100 |       0 |       0 | 3                 
+  sortWithCategories.ts                                         |       0 |        0 |       0 |       0 | 7-45              
+ app/store/_revisions                                           |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useRevisions.ts                                               |       0 |        0 |       0 |       0 | 10-53             
+ app/store/_search                                              |       0 |        0 |       0 |       0 |                   
+  constants.ts                                                  |       0 |      100 |     100 |       0 | 1-2               
+  index.tsx                                                     |       0 |      100 |       0 |       0 | 9                 
+  migration.ts                                                  |       0 |        0 |       0 |       0 | 32-142            
+  types.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useESCallbacks.tsx                                            |       0 |        0 |       0 |       0 | 37-164            
+  useSearchLibrary.tsx                                          |       0 |        0 |       0 |       0 | 25-161            
+  useSearchResults.tsx                                          |       0 |        0 |       0 |       0 | 7-49              
+  utils.ts                                                      |       0 |        0 |       0 |       0 | 8-70              
+ app/store/_search/indexing                                     |       0 |        0 |       0 |       0 |                   
+  LinkDecryptionBuffer.ts                                       |       0 |        0 |       0 |       0 | 14-86             
+  LinkMapLoader.ts                                              |       0 |        0 |       0 |       0 | 9-65              
+  createLinkGenerator.ts                                        |       0 |      100 |       0 |       0 | 8-23              
+  fetchItemsMetadataPage.ts                                     |       0 |        0 |       0 |       0 | 10-51             
+  processEvent.ts                                               |       0 |        0 |       0 |       0 | 21-70             
+  useFetchShareMap.ts                                           |       0 |      100 |       0 |       0 | 18-21             
+  useKeysCache.ts                                               |       0 |        0 |       0 |       0 | 12-54             
+ app/store/_settings                                            |       0 |        0 |       0 |       0 |                   
+  index.tsx                                                     |       0 |        0 |       0 |       0 |                   
+  sorting.ts                                                    |       0 |        0 |       0 |       0 | 11-30             
+  useUserSettings.tsx                                           |       0 |        0 |       0 |       0 | 16-96             
+ app/store/_shares                                              |       0 |        0 |       0 |       0 |                   
+  index.tsx                                                     |       0 |      100 |       0 |       0 | 19                
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  shareUrl.ts                                                   |       0 |        0 |       0 |       0 | 7-44              
+  useCollaborativeSharingFeatureFlag.ts                         |       0 |      100 |       0 |       0 | 3                 
+  useCreateDevice.ts                                            |       0 |      100 |       0 |       0 | 11-52             
+  useCreatePhotos.ts                                            |       0 |      100 |       0 |       0 | 11-47             
+  useDefaultShare.ts                                            |       0 |        0 |       0 |       0 | 18-110            
+  useDirectSharingInfo.ts                                       |       0 |        0 |       0 |       0 | 15-57             
+  useLegacyShareUrl.ts                                          |       0 |        0 |       0 |       0 | 63-607            
+  usePublicShare.ts                                             |       0 |        0 |       0 |       0 | 20-168            
+  useShare.ts                                                   |       0 |        0 |       0 |       0 | 15-172            
+  useShareActions.ts                                            |       0 |        0 |       0 |       0 | 29-220            
+  useShareInvitation.ts                                         |       0 |        0 |       0 |       0 | 28-182            
+  useShareMember.ts                                             |       0 |      100 |       0 |       0 | 11-29             
+  useShareUrl.ts                                                |       0 |        0 |       0 |       0 | 63-605            
+  useSharesKeys.tsx                                             |       0 |        0 |       0 |       0 | 22-49             
+  useSharesState.tsx                                            |       0 |        0 |       0 |       0 | 13-118            
+  useVolume.ts                                                  |       0 |      100 |       0 |       0 | 9-39              
+ app/store/_shares/useLockedVolume                              |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useLockedVolume.ts                                            |       0 |        0 |       0 |       0 | 38-319            
+  utils.ts                                                      |       0 |        0 |       0 |       0 | 19-164            
+ app/store/_shares/utils                                        |       0 |        0 |       0 |       0 |                   
+  getSharedWithMeMembership.ts                                  |       0 |        0 |       0 |       0 | 8-21              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+ app/store/_transfer                                            |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useTransferLog.ts                                             |       0 |        0 |       0 |       0 | 6-41              
+ app/store/_uploads                                             |    1.93 |        0 |    3.63 |    1.99 |                   
+  ChunkFileReader.ts                                            |   22.22 |        0 |   28.57 |   22.22 | 18-40             
+  constants.ts                                                  |       0 |      100 |     100 |       0 | 5-104             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  useUploadInput.ts                                             |       0 |        0 |       0 |       0 | 12-93             
+  workerController.ts                                           |       0 |        0 |       0 |       0 | 206-662           
+ app/store/_uploads/UploadProvider                              |       0 |        0 |       0 |       0 |                   
+  UploadModalContainer.ts                                       |       0 |        0 |       0 |       0 |                   
+  UploadProvider.tsx                                            |       0 |        0 |       0 |       0 | 6-28              
+  UploadProviderState.ts                                        |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 | 86-104            
+  uploadClientUid.ts                                            |       0 |        0 |       0 |       0 | 14-120            
+  useUpload.tsx                                                 |       0 |        0 |       0 |       0 | 37-299            
+  useUploadConflict.tsx                                         |       0 |        0 |       0 |       0 | 12-167            
+  useUploadControl.ts                                           |       0 |        0 |       0 |       0 | 19-149            
+  useUploadFile.ts                                              |       0 |        0 |       0 |       0 | 66-583            
+  useUploadFolder.ts                                            |       0 |        0 |       0 |       0 | 19-161            
+  useUploadHelper.ts                                            |       0 |        0 |       0 |       0 | 17-195            
+  useUploadQueue.ts                                             |       0 |        0 |       0 |       0 | 34-429            
+ app/store/_uploads/media                                       |       0 |        0 |       0 |       0 |                   
+  canvasUtil.ts                                                 |       0 |        0 |       0 |       0 | 13-38             
+  getMediaInfo.ts                                               |       0 |        0 |       0 |       0 | 25-53             
+  image.ts                                                      |       0 |        0 |       0 |       0 | 7-71              
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  svg.ts                                                        |       0 |        0 |       0 |       0 | 8-41              
+  util.ts                                                       |       0 |        0 |       0 |       0 | 9-15              
+  video.ts                                                      |       0 |        0 |       0 |       0 | 18-126            
+ app/store/_uploads/mimeTypeParser                              |   66.66 |       80 |   66.66 |   66.66 |                   
+  helpers.ts                                                    |      50 |      100 |      50 |      50 | 8-11              
+  mimeTypeParser.ts                                             |   83.33 |    66.66 |     100 |   83.33 | 12                
+ app/store/_uploads/worker                                      |       0 |        0 |       0 |       0 |                   
+  buffer.ts                                                     |       0 |        0 |       0 |       0 | 35-207            
+  encryption.ts                                                 |       0 |        0 |       0 |       0 | 31-167            
+  interface.ts                                                  |       0 |        0 |       0 |       0 |                   
+  pauser.ts                                                     |       0 |        0 |       0 |       0 | 4-31              
+  testHelpers.ts                                                |       0 |        0 |       0 |       0 | 7-91              
+  upload.ts                                                     |       0 |        0 |       0 |       0 | 29-311            
+  verifier.ts                                                   |       0 |        0 |       0 |       0 | 6-22              
+  worker.ts                                                     |       0 |        0 |       0 |       0 | 32-215            
+ app/store/_user                                                |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useActivePing.ts                                              |       0 |        0 |       0 |       0 | 29-76             
+ app/store/_utils                                               |       0 |        0 |       0 |       0 |                   
+  errorHandler.ts                                               |       0 |        0 |       0 |       0 | 13-95             
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useDebouncedFunction.ts                                       |       0 |        0 |       0 |       0 | 12-106            
+  waitFor.ts                                                    |       0 |        0 |       0 |       0 | 1-36              
+ app/store/_views                                               |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useDevicesView.ts                                             |       0 |      100 |       0 |       0 | 8-23              
+  useFileNavigation.tsx                                         |       0 |        0 |       0 |       0 | 20-74             
+  useFileView.tsx                                               |       0 |        0 |       0 |       0 | 22-180            
+  useFolderView.tsx                                             |       0 |        0 |       0 |       0 | 22-57             
+  useLegacyShareURLView.tsx                                     |       0 |        0 |       0 |       0 | 15-213            
+  useLinkDetailsView.tsx                                        |       0 |        0 |       0 |       0 | 17-72             
+  useLinkPath.tsx                                               |       0 |        0 |       0 |       0 | 17-121            
+  useLinksDetailsView.tsx                                       |       0 |        0 |       0 |       0 | 13-70             
+  usePhotosView.ts                                              |       0 |        0 |       0 |       0 | 21-175            
+  usePublicFolderView.tsx                                       |       0 |        0 |       0 |       0 | 13-54             
+  useRevisionsView.ts                                           |       0 |        0 |       0 |       0 | 20-72             
+  useSearchControl.tsx                                          |       0 |        0 |       0 |       0 | 7-36              
+  useSearchView.tsx                                             |       0 |        0 |       0 |       0 | 16-110            
+  useShareMemberView.tsx                                        |       0 |        0 |       0 |       0 | 21-180            
+  useShareURLView.tsx                                           |       0 |        0 |       0 |       0 | 14-285            
+  useSharedLinksView.ts                                         |       0 |        0 |       0 |       0 | 13-48             
+  useSharedWithMeView.ts                                        |       0 |        0 |       0 |       0 | 13-67             
+  useTransfersView.tsx                                          |       0 |        0 |       0 |       0 | 16-172            
+  useTrashView.ts                                               |       0 |        0 |       0 |       0 | 13-48             
+  useTree.tsx                                                   |       0 |        0 |       0 |       0 | 27-251            
+ app/store/_views/utils                                         |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  objectId.ts                                                   |       0 |        0 |       0 |       0 | 3-32              
+  useAbortSignal.ts                                             |       0 |      100 |       0 |       0 | 7-17              
+  useIsActiveLinkReadOnly.ts                                    |       0 |        0 |       0 |       0 | 9-55              
+  useLinkName.ts                                                |       0 |        0 |       0 |       0 | 10-29             
+  useShareType.ts                                               |       0 |      100 |       0 |       0 | 13-30             
+  useSorting.ts                                                 |       0 |        0 |       0 |       0 | 42-135            
+  useSortingDevices.ts                                          |       0 |        0 |       0 |       0 | 32-89             
+ app/store/_volumes                                             |       0 |        0 |       0 |       0 |                   
+  index.ts                                                      |       0 |        0 |       0 |       0 |                   
+  useVolumesState.tsx                                           |       0 |        0 |       0 |       0 | 14-72             
+ app/utils                                                      |       0 |        0 |       0 |       0 |                   
+  appPlatforms.ts                                               |       0 |        0 |       0 |       0 | 25-68             
+  async.ts                                                      |       0 |        0 |       0 |       0 | 5-36              
+  file.ts                                                       |       0 |        0 |       0 |       0 | 3-39              
+  formatters.ts                                                 |       0 |        0 |       0 |       0 | 1-4               
+  getPublicKeysForEmail.ts                                      |       0 |        0 |       0 |       0 | 16-36             
+  isSearchFeatureEnabled.ts                                     |       0 |        0 |       0 |       0 | 13                
+  moveTexts.ts                                                  |       0 |      100 |       0 |       0 | 3-4               
+  parallelRunners.ts                                            |       0 |        0 |       0 |       0 | 3-53              
+  replaceLocalURL.ts                                            |       0 |        0 |       0 |       0 | 5-16              
+  retryOnError.ts                                               |       0 |        0 |       0 |       0 | 12-71             
+  stopPropagation.ts                                            |       0 |      100 |       0 |       0 | 1-2               
+  stream.ts                                                     |       0 |        0 |       0 |       0 | 3-41              
+  transfer.ts                                                   |       0 |        0 |       0 |       0 | 4-100             
+ app/utils/errorHandling                                        |   15.55 |        0 |       0 |   15.55 |                   
+  EnrichedError.ts                                              |    12.5 |        0 |       0 |    12.5 | 6-51,61-74        
+  RefreshError.ts                                               |    37.5 |        0 |       0 |    37.5 | 6,19,33-37        
+  ValidationError.ts                                            |       0 |      100 |       0 |       0 | 2-8               
+  index.ts                                                      |   11.11 |        0 |       0 |   11.11 | 10-25,29-52       
+ app/utils/intl                                                 |       0 |        0 |       0 |       0 |                   
+  dateFormatter.ts                                              |       0 |        0 |       0 |       0 | 8-33              
+  numberFormatter.ts                                            |       0 |        0 |       0 |       0 | 8-24              
+ app/utils/test                                                 |       0 |        0 |       0 |       0 |                   
+  crypto.ts                                                     |       0 |        0 |       0 |       0 | 5-63              
+  file.ts                                                       |       0 |        0 |       0 |       0 | 3-32              
+  generator.ts                                                  |       0 |      100 |       0 |       0 | 2-6               
+  shareMapLink.ts                                               |       0 |      100 |     100 |       0 | 3                 
+ app/utils/type                                                 |       0 |        0 |       0 |       0 |                   
+  DeepPartial.ts                                                |       0 |        0 |       0 |       0 |                   
+----------------------------------------------------------------|---------|----------|---------|---------|-------------------

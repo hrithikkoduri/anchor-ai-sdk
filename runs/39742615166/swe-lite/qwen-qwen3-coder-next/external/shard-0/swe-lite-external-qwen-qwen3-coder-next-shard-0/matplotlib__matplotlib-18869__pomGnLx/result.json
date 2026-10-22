@@ -1,0 +1,122 @@
+{
+    "id": "b1f1fccc-29ef-4b65-baab-694387d351fb",
+    "task_name": "swe-bench-lite/matplotlib__matplotlib-18869",
+    "trial_name": "matplotlib__matplotlib-18869__pomGnLx",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/swe-lite/qwen-qwen3-coder-next/external/shard-0/swe-lite-external-qwen-qwen3-coder-next-shard-0/matplotlib__matplotlib-18869__pomGnLx",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/matplotlib__matplotlib-18869"
+    },
+    "source": "tasks",
+    "task_checksum": "73af0f5260c80bcc6e9b30ad06a23c892d01c4e460a31bccc0187c1ad090fb8d",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/matplotlib__matplotlib-18869",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "matplotlib__matplotlib-18869__pomGnLx",
+        "trials_dir": "external-runs/swe-lite/qwen-qwen3-coder-next/external/shard-0/swe-lite-external-qwen-qwen3-coder-next-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "swe-agent",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "69f75683-8e96-4025-b99b-2b3ad1a0bb4b",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "swe-agent",
+        "version": "unknown",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 0,
+        "n_cache_tokens": null,
+        "n_output_tokens": 0,
+        "cost_usd": 0.0,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T08:09:53.438336Z",
+    "finished_at": "2026-10-22T08:24:52.095476Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T08:09:53.439264Z",
+        "finished_at": "2026-10-22T08:10:41.495732Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T08:10:41.495763Z",
+        "finished_at": "2026-10-22T08:10:53.024342Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T08:10:53.024477Z",
+        "finished_at": "2026-10-22T08:24:37.326696Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T08:24:37.594735Z",
+        "finished_at": "2026-10-22T08:24:37.817970Z"
+    },
+    "step_results": null
+}

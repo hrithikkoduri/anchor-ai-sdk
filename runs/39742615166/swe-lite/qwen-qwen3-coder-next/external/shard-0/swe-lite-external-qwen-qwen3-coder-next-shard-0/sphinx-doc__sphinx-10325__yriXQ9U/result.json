@@ -1,0 +1,122 @@
+{
+    "id": "d33e888a-895e-4bd4-a4b6-c953772dc152",
+    "task_name": "swe-bench-lite/sphinx-doc__sphinx-10325",
+    "trial_name": "sphinx-doc__sphinx-10325__yriXQ9U",
+    "trial_uri": "file:///home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/external-runs/swe-lite/qwen-qwen3-coder-next/external/shard-0/swe-lite-external-qwen-qwen3-coder-next-shard-0/sphinx-doc__sphinx-10325__yriXQ9U",
+    "task_id": {
+        "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/sphinx-doc__sphinx-10325"
+    },
+    "source": "tasks",
+    "task_checksum": "dbc0928067dfe8edfd82817b1f989693753eda08ec9ab5717a0c1a30ae7dbf14",
+    "config": {
+        "task": {
+            "path": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/evals/benchmarks/swe-bench-lite/data/tasks/sphinx-doc__sphinx-10325",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "tasks"
+        },
+        "trial_name": "sphinx-doc__sphinx-10325__yriXQ9U",
+        "trials_dir": "external-runs/swe-lite/qwen-qwen3-coder-next/external/shard-0/swe-lite-external-qwen-qwen3-coder-next-shard-0",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "swe-agent",
+            "import_path": null,
+            "model_name": "openrouter/qwen/qwen3-coder-next",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [
+                "openrouter.ai",
+                "api.openrouter.ai"
+            ],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "69f75683-8e96-4025-b99b-2b3ad1a0bb4b",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "swe-agent",
+        "version": "unknown",
+        "model_info": {
+            "name": "qwen/qwen3-coder-next",
+            "provider": "openrouter"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 0,
+        "n_cache_tokens": null,
+        "n_output_tokens": 0,
+        "cost_usd": 0.0,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-10-22T09:46:27.368822Z",
+    "finished_at": "2026-10-22T10:03:27.257331Z",
+    "environment_setup": {
+        "started_at": "2026-10-22T09:46:27.369718Z",
+        "finished_at": "2026-10-22T09:46:45.174700Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-22T09:46:45.174723Z",
+        "finished_at": "2026-10-22T09:48:19.637272Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-22T09:48:19.637396Z",
+        "finished_at": "2026-10-22T10:03:12.851409Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-22T10:03:13.125907Z",
+        "finished_at": "2026-10-22T10:03:13.360519Z"
+    },
+    "step_results": null
+}
