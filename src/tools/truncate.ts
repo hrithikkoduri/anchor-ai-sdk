@@ -16,6 +16,9 @@ export interface TruncateOptions {
 
 export const TRUNCATE_DEFAULTS = { maxLines: 300, maxChars: 20_000 } as const;
 
+/** Absolute ceiling for any tool result entering the model context. */
+export const TOOL_RESULT_MAX_CHARS = 100_000;
+
 export function truncate(text: string, opts: TruncateOptions = {}): string {
   const maxLines = opts.maxLines ?? TRUNCATE_DEFAULTS.maxLines;
   const maxChars = opts.maxChars ?? TRUNCATE_DEFAULTS.maxChars;
@@ -102,4 +105,20 @@ export async function spillOrTruncate(
     `[... full output saved: ${file} (${lines} lines, ${Math.round(text.length / 1024)} KB). ` +
     `Read slices with read_file(path, offset, limit), or search it with search(path, pattern) ...]`
   );
+}
+
+
+/**
+ * The public boundary for consumer tools. Built-in tools use the same path;
+ * this exists so a product tool never has to reimplement truncation/spill.
+ */
+export async function boundToolResult(
+  content: string,
+  target: SpillTarget = {},
+  opts: TruncateOptions = {},
+): Promise<string> {
+  return spillOrTruncate(content, target, {
+    maxChars: TOOL_RESULT_MAX_CHARS,
+    ...opts,
+  });
 }
