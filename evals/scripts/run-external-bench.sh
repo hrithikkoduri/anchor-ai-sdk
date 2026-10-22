@@ -98,8 +98,13 @@ from harbor.models.task.task import Task
 root = pathlib.Path(sys.argv[1])
 for d in sorted(root.iterdir())[:3]:
     try:
-        Task(d)
-        print("valid task:", d.name)
+        print("valid task:", d.name, Task.is_valid_dir(d))
+        from harbor.models.task.paths import TaskPaths
+        from harbor.models.task.config import TaskConfig
+        paths = TaskPaths(d)
+        config = TaskConfig.model_validate_toml(paths.config_path.read_text())
+        Task._validate_tests(config, paths)
+        print("  detail ok")
     except Exception as e:
         print("invalid task:", d.name, type(e).__name__, e)
 PYDEBUG
