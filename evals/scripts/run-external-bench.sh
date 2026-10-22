@@ -89,7 +89,7 @@ for ID in "${IDS[@]}"; do
   ARGS+=(-i "$ID")
 done
 if [ "$AGENT" = "swe-agent" ]; then
-  ARGS+=(--agent-timeout-multiplier 2)
+  ARGS+=(--agent-timeout-multiplier 2 --agent-setup-timeout-multiplier 4)
 fi
 
 echo "external bench=$BENCH model=$MODEL agent=$AGENT shard=$SHARD/$SHARDS tasks=${#IDS[@]}"
