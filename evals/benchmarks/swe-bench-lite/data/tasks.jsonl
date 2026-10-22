@@ -1,0 +1,10 @@
+{"id":"psf__requests-1963","kind":"harbor","path":"tasks/psf__requests-1963","grading":"in-place","workspacePath":"/testbed"}
+{"id":"pytest-dev__pytest-11143","kind":"harbor","path":"tasks/pytest-dev__pytest-11143","grading":"in-place","workspacePath":"/testbed"}
+{"id":"pallets__flask-4045","kind":"harbor","path":"tasks/pallets__flask-4045","grading":"in-place","workspacePath":"/testbed"}
+{"id":"pylint-dev__pylint-5859","kind":"harbor","path":"tasks/pylint-dev__pylint-5859","grading":"in-place","workspacePath":"/testbed"}
+{"id":"mwaskom__seaborn-2848","kind":"harbor","path":"tasks/mwaskom__seaborn-2848","grading":"in-place","workspacePath":"/testbed"}
+{"id":"sphinx-doc__sphinx-10325","kind":"harbor","path":"tasks/sphinx-doc__sphinx-10325","grading":"in-place","workspacePath":"/testbed"}
+{"id":"django__django-10914","kind":"harbor","path":"tasks/django__django-10914","grading":"in-place","workspacePath":"/testbed"}
+{"id":"sympy__sympy-11400","kind":"harbor","path":"tasks/sympy__sympy-11400","grading":"in-place","workspacePath":"/testbed"}
+{"id":"matplotlib__matplotlib-18869","kind":"harbor","path":"tasks/matplotlib__matplotlib-18869","grading":"in-place","workspacePath":"/testbed"}
+{"id":"pydata__xarray-3364","kind":"harbor","path":"tasks/pydata__xarray-3364","grading":"in-place","workspacePath":"/testbed"}

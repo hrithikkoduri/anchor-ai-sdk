@@ -1,0 +1,20 @@
+schema_version = "1.0"
+
+[task]
+name = "swe-bench-lite/pylint-dev__pylint-5859"
+description = "\"--notes\" option ignores note tags that are entirely punctuation"
+
+[environment]
+docker_image = "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-5859:latest"
+os = "linux"
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+
+[agent]
+timeout_sec = 900.0
+network_mode = "public"
+
+[verifier]
+timeout_sec = 900.0
+network_mode = "public"

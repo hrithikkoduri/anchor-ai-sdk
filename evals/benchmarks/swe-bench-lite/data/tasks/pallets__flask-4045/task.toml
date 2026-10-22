@@ -1,0 +1,20 @@
+schema_version = "1.0"
+
+[task]
+name = "swe-bench-lite/pallets__flask-4045"
+description = "Raise error when blueprint name contains a dot"
+
+[environment]
+docker_image = "swebench/sweb.eval.x86_64.pallets_1776_flask-4045:latest"
+os = "linux"
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+
+[agent]
+timeout_sec = 900.0
+network_mode = "public"
+
+[verifier]
+timeout_sec = 900.0
+network_mode = "public"

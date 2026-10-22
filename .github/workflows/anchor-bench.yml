@@ -1,4 +1,4 @@
-name: bench
+name: anchor-bench
 
 on:
   workflow_dispatch:
@@ -43,6 +43,39 @@ on:
         default: "5"
       terminal_shards:
         description: Shards for Terminal-Bench (10 tasks split across shards)
+        type: string
+        default: "5"
+
+  workflow_call:
+    inputs:
+      bench:
+        type: string
+        default: all
+      models:
+        type: string
+        default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      variants:
+        type: string
+        default: baseline,progress
+      reasoning:
+        type: string
+        default: high
+      max_steps:
+        type: string
+        default: "50"
+      max_usd:
+        type: string
+        default: "8"
+      time_budget:
+        type: string
+        default: ""
+      tasks:
+        type: string
+        default: ""
+      pro_shards:
+        type: string
+        default: "5"
+      terminal_shards:
         type: string
         default: "5"
 

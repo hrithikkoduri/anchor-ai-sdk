@@ -1,0 +1,17 @@
+{
+  "fail_to_pass": [
+    "tests/checkers/unittest_misc.py::TestFixme::test_non_alphanumeric_codetag"
+  ],
+  "pass_to_pass": [
+    "tests/checkers/unittest_misc.py::TestFixme::test_fixme_with_message",
+    "tests/checkers/unittest_misc.py::TestFixme::test_todo_without_message",
+    "tests/checkers/unittest_misc.py::TestFixme::test_xxx_without_space",
+    "tests/checkers/unittest_misc.py::TestFixme::test_xxx_middle",
+    "tests/checkers/unittest_misc.py::TestFixme::test_without_space_fixme",
+    "tests/checkers/unittest_misc.py::TestFixme::test_absent_codetag",
+    "tests/checkers/unittest_misc.py::TestFixme::test_other_present_codetag",
+    "tests/checkers/unittest_misc.py::TestFixme::test_issue_2321_should_not_trigger",
+    "tests/checkers/unittest_misc.py::TestFixme::test_issue_2321_should_trigger",
+    "tests/checkers/unittest_misc.py::TestFixme::test_dont_trigger_on_todoist"
+  ]
+}

@@ -48,7 +48,7 @@ sandboxes); see the E2B section in its README.
 
 ## GitHub Actions
 
-`.github/workflows/bench.yml` runs the whole matrix on `ubuntu-latest` with
+`.github/workflows/anchor-bench.yml` runs the Anchor matrix on `ubuntu-latest` with
 Docker: three benchmarks × two models × two variants, sharded to stay under
 the six-hour job limit. It needs one repository secret:
 
@@ -59,6 +59,6 @@ The workflow writes raw results as artifacts and publishes:
 - `dashboard/index.html` on the same branch (enable GitHub Pages from that
   branch to view it).
 
-Trigger it from **Actions → bench → Run workflow**. `bench=all` runs the six
+Trigger it from **Actions → run-all-bench → Run workflow** (or trigger `anchor-bench` / `external-bench` separately). `bench=all` runs the six
 baseline + six treatment logical runs; pick one benchmark or one variant to
 iterate cheaper.

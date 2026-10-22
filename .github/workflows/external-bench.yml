@@ -1,0 +1,170 @@
+name: external-bench
+
+on:
+  workflow_dispatch:
+    inputs:
+      bench:
+        description: Benchmark to run
+        type: choice
+        default: all
+        options: [all, swe-lite, swe-pro, terminal-bench]
+      models:
+        description: Comma-separated OpenRouter model ids
+        type: string
+        default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      agent:
+        description: Harbor agent
+        type: string
+        default: terminus-2
+      tasks:
+        description: Optional comma-separated task ids (smoke runs)
+        type: string
+        default: ""
+      pro_shards:
+        description: Shards for SWE-bench Pro
+        type: string
+        default: "5"
+      terminal_shards:
+        description: Shards for Terminal-Bench
+        type: string
+        default: "5"
+  workflow_call:
+    inputs:
+      bench:
+        type: string
+        default: all
+      models:
+        type: string
+        default: deepseek/deepseek-v4.1-flash-1017,qwen/qwen3-coder-next
+      agent:
+        type: string
+        default: terminus-2
+      tasks:
+        type: string
+        default: ""
+      pro_shards:
+        type: string
+        default: "5"
+      terminal_shards:
+        type: string
+        default: "5"
+
+permissions:
+  contents: write
+
+env:
+  OPENROUTER_API_KEY: ${{ secrets.LLM_API_KEY }}
+  OUT_ROOT: external-runs
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        env:
+          BENCH: ${{ inputs.bench }}
+          MODELS: ${{ inputs.models }}
+          PRO_SHARDS: ${{ inputs.pro_shards }}
+          TERMINAL_SHARDS: ${{ inputs.terminal_shards }}
+        run: |
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+          const { BENCH, MODELS, PRO_SHARDS, TERMINAL_SHARDS } = process.env;
+          const benches = BENCH === "all" ? ["swe-lite", "swe-pro", "terminal-bench"] : [BENCH];
+          const shardsFor = (bench) => bench === "swe-pro" ? Number(PRO_SHARDS) : bench === "terminal-bench" ? Number(TERMINAL_SHARDS) : 1;
+          const include = [];
+          for (const bench of benches) {
+            const shards = shardsFor(bench);
+            for (const model of MODELS.split(",").map((s) => s.trim()).filter(Boolean)) {
+              for (let shard = 0; shard < shards; shard++) {
+                include.push({ bench, model, shard: String(shard), shards: String(shards) });
+              }
+            }
+          }
+          console.log(`matrix=${JSON.stringify({ include })}`);
+          NODE
+
+  external:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    env:
+      BENCH: ${{ matrix.bench }}
+      MODEL: ${{ matrix.model }}
+      SHARD: ${{ matrix.shard }}
+      SHARDS: ${{ matrix.shards }}
+      AGENT: ${{ inputs.agent }}
+      TASKS: ${{ inputs.tasks }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Harbor
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install harbor
+          sudo apt-get update && sudo apt-get install -y tmux
+      - name: Free disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          docker system prune -af --volumes || true
+      - name: Run external ${{ matrix.bench }} ${{ matrix.model }} shard ${{ matrix.shard }}
+        run: bash evals/scripts/run-external-bench.sh
+      - name: Upload external results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-${{ strategy.job-index }}
+          path: evals/external-runs
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    needs: [plan, external]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: external-results
+          merge-multiple: true
+      - name: Aggregate
+        run: node evals/scripts/aggregate-external.mjs external-results external-results
+      - name: Publish external results
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "anchor-bench"
+          git config user.email "bench@anchor.local"
+          git fetch origin external-bench-results || true
+          if git rev-parse --verify origin/external-bench-results >/dev/null 2>&1; then
+            git checkout -B external-bench-results origin/external-bench-results
+          else
+            git checkout --orphan external-bench-results
+            git rm -rf . --quiet || true
+          fi
+          mkdir -p latest "runs/$GITHUB_RUN_ID"
+          cp external-results/summary.json latest/
+          cp external-results/summary.md latest/
+          cp -R external-results/. "runs/$GITHUB_RUN_ID/"
+          git add latest runs
+          git commit -m "external bench: run $GITHUB_RUN_ID" || true
+          git push origin HEAD:external-bench-results
+      - name: Upload external summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-summary
+          path: |
+            external-results/summary.json
+            external-results/summary.md
+          retention-days: 90

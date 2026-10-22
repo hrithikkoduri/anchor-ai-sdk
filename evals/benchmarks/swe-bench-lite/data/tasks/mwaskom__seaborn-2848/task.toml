@@ -1,0 +1,20 @@
+schema_version = "1.0"
+
+[task]
+name = "swe-bench-lite/mwaskom__seaborn-2848"
+description = "pairplot fails with hue_order not containing all hue values in seaborn 0.11.1"
+
+[environment]
+docker_image = "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-2848:latest"
+os = "linux"
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+
+[agent]
+timeout_sec = 900.0
+network_mode = "public"
+
+[verifier]
+timeout_sec = 900.0
+network_mode = "public"

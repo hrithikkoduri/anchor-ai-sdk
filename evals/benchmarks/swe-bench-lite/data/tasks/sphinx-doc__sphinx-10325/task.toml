@@ -1,0 +1,20 @@
+schema_version = "1.0"
+
+[task]
+name = "swe-bench-lite/sphinx-doc__sphinx-10325"
+description = "inherited-members should support more than one class"
+
+[environment]
+docker_image = "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10325:latest"
+os = "linux"
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+
+[agent]
+timeout_sec = 900.0
+network_mode = "public"
+
+[verifier]
+timeout_sec = 900.0
+network_mode = "public"

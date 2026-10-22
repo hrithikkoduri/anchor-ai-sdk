@@ -1,0 +1,20 @@
+schema_version = "1.0"
+
+[task]
+name = "swe-bench-lite/matplotlib__matplotlib-18869"
+description = "Add easily comparable version info to toplevel"
+
+[environment]
+docker_image = "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-18869:latest"
+os = "linux"
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+
+[agent]
+timeout_sec = 900.0
+network_mode = "public"
+
+[verifier]
+timeout_sec = 900.0
+network_mode = "public"
