@@ -69,14 +69,33 @@ async function uploadTree(
 async function applyPatch(sandbox: Sandbox, patch: string): Promise<void> {
   if (!patch.trim()) throw new Error("agent produced an empty patch");
   const encoded = Buffer.from(patch).toString("base64");
+  // A real SWE-bench Pro diff can be megabytes; passing it through one
+  // `docker exec` argument hits E2BIG (observed on NodeBB). Stream it in
+  // argument-safe chunks instead.
+  const chunkSize = 64 * 1024;
+  await sandbox.exec("rm -f /tmp/anchor-agent.patch.b64 && : > /tmp/anchor-agent.patch.b64", {
+    timeoutSecs: 30,
+  });
+  for (let offset = 0; offset < encoded.length; offset += chunkSize) {
+    const chunk = encoded.slice(offset, offset + chunkSize);
+    const write = await sandbox.exec(
+      `printf '%s' '${chunk}' >> /tmp/anchor-agent.patch.b64`,
+      { timeoutSecs: 60 },
+    );
+    if (write.exitCode !== 0) {
+      throw new Error(
+        `agent patch upload failed (exit ${write.exitCode}): ${write.output.trim().slice(0, 300)}`,
+      );
+    }
+  }
   const command = [
-    `echo '${encoded}' | base64 -d > /tmp/anchor-agent.patch`,
+    "base64 -d /tmp/anchor-agent.patch.b64 > /tmp/anchor-agent.patch",
     "git apply --binary --verbose /tmp/anchor-agent.patch",
     "code=$?",
-    "rm -f /tmp/anchor-agent.patch",
+    "rm -f /tmp/anchor-agent.patch /tmp/anchor-agent.patch.b64",
     "exit $code",
   ].join("\n");
-  const result = await sandbox.exec(command, { timeoutSecs: 180 });
+  const result = await sandbox.exec(command, { timeoutSecs: 300 });
   if (result.exitCode !== 0) {
     throw new Error(
       `agent patch failed to apply (exit ${result.exitCode}): ${result.output.trim().slice(0, 800)}`,

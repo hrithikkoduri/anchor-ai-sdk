@@ -7,6 +7,7 @@ dist/
 .venv*/
 .eval-runs/
 .bench-runs/
+evals/bench-runs/
 traces/
 .DS_Store
 site/test-results/
