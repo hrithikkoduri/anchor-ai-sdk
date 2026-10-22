@@ -361,6 +361,7 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true, // file-backed pushes to a host origin work
       egressControl: false,
       localPath: true,
+      buildImage: false, // the guest IS the host; no publish step
     },
     create: (spec) => new LocalSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

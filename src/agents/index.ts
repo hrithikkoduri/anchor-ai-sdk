@@ -7,4 +7,3 @@
 export * from "./types.js";
 export * from "./coding/index.js";
 export * from "./chat/index.js";
-export * from "./terminal/index.js";

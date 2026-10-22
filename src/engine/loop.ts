@@ -36,7 +36,7 @@ import {
   type InboxMessage,
   type RunSummary,
 } from "./inbox.js";
-import { defineTool, type Tool } from "../tools/types.js";
+import { defineTool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
@@ -45,32 +45,8 @@ import {
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
-import { resolveTurnIntent } from "./intent.js";
-import {
-  addRequirement,
-  compileLedger,
-  ledgerGate,
-  linkEvidence,
-  recordEvidence,
-  renderLedger,
-  setRequirementStatus,
-  verifyAlignment,
-  type VerifierConfig,
-} from "../ledger/index.js";
-import { chatAgent } from "../agents/chat/index.js";
-import { codingAgent } from "../agents/coding/index.js";
 import type { EventSink, RevivalRequest } from "./events.js";
-import {
-  dispatchToolCalls,
-  type OperationRuntime,
-} from "./dispatch.js";
-import {
-  mintOperationId,
-  reconcilePendingOperations,
-  settleFromResult,
-  type PendingOperation,
-  type ReconcileOutcome,
-} from "./operations.js";
+import { dispatchToolCalls } from "./dispatch.js";
 import {
   RepeatTracker,
   cappedReplyNudge,
@@ -206,18 +182,9 @@ async function runOne(
   };
   // Terminal intrinsic — with the consumer's handoff shape when configured
   // (EngineOptions.handoff). Never required to stop.
-  let completionGate:
-    | ((summary: string, success: boolean) => Promise<{ ok: boolean; content: string }>)
-    | undefined;
-  let verified = false;
-  let finishGateAttempts = 0;
-  const finish = createFinishTool({
-    ...(opts.handoff ? { handoff: opts.handoff } : {}),
-    validate: async (input) =>
-      completionGate
-        ? completionGate(input.summary, input.success)
-        : { ok: true },
-  });
+  const finish = createFinishTool(
+    opts.handoff ? { handoff: opts.handoff } : {},
+  );
   if (opts.intrinsics?.finish !== false) available.set("finish", finish);
   const missing = (strategy.requiredTools ?? []).filter(
     (name) => !available.has(name),
@@ -249,114 +216,6 @@ async function runOne(
   )
     phase = prior.phase;
   let summary = prior?.summary;
-
-  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
-
-  // ---- Task verification ------------------------------------------------
-  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  const verifierConfig: VerifierConfig =
-    verifierOn && typeof opts.verifier === "object" ? opts.verifier : {};
-  const verifierLlm = verifierConfig.llm ?? opts.llm;
-  const verifierGates = new Set(
-    verifierConfig.gates ?? ["phase", "finish"],
-  );
-  const maxVerifierCalls = verifierConfig.maxCallsPerTask ?? 6;
-  let verifierCalls = 0;
-  let ledger = opts.ledger ?? (verifierOn ? prior?.ledger : undefined);
-  if (verifierOn && !ledger) {
-    const compiled = await compileLedger({
-      llm: verifierLlm,
-      taskId: opts.thread?.id ?? `task-${Date.now()}`,
-      task: task.task,
-      phases: strategy.phases,
-      reasoningEffort: "low",
-    });
-    ledger = compiled.ledger;
-    if (compiled.usage) budget.record(compiled.usage);
-  }
-  const recentEvidence = (): string => {
-    if (!ledger) return "(none)";
-    return Object.values(ledger.evidence)
-      .slice(-6)
-      .map(
-        (item) =>
-          `${item.id} ${item.tool}${item.summary ? `: ${item.summary}` : ""}${item.ok ? "" : " (failed)"}`,
-      )
-      .join("\n");
-  };
-  const callVerifier = async (
-    phaseGoal: { id: string; goal: string; guidance?: string },
-  ) => {
-    if (!verifierOn || !ledger || verifierCalls >= maxVerifierCalls) {
-      return { allow: true } as const;
-    }
-    verifierCalls += 1;
-    try {
-      const { verdict, usage } = await verifyAlignment({
-        llm: verifierLlm,
-        task: task.task,
-        phase: phaseGoal,
-        ledger,
-        recentEvidence: recentEvidence(),
-        reasoningEffort: "low",
-      });
-      if (usage) budget.record(usage);
-      return verdict;
-    } catch (error) {
-      emit({
-        type: "advisory",
-        kind: "verifier_failed",
-        detail:
-          error instanceof Error ? error.message : String(error),
-      });
-      return {
-        allow: verifierConfig.onError !== "block",
-        aligned: false,
-        justified: true,
-        reason: "verifier unavailable",
-        requiredAction: "none" as const,
-        confidence: 0,
-      };
-    }
-  };
-  if (verifierOn && ledger) {
-    completionGate = async (summaryText) => {
-      const structural = ledgerGate(ledger!, {
-        allowWaived: verifierConfig.allowWaived,
-      });
-      if (!structural.allow) {
-        return {
-          ok: false,
-          content: [
-            "Verification gate: required work is not complete.",
-            `open: ${structural.open.join(", ") || "none"}`,
-            `missingEvidence: ${structural.missingEvidence.join(", ") || "none"}`,
-            `failures: ${structural.failures.join(" | ") || "none"}`,
-            "Attach evidence to each requirement with update_ledger, resolve failures, and try again.",
-          ].join("\n"),
-        };
-      }
-      if (!verifierGates.has("finish")) {
-        verified = true;
-        return { ok: true, content: "" };
-      }
-      const verdict = await callVerifier({
-        id: "finish",
-        goal: "Deliver the task outcome with evidence.",
-      });
-      if (verdict.allow) {
-        verified = true;
-        return { ok: true, content: "" };
-      }
-      return {
-        ok: false,
-        content:
-          `Verification gate rejected completion: ${verdict.reason ?? "unsupported claim"}. ` +
-          `Required action: ${verdict.requiredAction ?? "gather_evidence"}. ` +
-          `Claim: ${summaryText.slice(0, 400)}`,
-      };
-    };
-  }
   const currentRequest = userMessage(task.task);
   const revivalOn = !!opts.revival;
   const revivalWarnAt = revivalWarnPercent(
@@ -371,122 +230,14 @@ async function runOne(
     content:
       strategy.systemPrompt({ task: task.task, context, summary }) +
       (phaseOn ? `\n\n${phaseDisciplineBlock(strategy.phases)}` : "") +
-      (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : "") +
-      (ledger
-        ? `\n\nPROGRESS LEDGER (authoritative task state):\n${renderLedger(ledger)}\n\nUse update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.`
-        : ""),
+      (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : ""),
   });
-  if (ledger) {
-    const updateLedger = defineTool(
-      {
-        name: "update_ledger",
-        description:
-          "Update the task contract. Use it after gathering evidence: link a tool result to a requirement, mark it verified, record an open failure, or set the next step. Never invent evidence ids.",
-        parameters: {
-          type: "object",
-          properties: {
-            op: {
-              type: "string",
-              enum: [
-                "add_requirement",
-                "link_evidence",
-                "set_status",
-                "set_next_step",
-                "add_failure",
-                "clear_failure",
-              ],
-            },
-            text: { type: "string" },
-            required: { type: "boolean" },
-            requirementId: { type: "string" },
-            evidenceId: { type: "string" },
-            status: {
-              type: "string",
-              enum: ["open", "in_progress", "verified", "blocked", "waived"],
-            },
-            failure: { type: "string" },
-          },
-          required: ["op"],
-          additionalProperties: false,
-        },
-      },
-      async (input) => {
-        const op = String(input.op ?? "");
-        if (op === "add_requirement") {
-          const text = String(input.text ?? "").trim();
-          if (!text) return { ok: false, content: "text is required" };
-          const requirement = addRequirement(
-            ledger!,
-            { text, required: input.required !== false },
-            "agent",
-          );
-          return {
-            ok: true,
-            content: `added ${requirement.id}: ${requirement.text}`,
-          };
-        }
-        if (op === "link_evidence") {
-          linkEvidence(
-            ledger!,
-            String(input.requirementId ?? ""),
-            String(input.evidenceId ?? ""),
-          );
-          return { ok: true, content: "evidence linked" };
-        }
-        if (op === "set_status") {
-          const status = String(input.status ?? "");
-          if (status === "superseded") {
-            return { ok: false, content: "use a user revision to supersede" };
-          }
-          const requirementId = String(input.requirementId ?? "");
-          if (status === "verified") {
-            const requirement = ledger!.requirements.find(
-              (item) => item.id === requirementId,
-            );
-            if (!requirement || requirement.evidenceIds.length === 0) {
-              return {
-                ok: false,
-                content:
-                  "link evidence to this requirement before marking it verified",
-              };
-            }
-          }
-          setRequirementStatus(
-            ledger!,
-            requirementId,
-            status as "open" | "in_progress" | "verified" | "blocked" | "waived",
-          );
-          return { ok: true, content: `status set to ${status}` };
-        }
-        if (op === "set_next_step") {
-          ledger!.nextStep = String(input.text ?? "");
-          return { ok: true, content: "next step recorded" };
-        }
-        if (op === "add_failure") {
-          const failure = String(input.failure ?? "").trim();
-          if (!failure) return { ok: false, content: "failure is required" };
-          ledger!.openFailures.push(failure);
-          return { ok: true, content: "failure recorded" };
-        }
-        if (op === "clear_failure") {
-          const failure = String(input.failure ?? "");
-          ledger!.openFailures = ledger!.openFailures.filter(
-            (item) => item !== failure,
-          );
-          return { ok: true, content: "failure cleared" };
-        }
-        return { ok: false, content: `unknown ledger op "${op}"` };
-      },
-      { verb: "Updating the progress ledger" },
-    );
-    available.set("update_ledger", updateLedger);
-  }
-
   const messages: LLMMessage[] = [
     system(),
     ...conversationHistory(prior?.messages ?? []),
     currentRequest,
   ];
+  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
   const compact =
     opts.compaction === false
       ? null
@@ -503,12 +254,6 @@ async function runOne(
     ...(opts.resumeJobs ?? []),
     ...(chain.jobs ?? []),
   ];
-  /**
-   * External operations recovery could not resolve. When non-empty, the run
-   * never reaches a model call: replaying an ambiguous write is worse than
-   * stopping. Reported as `reason: "recovery_required"`.
-   */
-  const unresolvedOperations: PendingOperation[] = [];
   // Thresholds that double as switches (`number | false`) must be positive
   // when numeric. 0 is not "off" — `false` is — and left alone it would mean
   // "immediately" for the nudges while meaning "uncapped" for the caps.
@@ -543,9 +288,6 @@ async function runOne(
     outputTokenCap === false
       ? undefined
       : positiveNumber("maxOutputTokens", outputTokenCap);
-  // Explicit option wins over the bundle's suggestion, like maxOutputTokens.
-  const reasoningEffort =
-    opts.reasoningEffort ?? opts.agent?.reasoningEffort;
   const maxAssistantChars = threshold(
     "maxAssistantChars",
     opts.maxAssistantChars ?? DEFAULT_MAX_ASSISTANT_CHARS,
@@ -557,92 +299,6 @@ async function runOne(
   let silentToolTurns = 0;
   let steps = 0;
   const stepsBefore = chain.stepsBefore ?? 0;
-  // Recovery for tools that declare an external effect. Scope defaults to the
-  // thread; a store without either is a wiring bug, not a silent no-op.
-  const operations = opts.operations;
-  const operationScope = operations
-    ? (operations.scope ?? opts.thread?.id)
-    : undefined;
-  if (operations && operationScope === undefined)
-    throw new Error(
-      "anchor: operations.scope is required when the run has no thread id",
-    );
-  const operationCalls = new Map<string, { name: string; callId?: string }>();
-  const missingJournal = new Set<string>();
-  const onMissingJournal = (tool: Tool): void => {
-    const name = tool.definition.name;
-    if (missingJournal.has(name)) return;
-    missingJournal.add(name);
-    emit({
-      type: "advisory",
-      kind: "effect_without_journal",
-      detail:
-        `tool "${name}" declares an external effect, but no operations store is configured — ` +
-        "a crash between the write and its result can repeat it. Pass EngineOptions.operations.",
-    });
-  };
-  const operationRuntime: OperationRuntime | undefined =
-    operations && operationScope !== undefined
-      ? (() => {
-          const { store } = operations;
-          return {
-            async begin(call, input, tool) {
-              const keyed = tool.effect?.key?.(input);
-              const operationId =
-                keyed !== undefined && keyed.trim() !== ""
-                  ? keyed
-                  : mintOperationId();
-              const started = await store.begin({
-                operationId,
-                scope: operationScope,
-                tool: call.name,
-                input,
-                status: "intent",
-                startedAt: Date.now(),
-              });
-              operationCalls.set(operationId, {
-                name: call.name,
-                ...(call.id ? { callId: call.id } : {}),
-              });
-              return { operationId, started };
-            },
-            async acknowledge(operationId, ack) {
-              try {
-                await store.acknowledge(operationId, ack);
-              } catch {
-                /* acceptance is a fact even when the journal is unavailable */
-              }
-              const recordedCall = operationCalls.get(operationId);
-              emit({
-                type: "tool_ack",
-                name: recordedCall?.name ?? "unknown",
-                ...(recordedCall?.callId
-                  ? { callId: recordedCall.callId }
-                  : {}),
-                operationId,
-                phase,
-                step: steps,
-                ack,
-              });
-            },
-            async settle(operationId, result) {
-              try {
-                await store.settle(operationId, settleFromResult(result));
-                return true;
-              } catch (err) {
-                emit({
-                  type: "advisory",
-                  kind: "operation_settle_failed",
-                  detail:
-                    `could not record the result of operation ${operationId}: ` +
-                    (err instanceof Error ? err.message : String(err)),
-                });
-                return false;
-              }
-            },
-          };
-        })()
-      : undefined;
   // #78: the engine asked the model for something visible and the model
   // answered in prose and stopped. That is a checkpoint, not a result. Scoped
   // to nudges on purpose: an ordinary prose ending after tool work is the
@@ -664,9 +320,7 @@ async function runOne(
   const courseCorrect = createCourseCorrect({
     emit,
     messages,
-    persist: async () => {
-      await persist();
-    },
+    persist: () => persist(),
     markProseCheck: () => {
       pendingProseCheck = true;
     },
@@ -708,29 +362,6 @@ async function runOne(
               content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}.`,
             };
           const previous = phase;
-          if (
-            verifierOn &&
-            ledger &&
-            verifierGates.has("phase") &&
-            target.id !== previous
-          ) {
-            const verdict = await callVerifier(target);
-            if (!verdict.allow) {
-              emit({
-                type: "guardrail",
-                kind: "transition_rejected",
-                detail: `${previous} -> ${target.id}: ${verdict.reason}`,
-              });
-              return {
-                ok: false,
-                content: [
-                  `Phase transition rejected: ${verdict.reason}`,
-                  `Required action: ${verdict.requiredAction}`,
-                  "Gather the missing evidence or update the ledger, then transition again.",
-                ].join("\n"),
-              };
-            }
-          }
           phase = target.id;
           pauseRequested =
             opts.pauseAfterPhase === previous && previous !== phase;
@@ -805,40 +436,15 @@ async function runOne(
     );
   }
 
-  /**
-   * Settle operations only AFTER the conversation that contains their results
-   * is durable. The opposite order opens the window this whole layer exists to
-   * close: a settled journal entry with no result in the thread, which the next
-   * run would have to replay. A failed save leaves them pending instead.
-   */
-  const pendingSettlements: Array<{
-    operationId: string;
-    result: ToolResult;
-  }> = [];
-  const settleRecorded = async (persisted: boolean): Promise<void> => {
-    if (!operationRuntime || !persisted) return;
-    while (pendingSettlements.length > 0) {
-      const settled = pendingSettlements.shift()!;
-      await operationRuntime.settle(settled.operationId, settled.result);
-    }
-  };
-  const persist = async (
-    done = false,
-    resumePhase?: string,
-  ): Promise<boolean> => {
+  const persist = async (done = false, resumePhase?: string) => {
     try {
       await opts.thread?.store.save(opts.thread.id, {
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
-        ...(ledger ?? prior?.ledger
-          ? { ledger: ledger ?? prior?.ledger }
-          : {}),
       });
-      return true;
     } catch {
       /* a storage outage must not corrupt the model/tool protocol */
-      return false;
     }
   };
   const conclude = async (
@@ -891,9 +497,6 @@ async function runOne(
       ...(budget.reasoningTokens !== undefined
         ? { reasoningTokens: budget.reasoningTokens }
         : {}),
-      ...(budget.cachedTokens > 0
-        ? { cachedTokens: budget.cachedTokens }
-        : {}),
     };
     emit({
       type: "run_finished",
@@ -904,13 +507,12 @@ async function runOne(
       reason,
       ...(extra.handoff !== undefined ? { handoff: extra.handoff } : {}),
     });
-    const persisted = await persist(
+    await persist(
       reason !== "paused",
       extra.handoff !== undefined
         ? opts.handoff?.threadPhase?.(extra.handoff)
         : undefined,
     );
-    await settleRecorded(persisted);
     // Every exit passes through here: stop beating, unlink the caller's
     // signal, and make sure the sinks hold the complete journal — including
     // this run_finished — before the caller sees the result.
@@ -924,16 +526,11 @@ async function runOne(
       checkpointRef,
       phase,
       evidence,
-      ...(ledger ? { ledger } : {}),
-      ...(verifierOn ? { verified } : {}),
       ...(revivalRequest &&
       (reason === "budget_exceeded" || reason === "max_steps")
         ? { revival: revivalRequest }
         : {}),
       ...(outstanding.length > 0 ? { pendingJobs: [...outstanding] } : {}),
-      ...(unresolvedOperations.length > 0
-        ? { pendingOperations: [...unresolvedOperations] }
-        : {}),
     };
   };
 
@@ -1036,66 +633,6 @@ async function runOne(
       })),
     });
   emit({ type: "phase_started", phase });
-  // Resume recovery runs BEFORE the first model call: an effect that may have
-  // landed must never be replayed, and one that did land must be visible to the
-  // model. An unknowable outcome stops the run instead of guessing.
-  if (operations && operationScope !== undefined) {
-    let outcomes: ReconcileOutcome[];
-    try {
-      outcomes = await reconcilePendingOperations({
-        store: operations.store,
-        scope: operationScope,
-        tools: [...available.values()],
-        context: toolContext,
-      });
-    } catch (err) {
-      return conclude("error", {
-        ok: false,
-        error:
-          "anchor: could not read pending operations — refusing to start " +
-          `(${err instanceof Error ? err.message : String(err)})`,
-      });
-    }
-    for (const outcome of outcomes) {
-      emit({
-        type: "reconciled",
-        operationId: outcome.operation.operationId,
-        tool: outcome.operation.tool,
-        status: outcome.status,
-        ...(outcome.detail ? { detail: outcome.detail } : {}),
-      });
-      if (outcome.status === "applied") {
-        messages.push({
-          role: "user",
-          origin: "runtime",
-          content:
-            `[runtime] Operation ${outcome.operation.operationId} ` +
-            `(${outcome.operation.tool}) was already applied before this run resumed.` +
-            (outcome.result?.content ? `\n${outcome.result.content}` : ""),
-        });
-      } else if (outcome.status === "not_applied") {
-        messages.push({
-          role: "user",
-          origin: "runtime",
-          content:
-            `[runtime] Operation ${outcome.operation.operationId} ` +
-            `(${outcome.operation.tool}) was NOT applied. It is safe to perform ` +
-            "the action again if it is still needed.",
-        });
-      } else {
-        unresolvedOperations.push(outcome.operation);
-      }
-    }
-    if (unresolvedOperations.length > 0) {
-      return conclude("recovery_required", {
-        ok: false,
-        error:
-          `anchor: ${unresolvedOperations.length} external operation(s) have an unknown outcome ` +
-          `(${unresolvedOperations.map((operation) => operation.operationId).join(", ")}). ` +
-          "They were not replayed. Reconcile them, then run again.",
-      });
-    }
-  }
   try {
     for (;;) {
       if (signal.aborted)
@@ -1227,9 +764,6 @@ async function runOne(
       // fold. A job that finished since the previous turn (including one
       // carried in from a previous run) rides this call, not the one after.
       await pollJobs();
-      // Refresh the authoritative contract every turn so evidence ids and
-      // status changes are visible after each tool result.
-      if (ledger) messages[0] = system();
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(
@@ -1246,7 +780,6 @@ async function runOne(
           ...(opts.sampling?.seed !== undefined
             ? { seed: opts.sampling.seed }
             : {}),
-          ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {
@@ -1383,25 +916,6 @@ async function runOne(
         // A pending background job can still change the answer: wait for it and
         // give the model the result rather than losing it at the exit.
         if (await settleBeforeFinish()) continue;
-        if (completionGate) {
-          const gate = await completionGate(response.text.trim(), true);
-          if (!gate.ok) {
-            finishGateAttempts += 1;
-            emit({
-              type: "guardrail",
-              kind: "finish_rejected",
-              detail: gate.content.slice(0, 500),
-            });
-            if (finishGateAttempts >= 3) {
-              return conclude("stalled", {
-                ok: false,
-                error: gate.content,
-              });
-            }
-            messages.push({ role: "user", content: gate.content });
-            continue;
-          }
-        }
         return conclude("finished", {
           ok: true,
           summary: response.text.trim(),
@@ -1430,31 +944,12 @@ async function runOne(
         evidence,
         emit,
         emitBackground,
-        ...(operationRuntime ? { operations: operationRuntime } : {}),
-        onMissingJournal,
         signal,
         pauseRequested: () => pauseRequested,
-        onToolResult: (call, result) => {
-          if (
-            !ledger ||
-            call.name === "finish" ||
-            call.name === "update_ledger"
-          ) {
-            return;
-          }
-          recordEvidence(ledger, {
-            tool: call.name,
-            ref: `call:${call.id}`,
-            ok: result.ok,
-            summary: result.content.replace(/\s+/g, " ").slice(0, 500),
-            ...(result.meta ? { meta: result.meta } : {}),
-          });
-        },
       });
       runaway = outcome.runaway;
       declared = outcome.declared;
       outstanding.push(...outcome.jobs);
-      pendingSettlements.push(...outcome.settlements);
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
@@ -1495,8 +990,7 @@ async function runOne(
           content: verboseNudge(visibleTokens),
         });
       }
-      const persisted = await persist();
-      await settleRecorded(persisted);
+      await persist();
       if (signal.aborted)
         return conclude("cancelled", {
           ok: false,
@@ -1547,7 +1041,6 @@ interface ChainSpend {
   costUsd: number;
   costsKnown: boolean;
   reasoningTokens?: number;
-  cachedTokens?: number;
 }
 
 function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
@@ -1558,8 +1051,6 @@ function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
   budget.costsKnown = spend.costsKnown;
   if (spend.reasoningTokens !== undefined)
     budget.reasoningTokens = spend.reasoningTokens;
-  if (spend.cachedTokens !== undefined)
-    budget.cachedTokens = spend.cachedTokens;
   return budget;
 }
 
@@ -1596,9 +1087,6 @@ function usageDelta(
     totalTokens: Math.max(0, now.totalTokens - (before.promptTokens + before.completionTokens)),
     ...(now.costUsd !== undefined ? { costUsd: now.costUsd - before.costUsd } : {}),
     ...(reasoning !== undefined ? { reasoningTokens: reasoning } : {}),
-    ...(now.cachedTokens !== undefined
-      ? { cachedTokens: Math.max(0, now.cachedTokens - (before.cachedTokens ?? 0)) }
-      : {}),
   };
 }
 
@@ -1675,9 +1163,6 @@ async function runChain(
       ...(usage.reasoningTokens !== undefined
         ? { reasoningTokens: usage.reasoningTokens }
         : {}),
-      ...(usage.cachedTokens !== undefined
-        ? { cachedTokens: usage.cachedTokens }
-        : {}),
     };
     stepsBefore += result.steps;
     zeroProgressRuns = result.steps === 0 ? zeroProgressRuns + 1 : 0;
@@ -1718,27 +1203,5 @@ export async function runAgent(
   task: RunTask,
   opts: EngineOptions,
 ): Promise<AgentResult> {
-  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  const intent = resolveTurnIntent(task.task, opts.intent ?? "auto");
-
-  // Conversation turns never create task state: no ledger, no verifier, no
-  // coding phases. A clear task uses the caller's agent, or the coding agent.
-  if (verifierOn && intent !== "task") {
-    const conversation: EngineOptions = {
-      ...opts,
-      agent: chatAgent,
-      verifier: false,
-      intent: "chat",
-      ledger: undefined,
-    };
-    return opts.inbox
-      ? runChain(task, conversation)
-      : runOne(task, conversation);
-  }
-
-  const effective: EngineOptions = {
-    ...opts,
-    agent: opts.agent ?? (verifierOn ? codingAgent : chatAgent),
-  };
-  return opts.inbox ? runChain(task, effective) : runOne(task, effective);
+  return opts.inbox ? runChain(task, opts) : runOne(task, opts);
 }

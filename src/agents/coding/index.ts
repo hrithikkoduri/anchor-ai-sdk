@@ -18,11 +18,7 @@ export { codingPhases } from "./phases.js";
  * `EngineOptions.maxOutputTokens` still wins.
  */
 export function createCodingAgent(
-  opts: {
-    testCommand?: string;
-    maxOutputTokens?: number | false;
-    reasoningEffort?: Agent["reasoningEffort"];
-  } = {},
+  opts: { testCommand?: string; maxOutputTokens?: number | false } = {},
 ): Agent {
   return {
     name: "coding",
@@ -30,9 +26,6 @@ export function createCodingAgent(
     tools: createCodingTools(opts),
     ...(opts.maxOutputTokens !== undefined
       ? { maxOutputTokens: opts.maxOutputTokens }
-      : {}),
-    ...(opts.reasoningEffort !== undefined
-      ? { reasoningEffort: opts.reasoningEffort }
       : {}),
   };
 }

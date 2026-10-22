@@ -193,18 +193,6 @@ export class HeyoGuestExecutor {
   }
 
   /** Kill a backgrounded job (works from an adopted sandbox too). */
-  /** Drain every guest job, including a leaked `cmd &` child. */
-  async killAll(): Promise<number> {
-    let killed = 0;
-    for (const job of [...this.jobs.values()]) {
-      if (await this.killDir(job)) {
-        this.jobs.delete(job.dir);
-        killed++;
-      }
-    }
-    return killed;
-  }
-
   async kill(jobId: string): Promise<boolean> {
     const known = this.jobs.get(jobId);
     const job: Job = known ?? {

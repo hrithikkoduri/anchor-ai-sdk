@@ -1,9 +1,9 @@
-# swe-bench Lite
+# swe-bench: Anchor vs mini-swe-agent
 
-Scores **Anchor** on SWE-bench Lite. The benchmark supplies the task image,
-the model, and the official test patch; the harness is the variable. This
-benchmark's data and results live here; the shared runner lives in
-[`../../src/runner.ts`](../../src/runner.ts).
+Scores **Anchor as a harness** on SWE-bench. Same task images, same model,
+same runner, same patch extraction, same official grader: the only variable
+is the harness. This benchmark's data and results live here; the shared
+runner lives in [`../../src/runner.ts`](../../src/runner.ts).
 
 ## Layout
 
@@ -11,7 +11,9 @@ benchmark's data and results live here; the shared runner lives in
 main.ts          CLI: predictions.jsonl + results.jsonl + run.json + traces/
 tasks.ts         SWE-bench row → EvalTask, incl. the task's Docker image
                  (arms never see gold patches)
-arms/anchor.ts   system under test: codingAgent + benchmark context
+arms/anchor.ts   system under test #1: codingAgent + benchmark context
+arms/mini-swe.ts system under test #2: mini-swe-agent via its python
+                 bindings, in the SAME container (the baseline)
 data/            the committed task subset (deterministic, one per repo)
 results/         verdicts + the comparison table, per round
 ```
@@ -22,6 +24,10 @@ results/         verdicts + the comparison table, per round
 # grader venv
 /opt/homebrew/bin/python3.12 -m venv evals/.venv
 evals/.venv/bin/pip install swebench
+
+# baseline-arm venv (isolated: mini pulls its own litellm stack)
+/opt/homebrew/bin/python3.12 -m venv evals/.venv-mini
+evals/.venv-mini/bin/pip install mini-swe-agent
 ```
 
 Docker Desktop must be installed and running. **The eval images are
@@ -40,7 +46,12 @@ node scripts/fetch-tasks.mjs --limit 10 --out benchmarks/swe-bench/data/swebench
 # 2. the real thing: the official task image (repo at /testbed, deps installed)
 DOCKER_BIN=/Applications/Docker.app/Contents/Resources/bin/docker \
   npm run eval --prefix evals -- --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
-  --provider docker --model deepseek/deepseek-v4.1-flash-1017 --reasoning high --max-steps 50
+  --provider docker --model z-ai/glm-5.3 --max-steps 60
+
+# the baseline arm: same tasks, same model, same container:
+DOCKER_BIN=/Applications/Docker.app/Contents/Resources/bin/docker \
+  npm run eval --prefix evals -- --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \
+  --provider docker --model z-ai/glm-5.3 --arm mini
 
 # 3. bigger sets: Verified (500) or the full benchmark (2294): fetch on demand
 node scripts/fetch-tasks.mjs --dataset SWE-bench/SWE-bench_Verified \

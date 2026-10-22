@@ -129,41 +129,6 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.tools).toBeUndefined();
   });
 
-  it("sends a provider-neutral JSON schema as response_format", async () => {
-    let capturedBody: Record<string, unknown> = {};
-    const fetchImpl: typeof fetch = async (_url, init) => {
-      capturedBody = JSON.parse(String(init?.body));
-      return sseResponse(TEXT_FRAMES);
-    };
-    const schema = {
-      type: "object",
-      properties: { ok: { type: "boolean" } },
-      required: ["ok"],
-      additionalProperties: false,
-    };
-    await make(fetchImpl).complete({
-      messages: [{ role: "user", content: "verdict?" }],
-      maxTokens: 16,
-      responseFormat: {
-        type: "json_schema",
-        name: "verdict",
-        schema,
-      },
-    });
-
-    expect(capturedBody.response_format).toEqual({
-      type: "json_schema",
-      json_schema: {
-        name: "verdict",
-        schema,
-        strict: true,
-      },
-    });
-    expect(capturedBody.stream).toBe(true);
-    expect(capturedBody.max_tokens).toBe(16);
-    expect(capturedBody.tools).toBeUndefined();
-  });
-
   it("sends a sampling pin and records the upstream the gateway names", async () => {
     let capturedBody: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
@@ -186,37 +151,6 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.seed).toBe(42);
     expect(r.model).toBe("zai-org/GLM-5.3");
     expect(r.provider).toBe("Parasail");
-  });
-
-  it("sends reasoning effort in OpenRouter's shape and lets a call override it", async () => {
-    let capturedBody: Record<string, unknown> = {};
-    const fetchImpl: typeof fetch = async (_url, init) => {
-      capturedBody = JSON.parse(String(init?.body));
-      return sseResponse(TEXT_FRAMES);
-    };
-    await make(fetchImpl, {
-      baseUrl: "https://openrouter.ai/api/v1",
-      reasoningEffort: "low",
-    }).complete({
-      messages: [{ role: "user", content: "ping" }],
-      reasoningEffort: "high",
-    });
-    expect(capturedBody.reasoning).toEqual({ effort: "high" });
-    expect(capturedBody.reasoning_effort).toBeUndefined();
-  });
-
-  it("sends reasoning_effort to a direct OpenAI-compatible endpoint", async () => {
-    let capturedBody: Record<string, unknown> = {};
-    const fetchImpl: typeof fetch = async (_url, init) => {
-      capturedBody = JSON.parse(String(init?.body));
-      return sseResponse(TEXT_FRAMES);
-    };
-    await make(fetchImpl, {
-      baseUrl: "https://api.openai.com/v1",
-      reasoningEffort: "xhigh",
-    }).complete({ messages: [{ role: "user", content: "ping" }] });
-    expect(capturedBody.reasoning_effort).toBe("xhigh");
-    expect(capturedBody.reasoning).toBeUndefined();
   });
 
   it("emits deltas incrementally through stream()", async () => {

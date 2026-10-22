@@ -66,45 +66,13 @@ export interface LLMResponse {
   latencyMs: number;
 }
 
-/** Provider-normalized reasoning budget (OpenRouter/OpenAI vocabulary). */
-export type ReasoningEffort =
-  | "minimal"
-  | "low"
-  | "medium"
-  | "high"
-  | "xhigh"
-  | "max";
-
-/**
- * Provider-neutral structured output request. The OpenAI-compatible adapter
- * maps this to `response_format`; providers that support strict JSON Schema
- * return a JSON object directly instead of prose that callers must parse.
- */
-export type LLMResponseFormat =
-  | {
-      type: "json_schema";
-      name: string;
-      schema: Record<string, unknown>;
-      strict?: boolean;
-      description?: string;
-    }
-  | { type: "json_object" };
-
 export interface LLMRequest {
   messages: LLMMessage[];
   tools?: LLMToolDef[];
-  /** Ask for a structured response instead of free-form text. */
-  responseFormat?: LLMResponseFormat;
   temperature?: number;
   /** Fixed sample, when the provider supports it. */
   seed?: number;
   maxTokens?: number;
-  /**
-   * How much reasoning to spend on this call. Sent as OpenRouter's
-   * `reasoning: { effort }` or OpenAI's `reasoning_effort` (see
-   * `OpenAICompatibleOptions.reasoningFormat`).
-   */
-  reasoningEffort?: ReasoningEffort;
 }
 
 export interface LLMClient {

@@ -2,10 +2,12 @@
 /**
  * Read an agent execution, human-first.
  *
- *   node scripts/show-trace.mjs .eval-runs/<run>/traces/<task>.jsonl
+ *   node scripts/show-trace.mjs .eval-runs/<run>/traces/<task>.jsonl   # anchor
+ *   node scripts/show-trace.mjs .eval-runs/<run>/artifacts/mini-<task>.json
  *
- * JSONL of engine events written live by the runner. Truncates long text by
- * default; `--full` shows everything.
+ * Auto-detects the format: JSONL of engine events (anchor; written live by the
+ * runner) or a mini-swe-agent trajectory JSON (captured out of the container).
+ * Truncates long text by default; `--full` shows everything.
  */
 import { readFileSync } from "node:fs";
 
@@ -86,9 +88,41 @@ function showAnchor(path) {
   }
 }
 
+function showMini(path) {
+  const traj = JSON.parse(readFileSync(path, "utf8"));
+  const messages = traj.messages ?? [];
+  console.log(`══ ${path}`);
+  const info = traj.info ?? {};
+  if (info.exit_status) console.log(`   exit_status: ${info.exit_status}`);
+  if (info.model_stats)
+    console.log(`   model_stats: ${JSON.stringify(info.model_stats)}`);
+  let step = 0;
+  for (const message of messages) {
+    if (message.role === "system") continue;
+    if (message.role === "assistant") {
+      step += 1;
+      console.log(`\n[step ${step}]`);
+      if (message.content) {
+        console.log(`  🗨  ${indent(cut(message.content, 1200), "     ")}`);
+      }
+      for (const call of message.tool_calls ?? []) {
+        const name = call.function?.name ?? call.name ?? "?";
+        const args = call.function?.arguments ?? call.arguments ?? "";
+        console.log(`  → ${name}`);
+        console.log(`    ${indent(cut(args, 300), "    ")}`);
+      }
+    } else if (message.role === "user") {
+      console.log(`  ← ${indent(cut(message.content, 600), "    ")}`);
+    }
+  }
+  if (info.submission)
+    console.log(`\n══ submission: ${cut(info.submission, 1000)}`);
+}
+
 for (const file of files) {
   try {
-    showAnchor(file);
+    if (file.endsWith(".jsonl")) showAnchor(file);
+    else showMini(file);
   } catch (error) {
     console.error(`${file}: ${error instanceof Error ? error.message : error}`);
   }

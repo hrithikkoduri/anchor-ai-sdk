@@ -1,14 +1,20 @@
-# terminal-bench 2.1
+# terminal-bench: planned
 
-Ten tasks from the public Terminal-Bench 2.1 dataset, kept as Harbor task
-directories (`task.toml`, `instruction.md`, `tests/`). The agent gets a shell
-in the official task container; the task's own verifier grades the final state.
+The terminal-native sibling of swe-bench: each task ships its own container
+and its own grading; the agent gets a shell and has to get the environment
+from "as found" to "task solved"; without a repo-shaped scaffold, and often
+without a test command handed to it.
 
-- Data: `data/tasks/<task>/`, manifest `data/tasks.jsonl`.
-- Images: the task's `environment.docker_image` (pulled at run time).
-- Grading: in-place, `bash /tests/test.sh`; reward comes from
-  `/logs/verifier/reward.txt`.
-- Fetch/update: `node scripts/fetch-harbor-tasks.mjs`.
-- Run: `BENCH=terminal-bench MODEL=openai/gpt-5.3-codex bash scripts/run-bench.sh`
+**Status: planned; nothing is wired yet.** When it lands, this benchmark
+contributes, on the shared runner:
 
-The ten tasks are a stratified first slice, not the full 89-task suite.
+- `tasks.ts`: a loader from the benchmark's task manifests (each task: a
+  container image + a problem statement + its own checks)
+- an anchor arm; `codingAgent` over the task container, shell-first
+  (its `run_tests` step becomes "discover and run the checks")
+- a grader adapter; the task's own assertions, mapped to the same
+  resolved/unresolved verdict shape swe-bench uses
+
+The shared runner (`../../src/runner.ts`) is already benchmark-agnostic;
+tasks → sandbox → arm → diff; so this is a task loader + an arm, not a
+second harness. Data and results will live here: `data/`, `results/`.

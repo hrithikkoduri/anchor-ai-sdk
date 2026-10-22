@@ -18,15 +18,6 @@ import { defineTool, optionalBoolean, requireString } from "./types.js";
 export interface FinishOptions {
   /** Consumer-supplied JSON schema for the optional `handoff` parameter. */
   handoff?: { schema: Record<string, unknown>; description?: string };
-  /**
-   * Engine-owned pre-completion gate. Returning ok:false turns the finish call
-   * into a failed tool result (the run continues) with actionable feedback.
-   */
-  validate?: (input: {
-    summary: string;
-    success: boolean;
-    handoff?: Record<string, unknown>;
-  }) => Promise<{ ok: false; content: string } | { ok: true }>;
 }
 
 export function createFinishTool(opts: FinishOptions = {}) {
@@ -81,18 +72,6 @@ export function createFinishTool(opts: FinishOptions = {}) {
         (typeof raw !== "object" || raw === null || Array.isArray(raw))
       )
         throw new Error('"handoff" must be an object');
-      const handoffValue =
-        raw !== undefined
-          ? (raw as Record<string, unknown>)
-          : undefined;
-      if (opts.validate) {
-        const verdict = await opts.validate({
-          summary,
-          success,
-          ...(handoffValue ? { handoff: handoffValue } : {}),
-        });
-        if (!verdict.ok) return { ok: false, content: verdict.content };
-      }
       ctx.onFinish?.(summary);
       return {
         ok: true,
@@ -100,7 +79,9 @@ export function createFinishTool(opts: FinishOptions = {}) {
         meta: {
           summary,
           success,
-          ...(handoffValue !== undefined ? { handoff: handoffValue } : {}),
+          ...(raw !== undefined
+            ? { handoff: raw as Record<string, unknown> }
+            : {}),
         },
       };
     },

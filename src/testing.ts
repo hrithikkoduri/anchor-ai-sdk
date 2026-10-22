@@ -504,6 +504,40 @@ const SCENARIOS: Scenario[] = [
       }
     },
   },
+
+  {
+    name: "buildImage publishes a named image a sandbox can boot",
+    skip: ({ provider }) =>
+      provider.capabilities.buildImage && provider.buildImage
+        ? undefined
+        : "provider declares no buildImage capability",
+    run: async ({ provider }) => {
+      // A distinct name per run: building is publishing, and a same-name
+      // rebuild of a live image would race a previous suite run's boots.
+      const name = `anchor-conformance-${provider.name}-${Date.now()}`;
+      const built = await provider.buildImage!({
+        name,
+        fromImage: "debian:bookworm",
+        run: [
+          "apt-get update",
+          "apt-get install -y --no-install-recommends git ca-certificates bash coreutils",
+          "rm -rf /var/lib/apt/lists/*",
+        ],
+      });
+      expect(built.name).toBe(name);
+      expect(built.provider).toBe(provider.name);
+      // Boot from the published name — `spec.image` is the opaque handle.
+      const sb = provider.create({ image: built.name });
+      await sb.start();
+      try {
+        const git = await sb.exec("git --version && timeout --version | head -1");
+        expect(git.exitCode).toBe(0);
+        expect(git.stdout).toContain("git version");
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
 ];
 
 /**

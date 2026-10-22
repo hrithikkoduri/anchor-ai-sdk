@@ -1,10 +1,5 @@
 import type { Agent } from "../agents/types.js";
-import type {
-  LLMClient,
-  LLMMessage,
-  LLMUsage,
-  ReasoningEffort,
-} from "../llm/types.js";
+import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
 import type { Tool } from "../tools/types.js";
 import type { TraceSink } from "../trace/sink.js";
@@ -14,9 +9,6 @@ import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
 import type { InboxMessage, InboxStore, RunSummary } from "./inbox.js";
-import type { OperationStore, PendingOperation } from "./operations.js";
-import type { ProgressLedger } from "../ledger/types.js";
-import type { VerifierConfig } from "../ledger/config.js";
 
 export interface RunTask {
   task: string;
@@ -45,16 +37,6 @@ export interface EngineOptions {
   strategy?: AgentStrategy;
   sandbox?: Sandbox;
   tools?: Tool[];
-  /**
-   * Task-verification mode. `true` enables the SDK-owned ledger, intent gate,
-   * evidence capture, and phase/finish verification. A config supplies an
-   * optional cheap verifier LLM. Absent/false preserves today's behavior.
-   */
-  verifier?: boolean | VerifierConfig;
-  /** Explicit turn routing; default "auto" when verifier is enabled. */
-  intent?: "auto" | "chat" | "clarify" | "task";
-  /** Resume/inject an existing ledger (normally loaded from the thread). */
-  ledger?: ProgressLedger;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean };
   budgets?: Partial<BudgetLimits>;
@@ -161,12 +143,6 @@ export interface EngineOptions {
    * upstreams.
    */
   sampling?: { temperature?: number; seed?: number };
-  /**
-   * How much reasoning the model may spend per call (`minimal` … `xhigh`).
-   * Explicit option wins over the agent bundle's suggestion. Sent as the
-   * provider's native shape by the LLM client.
-   */
-  reasoningEffort?: ReasoningEffort;
   /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };
@@ -186,23 +162,6 @@ export interface EngineOptions {
     channel: string;
     /** Build the next run's task from a claimed batch. Default joins text. */
     render?: (messages: InboxMessage[]) => { task: string; context?: string };
-  };
-  /**
-   * Durable recovery for tools that declare an `effect` (external writes).
-   * The engine records the intent BEFORE the tool runs, mints an
-   * `operationId` the tool forwards as an idempotency key, and settles the
-   * record after. On resume, pending operations are reconciled; an ambiguous
-   * outcome stops the run with `reason: "recovery_required"` instead of being
-   * replayed. Absent: effectful tools still run, with an advisory (today's
-   * behavior, no crash protection).
-   *
-   * The store is the consumer's. `scope` defaults to the thread id; one of the
-   * two is required when a store is supplied.
-   */
-  operations?: {
-    store: OperationStore;
-    /** Recovery scope — usually the thread id. Default: `thread.id`. */
-    scope?: string;
   };
 }
 
@@ -271,14 +230,7 @@ export type FinishReason =
    * continues with the message it claimed; a standalone run (no inbox) never
    * reports this.
    */
-  | "interrupted"
-  /**
-   * Recovery found an operation whose outcome is unknown (a crash between the
-   * external write and its result). The run stops BEFORE the next model turn,
-   * so the write cannot be replayed silently. Resolve it (the tool's
-   * `effect.reconcile` or a human) and run again.
-   */
-  | "recovery_required";
+  | "interrupted";
 
 export interface AgentResult {
   /** Runtime outcome only: not a verification certificate or permission to publish. */
@@ -304,16 +256,7 @@ export interface AgentResult {
    * `resumeJobs` to keep polling them; otherwise their results are lost.
    */
   pendingJobs?: BackgroundJob[];
-  /**
-   * External operations with an UNKNOWN outcome. Present when the run ended
-   * with `reason: "recovery_required"`; never retried automatically.
-   */
-  pendingOperations?: PendingOperation[];
   phase?: string;
-  /** Ledger state after this run, when verifier/ledger mode was active. */
-  ledger?: ProgressLedger;
-  /** Whether the finish/phase gate accepted the claimed completion. */
-  verified?: boolean;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
   handoff?: Record<string, unknown>;
 }

@@ -129,7 +129,6 @@ export class DockerSandbox implements Sandbox {
     try {
       // The workspace must exist: a named path comes from the image; a repoUrl
       // is cloned; nothing means an empty, git-initialized directory.
-      let gitWorkspace = true;
       if (this.spec.workspacePath) {
         const present = await this.execRaw(`test -d ${shq(this.workspace)}`, {
           cwd: "/",
@@ -140,13 +139,6 @@ export class DockerSandbox implements Sandbox {
             `workspacePath ${this.workspace} does not exist in ${this.spec.image ?? this.opts.image}`,
           );
         }
-        // Harbor task images are not all git repos (Terminal-Bench). Git is a
-        // capability of the workspace, not a precondition for running a shell.
-        const hasGit = await this.execRaw(
-          `test -d ${shq(`${this.workspace}/.git`)}`,
-          { cwd: "/", timeoutSecs: 60 },
-        );
-        gitWorkspace = hasGit.exitCode === 0;
       } else if (this.spec.repoUrl) {
         const clone = await this.execRaw(
           `git clone --quiet ${shq(this.spec.repoUrl)} ${shq(this.workspace)}`,
@@ -188,23 +180,21 @@ export class DockerSandbox implements Sandbox {
         }
       }
 
-      if (gitWorkspace) {
-        const access = this.gitAccess();
-        // Benchmark images ship exec bits that their git index does not
-        // record; ignoring mode drift keeps patches (and hasChangesFrom)
-        // about CONTENT — a fresh boot must never read as "new work".
-        await access.git(["config", "core.fileMode", "false"]);
-        await access.git([
-          "config",
-          "user.name",
-          this.spec.gitIdentity?.name ?? "anchor",
-        ]);
-        await access.git([
-          "config",
-          "user.email",
-          this.spec.gitIdentity?.email ?? "anchor@localhost",
-        ]);
-      }
+      const access = this.gitAccess();
+      // Benchmark images ship exec bits that their git index does not record;
+      // ignoring mode drift keeps patches (and hasChangesFrom) about CONTENT —
+      // a fresh boot must never read as "new work".
+      await access.git(["config", "core.fileMode", "false"]);
+      await access.git([
+        "config",
+        "user.name",
+        this.spec.gitIdentity?.name ?? "anchor",
+      ]);
+      await access.git([
+        "config",
+        "user.email",
+        this.spec.gitIdentity?.email ?? "anchor@localhost",
+      ]);
       // The reserved .anchor dir: git-excluded (status/diff), checkpoint-carried.
       await this.execRaw(reservedScratchPrepCommand(), { timeoutSecs: 60 });
 
@@ -429,6 +419,7 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true,
       egressControl: true, // `--network none` shape via disconnect after setup
       localPath: false,
+      buildImage: false, // images are plain registry refs; nothing to publish
     },
     create: (spec) => new DockerSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

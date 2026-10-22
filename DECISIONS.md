@@ -920,113 +920,39 @@ what served it instead of inferring from the bill.
 
 Regressions: `tests/unit/llm.test.ts`.
 
-## Decision #83: External effects get a write-ahead operation journal
+## Decision #81: The Daytona adapter ships behind `./sandbox/daytona`
 
-A run persisted the conversation only after a whole tool batch finished, so a
-worker that died between an external write and that save left no trace of the
-write in the thread. Recovery read the missing result as "not done" and could
-repeat it (a second issue, refund, or message). The trace had intent
-(`tool_call`) and observed result (`tool_result`) adjacent, but no record the
-harness could read back, and no stable identity the target could use to
-recognize a retry.
+The planned stub becomes a real adapter, mapped 1:1 onto the E2B shape so the
+two remote-VM providers stay diffable. Daytona's TypeScript SDK
+(`@daytona/sdk`, an optional peer like `e2b`) supplies create-from-image,
+`get`+`start`, `pause`, `delete`, copy-on-write `fork`, and
+`process.executeCommand`.
 
-Tools that change something outside the workspace now declare
-`Tool.effect`. The engine then:
+- **Images, not templates.** Daytona builds a snapshot from any registry image
+  at create time, so there is no E2B-style template step — but also no
+  "base" default: a missing image fails loudly at `start()`.
+- **Lifecycle timers disabled at create** (`autoStop: 0`, `autoPause: 0`,
+  `autoArchive: 0`, `autoDelete: -1`): a retained sandbox must never be
+  reaped by an idle timer while its thread is between runs. Retention is
+  Anchor's alone: `destroy()` pauses when `retain`, `adopt` is `get()` +
+  `start()`, `release(handle)` deletes unconditionally.
+- **The timeout rule unchanged.** `executeCommand`'s deadline is not trusted
+  as a process kill; every command is still wrapped in guest-side
+  `timeout -k`, exit 124/137 → `timedOut`, and the HTTP wait is
+  `timeoutSecs + 30` as a transport guard only.
+- **One stream, honestly reported.** Daytona returns a single combined
+  output; `ExecResult.output` carries it verbatim and `stderr` stays empty —
+  no fabricated split.
+- **Coordinates via labels.** Workspace/scratch paths ride base64 sandbox
+  labels (label validators are undocumented), read back on adopt.
+- **Capabilities unchanged from E2B:** `fork`/`retain`/`remoteCheckpoint`
+  true; `egressControl` false (Daytona's `networkBlockAll` is create-time
+  only, but clone-at-start needs network, so it cannot honor the
+  setup-then-block contract); `localPath` false.
 
-1. mints an `operationId` (or uses `effect.key(input)` for a domain key),
-2. calls `OperationStore.begin()` — durable — BEFORE the tool runs,
-3. passes `context.operationId` to the tool, which forwards it as the target's
-   idempotency key, and offers `context.acknowledge()` for acceptance facts,
-4. calls `settle()` with the observed outcome — but only AFTER the conversation
-   containing that result is durable. A failed thread save leaves the operation
-   pending for the next run, rather than settled with no result the model can
-   see.
+Live conformance stays opt-in (`RUN_LIVE_DAYTONA_TESTS=1` with
+`DAYTONA_API_KEY`/`DAYTONA_IMAGE`) until it has run green against a real
+account — the offline lifecycle suite covers the same paths through the
+injectable `clientFactory`.
 
-`OperationStore` is the consumer's storage, like `ThreadStore` and
-`InboxStore`; `MemoryOperationStore` ships for tests. `EngineOptions.operations`
-is opt-in. Without it, effectful tools still run and emit one
-`effect_without_journal` advisory — no breaking change, no crash protection.
-`MemoryOperationStore` is not crash-durable; production consumers bring a
-database (a unique `operation_id` column and an idempotent insert).
-
-On resume, pending operations are reconciled BEFORE the first model call. The
-tool's `effect.reconcile()` answers applied / not applied / unknown:
-
-- **applied** → settle as completed and tell the model (runtime message);
-- **not applied** → settle as failed; redoing the action is safe;
-- **unknown** → stop with `reason: "recovery_required"`, report
-  `AgentResult.pendingOperations`, and make NO model call. An ambiguous write
-  is never replayed silently.
-
-`ToolResult.completion: "unknown"` marks a result whose effect may have landed
-(a lost response, or a failed settle). The trace now records intent
-(`tool_call` + `operationId`), acknowledgement (`tool_ack`), observed result
-(`tool_result` + `outcome`), and recovery (`reconciled`). Trace sinks remain
-best-effort; the operation store is the authoritative record.
-
-The honest guarantee is **effectively-once within the target's idempotency
-window**. A target with a unique constraint or idempotency key gets dedupe for
-free; a target with a status lookup gets reconciliation; a target with neither
-gets a detected unknown, not a duplicate. "Not found" is not treated as "not
-applied" unless the tool says so — eventual consistency is the tool's call.
-
-A journal write failure fails closed: a mutating call does not run if its
-intent cannot be recorded, and a failed settle marks the result unknown. A
-repeated domain key (`effect.key`) is not executed twice: `begin()` returns
-false and the call reports that the operation is already recorded.
-
-Regressions: `tests/unit/operation-recovery.test.ts`.
-
-## Decision #84: Reasoning effort is a first-class option
-
-Reasoning budget was implicit: the engine could pin sampling (temperature, seed)
-but had no way to say "think harder" or "think less" per run. Every harness that
-optimizes long tasks shapes this dial (planning and verification get more
-reasoning, the middle gets less), so it belongs in the public surface, not in a
-provider-specific wrapper.
-
-`EngineOptions.reasoningEffort` (`minimal` | `low` | `medium` | `high` |
-`xhigh` | `max`) travels to every `LLMRequest`; an `Agent.reasoningEffort`
-bundle default applies when the run does not set one, and the explicit option
-wins. The LLM client sends OpenRouter's `reasoning: { effort }` by default when
-the base URL is OpenRouter, and OpenAI's `reasoning_effort` otherwise; a
-gateway that speaks the other shape sets `reasoningFormat` explicitly. A
-client-level default is also available for consumers that want one effort for
-every call.
-
-Ignored by non-reasoning models. No validation beyond the type: providers
-reject unsupported levels, and the eval records the chosen level in `run.json`.
-
-Regressions: `tests/unit/llm.test.ts`, `tests/unit/reasoning-effort.test.ts`.
-
-## Decision #85: Verification is opt-in, ledger-backed, and storage-free
-
-Task verification is a mode, not a second agent framework. One option —
-`EngineOptions.verifier: true` — enables a durable ledger, an intent gate,
-automatic evidence capture, a coverage gate, and cheap structured phase/finish
-verification. No new store: the ledger is a field on the existing
-`StoredThread` and is saved by the consumer's existing `ThreadStore`.
-
-Intent routing is SDK-owned and deterministic first: greetings/thanks are chat;
-clear task verbs or code references are tasks; ambiguous turns clarify. Chat
-turns create no ledger and make no verifier call. The consumer can override
-with `EngineOptions.intent`.
-
-The ledger is append-only. User/compiled requirements are locked; agents may
-add requirements and link evidence, never delete or weaken locked ones. Every
-tool result is captured as an evidence reference (tool, ref, status, compact
-summary); raw output stays in the thread/artifact store. A deterministic gate
-checks coverage and evidence presence before the verifier judges whether the
-evidence supports the claim. The verifier is a separate low-effort structured
-call (same model by default, optional cheap model), used at phase transitions
-and finish, with a call cap and an allow-with-warning outage policy.
-
-Structured output is first-class (`LLMRequest.responseFormat` +
-`completeStructured`), so compiler and verifier decisions are schema-bound
-rather than prose parsed by regex. Compiler and verifier token usage is recorded
-against the run budget.
-
-Regressions: `tests/unit/ledger.test.ts`,
-`tests/unit/ledger-compiler.test.ts`,
-`tests/unit/engine-verifier.test.ts`,
-`tests/unit/structured-output.test.ts`.
+Regressions: `tests/unit/daytona.test.ts`, `tests/unit/daytona-lifecycle.test.ts`.

@@ -20,11 +20,17 @@ import {
   CommandExitError,
   Sandbox as E2BClient,
   SandboxNotFoundError,
+  Template,
   type SandboxConnectOpts,
   type SandboxInfo,
   type SandboxOpts,
 } from "e2b";
-import type { ProviderHealth, SandboxProvider } from "../provider.js";
+import type {
+  ImageBuildResult,
+  ImageBuildSpec,
+  ProviderHealth,
+  SandboxProvider,
+} from "../provider.js";
 import {
   clampTimeout,
   shq,
@@ -590,8 +596,39 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
       remoteCheckpoint: true, // git push over the sandbox's network
       egressControl: false, // not exposed by this adapter yet
       localPath: false, // remote VM; no host-directory import
+      buildImage: true, // Template.build publishes a named template
     },
     create: (spec) => new E2BSandbox(spec, opts),
+    buildImage: async (spec): Promise<ImageBuildResult> => {
+      if (!spec.fromImage && !spec.dockerfile) {
+        throw new Error(
+          "e2b buildImage: name exactly one of fromImage / dockerfile",
+        );
+      }
+      if (spec.fromImage && spec.dockerfile) {
+        throw new Error(
+          "e2b buildImage: fromImage and dockerfile are mutually exclusive",
+        );
+      }
+      // E2B boots templates, not raw images: `Template.build` publishes the
+      // builder to their cloud under `name`, and `spec.image` = that name.
+      // `run` steps run as root — a plain `apt-get install` needs it (the
+      // template's default user is unprivileged); the booted sandbox keeps
+      // the template's own default user.
+      const template = spec.dockerfile
+        ? Template().fromDockerfile(spec.dockerfile)
+        : Template().fromImage(spec.fromImage!);
+      if (spec.run?.length) {
+        for (const cmd of spec.run) {
+          template.runCmd(cmd, { user: "root" });
+        }
+      }
+      await Template.build(template, spec.name, {
+        ...(spec.cpu ? { cpuCount: spec.cpu } : {}),
+        ...(spec.memoryMB ? { memoryMB: spec.memoryMB } : {}),
+      });
+      return { name: spec.name, provider: "e2b" };
+    },
     adopt: (handle, spec = {}) =>
       new E2BSandbox({ ...spec, adopt: handle.id }, opts),
     release: async (handle) => {

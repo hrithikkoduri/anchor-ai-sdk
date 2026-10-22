@@ -188,13 +188,6 @@ export interface Sandbox {
   ): Promise<ExecResult | undefined>;
   /** Kill a backgrounded job (idempotent: false when it was already gone). */
   killJob?(jobId: string): Promise<boolean>;
-  /**
-   * Kill every guest job this sandbox still has, returning how many were
-   * stopped. A leaked shell background child (`cmd &`) is not one the engine
-   * tracks; draining before a checkpoint/diff keeps a benchmark from failing
-   * on a busy sandbox instead of on the work. Best-effort by contract.
-   */
-  killAllJobs?(): Promise<number>;
   /** Commit the workspace state so the run can resume / fork from here.
    * With `push`, also force-push the commit to `refs/heads/<push>` so the
    * checkpoint survives losing the machine. A failed push is REPORTED in the

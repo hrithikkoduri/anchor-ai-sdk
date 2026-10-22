@@ -12,12 +12,15 @@ sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
 sandbox/e2b               e2b/ (index, exec)          E2B cloud sandboxes (remote)
+sandbox/daytona           daytona/ (index, exec)     Daytona cloud sandboxes (remote)
 sandbox/local             local/index.ts              the host, NO isolation: dev/CI
 ```
 
-Daytona is **planned**: its stub module exists in-repo (`daytona/`) so the
-shape is visible, but it is not an exported subpath and its factory throws
-until it passes the conformance suite.
+Daytona boots a **registry Docker image** — unlike E2B, it builds a snapshot
+from the image at create time, so any image with `bash`, `git`, and coreutils
+(including `timeout`) works. The adapter disables Daytona's auto-lifecycle
+timers at create (retention is explicit: pause at destroy, start at adopt), so
+a retained sandbox can never be reaped between a thread's runs.
 
 E2B boots a **template**, not an arbitrary Docker image at create time. Pass
 `template` to `e2b()` (or let `SandboxSpec.image` name one) and build it with
@@ -145,11 +148,7 @@ The Heyo adapter resolves the rootfs from `imageKind`:
 |---|---|---|
 | `artifact` (**preferred**) | host **pulls** a prebuilt rootfs from `imageStore` | fast, no build |
 | `dockerfile` | host **builds** the rootfs from a manifest | slow cold start |
-| `git` | host **clones the repo and builds its Dockerfile** | slow, plus a clone; set `imageContext` when the Dockerfile is not at the repo root |
-
-A first host-side build can take longer than a boot: `readyTimeoutMs`
-(default 15 minutes) bounds the readiness wait, and a failed build job throws
-with the builder's log instead of reading as a generic boot timeout.
+| `git` | host **clones the repo and builds its Dockerfile** | slow, plus a clone |
 
 Prefer `artifact`. The build kinds pay clone-and-build on a cold start, and the
 `git` kind reads a build secret while building; that is what
@@ -194,9 +193,9 @@ retryable/adoptable, and the boot itself lives in `start()`.
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-Daytona is planned: its stub module stays in-repo as a signpost but is not
-exported; its factory throws with a pointer here until it passes the
-conformance suite.
+Daytona shipped as an adapter behind `./sandbox/daytona`; live conformance is
+opt-in (`RUN_LIVE_DAYTONA_TESTS=1` with a `DAYTONA_API_KEY`) until it has run
+green against a real account.
 
 ### E2B notes
 
@@ -218,6 +217,105 @@ conformance suite.
   for five minutes, so a callback that hits GitHub does not run on every
   command.
 
+### Daytona notes
+
+- **Images, not templates.** `create({ image })` builds a snapshot from any
+  registry image at create time; `spec.image` is a plain Docker reference.
+  There is no "base" default — a missing image fails loudly at start().
+- **Retain = pause.** Same shape as E2B: `destroy()` pauses a retained
+  sandbox, `adopt()` is `get()` + `start()` (start on a running sandbox is a
+  no-op). `keep` leaves it running. `release(handle)` deletes unconditionally.
+- **Auto-lifecycle disabled.** `autoStop`/`autoPause`/`autoArchive` are 0 and
+  `autoDeleteInterval: -1` at create, so Daytona's idle reapers can never
+  destroy a retained sandbox between runs; lifecycle is Anchor's alone.
+- **Fork = copy-on-write clone.** `sandbox.fork()` copies the filesystem;
+  the child is reset to the requested commit like E2B's.
+- **One output stream.** Daytona's `executeCommand` returns a single combined
+  `result` — no stdout/stderr split. `ExecResult.output` carries it verbatim
+  and `stderr` stays empty rather than fabricating a split.
+- **Coordinates via labels.** Workspace/scratch paths are stored base64 in
+  sandbox labels at create (label validators are unknown; b64 is safe) and
+  read back on adopt.
+
+- **Templates, not images.** E2B has no Docker-image-at-create; `spec.image`
+  is a template name. Build the template with `Template().fromImage(...)` or
+  `fromDockerfile(...)`, then pass its name.
+- **Retain = pause.** `destroy()` pauses a retained sandbox (memory and disk
+  survive indefinitely) and `adopt()` connects/resumes it. `keep` leaves it
+  running for debugging. `provider.release(handle)` is the FINAL teardown and
+  kills even a retained sandbox: it does not know the run's `retain` flag, so
+  a sweep must not call it on a thread it means to resume.
+- **Fork = native snapshot.** `fork()` snapshots the VM, attaches the fork,
+  then resets it to the requested commit (`checkout -f` + `clean -fd`) so the
+  result matches the contract's clean-checkpoint semantics.
+- **Timeout.** The adapter wraps every command in guest-side `timeout -k`, so
+  E2B's control-plane `timeoutMs` is not trusted as a process kill.
+- **Credentials.** `git.token` is resolved into `GIT_TOKEN` and a repo-local
+  credential helper; the token never enters the workspace. One mint is reused
+  for five minutes, so a callback that hits GitHub does not run on every
+  command.
+
+## Build once, boot many: `buildImage`
+
+Every remote provider publishes a **named machine image** on its own hub and
+boots later sandboxes from that name — publish-then-reuse, the same pattern
+in three vocabularies:
+
+| provider | publishes | later creates |
+| --- | --- | --- |
+| `daytona` | a named **snapshot** (`daytona.snapshot.create`) | `{ image: name }` resolves as a snapshot |
+| `e2b` | a named **template** (`Template.build`) | `{ image: name }` is the template name |
+| `heyo` | a **rollout image** from a git-kind build (app-lb rolls it out as the deployment's `vm.image`) | the deployment that built it boots it; a *published rootfs* (`imageKind: "artifact"`) is pushed out-of-band with `heyctl artifact push` |
+
+`SandboxSpec.image` stays an opaque name on every provider; `buildImage` is
+the unified publish step (declared via `capabilities.buildImage`):
+
+```ts
+const built = await provider.buildImage({
+  name: "my-toolchain",
+  fromImage: "debian:bookworm",          // or `dockerfile: "path/to/Dockerfile"`
+  run: [                                 // layered `RUN` steps
+    "apt-get update",
+    "apt-get install -y --no-install-recommends git ripgrep",
+  ],
+});
+
+const sb = provider.create({ image: built.name }); // boots the published image
+```
+
+Or headless, the same thing from the CLI:
+
+```
+node scripts/build-image.mjs --provider daytona --name my-toolchain \
+  --from-image debian:bookworm --run 'apt-get install -y git ripgrep'
+```
+
+Notes per provider:
+
+- **daytona** — the snapshot is built once and registered by name; a later
+  `{ image }` that names a snapshot boots it without paying the build again.
+  A `{ image }` that does not name a snapshot is a registry Docker reference,
+  built at create time (so prefer published snapshots for anything custom).
+- **e2b** — `Template.build` publishes the template under `name`; `spec.image`
+  is that name (the existing behavior, now also the `buildImage` path).
+- **heyo** — the SDK cannot push a rootfs artifact (`heyctl artifact push`
+  ships a built ext4, the output of `heyvm mvm build`), and a
+  `push-dockerfile` recipe manifest cannot be built by a deployment without
+  the store's own API key in `build.auth` (operator-side, `ART_API_KEY`).
+  `buildImage` is therefore the **git-kind** build:
+  `gitRepo`/`gitRef`/`gitDockerfile` name the recipe, app-lb clones and
+  builds it, rolling the result out as that deployment's `vm.image` —
+  verified live (`status: succeeded`, `rolled_out: true`). The recipe must
+  build a **heyo-bootable** rootfs (sshd + the firecracker guest contract);
+  an arbitrary registry image's Dockerfile builds but never comes ready.
+  `fromImage`/`dockerfile` are rejected with that reason. To boot a
+  published rootfs (`imageKind: "artifact"`, e.g. the toolchain image),
+  push it out-of-band with `heyctl artifact push`.
+
+The conformance suite runs a buildImage scenario for every provider that
+declares the capability: it builds, boots from the returned name, and asserts
+the image's content is really there.
+
 ## Layout
 
 ```
@@ -229,5 +327,5 @@ heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
 e2b/         E2B cloud sandboxes: index (provider), exec (command/result)
 local/       the host itself: dev/CI only, no isolation
-daytona/     stub: planned, not exported
+daytona/     Daytona cloud sandboxes: index (provider), exec (command/result)
 ```

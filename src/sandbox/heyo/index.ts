@@ -16,7 +16,12 @@
 import { Hws } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./exec.js";
 import { upsertHeyoSecret } from "./secret.js";
-import type { ProviderHealth, SandboxProvider } from "../provider.js";
+import type {
+  ImageBuildResult,
+  ImageBuildSpec,
+  ProviderHealth,
+  SandboxProvider,
+} from "../provider.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -61,8 +66,6 @@ export interface HeyoSandboxConfig {
   imageRepo?: string;
   imageRef?: string;
   imageDockerfile?: string;
-  /** git kind: build context inside the repo (default: repo root). */
-  imageContext?: string;
   /** git kind: an app-lb secret holding the git token (private repos). */
   imageAuth?: { secret: string; key?: string };
   /**
@@ -77,12 +80,6 @@ export interface HeyoSandboxConfig {
    * when pip/venvs install into it; the /workspace data disk is `diskSizeGb`.
    */
   imageSizeMb?: number;
-  /**
-   * How long to wait for the deployment's pool to become healthy after an
-   * image pull/build. Default 15 minutes: a first host-side build of a broad
-   * toolchain image can outlive the old 5-minute budget.
-   */
-  readyTimeoutMs?: number;
   sizeClass: HeyoSizeClass;
   diskSizeGb: number;
   /**
@@ -178,8 +175,58 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
       remoteCheckpoint: true,
       egressControl: false,
       localPath: false, // the VM is another machine
+      buildImage: true, // a build-kind deployment publishes `image_name` to the store
     },
     create: (spec) => new HeyoSandbox(spec, cfg),
+    buildImage: async (spec): Promise<ImageBuildResult> => {
+      // Heyo cannot push a registry image from SDK code — pushing an image is
+      // the host-side `heyctl artifact push`. The SDK-native publish path is
+      // the git-kind build: a `build` source (git repo + Dockerfile) that
+      // app-lb builds, landing the rootfs in the namespace's artifact store
+      // under `image_name`. Later sandboxes boot it with the same name via
+      // the plain `artifact` kind.
+      if (!spec.gitRepo) {
+        throw new Error(
+          "heyo buildImage needs a git source (gitRepo, plus gitRef / gitDockerfile as needed): " +
+            "the SDK cannot push registry images — that is `heyctl artifact push`. " +
+            `got: ${spec.fromImage ? "fromImage" : spec.dockerfile ? "dockerfile" : "nothing"}`,
+        );
+      }
+      const lb = new Hws({ server: cfg.server, token: cfg.token });
+      const id = `anchor-image-${spec.name}`;
+      await lb.createDeployment({
+        id,
+        namespace: cfg.namespace,
+        routes: [],
+        build: {
+          repo: spec.gitRepo,
+          ...(spec.gitRef ? { ref: spec.gitRef } : {}),
+          ...(spec.gitDockerfile ? { dockerfile: spec.gitDockerfile } : {}),
+          image_name: spec.name,
+          ...(cfg.imageSizeMb ? { image_size_mb: cfg.imageSizeMb } : {}),
+        },
+        vm: {
+          driver: "firecracker",
+          port: 22,
+          size_class: cfg.sizeClass,
+          disk_size_gb: cfg.diskSizeGb,
+        },
+        health: { path: null },
+        scaling: {
+          min_replicas: 0,
+          max_replicas: 1,
+          scale_to_zero_after_secs: 0,
+          idle_action: "retain",
+        },
+      });
+      try {
+        const job = await lb.startBuild(id);
+        await lb.waitForJob(job.id);
+      } finally {
+        await lb.deleteDeployment(id).catch(() => undefined);
+      }
+      return { name: spec.name, provider: "heyo" };
+    },
     adopt: (handle, spec = {}) =>
       new HeyoSandbox({ ...spec, adopt: handle.id }, cfg),
     release: async (handle) => {
@@ -211,12 +258,8 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
 export class HeyoSandbox implements Sandbox {
   readonly backend = "heyo" as const;
   readonly id: string;
-  /**
-   * The repo path inside the VM. Defaults to the /workspace data disk; an
-   * image-provisioned workspace can name its own path (SWE-bench images ship
-   * the repo at /testbed), in which case start() verifies it instead of cloning.
-   */
-  readonly workspace: string;
+  /** The repo path inside the VM (the /workspace data disk). */
+  readonly workspace = "/workspace/repo";
   /** Scratch on the data disk, outside the repo (spills, notes). */
   readonly scratch = "/workspace/.anchor";
 
@@ -231,7 +274,6 @@ export class HeyoSandbox implements Sandbox {
   ) {
     // Adopting keeps the retained deployment's id — same VM, same disk.
     this.id = spec.adopt ?? newSandboxId();
-    this.workspace = spec.workspacePath ?? "/workspace/repo";
     this.lb = new Hws({ server: cfg.server, token: cfg.token });
     this.executor = new HeyoGuestExecutor((command, env) =>
       this.lb.exec(this.id, command, {
@@ -244,9 +286,9 @@ export class HeyoSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
-    if (this.spec.image) {
+    if (this.spec.image || this.spec.workspacePath) {
       throw new Error(
-        "the heyo backend uses its configured image — a per-sandbox image belongs to the docker backend; use imageKind for a provider-level image",
+        "the heyo backend uses its configured image — per-sandbox image/workspacePath belong to the docker backend",
       );
     }
     if (this.spec.egress === "none") {
@@ -260,9 +302,7 @@ export class HeyoSandbox implements Sandbox {
       // still there. Refreshing git identity + credentials is idempotent.
       try {
         await this.lb.patchScaling(this.id, { min_replicas: 1 });
-        await this.lb.waitForReady(this.id, {
-          timeoutMs: this.cfg.readyTimeoutMs ?? 900_000,
-        });
+        await this.lb.waitForReady(this.id);
       } catch (err) {
         throw new Error(
           `retained sandbox ${this.id} is unavailable: ${err instanceof Error ? err.message : String(err)}`,
@@ -301,9 +341,6 @@ export class HeyoSandbox implements Sandbox {
                 repo: this.cfg.imageRepo,
                 ref: this.cfg.imageRef,
                 dockerfile: this.cfg.imageDockerfile ?? "Dockerfile",
-                ...(this.cfg.imageContext
-                  ? { context: this.cfg.imageContext }
-                  : {}),
                 ...(this.cfg.imageAuth ? { auth: this.cfg.imageAuth } : {}),
                 ...(this.cfg.imageSizeMb
                   ? { image_size_mb: this.cfg.imageSizeMb }
@@ -342,34 +379,13 @@ export class HeyoSandbox implements Sandbox {
       this.cfg.imageKind === "artifact"
         ? await this.lb.startPull(this.id)
         : await this.lb.startBuild(this.id);
-    // A failed job is an answer, not an exception: waitForJob resolves and the
-    // record carries the builder's log. Surface it instead of blaming readiness.
-    const finished = await this.lb.waitForJob(job.id, {
-      deployment: this.id,
-    });
-    if (finished.status !== "succeeded") {
-      const tail = finished.log.slice(-8).join("\n");
-      throw new Error(
-        `image ${this.cfg.imageKind} job ${finished.status}: ${
-          finished.error ?? tail ?? "no builder log"
-        }`,
-      );
-    }
+    await this.lb.waitForJob(job.id);
     await this.lb.patchScaling(this.id, { min_replicas: 1 });
-    await this.lb.waitForReady(this.id, {
-      timeoutMs: this.cfg.readyTimeoutMs ?? 900_000,
-    });
+    await this.lb.waitForReady(this.id);
 
     await this.ensureGit();
-    if (this.spec.workspacePath) {
-      // The image already contains the repo (SWE-bench's /testbed). Verify it
-      // and configure identity; never clone over the provisioned environment.
-      await this.verifyWorkspace();
-      await this.configureGitIdentity();
-    } else {
-      await this.setupGitCredentials();
-      await this.cloneRepo();
-    }
+    await this.setupGitCredentials();
+    await this.cloneRepo();
     await this.prepareScratch();
     this.started = true;
   }
@@ -390,11 +406,6 @@ export class HeyoSandbox implements Sandbox {
   async killJob(jobId: string): Promise<boolean> {
     this.assertUsable();
     return this.executor.kill(jobId);
-  }
-
-  async killAllJobs(): Promise<number> {
-    this.assertUsable();
-    return this.executor.killAll();
   }
 
   async checkpoint(
@@ -579,21 +590,11 @@ export class HeyoSandbox implements Sandbox {
     }
   }
 
-  /** An image-provisioned workspace must already be a git checkout. */
-  private async verifyWorkspace(): Promise<void> {
-    const probe = await this.guest(`test -d ${shq(this.workspace)}/.git`, {
+  private async cloneRepo(): Promise<void> {
+    await this.guest(`mkdir -p ${this.workspace}`, {
       cwd: "/",
-      timeoutSecs: 30,
+      timeoutSecs: 60,
     });
-    if (probe.exitCode !== 0) {
-      throw new Error(
-        `workspacePath ${this.workspace} is not a git repository — ` +
-          "the configured image must contain the checkout",
-      );
-    }
-  }
-
-  private async configureGitIdentity(): Promise<void> {
     const gitName = this.spec.gitIdentity?.name ?? "anchor";
     const gitEmail = this.spec.gitIdentity?.email ?? "anchor@localhost";
     const identity = await this.guest(
@@ -603,14 +604,6 @@ export class HeyoSandbox implements Sandbox {
     if (identity.exitCode !== 0) {
       throw new Error(`git identity setup failed: ${identity.output.trim()}`);
     }
-  }
-
-  private async cloneRepo(): Promise<void> {
-    await this.guest(`mkdir -p ${shq(this.workspace)}`, {
-      cwd: "/",
-      timeoutSecs: 60,
-    });
-    await this.configureGitIdentity();
 
     if (!this.spec.repoUrl) {
       const init = await this.guest(`git init -q -b main`, {

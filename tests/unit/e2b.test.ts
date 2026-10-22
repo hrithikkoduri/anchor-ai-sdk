@@ -88,6 +88,7 @@ describe("e2b provider", () => {
       remoteCheckpoint: true,
       egressControl: false,
       localPath: false,
+      buildImage: true,
     });
   });
 

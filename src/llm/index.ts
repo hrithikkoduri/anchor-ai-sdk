@@ -5,14 +5,10 @@
  * plain options — an app hands in its own config object, this module never
  * looks one up.
  */
-import {
-  OpenAICompatibleClient,
-  type OpenAICompatibleOptions,
-} from "./openai-compatible.js";
+import { OpenAICompatibleClient } from "./openai-compatible.js";
 import type { LLMClient } from "./types.js";
 
 export * from "./types.js";
-export * from "./structured.js";
 export * from "./catalog.js";
 export { OpenAICompatibleClient, LLMApiError } from "./openai-compatible.js";
 export type { OpenAICompatibleOptions } from "./openai-compatible.js";
@@ -27,10 +23,6 @@ export interface LLMOptions {
   priceCacheReadPerMTok?: number;
   /** Ask the provider for a usage block carrying the real cost (OpenRouter). */
   includeUsageCost?: boolean;
-  /** Default reasoning budget; per-request `reasoningEffort` wins. */
-  reasoningEffort?: OpenAICompatibleOptions["reasoningEffort"];
-  /** Wire shape for reasoning effort; inferred from `baseUrl` when unset. */
-  reasoningFormat?: OpenAICompatibleOptions["reasoningFormat"];
 }
 
 export function createLLMClient(opts: LLMOptions): LLMClient {
@@ -50,7 +42,5 @@ export function createLLMClient(opts: LLMOptions): LLMClient {
     priceOutPerMTok: opts.priceOutPerMTok,
     priceCacheReadPerMTok: opts.priceCacheReadPerMTok,
     includeUsageCost: opts.includeUsageCost,
-    reasoningEffort: opts.reasoningEffort,
-    reasoningFormat: opts.reasoningFormat,
   });
 }

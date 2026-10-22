@@ -37,7 +37,7 @@ release policy.** There is no requirement to turn an agent into a workflow graph
 | Build around | What Anchor supplies |
 | --- | --- |
 | **Your agent** | Chat and coding bundles, or your own strategy and toolset. Phases label the approach; they are not permissions. |
-| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Docker, and local development. |
+| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Daytona, Docker, and local development. |
 | **Longer tasks** | Conversation compaction, thread-store interfaces, working notes, checkpoints, and opt-in revival planning. |
 | **Observable execution** | Streaming events, tool-result metadata, NDJSON/custom trace sinks, and replay helpers. |
 
@@ -77,40 +77,6 @@ No sandbox is needed for this chat example. Model calls may incur cost.
 pass its returned `compaction` settings to the engine as shown. Catalog lookup is
 best-effort; configure overrides and fallbacks for endpoints without this metadata.
 
-## Task verification
-
-For tasks that need evidence before completion, enable the opt-in verifier:
-
-```ts
-const result = await runAgent(
-  { task: "Investigate where auth is refreshed" },
-  {
-    llm,
-    sandbox,
-    thread: { store, id: threadId },
-    verifier: true,
-  },
-);
-```
-
-The SDK owns the ledger, intent routing, evidence capture, and phase/finish
-checks. The consumer supplies only the normal `ThreadStore` (the ledger is an
-optional field on `StoredThread`) and the model. Greetings and other chat turns
-create no ledger and make no verifier call. A separate cheap verifier model is
-optional:
-
-```ts
-verifier: {
-  llm: cheapLlm,
-  gates: ["phase", "finish"],
-  allowWaived: true,
-}
-```
-
-`finish` is rejected while a required ledger item is open or lacks linked
-evidence; the agent loops with the missing-evidence feedback. Compiler and
-verifier token usage is counted against the run budget.
-
 ## One sandbox interface
 
 **Configure the provider once. Keep the agent-facing machine interface the same.**
@@ -121,6 +87,7 @@ The same layer works with the built-in coding tools, custom agents, or direct
 | --- | --- | --- |
 | **Heyo Computer** | `anchor-ai-sdk/sandbox/heyo` | Image artifact/store on the provider; host-built image kinds are also supported. |
 | **E2B** | `anchor-ai-sdk/sandbox/e2b` | A prepared template name or ID, **not** an arbitrary Docker image at create time. |
+| **Daytona** | `anchor-ai-sdk/sandbox/daytona` | Any registry Docker image with bash, git, and coreutils — Daytona builds a snapshot from it at create time. |
 | **Docker** | `anchor-ai-sdk/sandbox/docker` | An explicit container image, Docker CLI, and running daemon. |
 | **Local** | `anchor-ai-sdk/sandbox/local` | Host processes and a working directory. **No isolation; trusted dev/CI only.** |
 
@@ -312,13 +279,11 @@ Validate inputs and enforce permissions in your implementation.
 | Capability | Your controls |
 | --- | --- |
 | **Budgets and correction** | Step/token/known-dollar budgets, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
-| **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`xhigh`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
 | **Context and memory** | Catalog-derived or explicit compaction, supplied thread stores, agent-authored notes, and best-effort output spill. |
 | **Revival and resume** | Opt-in budget warnings, `request_revival`, `planRevival`, and `ThreadBudget`. Your app persists state and decides whether to fund or enqueue another run. |
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |
 | **Streaming and traces** | Raw `onEvent` updates; sequenced, pattern-redacted `traceSinks`; NDJSON files, custom sinks, live projection, and replay. |
 | **Execution evidence** | Tool names/status/metadata plus recorded test-command outcomes and optional post-run Git freshness checks. Your app defines verification and release gates. |
-| **External effects** | Declared effects, a write-ahead operation journal, stable operation ids, reconciliation on resume, and a stop on unknown outcomes. |
 
 <details>
 <summary><strong>Example: limits, nudges, compaction, and a recorded trace</strong></summary>
@@ -367,45 +332,6 @@ are not redacted. Use distinct trace files/IDs per run in your application.
 > `latestEvidenceForTree` can compare it with the current tree, but does not prove
 > an immutable tested snapshot, require a full suite, or inspect assertions.
 
-## Recovering external writes
-
-A crash between "the target accepted the write" and "the thread saved the
-result" must not become a duplicate write. A tool that changes something outside
-the workspace declares an effect; the engine then records the intent before the
-call and settles it after:
-
-```js
-const createIssue = defineTool({ name: "create_issue", /* ... */ }, async (input, ctx) => {
-  const issue = await github.createIssue(input, {
-    idempotencyKey: ctx.operationId, // stable across retries
-  });
-  await ctx.acknowledge?.({ issue: issue.number });
-  return { ok: true, content: `Created #${issue.number}` };
-}, {
-  effect: {
-    async reconcile({ operationId }) {
-      const found = await github.findByKey(operationId);
-      return found
-        ? { status: "applied", result: { ok: true, content: found.url } }
-        : { status: "unknown" };
-    },
-  },
-});
-
-await runAgent(task, {
-  llm, agent, sandbox,
-  operations: { store }, // a durable table in production
-});
-```
-
-On resume, a pending operation is reconciled, never replayed. An unknowable
-outcome ends the run with `reason: "recovery_required"` and
-`AgentResult.pendingOperations`. `MemoryOperationStore` is for tests; production
-needs a durable table with a unique `operation_id`. The target's participation
-(an idempotency key or a status lookup) is what turns this into
-effectively-once; without it, the harness surfaces the ambiguity instead of
-guessing.
-
 ## Test the machine contract
 
 `runSandboxConformance(provider)` from `anchor-ai-sdk/testing` exercises the
@@ -444,7 +370,7 @@ claim. The older 7/10 OpenRouter cost comparison is separate historical context.
 
 **Early alpha, 0.x.** Pin exact versions and test your integration. Provider and
 runtime features are version-specific; the current source may be ahead of the
-installed package. Daytona, agent teams, and consumer skill bundles remain
+installed package. Agent teams and consumer skill bundles remain
 roadmap work in the reviewed source.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in

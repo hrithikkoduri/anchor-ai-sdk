@@ -156,7 +156,6 @@ export function evalsConfig(env: NodeJS.ProcessEnv = process.env): EvalsConfig {
       imageRepo: env.HEYO_IMAGE_GIT_REPO || undefined,
       imageRef: env.HEYO_IMAGE_GIT_REF || undefined,
       imageDockerfile: env.HEYO_IMAGE_GIT_DOCKERFILE || undefined,
-      imageContext: env.HEYO_IMAGE_GIT_CONTEXT || undefined,
       imageAuth: env.HEYO_IMAGE_GIT_SECRET
         ? {
             secret: env.HEYO_IMAGE_GIT_SECRET,

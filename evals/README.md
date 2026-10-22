@@ -10,10 +10,11 @@ imports**: its own config reader, the package, and nothing else.
 
 ```
 benchmarks/
-  swe-bench/       SWE-bench Lite (larger sets on demand).
+  swe-bench/       SWE-bench Lite (larger sets on demand) vs mini-swe-agent.
                    Data, results, and the full how-to live in its README.
-  swe-bench-pro/   SWE-bench Pro V2, ten Harbor tasks, patch replay.
-  terminal-bench/  Terminal-Bench 2.1, ten Harbor tasks, in-place verifier.
+  terminal-bench/  planned: terminal-native tasks, per-task containers.
+  program-bench/   planned.
+  metr/            planned.
 src/               the harness engine: the generic runner (tasks → sandbox →
                    arm → git diff, the future Anchor lift, deliberately one
                    isolated module), the config reader, the CLI, the arms.
@@ -21,7 +22,7 @@ scripts/           run/build tooling: fetch tasks, prepull/prewarm images,
                    grade with the official harness, watch-and-grade, report.
 .eval-runs/        local, gitignored run artifacts (predictions, traces,
                    grading reports).
-.venv            host venv for the official SWE-bench grader.
+.venv / .venv-mini host venvs: the official grader, and the mini baseline.
 ```
 
 `src/runner.ts` is benchmark-agnostic by design: a benchmark contributes a
@@ -37,28 +38,12 @@ Copy `.env.example` to `.env` and fill in `LLM_API_KEY` (and `E2B_API_KEY` for t
 
 | benchmark | status | docs |
 | --- | --- | --- |
-| **swe-bench Lite** | Round 1 shipped (GLM 5.3); Docker + official test patches | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
-| **swe-bench Pro V2** | Ten Harbor tasks, patch replay | [`benchmarks/swe-bench-pro/README.md`](benchmarks/swe-bench-pro/README.md) |
-| **terminal-bench 2.1** | Ten Harbor tasks, in-place verifier | [`benchmarks/terminal-bench/README.md`](benchmarks/terminal-bench/README.md) |
+| **swe-bench** | Round 1 shipped (GLM 5.3) | [`benchmarks/swe-bench/README.md`](benchmarks/swe-bench/README.md) |
+| **terminal-bench** | planned | [`benchmarks/terminal-bench/README.md`](benchmarks/terminal-bench/README.md) |
+| **program-bench** | planned | [`benchmarks/program-bench/README.md`](benchmarks/program-bench/README.md) |
+| **metr** | planned | [`benchmarks/metr/README.md`](benchmarks/metr/README.md) |
 
 Results always live next to their benchmark: `benchmarks/<name>/results/`.
 
 The swe-bench runner also accepts `--provider e2b` (template-backed remote
 sandboxes); see the E2B section in its README.
-
-## GitHub Actions
-
-`.github/workflows/anchor-bench.yml` runs the Anchor matrix on `ubuntu-latest` with
-Docker: three benchmarks × two models × two variants, sharded to stay under
-the six-hour job limit. It needs one repository secret:
-
-- `LLM_API_KEY` — an OpenRouter key.
-
-The workflow writes raw results as artifacts and publishes:
-- `latest/summary.md` and `latest/summary.json` on the `bench-results` branch;
-- `dashboard/index.html` on the same branch (enable GitHub Pages from that
-  branch to view it).
-
-Trigger it from **Actions → run-all-bench → Run workflow** (or trigger `anchor-bench` / `external-bench` separately). `bench=all` runs the six
-baseline + six treatment logical runs; pick one benchmark or one variant to
-iterate cheaper.

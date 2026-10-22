@@ -29,6 +29,11 @@ export interface SandboxCapabilities {
    */
   localPath: boolean;
   /**
+   * `buildImage(spec)` is implemented — the provider can build and publish a
+   * named machine image that later creates reference via `SandboxSpec.image`.
+   */
+  buildImage: boolean;
+  /**
    * Provider-specific flags beyond the contract — declared, never implied.
    * (Deliberately not an index signature: a typo must not type-check as a
    * present capability.)
@@ -50,6 +55,50 @@ export interface ProviderHealth {
   detail?: string;
   /** Provider-specific structured extras (e.g. token scope) for `doctor`s. */
   info?: Record<string, unknown>;
+}
+
+/**
+ * A machine image a consumer builds once and reuses — the publish step of the
+ * publish-then-boot pattern every remote provider supports in its own
+ * vocabulary (Daytona snapshot, E2B template, Heyo artifact).
+ */
+export interface ImageBuildSpec {
+  /** The name later creates reference it by (`spec.image`). Provider-scoped. */
+  name: string;
+  /** A registry base image (e.g. `debian:bookworm`). Mutually exclusive with `dockerfile`. */
+  fromImage?: string;
+  /**
+   * Path to a Dockerfile (host-side read). Mutually exclusive with `fromImage`.
+   * The provider runs it through its own build pipeline; Heyo needs a
+   * `heyvm.dockerfile.v1` manifest — a Dockerfile path is `git`-kind source.
+   */
+  dockerfile?: string;
+  /** The directory the Dockerfile's build context lives in. Default: the Dockerfile's dir. */
+  context?: string;
+  /** Commands to run in the image after the base layer (the usual `apt-get install …`). */
+  run?: string[];
+  /**
+   * Git source recipe (Daytona's `Image.fromDockerfile`-style build can take
+   * this too; Heyo's git-kind build is built from it). Mutually exclusive
+   * with `fromImage`/`dockerfile` on providers that build from git.
+   */
+  gitRepo?: string;
+  /** Branch/tag/commit for `gitRepo`. Default: the remote's default branch. */
+  gitRef?: string;
+  /** Path of the Dockerfile inside `gitRepo`. Default: `Dockerfile`. */
+  gitDockerfile?: string;
+  /** vCPUs for the build. Default: the provider's own. */
+  cpu?: number;
+  /** Memory (MB) for the build. Default: the provider's own. */
+  memoryMB?: number;
+}
+
+/** What a successful `buildImage` hands back. */
+export interface ImageBuildResult {
+  /** The exact string to pass as `SandboxSpec.image` on later creates. */
+  name: string;
+  /** The provider that owns it (for logging/multi-provider consumers). */
+  provider: string;
 }
 
 export interface SandboxProvider {
@@ -76,4 +125,11 @@ export interface SandboxProvider {
    * refresh the build secret its git-kind image builds read).
    */
   prepare?(args: { gitToken?: () => Promise<string> }): Promise<void>;
+  /**
+   * Build and publish a named machine image on the provider's own
+   * infrastructure, so later `create`s boot from it without paying the build
+   * again (`spec.image` = the returned `name`). Optional: declared via
+   * `capabilities.buildImage`.
+   */
+  buildImage?(spec: ImageBuildSpec): Promise<ImageBuildResult>;
 }
