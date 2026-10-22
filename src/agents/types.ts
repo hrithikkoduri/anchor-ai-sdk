@@ -11,6 +11,7 @@
  * per-field. Custom agents are just objects built from the same primitives.
  */
 import type { AgentStrategy } from "../engine/strategy.js";
+import type { ReasoningEffort } from "../llm/types.js";
 import type { Tool } from "../tools/types.js";
 
 export interface Agent {
@@ -25,4 +26,9 @@ export interface Agent {
    * An explicit engine option wins; absent, the engine default applies.
    */
   maxOutputTokens?: number | false;
+  /**
+   * Reasoning budget this bundle suggests. An explicit
+   * `EngineOptions.reasoningEffort` wins; absent, the provider default applies.
+   */
+  reasoningEffort?: ReasoningEffort;
 }

@@ -31,6 +31,11 @@ const USAGE = `usage: eval --tasks <file.jsonl> [options]
                           benchmark environment from task images; heyo/e2b = VMs)
   --e2b-template <name>   override E2B_TEMPLATE for repo-clone tasks
   --arm anchor|mini       system under test (default anchor)
+  --variant <name>        harness variant recorded with the run (default baseline)
+  --reasoning <effort>    minimal|low|medium|high|xhigh|max (anchor arm only)
+  --task-image            heyo: boot the task's own image (no repo clone)
+  --time-budget <secs>    wall-clock ceiling per task (checks still run)
+  --repeat <n>            repeat each harness task n times (n>1 needs checks)
   --limit <n>             run only the first n tasks
   --task <instance_id>    run a single task
   --model <id>            model override (default: configured LLM)
@@ -76,7 +81,41 @@ if (args.has("help") || !args.has("tasks")) {
 }
 
 const tasksFile = String(args.get("tasks"));
+const variant = String(args.get("variant") ?? "baseline");
 const armName = String(args.get("arm") ?? "anchor");
+const REASONING_EFFORTS = [
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+const reasoningArg = args.has("reasoning")
+  ? String(args.get("reasoning"))
+  : undefined;
+if (
+  reasoningArg !== undefined &&
+  !REASONING_EFFORTS.includes(
+    reasoningArg as (typeof REASONING_EFFORTS)[number],
+  )
+) {
+  say(`unknown reasoning effort "${reasoningArg}" — ${REASONING_EFFORTS.join(", ")}`);
+  process.exit(1);
+}
+const reasoningEffort = reasoningArg as
+  | (typeof REASONING_EFFORTS)[number]
+  | undefined;
+const timeBudgetSecs = args.has("time-budget")
+  ? Number(args.get("time-budget"))
+  : undefined;
+if (
+  timeBudgetSecs !== undefined &&
+  (!Number.isFinite(timeBudgetSecs) || timeBudgetSecs <= 0)
+) {
+  say("--time-budget must be a positive number of seconds");
+  process.exit(1);
+}
 if (armName !== "anchor" && armName !== "mini") {
   say(`unknown arm "${armName}" — anchor or mini`);
   process.exit(1);
@@ -208,6 +247,25 @@ if (args.has("task")) {
   tasks = tasks.filter((task) => task.id === wanted);
 }
 if (args.has("limit")) tasks = tasks.slice(0, Number(args.get("limit")));
+if (args.has("repeat")) {
+  const repeat = Number(args.get("repeat"));
+  if (!Number.isInteger(repeat) || repeat < 1) {
+    say("--repeat must be a positive integer");
+    process.exit(1);
+  }
+  if (repeat > 1) {
+    if (!tasks.every((task) => task.checks?.length)) {
+      say("--repeat needs harness tasks with checks (no external grader)");
+      process.exit(1);
+    }
+    tasks = tasks.flatMap((task) =>
+      Array.from({ length: repeat }, (_, index) => ({
+        ...task,
+        id: `${task.id}__r${index + 1}`,
+      })),
+    );
+  }
+}
 if (args.has("image-tag")) {
   const tag = String(args.get("image-tag"));
   tasks = tasks.map((task) =>
@@ -216,6 +274,52 @@ if (args.has("image-tag")) {
       : task,
   );
 }
+if (providerName === "heyo" && args.has("task-image")) {
+  // The provider boots this task's own image (built from the official task
+  // image). The repo is already provisioned at workspacePath; never clone.
+  tasks = tasks.map((task) => {
+    const {
+      image: _image,
+      repoUrl: _repoUrl,
+      baseRef: _baseRef,
+      setup: _setup,
+      ...rest
+    } = task;
+    const checks =
+      task.checks ??
+      task.failToPass?.map((test) => ({
+        id: test,
+        command: `python -m pytest -q ${JSON.stringify(test)}`,
+      }));
+    return {
+      ...rest,
+      workspacePath: task.workspacePath ?? "/testbed",
+      ...(checks && checks.length > 0 ? { checks } : {}),
+    };
+  });
+} else if (providerName === "heyo") {
+  // Generic image: clone the task repo at its base commit and install the
+  // project. This is only an approximation; old SWE-bench repos need their
+  // official image (use --task-image with a per-task build).
+  tasks = tasks.map((task) => {
+    const { image, workspacePath: _workspacePath, ...rest } = task;
+    const setup =
+      rest.setup ??
+      (image !== undefined ? ["python3 -m pip install -e ."] : undefined);
+    const checks =
+      rest.checks ??
+      task.failToPass?.map((test) => ({
+        id: test,
+        command: `python3 -m pytest -q ${JSON.stringify(test)}`,
+      }));
+    return {
+      ...rest,
+      ...(setup && setup.length > 0 ? { setup } : {}),
+      ...(checks && checks.length > 0 ? { checks } : {}),
+    };
+  });
+}
+
 if (providerName === "e2b") {
   // The task's `image` is a Docker image from the SWE-bench dataset. E2B boots
   // templates instead, so each image task needs an explicit mapping (built
@@ -297,11 +401,22 @@ const report = (result: EvalTaskResult, index: number): void => {
     usage === undefined
       ? "—"
       : `${Math.round((usage.promptTokens + usage.completionTokens) / 1000)}k`;
-  const mark = result.status === "completed" ? "✓" : "✗";
-  const detail =
+  const mark =
     result.status === "completed"
-      ? `${result.steps ?? "?"} steps · ${tokens} tok · ${fmtUsd(usage?.costUsd)}`
-      : `${result.error ?? "failed"}`;
+      ? result.falseFinish
+        ? "!"
+        : "✓"
+      : result.status === "timeout"
+        ? "⏱"
+        : "✗";
+  const scored =
+    result.reward === undefined
+      ? ""
+      : ` · reward ${result.reward.toFixed(2)}${result.checks ? ` (${result.checks.filter((check) => check.ok).length}/${result.checks.length})` : ""}`;
+  const detail =
+    result.status === "completed" || result.status === "timeout"
+      ? `${result.steps ?? "?"} steps · ${tokens} tok · ${fmtUsd(usage?.costUsd)}${scored}`
+      : `${result.error ?? "failed"}${scored}`;
   say(
     `[${index + 1}/${tasks.length}] ${result.taskId} ${mark} ${detail} · ${fmtWall(result.wallMs)}`,
   );
@@ -330,9 +445,14 @@ const arm =
           ? { costLimitUsd: Number(args.get("max-usd")) }
           : {}),
       })
-    : anchorArm();
+    : anchorArm({
+        variant,
+        ...(reasoningEffort ? { engineOptions: { reasoningEffort } } : {}),
+      });
 
 let finished = 0;
+/** Tool calls per task — the mechanism-activation signal. */
+const toolCounts = new Map<string, Record<string, number>>();
 
 const results = await runEvalSuite({
   tasks,
@@ -343,11 +463,18 @@ const results = await runEvalSuite({
   ...(compaction ? { compaction } : {}),
   ...(sampling ? { sampling } : {}),
   ...(egress ? { egress: egress as "none" } : {}),
+  ...(timeBudgetSecs !== undefined ? { timeBudgetSecs } : {}),
+  variant,
   artifactsDir,
   onEvent: (task, event) => {
     const chunks = traces.get(task.id) ?? [];
     chunks.push(`${JSON.stringify({ at: Date.now(), ...event })}\n`);
     traces.set(task.id, chunks);
+    if (event.type === "tool_call") {
+      const counts = toolCounts.get(task.id) ?? {};
+      counts[event.name] = (counts[event.name] ?? 0) + 1;
+      toolCounts.set(task.id, counts);
+    }
   },
   onResult: async (result) => {
     await flushTrace(result.taskId);
@@ -364,11 +491,29 @@ const results = await runEvalSuite({
       `${JSON.stringify({
         taskId: result.taskId,
         arm: result.arm,
+        ...(result.variant ? { variant: result.variant } : {}),
         status: result.status,
         ...(result.error ? { error: result.error } : {}),
         ...(result.steps !== undefined ? { steps: result.steps } : {}),
         ...(result.reason ? { reason: result.reason } : {}),
         ...(result.usage ? { usage: result.usage } : {}),
+        ...(result.reward !== undefined ? { reward: result.reward } : {}),
+        ...(result.checks
+          ? {
+              checks: result.checks.map((check) => ({
+                id: check.id,
+                ok: check.ok,
+                weight: check.weight,
+                exitCode: check.exitCode,
+                output: check.output.slice(0, 500),
+              })),
+            }
+          : {}),
+        ...(result.timedOut ? { timedOut: true } : {}),
+        ...(result.falseFinish ? { falseFinish: true } : {}),
+        ...(toolCounts.get(result.taskId)
+          ? { toolCalls: toolCounts.get(result.taskId) }
+          : {}),
         wallMs: result.wallMs,
         patchChars: result.patch.length,
       })}\n`,
@@ -381,6 +526,15 @@ const results = await runEvalSuite({
 const completed = results.filter(
   (result) => result.status === "completed",
 ).length;
+const scored = results.filter((result) => result.reward !== undefined);
+const fullCredit = scored.filter((result) => (result.reward ?? 0) >= 0.95).length;
+const meanReward =
+  scored.length === 0
+    ? undefined
+    : scored.reduce((sum, result) => sum + (result.reward ?? 0), 0) /
+      scored.length;
+const falseFinishes = results.filter((result) => result.falseFinish).length;
+const timeouts = results.filter((result) => result.status === "timeout").length;
 const totalUsd = results.reduce(
   (sum, result) => sum + (result.usage?.costUsd ?? 0),
   0,
@@ -396,12 +550,19 @@ await writeFile(
   `${JSON.stringify(
     {
       arm: armName,
+      variant,
+      ...(reasoningEffort ? { reasoningEffort } : {}),
       model,
       llm: llmName,
       baseUrl,
+      ...(args.has("repeat") ? { repeat: Number(args.get("repeat")) } : {}),
+      ...(timeBudgetSecs !== undefined ? { timeBudgetSecs } : {}),
       ...(sampling ? { sampling } : {}),
       ...(egress ? { egress } : {}),
       provider: provider.name,
+      ...(providerName === "heyo"
+        ? { grader: "pytest-fail-to-pass (local approximation, not official)" }
+        : {}),
       ...(providerName === "e2b"
         ? {
             e2b: {
@@ -414,6 +575,23 @@ await writeFile(
       tasks: tasks.length,
       completed,
       failed: tasks.length - completed,
+      ...(scored.length > 0
+        ? {
+            fullCredit,
+            meanReward,
+            falseFinishes,
+            timeouts,
+            checksPassed: scored.reduce(
+              (sum, result) =>
+                sum + (result.checks?.filter((check) => check.ok).length ?? 0),
+              0,
+            ),
+            checksTotal: scored.reduce(
+              (sum, result) => sum + (result.checks?.length ?? 0),
+              0,
+            ),
+          }
+        : {}),
       totalUsd,
       wallMsP50: percentile(0.5),
       wallMsP95: percentile(0.95),
@@ -432,5 +610,12 @@ say(
   `done: ${completed}/${tasks.length} completed · ${fmtUsd(totalUsd)} total · ` +
     `p50 ${fmtWall(percentile(0.5) ?? 0)} · p95 ${fmtWall(percentile(0.95) ?? 0)}`,
 );
+if (scored.length > 0) {
+  say(
+    `scored: ${fullCredit}/${scored.length} full credit · mean reward ${
+      meanReward?.toFixed(3) ?? "—"
+    } · ${falseFinishes} false finish(es) · ${timeouts} timeout(s)`,
+  );
+}
 say(`predictions: ${path.join(outDir, "predictions.jsonl")}`);
 say("next: grade with the official swebench harness (Docker)");

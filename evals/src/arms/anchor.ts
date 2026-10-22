@@ -13,6 +13,7 @@ import {
   codingAgent,
   runAgent,
   type Agent,
+  type EngineOptions,
 } from "anchor-ai-sdk";
 import type { EvalArm, EvalArmContext } from "../runner.js";
 import type { EvalTask } from "../tasks.js";
@@ -51,18 +52,34 @@ const BENCHMARK_DISCIPLINE = [
   "- Keep your working-notes file (.anchor/notes.md) current and reconcile it before finishing — every unverified requirement written on it is unfinished work.",
 ].join("\n");
 
-export function anchorArm(): EvalArm {
+export interface AnchorArmOptions {
+  /**
+   * Which harness variant this arm runs. `baseline` is today's engine;
+   * `progress` will enable the progress ledger once it exists. The runner
+   * records it, so a null result can never be blamed on the wrong build.
+   */
+  variant?: string;
+  /** Extra engine options for a variant (kept explicit; no hidden defaults). */
+  engineOptions?: Partial<EngineOptions>;
+}
+
+export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
   return {
     name: "anchor",
     async run(task: EvalTask, ctx: EvalArmContext) {
+      const localFixture = task.localPath !== undefined;
       const context = JSON.stringify(
         {
-          repository: task.repoUrl,
+          ...(task.repoUrl ? { repository: task.repoUrl } : {}),
           workspace: ctx.sandbox.workspace,
-          baseCommit: task.baseRef,
+          ...(task.baseRef ? { baseCommit: task.baseRef } : {}),
           note: [
-            "A benchmark task: make the requested change in this repository; the workspace diff is the deliverable (no remote, no publication).",
-            "The environment is ALREADY provisioned: the project's dependencies live in a ready Python environment — try /opt/miniconda3/envs/testbed/bin/python first (bare python/pip may not see them). Do NOT reinstall the project.",
+            "A benchmark task: make the requested change in this workspace; the workspace diff is the deliverable (no remote, no publication).",
+            localFixture
+              ? "This is a local, dependency-free Node project. Run its checks with node; do not install packages."
+              : task.setup?.length
+                ? "The harness ran a setup step against the system Python. If a dependency is still missing, install it with pip; do not reinstall what is already present."
+                : "The environment is ALREADY provisioned: the project's dependencies live in a ready Python environment — try /opt/miniconda3/envs/testbed/bin/python first (bare python/pip may not see them). Do NOT reinstall the project.",
             "The project's own tests are the source of truth. Find and run the tests that cover the reported behavior before and after your change — and run the relevant test FILES, not only your own repro: breaking neighboring behavior counts against you.",
             "When the report shows an exact expected output or format, reproduce it verbatim in your repro and compare against it.",
             "Re-read the report before finishing and cover EVERY requirement it names — including 'this was already added for X and should also apply to Y' style twins. Do not finish while any relevant test fails.",
@@ -91,17 +108,19 @@ export function anchorArm(): EvalArm {
             }),
         },
       };
+      const budgets = { ...(ctx.budgets ?? {}), ...(task.budgets ?? {}) };
       const outcome = await runAgent(
         { task: task.problem },
         {
           llm: ctx.llm,
           sandbox: ctx.sandbox,
           agent,
-          ...(ctx.budgets ? { budgets: ctx.budgets } : {}),
+          ...(Object.keys(budgets).length > 0 ? { budgets } : {}),
           ...(ctx.compaction ? { compaction: ctx.compaction } : {}),
           ...(ctx.sampling ? { sampling: ctx.sampling } : {}),
           ...(ctx.onEvent ? { onEvent: ctx.onEvent } : {}),
           ...(ctx.signal ? { signal: ctx.signal } : {}),
+          ...(options.engineOptions ?? {}),
         },
       );
       return {

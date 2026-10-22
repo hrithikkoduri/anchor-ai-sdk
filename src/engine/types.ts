@@ -1,5 +1,10 @@
 import type { Agent } from "../agents/types.js";
-import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
+import type {
+  LLMClient,
+  LLMMessage,
+  LLMUsage,
+  ReasoningEffort,
+} from "../llm/types.js";
 import type { Sandbox } from "../sandbox/types.js";
 import type { Tool } from "../tools/types.js";
 import type { TraceSink } from "../trace/sink.js";
@@ -144,6 +149,12 @@ export interface EngineOptions {
    * upstreams.
    */
   sampling?: { temperature?: number; seed?: number };
+  /**
+   * How much reasoning the model may spend per call (`minimal` … `xhigh`).
+   * Explicit option wins over the agent bundle's suggestion. Sent as the
+   * provider's native shape by the LLM client.
+   */
+  reasoningEffort?: ReasoningEffort;
   /** External abort (fast in-process path). Merged with `cancel` polling. */
   signal?: AbortSignal;
   thread?: { store: ThreadStore; id: string };

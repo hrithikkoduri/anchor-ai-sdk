@@ -976,3 +976,25 @@ repeated domain key (`effect.key`) is not executed twice: `begin()` returns
 false and the call reports that the operation is already recorded.
 
 Regressions: `tests/unit/operation-recovery.test.ts`.
+
+## Decision #84: Reasoning effort is a first-class option
+
+Reasoning budget was implicit: the engine could pin sampling (temperature, seed)
+but had no way to say "think harder" or "think less" per run. Every harness that
+optimizes long tasks shapes this dial (planning and verification get more
+reasoning, the middle gets less), so it belongs in the public surface, not in a
+provider-specific wrapper.
+
+`EngineOptions.reasoningEffort` (`minimal` | `low` | `medium` | `high` |
+`xhigh` | `max`) travels to every `LLMRequest`; an `Agent.reasoningEffort`
+bundle default applies when the run does not set one, and the explicit option
+wins. The LLM client sends OpenRouter's `reasoning: { effort }` by default when
+the base URL is OpenRouter, and OpenAI's `reasoning_effort` otherwise; a
+gateway that speaks the other shape sets `reasoningFormat` explicitly. A
+client-level default is also available for consumers that want one effort for
+every call.
+
+Ignored by non-reasoning models. No validation beyond the type: providers
+reject unsupported levels, and the eval records the chosen level in `run.json`.
+
+Regressions: `tests/unit/llm.test.ts`, `tests/unit/reasoning-effort.test.ts`.

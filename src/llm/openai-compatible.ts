@@ -25,6 +25,7 @@ import type {
   LLMResponse,
   LLMToolCall,
   LLMUsage,
+  ReasoningEffort,
 } from "./types.js";
 
 export interface OpenAICompatibleOptions {
@@ -45,6 +46,20 @@ export interface OpenAICompatibleOptions {
    * the price table whenever it is present.
    */
   includeUsageCost?: boolean;
+  /**
+   * Default reasoning budget for calls that do not set one per request.
+   * Ignored by non-reasoning models.
+   */
+  reasoningEffort?: ReasoningEffort;
+  /**
+   * Wire shape for `reasoningEffort`:
+   * - `"openrouter"` sends `reasoning: { effort }`
+   * - `"openai"` sends `reasoning_effort`
+   *
+   * Default: inferred from `baseUrl` (`openrouter.ai` → openrouter, otherwise
+   * openai). Set it explicitly for a gateway that speaks the other shape.
+   */
+  reasoningFormat?: "openrouter" | "openai";
   /** Test seams. */
   fetchImpl?: typeof fetch;
   retryBaseDelayMs?: number;
@@ -198,6 +213,15 @@ export class OpenAICompatibleClient implements LLMClient {
     if (req.temperature !== undefined) body.temperature = req.temperature;
     if (req.seed !== undefined) body.seed = req.seed;
     if (req.maxTokens !== undefined) body.max_tokens = req.maxTokens;
+    const reasoningEffort =
+      req.reasoningEffort ?? this.opts.reasoningEffort;
+    if (reasoningEffort !== undefined) {
+      const format =
+        this.opts.reasoningFormat ??
+        (/openrouter\.ai/i.test(this.opts.baseUrl) ? "openrouter" : "openai");
+      if (format === "openrouter") body.reasoning = { effort: reasoningEffort };
+      else body.reasoning_effort = reasoningEffort;
+    }
 
     // --- establish the call (this part is retried) --------------------------
     let res: Response | undefined;

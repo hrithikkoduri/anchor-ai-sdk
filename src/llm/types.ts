@@ -66,6 +66,15 @@ export interface LLMResponse {
   latencyMs: number;
 }
 
+/** Provider-normalized reasoning budget (OpenRouter/OpenAI vocabulary). */
+export type ReasoningEffort =
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
 export interface LLMRequest {
   messages: LLMMessage[];
   tools?: LLMToolDef[];
@@ -73,6 +82,12 @@ export interface LLMRequest {
   /** Fixed sample, when the provider supports it. */
   seed?: number;
   maxTokens?: number;
+  /**
+   * How much reasoning to spend on this call. Sent as OpenRouter's
+   * `reasoning: { effort }` or OpenAI's `reasoning_effort` (see
+   * `OpenAICompatibleOptions.reasoningFormat`).
+   */
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface LLMClient {

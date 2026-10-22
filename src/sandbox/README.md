@@ -145,7 +145,11 @@ The Heyo adapter resolves the rootfs from `imageKind`:
 |---|---|---|
 | `artifact` (**preferred**) | host **pulls** a prebuilt rootfs from `imageStore` | fast, no build |
 | `dockerfile` | host **builds** the rootfs from a manifest | slow cold start |
-| `git` | host **clones the repo and builds its Dockerfile** | slow, plus a clone |
+| `git` | host **clones the repo and builds its Dockerfile** | slow, plus a clone; set `imageContext` when the Dockerfile is not at the repo root |
+
+A first host-side build can take longer than a boot: `readyTimeoutMs`
+(default 15 minutes) bounds the readiness wait, and a failed build job throws
+with the builder's log instead of reading as a generic boot timeout.
 
 Prefer `artifact`. The build kinds pay clone-and-build on a cold start, and the
 `git` kind reads a build secret while building; that is what

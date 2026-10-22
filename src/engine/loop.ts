@@ -304,6 +304,9 @@ async function runOne(
     outputTokenCap === false
       ? undefined
       : positiveNumber("maxOutputTokens", outputTokenCap);
+  // Explicit option wins over the bundle's suggestion, like maxOutputTokens.
+  const reasoningEffort =
+    opts.reasoningEffort ?? opts.agent?.reasoningEffort;
   const maxAssistantChars = threshold(
     "maxAssistantChars",
     opts.maxAssistantChars ?? DEFAULT_MAX_ASSISTANT_CHARS,
@@ -970,6 +973,7 @@ async function runOne(
           ...(opts.sampling?.seed !== undefined
             ? { seed: opts.sampling.seed }
             : {}),
+          ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
         },
         (text) => emit({ type: "llm_text_delta", text }),
         {

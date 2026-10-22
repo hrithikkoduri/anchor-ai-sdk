@@ -153,6 +153,37 @@ describe("OpenAICompatibleClient", () => {
     expect(r.provider).toBe("Parasail");
   });
 
+  it("sends reasoning effort in OpenRouter's shape and lets a call override it", async () => {
+    let capturedBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      capturedBody = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl, {
+      baseUrl: "https://openrouter.ai/api/v1",
+      reasoningEffort: "low",
+    }).complete({
+      messages: [{ role: "user", content: "ping" }],
+      reasoningEffort: "high",
+    });
+    expect(capturedBody.reasoning).toEqual({ effort: "high" });
+    expect(capturedBody.reasoning_effort).toBeUndefined();
+  });
+
+  it("sends reasoning_effort to a direct OpenAI-compatible endpoint", async () => {
+    let capturedBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      capturedBody = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl, {
+      baseUrl: "https://api.openai.com/v1",
+      reasoningEffort: "xhigh",
+    }).complete({ messages: [{ role: "user", content: "ping" }] });
+    expect(capturedBody.reasoning_effort).toBe("xhigh");
+    expect(capturedBody.reasoning).toBeUndefined();
+  });
+
   it("emits deltas incrementally through stream()", async () => {
     const fetchImpl: typeof fetch = async () => sseResponse(TEXT_FRAMES);
     const deltas: string[] = [];
