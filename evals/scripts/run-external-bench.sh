@@ -103,6 +103,7 @@ for d in sorted(root.iterdir())[:3]:
         from harbor.models.task.config import TaskConfig
         paths = TaskPaths(d)
         config = TaskConfig.model_validate_toml(paths.config_path.read_text())
+        Task._validate_input_paths(config, paths)
         Task._validate_tests(config, paths)
         print("  detail ok")
     except Exception as e:
