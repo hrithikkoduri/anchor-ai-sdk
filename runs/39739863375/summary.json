@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-10-22T07:37:03.886Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [],
+      "tasks": 0,
+      "scored": 0,
+      "fullCredit": 0,
+      "costUsd": 0
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [],
+      "tasks": 0,
+      "scored": 0,
+      "fullCredit": 0,
+      "costUsd": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "terminus-2",
+      "results": [],
+      "tasks": 0,
+      "scored": 0,
+      "fullCredit": 0,
+      "costUsd": 0
+    }
+  ]
+}

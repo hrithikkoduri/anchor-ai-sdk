@@ -1,0 +1,69 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/single_step.py", line 76, in _run_agent
+    await self._run_agent_phase(
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/trial/trial.py", line 651, in _run_agent_phase
+    await asyncio.wait_for(
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 186, in wrapper
+    return await fn(self, instruction, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/swe_agent.py", line 630, in run
+    await self.exec_as_agent(environment, command=full_cmd, env=env)
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 1032, in exec_as_agent
+    return await self._exec(
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 999, in _exec
+    raise self._classify_exec_error(command, result)
+harbor.agents.installed.base.NonZeroAgentExitCodeError: Command failed (exit 1): set -euo pipefail
+set +u
+. /etc/profile.d/testbed-conda.sh || true
+set -u
+mkdir -p /logs/agent
+cat > '/logs/agent/problem_statement.md' << 'HARBOR_INSTRUCTION_9ef788ff394842a2b63952fb2e6994cc'
+`Session.resolve_redirects` copies the original request for all subsequent requests, can cause incorrect method selection
+Consider the following redirection chain:
+
+```
+POST /do_something HTTP/1.1
+Host: server.example.com
+...
+
+HTTP/1.1 303 See Other
+Location: /new_thing_1513
+
+GET /new_thing_1513
+Host: server.example.com
+...
+
+HTTP/1.1 307 Temporary Redirect
+Location: //failover.example.com/new_thing_1513
+```
+
+The intermediate 303 See Other has caused the POST to be converted to
+a GET.  The subsequent 307 should preserve the GET.  However, because
+`Session.resolve_redirects` starts each iteration by copying the _original_
+request object, Requests will issue a POST!
+
+
+HARBOR_INSTRUCTION_9ef788ff394842a2b63952fb2e6994cc
+sweagent run --agent.model.name=openrouter/deepseek/deepseek-v4.1-flash-1017 --problem_statement.path=/logs/agent/problem_statement.md --env.deployment.type=local --output_dir=/logs/agent/swe-agent-output $(if [ -d /testbed ]; then echo '--env.repo.type=preexisting --env.repo.repo_name=/testbed'; else echo '--env.repo.path=$(pwd)'; fi) --config=/opt/sweagent-configs/default.yaml 2>&1 | stdbuf -oL tee /logs/agent/swe-agent.txt
+
+stdout: 👋 INFO     This is SWE-agent version 1.1.0 (hash='unavailable') with SWE-ReX   
+            version 1.4.0 (rex_hash='unavailable').                             
+/testbed/requests/packages/urllib3/connectionpool.py:447: SyntaxWarning: invalid escape s ... [3680 chars truncated] ... , in <module>
+    from .packages import chardet
+  File "/testbed/requests/packages/__init__.py", line 3, in <module>
+    from . import urllib3
+  File "/testbed/requests/packages/urllib3/__init__.py", line 16, in <module>
+    from .connectionpool import (
+  File "/testbed/requests/packages/urllib3/connectionpool.py", line 31, in <module>
+    from .packages.ssl_match_hostname import CertificateError
+  File "/testbed/requests/packages/urllib3/packages/__init__.py", line 3, in <module>
+    from . import ssl_match_hostname
+  File "/testbed/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py", line 10, in <module>
+    from _implementation import CertificateError, match_hostname
+ModuleNotFoundError: No module named '_implementation'
+
+stderr: None
