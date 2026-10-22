@@ -1,0 +1,1 @@
+{"instance_id":"pylint-dev__pylint-5859","model_name_or_path":"anchor@qwen-qwen3-coder-next","model_patch":"diff --git a/test_punctuation_notes.py b/test_punctuation_notes.py\nnew file mode 100644\nindex 00000000..0f4eee0d\n--- /dev/null\n+++ b/test_punctuation_notes.py\n@@ -0,0 +1,2 @@\n+# YES: yes\n+# ???: no\n"}

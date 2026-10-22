@@ -1,0 +1,31 @@
+{
+  "bench": "terminal-bench",
+  "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+  "kind": "harbor",
+  "arm": "anchor",
+  "variant": "baseline",
+  "model": "qwen/qwen3-coder-next",
+  "llm": "openrouter",
+  "baseUrl": "https://openrouter.ai/api/v1",
+  "provider": "docker",
+  "tasks": 1,
+  "completed": 1,
+  "failed": 0,
+  "fullCredit": 1,
+  "meanReward": 1,
+  "falseFinishes": 0,
+  "timeouts": 0,
+  "checksPassed": 1,
+  "checksTotal": 1,
+  "totalUsd": 0.06505888,
+  "wallMsP50": 576771,
+  "wallMsP95": 576771,
+  "startedAt": "2026-10-22T06:16:31.786Z",
+  "finishedAt": "2026-10-22T06:26:13.818Z",
+  "budgets": {
+    "maxTokens": 50000000,
+    "maxSteps": 50,
+    "maxUsd": 3
+  },
+  "contextWindow": 262144
+}

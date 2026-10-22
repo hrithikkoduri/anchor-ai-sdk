@@ -1,18 +1,712 @@
 {
-  "generatedAt": "2026-10-22T06:11:42.024Z",
+  "generatedAt": "2026-10-22T07:34:41.264Z",
   "runs": [
     {
-      "bench": "swe-pro",
-      "model": "openai/gpt-5.3-codex",
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
       "variant": "baseline",
-      "tasks": 1,
-      "scored": 1,
-      "fullCredit": 1,
-      "meanReward": 1,
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 8,
+      "meanReward": 0.8,
+      "falseFinishes": 1,
+      "timeouts": 1,
+      "costUsd": 0.181355745,
+      "p50WallMs": 418989,
+      "runs": [
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.014326556000000006,
+          "wallMsP50": 708638,
+          "wallMsP95": 708638,
+          "startedAt": "2026-10-22T07:02:55.027Z",
+          "finishedAt": "2026-10-22T07:14:44.211Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/django__django-10914"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 4,
+          "checksTotal": 4,
+          "totalUsd": 0.010654456000000001,
+          "wallMsP50": 200695,
+          "wallMsP95": 200695,
+          "startedAt": "2026-10-22T07:17:17.394Z",
+          "finishedAt": "2026-10-22T07:20:39.232Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/matplotlib__matplotlib-18869"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 0,
+          "failed": 1,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 1,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.011433487,
+          "wallMsP50": 941615,
+          "wallMsP95": 941615,
+          "startedAt": "2026-10-22T06:36:00.549Z",
+          "finishedAt": "2026-10-22T06:51:42.434Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/mwaskom__seaborn-2848"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 2,
+          "checksTotal": 2,
+          "totalUsd": 0.016577296000000002,
+          "wallMsP50": 252622,
+          "wallMsP95": 252622,
+          "startedAt": "2026-10-22T06:28:50.729Z",
+          "finishedAt": "2026-10-22T06:33:03.660Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pallets__flask-4045"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 7,
+          "checksTotal": 7,
+          "totalUsd": 0.012530719999999999,
+          "wallMsP50": 361910,
+          "wallMsP95": 361910,
+          "startedAt": "2026-10-22T06:15:39.150Z",
+          "finishedAt": "2026-10-22T06:21:41.365Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/psf__requests-1963"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 2,
+          "checksTotal": 2,
+          "totalUsd": 0.05578727200000001,
+          "wallMsP50": 806737,
+          "wallMsP95": 806737,
+          "startedAt": "2026-10-22T07:20:50.451Z",
+          "finishedAt": "2026-10-22T07:34:17.642Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pydata__xarray-3364"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.006928272,
+          "wallMsP50": 166109,
+          "wallMsP95": 166109,
+          "startedAt": "2026-10-22T06:33:08.893Z",
+          "finishedAt": "2026-10-22T06:35:55.309Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pylint-dev__pylint-5859"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.00910803,
+          "wallMsP50": 418989,
+          "wallMsP95": 418989,
+          "startedAt": "2026-10-22T06:21:46.296Z",
+          "finishedAt": "2026-10-22T06:28:45.953Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/pytest-dev__pytest-11143"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.033284600000000004,
+          "wallMsP50": 661026,
+          "wallMsP95": 661026,
+          "startedAt": "2026-10-22T06:51:47.773Z",
+          "finishedAt": "2026-10-22T07:02:49.903Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sphinx-doc__sphinx-10325"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 1,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 2,
+          "totalUsd": 0.010725056,
+          "wallMsP50": 141631,
+          "wallMsP95": 141631,
+          "startedAt": "2026-10-22T07:14:49.637Z",
+          "finishedAt": "2026-10-22T07:17:11.570Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/sympy__sympy-11400"
+        }
+      ]
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "tasks": 10,
+      "scored": 9,
+      "fullCredit": 2,
+      "meanReward": 0.2222222222222222,
       "falseFinishes": 0,
       "timeouts": 0,
-      "costUsd": 0.8183349999999998,
-      "p50WallMs": 542588,
+      "costUsd": 0.5719968,
+      "p50WallMs": 179850,
+      "runs": [
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 0,
+          "failed": 1,
+          "totalUsd": 0.06507116,
+          "wallMsP50": 179850,
+          "wallMsP95": 179850,
+          "startedAt": "2026-10-22T06:34:23.184Z",
+          "finishedAt": "2026-10-22T06:37:23.645Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/django__django-10914"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 4,
+          "totalUsd": 0.04873008,
+          "wallMsP50": 221000,
+          "wallMsP95": 221000,
+          "startedAt": "2026-10-22T06:40:21.037Z",
+          "finishedAt": "2026-10-22T06:44:02.325Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/matplotlib__matplotlib-18869"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.039733920000000006,
+          "wallMsP50": 131133,
+          "wallMsP95": 131133,
+          "startedAt": "2026-10-22T06:29:02.880Z",
+          "finishedAt": "2026-10-22T06:31:14.283Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/mwaskom__seaborn-2848"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 2,
+          "totalUsd": 0.05148787999999999,
+          "wallMsP50": 163735,
+          "wallMsP95": 163735,
+          "startedAt": "2026-10-22T06:22:16.530Z",
+          "finishedAt": "2026-10-22T06:25:00.524Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pallets__flask-4045"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 7,
+          "checksTotal": 7,
+          "totalUsd": 0.033042959999999996,
+          "wallMsP50": 149993,
+          "wallMsP95": 149993,
+          "startedAt": "2026-10-22T06:16:32.648Z",
+          "finishedAt": "2026-10-22T06:19:02.906Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/psf__requests-1963"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 2,
+          "totalUsd": 0.07885171999999999,
+          "wallMsP50": 277281,
+          "wallMsP95": 277281,
+          "startedAt": "2026-10-22T06:44:13.560Z",
+          "finishedAt": "2026-10-22T06:48:51.148Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pydata__xarray-3364"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.06532948000000001,
+          "wallMsP50": 231527,
+          "wallMsP95": 231527,
+          "startedAt": "2026-10-22T06:25:05.840Z",
+          "finishedAt": "2026-10-22T06:28:57.640Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pylint-dev__pylint-5859"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.05886604,
+          "wallMsP50": 183335,
+          "wallMsP95": 183335,
+          "startedAt": "2026-10-22T06:19:07.793Z",
+          "finishedAt": "2026-10-22T06:22:11.499Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/pytest-dev__pytest-11143"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.0577034,
+          "wallMsP50": 177465,
+          "wallMsP95": 177465,
+          "startedAt": "2026-10-22T06:31:19.989Z",
+          "finishedAt": "2026-10-22T06:34:17.797Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sphinx-doc__sphinx-10325"
+        },
+        {
+          "bench": "swe-lite",
+          "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+          "kind": "mixed",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 900,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 2,
+          "totalUsd": 0.07318016,
+          "wallMsP50": 166374,
+          "wallMsP95": 166374,
+          "startedAt": "2026-10-22T06:37:29.570Z",
+          "finishedAt": "2026-10-22T06:40:16.246Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-lite/qwen-qwen3-coder-next/baseline/shard-0/sympy__sympy-11400"
+        }
+      ]
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 8,
+      "meanReward": 0.8,
+      "falseFinishes": 0,
+      "timeouts": 0,
+      "costUsd": 0.26896180468,
+      "p50WallMs": 673857,
       "runs": [
         {
           "bench": "swe-pro",
@@ -21,7 +715,7 @@
           "arm": "anchor",
           "variant": "baseline",
           "reasoningEffort": "high",
-          "model": "openai/gpt-5.3-codex",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
           "llm": "openrouter",
           "baseUrl": "https://openrouter.ai/api/v1",
           "timeBudgetSecs": 3000,
@@ -35,26 +729,2228 @@
           "timeouts": 0,
           "checksPassed": 1,
           "checksTotal": 1,
-          "totalUsd": 0.8183349999999998,
-          "wallMsP50": 542588,
-          "wallMsP95": 542588,
-          "startedAt": "2026-10-22T06:02:14.409Z",
-          "finishedAt": "2026-10-22T06:11:17.493Z",
+          "totalUsd": 0.027371941680000005,
+          "wallMsP50": 644635,
+          "wallMsP95": 644635,
+          "startedAt": "2026-10-22T06:15:06.833Z",
+          "finishedAt": "2026-10-22T06:25:51.893Z",
           "budgets": {
             "maxTokens": 50000000,
             "maxSteps": 50,
-            "maxUsd": 8
+            "maxUsd": 3
           },
-          "contextWindow": 400000,
-          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/openai-gpt-5.3-codex/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.023162758999999995,
+          "wallMsP50": 641552,
+          "wallMsP95": 641552,
+          "startedAt": "2026-10-22T06:26:05.780Z",
+          "finishedAt": "2026-10-22T06:36:50.255Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.014385950999999998,
+          "wallMsP50": 673857,
+          "wallMsP95": 673857,
+          "startedAt": "2026-10-22T06:15:41.489Z",
+          "finishedAt": "2026-10-22T06:26:55.958Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.016387468999999998,
+          "wallMsP50": 502400,
+          "wallMsP95": 502400,
+          "startedAt": "2026-10-22T06:27:00.227Z",
+          "finishedAt": "2026-10-22T06:35:22.802Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.025936260999999995,
+          "wallMsP50": 1068798,
+          "wallMsP95": 1068798,
+          "startedAt": "2026-10-22T06:15:38.665Z",
+          "finishedAt": "2026-10-22T06:33:27.955Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.040480135,
+          "wallMsP50": 1157525,
+          "wallMsP95": 1157525,
+          "startedAt": "2026-10-22T06:33:42.182Z",
+          "finishedAt": "2026-10-22T06:53:00.180Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.015499015999999997,
+          "wallMsP50": 569310,
+          "wallMsP95": 569310,
+          "startedAt": "2026-10-22T06:16:27.366Z",
+          "finishedAt": "2026-10-22T06:25:59.447Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.05119578399999999,
+          "wallMsP50": 1282555,
+          "wallMsP95": 1282555,
+          "startedAt": "2026-10-22T06:26:26.757Z",
+          "finishedAt": "2026-10-22T06:47:49.591Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.016131524,
+          "wallMsP50": 269419,
+          "wallMsP95": 269419,
+          "startedAt": "2026-10-22T06:16:08.195Z",
+          "finishedAt": "2026-10-22T06:20:37.876Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.038410964000000006,
+          "wallMsP50": 1331670,
+          "wallMsP95": 1331670,
+          "startedAt": "2026-10-22T06:20:48.912Z",
+          "finishedAt": "2026-10-22T06:43:00.880Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+        }
+      ]
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 4,
+      "meanReward": 0.4,
+      "falseFinishes": 1,
+      "timeouts": 0,
+      "costUsd": 0.9855152399999999,
+      "p50WallMs": 344982,
+      "runs": [
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 1,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.02949268,
+          "wallMsP50": 124120,
+          "wallMsP95": 124120,
+          "startedAt": "2026-10-22T06:16:14.157Z",
+          "finishedAt": "2026-10-22T06:18:18.642Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.11927264000000003,
+          "wallMsP50": 395651,
+          "wallMsP95": 395651,
+          "startedAt": "2026-10-22T06:18:29.326Z",
+          "finishedAt": "2026-10-22T06:25:06.106Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-0/instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.08167836000000002,
+          "wallMsP50": 314933,
+          "wallMsP95": 314933,
+          "startedAt": "2026-10-22T06:15:16.343Z",
+          "finishedAt": "2026-10-22T06:20:31.644Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.06063243999999999,
+          "wallMsP50": 320167,
+          "wallMsP95": 320167,
+          "startedAt": "2026-10-22T06:20:34.381Z",
+          "finishedAt": "2026-10-22T06:25:54.670Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-1/instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.14452699999999996,
+          "wallMsP50": 324885,
+          "wallMsP95": 324885,
+          "startedAt": "2026-10-22T06:15:04.307Z",
+          "finishedAt": "2026-10-22T06:20:29.959Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.07561984000000002,
+          "wallMsP50": 401759,
+          "wallMsP95": 401759,
+          "startedAt": "2026-10-22T06:20:56.539Z",
+          "finishedAt": "2026-10-22T06:27:39.153Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-2/instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.09280092000000001,
+          "wallMsP50": 329439,
+          "wallMsP95": 329439,
+          "startedAt": "2026-10-22T06:15:49.379Z",
+          "finishedAt": "2026-10-22T06:21:20.150Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.14627787999999997,
+          "wallMsP50": 363909,
+          "wallMsP95": 363909,
+          "startedAt": "2026-10-22T06:21:39.894Z",
+          "finishedAt": "2026-10-22T06:27:43.997Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-3/instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.11728651999999996,
+          "wallMsP50": 435599,
+          "wallMsP95": 435599,
+          "startedAt": "2026-10-22T06:15:25.534Z",
+          "finishedAt": "2026-10-22T06:22:41.800Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c"
+        },
+        {
+          "bench": "swe-pro",
+          "tasksFile": "benchmarks/swe-bench-pro/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "timeBudgetSecs": 3000,
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.11792696000000001,
+          "wallMsP50": 344982,
+          "wallMsP95": 344982,
+          "startedAt": "2026-10-22T06:22:58.738Z",
+          "finishedAt": "2026-10-22T06:28:44.062Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/swe-pro/qwen-qwen3-coder-next/baseline/shard-4/instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029"
+        }
+      ]
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 3,
+      "meanReward": 0.3,
+      "falseFinishes": 0,
+      "timeouts": 2,
+      "costUsd": 0.16325263992,
+      "p50WallMs": 612466,
+      "runs": [
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.008531684,
+          "wallMsP50": 288874,
+          "wallMsP95": 288874,
+          "startedAt": "2026-10-22T06:15:54.849Z",
+          "finishedAt": "2026-10-22T06:20:44.098Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/adaptive-rejection-sampler"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.026551392,
+          "wallMsP50": 620576,
+          "wallMsP95": 620576,
+          "startedAt": "2026-10-22T06:20:45.206Z",
+          "finishedAt": "2026-10-22T06:31:06.682Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-0/chess-best-move"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.024060248999999992,
+          "wallMsP50": 612466,
+          "wallMsP95": 612466,
+          "startedAt": "2026-10-22T06:15:50.333Z",
+          "finishedAt": "2026-10-22T06:26:09.175Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/bn-fit-modify"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.016888976,
+          "wallMsP50": 288669,
+          "wallMsP95": 288669,
+          "startedAt": "2026-10-22T06:26:11.879Z",
+          "finishedAt": "2026-10-22T06:31:01.082Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-1/circuit-fibsqrt"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.0025219429999999996,
+          "wallMsP50": 118373,
+          "wallMsP95": 118373,
+          "startedAt": "2026-10-22T06:15:20.955Z",
+          "finishedAt": "2026-10-22T06:17:20.413Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/break-filter-js-from-html"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 0,
+          "failed": 1,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 1,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.01422681,
+          "wallMsP50": 910685,
+          "wallMsP95": 910685,
+          "startedAt": "2026-10-22T06:17:24.362Z",
+          "finishedAt": "2026-10-22T06:32:35.630Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-2/cobol-modernization"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.010264065999999999,
+          "wallMsP50": 295527,
+          "wallMsP95": 295527,
+          "startedAt": "2026-10-22T06:16:14.888Z",
+          "finishedAt": "2026-10-22T06:21:11.261Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/build-cython-ext"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.036448112,
+          "wallMsP50": 471414,
+          "wallMsP95": 471414,
+          "startedAt": "2026-10-22T06:21:13.840Z",
+          "finishedAt": "2026-10-22T06:29:05.816Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-3/code-from-image"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 0,
+          "failed": 1,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 1,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.01299311576,
+          "wallMsP50": 909160,
+          "wallMsP95": 909160,
+          "startedAt": "2026-10-22T06:16:29.437Z",
+          "finishedAt": "2026-10-22T06:31:39.329Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/cancel-async-tasks"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "reasoningEffort": "high",
+          "model": "deepseek/deepseek-v4.1-flash-1017",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.010766292160000003,
+          "wallMsP50": 1469499,
+          "wallMsP95": 1469499,
+          "startedAt": "2026-10-22T06:31:40.640Z",
+          "finishedAt": "2026-10-22T06:56:17.413Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 1048576,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/deepseek-deepseek-v4.1-flash-1017/baseline/shard-4/compile-compcert"
+        }
+      ]
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "tasks": 10,
+      "scored": 10,
+      "fullCredit": 4,
+      "meanReward": 0.4,
+      "falseFinishes": 1,
+      "timeouts": 0,
+      "costUsd": 0.8046041199999999,
+      "p50WallMs": 414393,
+      "runs": [
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.06505888,
+          "wallMsP50": 576771,
+          "wallMsP95": 576771,
+          "startedAt": "2026-10-22T06:16:31.786Z",
+          "finishedAt": "2026-10-22T06:26:13.818Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/adaptive-rejection-sampler"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 1,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.12199348,
+          "wallMsP50": 414393,
+          "wallMsP95": 414393,
+          "startedAt": "2026-10-22T06:26:14.859Z",
+          "finishedAt": "2026-10-22T06:33:11.458Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-0/chess-best-move"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.07168531999999998,
+          "wallMsP50": 404607,
+          "wallMsP95": 404607,
+          "startedAt": "2026-10-22T06:15:57.312Z",
+          "finishedAt": "2026-10-22T06:22:45.461Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/bn-fit-modify"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.15900679999999995,
+          "wallMsP50": 699148,
+          "wallMsP95": 699148,
+          "startedAt": "2026-10-22T06:22:47.708Z",
+          "finishedAt": "2026-10-22T06:34:27.072Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-1/circuit-fibsqrt"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.05944004,
+          "wallMsP50": 304483,
+          "wallMsP95": 304483,
+          "startedAt": "2026-10-22T06:16:15.701Z",
+          "finishedAt": "2026-10-22T06:21:21.168Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/break-filter-js-from-html"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.03148228,
+          "wallMsP50": 163479,
+          "wallMsP95": 163479,
+          "startedAt": "2026-10-22T06:21:25.400Z",
+          "finishedAt": "2026-10-22T06:24:09.464Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-2/cobol-modernization"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.08373644,
+          "wallMsP50": 231773,
+          "wallMsP95": 231773,
+          "startedAt": "2026-10-22T06:27:36.457Z",
+          "finishedAt": "2026-10-22T06:31:28.936Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/build-cython-ext"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 0,
+          "meanReward": 0,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 0,
+          "checksTotal": 1,
+          "totalUsd": 0.15614472,
+          "wallMsP50": 575951,
+          "wallMsP95": 575951,
+          "startedAt": "2026-10-22T06:31:30.886Z",
+          "finishedAt": "2026-10-22T06:41:07.207Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-3/code-from-image"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.017094559999999998,
+          "wallMsP50": 146351,
+          "wallMsP95": 146351,
+          "startedAt": "2026-10-22T06:29:07.804Z",
+          "finishedAt": "2026-10-22T06:31:35.210Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/cancel-async-tasks"
+        },
+        {
+          "bench": "terminal-bench",
+          "tasksFile": "benchmarks/terminal-bench/data/tasks.jsonl",
+          "kind": "harbor",
+          "arm": "anchor",
+          "variant": "baseline",
+          "model": "qwen/qwen3-coder-next",
+          "llm": "openrouter",
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "provider": "docker",
+          "tasks": 1,
+          "completed": 1,
+          "failed": 0,
+          "fullCredit": 1,
+          "meanReward": 1,
+          "falseFinishes": 0,
+          "timeouts": 0,
+          "checksPassed": 1,
+          "checksTotal": 1,
+          "totalUsd": 0.038961600000000006,
+          "wallMsP50": 1323099,
+          "wallMsP95": 1323099,
+          "startedAt": "2026-10-22T06:31:37.585Z",
+          "finishedAt": "2026-10-22T06:54:02.234Z",
+          "budgets": {
+            "maxTokens": 50000000,
+            "maxSteps": 50,
+            "maxUsd": 3
+          },
+          "contextWindow": 262144,
+          "dir": "/home/runner/work/anchor-ai-sdk/anchor-ai-sdk/.bench-results/terminal-bench/qwen-qwen3-coder-next/baseline/shard-4/compile-compcert"
         }
       ]
     }
   ],
   "results": [
     {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "django__django-10914",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1155792,
+        "completionTokens": 35678,
+        "totalTokens": 1191470,
+        "costUsd": 0.014326556000000006,
+        "reasoningTokens": 26411
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "test_override_file_upload_permissions (test_utils.tests.OverrideSettingsTests)",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 52,
+        "search": 1,
+        "read_file": 4,
+        "set_phase": 2,
+        "edit_file": 6
+      },
+      "wallMs": 708638,
+      "patchChars": 3027
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "matplotlib__matplotlib-18869",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 28,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 385509,
+        "completionTokens": 12654,
+        "totalTokens": 398163,
+        "costUsd": 0.010654456000000001,
+        "reasoningTokens": 11796
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0-version_tuple0]",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.43s\n"
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0rc2-version_tuple1]",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.43s\n"
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0.dev820+g6768ef8c4c-version_tuple2]",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.43s\n"
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0.post820+g6768ef8c4c-version_tuple3]",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.42s\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 42,
+        "edit_file": 1
+      },
+      "wallMs": 200695,
+      "patchChars": 2422
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "mwaskom__seaborn-2848",
+      "arm": "anchor",
+      "status": "timeout",
+      "error": "wall-clock budget of 900s exceeded",
+      "steps": 28,
+      "reason": "cancelled",
+      "usage": {
+        "promptTokens": 447659,
+        "completionTokens": 27909,
+        "totalTokens": 475568,
+        "costUsd": 0.011433487,
+        "reasoningTokens": 21155
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "tests/test_relational.py::TestScatterPlotter::test_hue_order",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nseaborn/cm.py:1582\nseaborn/cm.py:1582\nseaborn/cm.py:1582\nseaborn/cm.py:1582\nseaborn/cm.py:1582\nseaborn/cm.py:1582\n  /testbed/seaborn/cm.py:1582: MatplotlibDeprecationWarning: The register_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps.register(name)`` instead.\n    m"
+        }
+      ],
+      "timedOut": true,
+      "toolCalls": {
+        "bash": 44,
+        "edit_file": 1
+      },
+      "wallMs": 941615,
+      "patchChars": 801
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "pallets__flask-4045",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 42,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 867863,
+        "completionTokens": 17852,
+        "totalTokens": 885715,
+        "costUsd": 0.016577296000000002,
+        "reasoningTokens": 17016
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "tests/test_blueprints.py::test_dotted_name_not_allowed",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.05s\n"
+        },
+        {
+          "id": "tests/test_blueprints.py::test_route_decorator_custom_endpoint_with_dots",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.01s\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 49,
+        "search": 1,
+        "set_phase": 1
+      },
+      "wallMs": 252622,
+      "patchChars": 2041
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "psf__requests-1963",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 45,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 998344,
+        "completionTokens": 31036,
+        "totalTokens": 1029380,
+        "costUsd": 0.012530719999999999,
+        "reasoningTokens": 22874
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_HTTP_200_OK_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_param_cookiejar_works",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::TestRedirects::test_requests_are_updated_each_time",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        }
+      ],
+      "toolCalls": {
+        "bash": 45,
+        "search": 2,
+        "read_file": 1,
+        "set_phase": 2,
+        "edit_file": 1,
+        "finish": 1
+      },
+      "wallMs": 361910,
+      "patchChars": 565
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "pydata__xarray-3364",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1500616,
+        "completionTokens": 27983,
+        "totalTokens": 1528599,
+        "costUsd": 0.05578727200000001,
+        "reasoningTokens": 19321
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "xarray/tests/test_combine.py::TestAutoCombineOldAPI::test_auto_combine_with_new_variables",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nxarray/core/pdcompat.py:45\n  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n    if LooseVersion(pd.__version__) < \"0.25.0\":\n\n../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345\n  /opt/miniconda3/envs/testbed/lib"
+        },
+        {
+          "id": "xarray/tests/test_concat.py::TestConcatDataset::test_concat_merge_variables_present_in_some_datasets",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nxarray/core/pdcompat.py:45\n  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n    if LooseVersion(pd.__version__) < \"0.25.0\":\n\n../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345\n  /opt/miniconda3/envs/testbed/lib"
+        }
+      ],
+      "toolCalls": {
+        "bash": 66,
+        "edit_file": 1
+      },
+      "wallMs": 806737,
+      "patchChars": 1636
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "pylint-dev__pylint-5859",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 17,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 192035,
+        "completionTokens": 7388,
+        "totalTokens": 199423,
+        "costUsd": 0.006928272,
+        "reasoningTokens": 6520
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "tests/checkers/unittest_misc.py::TestFixme::test_non_alphanumeric_codetag",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\n../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/astroid/interpreter/_import/util.py:7\n  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/astroid/interpreter/_import/util.py:7: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html\n    import pkg_resources\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 20,
+        "read_file": 2
+      },
+      "wallMs": 166109,
+      "patchChars": 1913
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "pytest-dev__pytest-11143",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 39,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 697886,
+        "completionTokens": 22984,
+        "totalTokens": 720870,
+        "costUsd": 0.00910803,
+        "reasoningTokens": 15756
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "testing/test_assertrewrite.py::TestIssue11140::test_constant_not_picked_as_module_docstring",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.17s\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 50,
+        "edit_file": 1,
+        "set_phase": 1
+      },
+      "wallMs": 418989,
+      "patchChars": 828
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "sphinx-doc__sphinx-10325",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 47,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 1167160,
+        "completionTokens": 42486,
+        "totalTokens": 1209646,
+        "costUsd": 0.033284600000000004,
+        "reasoningTokens": 32321
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "tests/test_ext_autodoc_automodule.py::test_automodule_inherited_members",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.25s\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 45,
+        "search": 1,
+        "read_file": 4,
+        "edit_file": 10,
+        "run_tests": 5,
+        "finish": 1
+      },
+      "wallMs": 661026,
+      "patchChars": 3693
+    },
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "sympy__sympy-11400",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 30,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 344421,
+        "completionTokens": 12680,
+        "totalTokens": 357101,
+        "costUsd": 0.010725056,
+        "reasoningTokens": 11217
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "test_ccode_Relational",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n"
+        },
+        {
+          "id": "test_ccode_sinc",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n"
+        }
+      ],
+      "falseFinish": true,
+      "toolCalls": {
+        "bash": 36,
+        "edit_file": 2,
+        "finish": 1
+      },
+      "wallMs": 141631,
+      "patchChars": 833
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "django__django-10914",
+      "arm": "anchor",
+      "status": "failed",
+      "error": "test patch failed to apply: error: patch failed: tests/test_utils/tests.py:1099\nerror: tests/test_utils/tests.py: patch does not apply",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 852073,
+        "completionTokens": 4698,
+        "totalTokens": 856771,
+        "costUsd": 0.06507116,
+        "reasoningTokens": 0
+      },
+      "toolCalls": {
+        "set_phase": 2,
+        "search": 6,
+        "read_file": 20,
+        "bash": 19,
+        "update_phase": 1,
+        "edit_file": 5
+      },
+      "wallMs": 179850,
+      "patchChars": 3646
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "matplotlib__matplotlib-18869",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 610884,
+        "completionTokens": 5626,
+        "totalTokens": 616510,
+        "costUsd": 0.04873008,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0-version_tuple0]",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "__version__\n        if name == \"__version_info__\":\n            # Extract version info from __version__.\n            version = __getattr__(\"__version__\")\n            # Parse the version string to get major, minor, micro.\n            import re\n            match = re.match(r'(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?', version)\n            if match:\n                major = int(match.group(1))\n                minor = int(match.group(2)) if match.group(2) else 0\n                micro = int(match.group(3)) if matc"
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0rc2-version_tuple1]",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "ersion__\n        if name == \"__version_info__\":\n            # Extract version info from __version__.\n            version = __getattr__(\"__version__\")\n            # Parse the version string to get major, minor, micro.\n            import re\n            match = re.match(r'(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?', version)\n            if match:\n                major = int(match.group(1))\n                minor = int(match.group(2)) if match.group(2) else 0\n                micro = int(match.group(3)) if match.g"
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0.dev820+g6768ef8c4c-version_tuple2]",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": " if name == \"__version_info__\":\n            # Extract version info from __version__.\n            version = __getattr__(\"__version__\")\n            # Parse the version string to get major, minor, micro.\n            import re\n            match = re.match(r'(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?', version)\n            if match:\n                major = int(match.group(1))\n                minor = int(match.group(2)) if match.group(2) else 0\n                micro = int(match.group(3)) if match.group(3) else 0\n "
+        },
+        {
+          "id": "lib/matplotlib/tests/test_matplotlib.py::test_parse_to_version_info[3.5.0.post820+g6768ef8c4c-version_tuple3]",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "if name == \"__version_info__\":\n            # Extract version info from __version__.\n            version = __getattr__(\"__version__\")\n            # Parse the version string to get major, minor, micro.\n            import re\n            match = re.match(r'(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?', version)\n            if match:\n                major = int(match.group(1))\n                minor = int(match.group(2)) if match.group(2) else 0\n                micro = int(match.group(3)) if match.group(3) else 0\n  "
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 3,
+        "bash": 36,
+        "read_file": 7,
+        "plan": 2,
+        "edit_file": 2
+      },
+      "wallMs": 221000,
+      "patchChars": 1929
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "mwaskom__seaborn-2848",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 36,
+      "reason": "error",
+      "usage": {
+        "promptTokens": 518896,
+        "completionTokens": 2161,
+        "totalTokens": 521057,
+        "costUsd": 0.039733920000000006,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "tests/test_relational.py::TestScatterPlotter::test_hue_order",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <seaborn._oldcore.HueMapping object at 0x7f0ba11b8310>, key = 'c'\n\n    def _lookup_single(self, key):\n        \"\"\"Get the color for a single value, using colormap to interpolate.\"\"\"\n        try:\n            # Use a value that's in the original data vector\n            value = self.lookup_table[key]\n        except KeyError:\n            # Use the colormap to interpolate between existing datapoints\n            # "
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 19,
+        "read_file": 15
+      },
+      "wallMs": 131133,
+      "patchChars": 0
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "pallets__flask-4045",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 670799,
+        "completionTokens": 3690,
+        "totalTokens": 674489,
+        "costUsd": 0.05148787999999999,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "tests/test_blueprints.py::test_dotted_name_not_allowed",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "F                                                                        [100%]\n=================================== FAILURES ===================================\n_________________________ test_dotted_name_not_allowed _________________________\n\napp = <Flask 'flask_test'>, client = <FlaskClient <Flask 'flask_test'>>\n\n    def test_dotted_name_not_allowed(app, client):\n        with pytest.raises(ValueError):\n>           flask.Blueprint(\"app.ui\", __name__)\nE           Failed: DID NOT RAISE <class 'Val"
+        },
+        {
+          "id": "tests/test_blueprints.py::test_route_decorator_custom_endpoint_with_dots",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "F                                                                        [100%]\n=================================== FAILURES ===================================\n________________ test_route_decorator_custom_endpoint_with_dots ________________\n\napp = <Flask 'flask_test'>, client = <FlaskClient <Flask 'flask_test'>>\n\n    def test_route_decorator_custom_endpoint_with_dots(app, client):\n        bp = flask.Blueprint(\"bp\", __name__)\n    \n        with pytest.raises(ValueError):\n>           bp.route(\"/\","
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "search": 5,
+        "bash": 33,
+        "read_file": 11
+      },
+      "wallMs": 163735,
+      "patchChars": 0
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "psf__requests-1963",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 32,
+      "reason": "error",
+      "usage": {
+        "promptTokens": 418918,
+        "completionTokens": 2980,
+        "totalTokens": 421898,
+        "costUsd": 0.033042959999999996,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_DIGEST_HTTP_200_OK_GET",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::RequestsTestCase::test_param_cookiejar_works",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        },
+        {
+          "id": "test_requests.py::TestRedirects::test_requests_are_updated_each_time",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n=============================== warnings summary ===============================\nrequests/packages/urllib3/_collections.py:7\n  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n    from collections import MutableMapping\n\nrequests/sessions.py:12\n  /te"
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "set_phase": 2,
+        "read_file": 11,
+        "search": 1,
+        "bash": 13,
+        "act": 1,
+        "edit_file": 2
+      },
+      "wallMs": 149993,
+      "patchChars": 1544
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "pydata__xarray-3364",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 995151,
+        "completionTokens": 9132,
+        "totalTokens": 1004283,
+        "costUsd": 0.07885171999999999,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "xarray/tests/test_combine.py::TestAutoCombineOldAPI::test_auto_combine_with_new_variables",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "=======\nxarray/core/pdcompat.py:45\n  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n    if LooseVersion(pd.__version__) < \"0.25.0\":\n\n../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345\n  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version inste"
+        },
+        {
+          "id": "xarray/tests/test_concat.py::TestConcatDataset::test_concat_merge_variables_present_in_some_datasets",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "full(shape, fill_value)\n>                           new_var = Variable(dims, data, attrs=ref_var.attrs,\n                                             encoding=ref_var.encoding)\nE                           UnboundLocalError: local variable 'Variable' referenced before assignment\n\nxarray/core/concat.py:367: UnboundLocalError\n=============================== warnings summary ===============================\nxarray/core/pdcompat.py:45\n  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 3,
+        "read_file": 16,
+        "bash": 22,
+        "write_file": 2,
+        "set_phase": 2,
+        "todo_list": 2,
+        "edit_file": 3
+      },
+      "wallMs": 277281,
+      "patchChars": 6657
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "pylint-dev__pylint-5859",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 811899,
+        "completionTokens": 8361,
+        "totalTokens": 820260,
+        "costUsd": 0.06532948000000001,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "tests/checkers/unittest_misc.py::TestFixme::test_non_alphanumeric_codetag",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "sition`, all checks for position\n        arguments (line, col_offset, ...) will be skipped. This can be used to\n        just test messages for the correct node.\n        \"\"\"\n        yield\n        got = self.linter.release_messages()\n        no_msg = \"No message.\"\n        expected = \"\\n\".join(repr(m) for m in messages) or no_msg\n        got_str = \"\\n\".join(repr(m) for m in got) or no_msg\n        msg = (\n            \"Expected messages did not match actual.\\n\"\n            f\"\\nExpected:\\n{expected}\\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "search": 2,
+        "read_file": 5,
+        "bash": 40,
+        "write_file": 1,
+        "run_tests": 1
+      },
+      "wallMs": 231527,
+      "patchChars": 198
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "pytest-dev__pytest-11143",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 759397,
+        "completionTokens": 5165,
+        "totalTokens": 764562,
+        "costUsd": 0.05886604,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "testing/test_assertrewrite.py::TestIssue11140::test_constant_not_picked_as_module_docstring",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": ".                                                                        [100%]\n1 passed in 0.17s\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "read_file": 14,
+        "search": 3,
+        "bash": 27,
+        "write_file": 1,
+        "plan": 2,
+        "edit_file": 1,
+        "validate": 1
+      },
+      "wallMs": 183335,
+      "patchChars": 6179
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "sphinx-doc__sphinx-10325",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 751035,
+        "completionTokens": 4456,
+        "totalTokens": 755491,
+        "costUsd": 0.0577034,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "tests/test_ext_autodoc_automodule.py::test_automodule_inherited_members",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": ",\n            '      Inherited class method.',\n            '',\n            '',\n            '   .. py:method:: Base.inheritedmeth()',\n            '      :module: target.inheritance',\n            '',\n            '      Inherited function.',\n            '',\n            '',\n            '   .. py:method:: Base.inheritedstaticmeth(cls)',\n            '      :module: target.inheritance',\n            '      :staticmethod:',\n            '',\n            '      Inherited static method.',\n            '',\n   "
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 3,
+        "bash": 29,
+        "read_file": 18
+      },
+      "wallMs": 177465,
+      "patchChars": 0
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "sympy__sympy-11400",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 963908,
+        "completionTokens": 4825,
+        "totalTokens": 968733,
+        "costUsd": 0.07318016,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "test_ccode_Relational",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n"
+        },
+        {
+          "id": "test_ccode_sinc",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 3,
+        "bash": 30,
+        "read_file": 12,
+        "update_phase": 1,
+        "edit_file": 4
+      },
+      "wallMs": 166374,
+      "patchChars": 1085
+    },
+    {
       "bench": "swe-pro",
-      "model": "openai/gpt-5.3-codex",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
       "variant": "baseline",
       "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
       "arm": "anchor",
@@ -62,11 +2958,11 @@
       "steps": 50,
       "reason": "max_steps",
       "usage": {
-        "promptTokens": 1676116,
-        "completionTokens": 29226,
-        "totalTokens": 1705342,
-        "costUsd": 0.8183349999999998,
-        "reasoningTokens": 22387
+        "promptTokens": 1073974,
+        "completionTokens": 22477,
+        "totalTokens": 1096451,
+        "costUsd": 0.027371941680000005,
+        "reasoningTokens": 18789
       },
       "reward": 1,
       "checks": [
@@ -79,15 +2975,1375 @@
         }
       ],
       "toolCalls": {
-        "set_phase": 4,
-        "search": 39,
-        "read_file": 28,
-        "bash": 4,
-        "edit_file": 17,
-        "run_tests": 2
+        "bash": 52,
+        "search": 1
       },
-      "wallMs": 542588,
-      "patchChars": 174771
+      "wallMs": 644635,
+      "patchChars": 177026
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1454943,
+        "completionTokens": 65504,
+        "totalTokens": 1520447,
+        "costUsd": 0.023162758999999995,
+        "reasoningTokens": 49117
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch lib/backend/pgbk/wal2json_test.go...\nApplied patch lib/backend/pgbk/wal2json_test.go cleanly.\nRequired tests: 2\nPassed tests: 2\nRequired tests that passed: 2\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 50,
+        "read_file": 9,
+        "search": 1
+      },
+      "wallMs": 641552,
+      "patchChars": 16773
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 894801,
+        "completionTokens": 40887,
+        "totalTokens": 935688,
+        "costUsd": 0.014385950999999998,
+        "reasoningTokens": 33328
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/units/utils/test_vars.py...\nApplied patch test/units/utils/test_vars.py cleanly.\nRequired tests: 16\nPassed tests: 16\nRequired tests that passed: 16\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 44,
+        "read_file": 3,
+        "edit_file": 4
+      },
+      "wallMs": 673857,
+      "patchChars": 1508
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 47,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 1003533,
+        "completionTokens": 46772,
+        "totalTokens": 1050305,
+        "costUsd": 0.016387468999999998,
+        "reasoningTokens": 33894
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch openlibrary/plugins/importapi/tests/test_import_validator.py...\nApplied patch openlibrary/plugins/importapi/tests/test_import_validator.py cleanly.\nRequired tests: 20\nPassed tests: 20\nRequired tests that passed: 20\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 66,
+        "edit_file": 2,
+        "finish": 1
+      },
+      "wallMs": 502400,
+      "patchChars": 4082
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 42,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 1021141,
+        "completionTokens": 35461,
+        "totalTokens": 1056602,
+        "costUsd": 0.025936260999999995,
+        "reasoningTokens": 27579
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx...\nChecking patch test/unit-tests/stores/SpaceStore-test.ts...\nApplied patch test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx cleanly.\nApplied patch test/unit-tests/stores/SpaceStore-test.ts cleanly.\nRequired tests: 503\nPassed tests: 503\nRequired tests that passed: 503\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 48,
+        "edit_file": 2,
+        "finish": 1
+      },
+      "wallMs": 1068798,
+      "patchChars": 6106
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1896023,
+        "completionTokens": 120940,
+        "totalTokens": 2016963,
+        "costUsd": 0.040480135,
+        "reasoningTokens": 99388
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts...\nApplied patch applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts cleanly.\nRequired tests: 5\nPassed tests: 4\nRequired tests that passed: 3\n\nRESULT: FAILED\nMissing tests: ['src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts | isSupportedImage treats HEIC and JXL as supported ima"
+        }
+      ],
+      "toolCalls": {
+        "bash": 78
+      },
+      "wallMs": 1157525,
+      "patchChars": 18399
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1313052,
+        "completionTokens": 37598,
+        "totalTokens": 1350650,
+        "costUsd": 0.015499015999999997,
+        "reasoningTokens": 25468
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch .github/workflows/integration-test.yml...\nChecking patch internal/cache/redis/client_test.go...\nChecking patch internal/config/config_test.go...\nChecking patch build/testing/integration.go...\nChecking patch internal/config/testdata/cache/redis-ca-bytes.yml...\nChecking patch internal/config/testdata/cache/redis-ca-invalid.yml...\nChecking patch internal/config/testdata/cache/redis-ca-path.yml...\nCh"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 58,
+        "read_file": 1,
+        "edit_file": 6
+      },
+      "wallMs": 569310,
+      "patchChars": 11119
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1681506,
+        "completionTokens": 173527,
+        "totalTokens": 1855033,
+        "costUsd": 0.05119578399999999,
+        "reasoningTokens": 165242
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch tests/unit/components/test_blockutils.py...\nChecking patch tests/unit/utils/test_version.py...\nApplied patch tests/unit/components/test_blockutils.py cleanly.\nApplied patch tests/unit/utils/test_version.py cleanly.\nRequired tests: 49\nPassed tests: 49\nRequired tests that passed: 49\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 60,
+        "search": 1,
+        "read_file": 5,
+        "edit_file": 6
+      },
+      "wallMs": 1282555,
+      "patchChars": 7111
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 16,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 270603,
+        "completionTokens": 18294,
+        "totalTokens": 288897,
+        "costUsd": 0.016131524,
+        "reasoningTokens": 17594
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch contrib/snmp2cpe/pkg/cpe/cpe_test.go...\nApplied patch contrib/snmp2cpe/pkg/cpe/cpe_test.go cleanly.\nRequired tests: 24\nPassed tests: 24\nRequired tests that passed: 24\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "bash": 16,
+        "edit_file": 1
+      },
+      "wallMs": 269419,
+      "patchChars": 3942
+    },
+    {
+      "bench": "swe-pro",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1613756,
+        "completionTokens": 115170,
+        "totalTokens": 1728926,
+        "costUsd": 0.038410964000000006,
+        "reasoningTokens": 104309
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/client/desktop/DesktopDownloadManagerTest.ts...\nChecking patch test/client/nodemocker.ts...\nApplied patch test/client/desktop/DesktopDownloadManagerTest.ts cleanly.\nApplied patch test/client/nodemocker.ts cleanly.\nRequired tests: 4\nPassed tests: 3\nRequired tests that passed: 3\n\nRESULT: FAILED\nMissing tests: ['test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::down"
+        }
+      ],
+      "toolCalls": {
+        "bash": 66,
+        "search": 1
+      },
+      "wallMs": 1331670,
+      "patchChars": 25006
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 28,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 386119,
+        "completionTokens": 1354,
+        "totalTokens": 387473,
+        "costUsd": 0.02949268,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/mocks/databasemock.js...\nChecking patch test/socket.io.js...\nChecking patch test/user.js...\nApplied patch test/mocks/databasemock.js cleanly.\nApplied patch test/socket.io.js cleanly.\nApplied patch test/user.js cleanly.\nRequired tests: 2\nPassed tests: 0\nRequired tests that passed: 0\n\nRESULT: FAILED\nMissing tests: ['test/socket.io.js | socket.io | should toggle caches', 'test/user.js | User | "
+        }
+      ],
+      "falseFinish": true,
+      "toolCalls": {
+        "set_phase": 1,
+        "read_file": 13,
+        "search": 2,
+        "bash": 10,
+        "run_tests": 1,
+        "finish": 1
+      },
+      "wallMs": 124120,
+      "patchChars": 166507
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_gravitational__teleport-005dcb16bacc6a5d5890c4cd302ccfd4298e275d-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1556032,
+        "completionTokens": 9730,
+        "totalTokens": 1565762,
+        "costUsd": 0.11927264000000003,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch lib/backend/pgbk/wal2json_test.go...\nApplied patch lib/backend/pgbk/wal2json_test.go cleanly.\nRequired tests: 2\nPassed tests: 1\nRequired tests that passed: 1\n\nRESULT: FAILED\nMissing tests: ['TestMessage']\n"
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "bash": 19,
+        "read_file": 18,
+        "plan": 2,
+        "act": 1,
+        "edit_file": 9
+      },
+      "wallMs": 395651,
+      "patchChars": 15694
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_ansible__ansible-0ea40e09d1b35bcb69ff4d9cecf3d0defa4b36e8-v30a923fb5c164d6cd18280c02422f75e611e8fb2",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1014933,
+        "completionTokens": 11160,
+        "totalTokens": 1026093,
+        "costUsd": 0.08167836000000002,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/units/utils/test_vars.py...\nApplied patch test/units/utils/test_vars.py cleanly.\nRequired tests: 16\nPassed tests: 16\nRequired tests that passed: 16\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 4,
+        "read_file": 13,
+        "search": 1,
+        "bash": 30,
+        "edit_file": 2
+      },
+      "wallMs": 314933,
+      "patchChars": 2032
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_internetarchive__openlibrary-00bec1e7c8f3272c469a58e1377df03f955ed478-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 43,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 706077,
+        "completionTokens": 12175,
+        "totalTokens": 718252,
+        "costUsd": 0.06063243999999999,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch openlibrary/plugins/importapi/tests/test_import_validator.py...\nApplied patch openlibrary/plugins/importapi/tests/test_import_validator.py cleanly.\nRequired tests: 20\nPassed tests: 20\nRequired tests that passed: 20\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 5,
+        "bash": 26,
+        "read_file": 6,
+        "run_tests": 1,
+        "edit_file": 4,
+        "finish": 1
+      },
+      "wallMs": 320167,
+      "patchChars": 2865
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_element-hq__element-web-1077729a19c0ce902e713cf6fab42c91fb7907f1-vnan",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1931905,
+        "completionTokens": 7323,
+        "totalTokens": 1939228,
+        "costUsd": 0.14452699999999996,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx...\nChecking patch test/unit-tests/stores/SpaceStore-test.ts...\nApplied patch test/unit-tests/components/viewmodels/roomlist/RoomListViewModel-test.tsx cleanly.\nApplied patch test/unit-tests/stores/SpaceStore-test.ts cleanly.\nRequired tests: 503\nPassed tests: 502\nRequired tests that passed: 502\n\nRESULT: FAILED\nMissing tests:"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 3,
+        "read_file": 24,
+        "search": 14,
+        "bash": 5,
+        "edit_file": 4
+      },
+      "wallMs": 324885,
+      "patchChars": 4881
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_protonmail__webclients-01b519cd49e6a24d9a05d2eb97f54e420740072e",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 993232,
+        "completionTokens": 5210,
+        "totalTokens": 998442,
+        "costUsd": 0.07561984000000002,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts...\nApplied patch applications/drive/src/app/store/_uploads/mimeTypeParser/mimeTypeParser.test.ts cleanly.\nRequired tests: 5\nPassed tests: 5\nRequired tests that passed: 5\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "todo_write": 1,
+        "set_phase": 1,
+        "search": 7,
+        "read_file": 10,
+        "edit_file": 8,
+        "run_tests": 5,
+        "bash": 18
+      },
+      "wallMs": 401759,
+      "patchChars": 6347
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1218621,
+        "completionTokens": 6512,
+        "totalTokens": 1225133,
+        "costUsd": 0.09280092000000001,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch .github/workflows/integration-test.yml...\nChecking patch internal/cache/redis/client_test.go...\nChecking patch internal/config/config_test.go...\nChecking patch build/testing/integration.go...\nChecking patch internal/config/testdata/cache/redis-ca-bytes.yml...\nChecking patch internal/config/testdata/cache/redis-ca-invalid.yml...\nChecking patch internal/config/testdata/cache/redis-ca-path.yml...\nCh"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 17,
+        "read_file": 22,
+        "write_file": 2,
+        "edit_file": 9
+      },
+      "wallMs": 329439,
+      "patchChars": 4671
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_qutebrowser__qutebrowser-01d1d1494411380d97cac14614a829d3a69cecaf-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1981309,
+        "completionTokens": 5093,
+        "totalTokens": 1986402,
+        "costUsd": 0.14627787999999997,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch tests/unit/components/test_blockutils.py...\nChecking patch tests/unit/utils/test_version.py...\nApplied patch tests/unit/components/test_blockutils.py cleanly.\nApplied patch tests/unit/utils/test_version.py cleanly.\nRequired tests: 49\nPassed tests: 48\nRequired tests that passed: 48\n\nRESULT: FAILED\nMissing tests: ['tests/unit/utils/test_version.py::TestModuleVersions::test_version_attribute[SIP_VER"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 3,
+        "search": 3,
+        "bash": 20,
+        "read_file": 20,
+        "set_phase": 3,
+        "edit_file": 1
+      },
+      "wallMs": 363909,
+      "patchChars": 764
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_future-architect__vuls-01441351c3407abfc21c48a38e28828e1b504e0c",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1443661,
+        "completionTokens": 17337,
+        "totalTokens": 1460998,
+        "costUsd": 0.11728651999999996,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch contrib/snmp2cpe/pkg/cpe/cpe_test.go...\nApplied patch contrib/snmp2cpe/pkg/cpe/cpe_test.go cleanly.\nRequired tests: 24\nPassed tests: 24\nRequired tests that passed: 24\n\nRESULT: PASSED\n"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 16,
+        "read_file": 13,
+        "bash": 18,
+        "edit_file": 3
+      },
+      "wallMs": 435599,
+      "patchChars": 5985
+    },
+    {
+      "bench": "swe-pro",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "instance_tutao__tutanota-51818218c6ae33de00cbea3a4d30daac8c34142e-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1548498,
+        "completionTokens": 8668,
+        "totalTokens": 1557166,
+        "costUsd": 0.11792696000000001,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 1,
+          "output": "Resetting test-space to base state (full test-code surface)...\nApplying test patch...\nChecking patch test/client/desktop/DesktopDownloadManagerTest.ts...\nChecking patch test/client/nodemocker.ts...\nApplied patch test/client/desktop/DesktopDownloadManagerTest.ts cleanly.\nApplied patch test/client/nodemocker.ts cleanly.\nRequired tests: 4\nPassed tests: 3\nRequired tests that passed: 3\n\nRESULT: FAILED\nMissing tests: ['test/client/desktop/DesktopDownloadManagerTest.ts::DesktopDownloadManagerTest::down"
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "search": 2,
+        "read_file": 14,
+        "bash": 26,
+        "run_tests": 2,
+        "act": 1,
+        "set_phase": 1,
+        "edit_file": 4
+      },
+      "wallMs": 344982,
+      "patchChars": 7180
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "adaptive-rejection-sampler",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 5,
+      "reason": "stalled",
+      "usage": {
+        "promptTokens": 21090,
+        "completionTokens": 32417,
+        "totalTokens": 53507,
+        "costUsd": 0.008531684,
+        "reasoningTokens": 32027
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "uffering=-1, encoding=None,\n             errors=None, newline=None):\n        \"\"\"\n        Open the file pointed to by this path and return a file object, as\n        the built-in open() function does.\n        \"\"\"\n        if \"b\" not in mode:\n            encoding = io.text_encoding(encoding)\n>       return io.open(self, mode, buffering, encoding, errors, newline)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       FileNotFoundError: [Errno 2] No such file or directory: '"
+        }
+      ],
+      "toolCalls": {
+        "bash": 5
+      },
+      "wallMs": 288874,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "chess-best-move",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1992374,
+        "completionTokens": 66001,
+        "totalTokens": 2058375,
+        "costUsd": 0.026551392,
+        "reasoningTokens": 51489
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease\nGet:2 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]\nGet:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]\nGet:4 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [55.6 kB]\nGet:5 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1411 kB]\nGet:6 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]\nGet:7 http://security.ubuntu.com/ubuntu noble-sec"
+        }
+      ],
+      "toolCalls": {
+        "bash": 52,
+        "set_phase": 1,
+        "read_file": 1
+      },
+      "wallMs": 620576,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "bn-fit-modify",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 36,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 619279,
+        "completionTokens": 34023,
+        "totalTokens": 653302,
+        "costUsd": 0.024060248999999992,
+        "reasoningTokens": 19666
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]\nGet:2 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1549 kB]\nGet:3 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [55.6 kB]\nGet:4 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1411 kB]\nGet:5 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2122 kB]\nGet:6 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]\nGet:7 "
+        }
+      ],
+      "toolCalls": {
+        "bash": 41,
+        "set_phase": 3,
+        "finish": 1
+      },
+      "wallMs": 612466,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "circuit-fibsqrt",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 4,
+      "reason": "stalled",
+      "usage": {
+        "promptTokens": 21774,
+        "completionTokens": 32196,
+        "totalTokens": 53970,
+        "costUsd": 0.016888976,
+        "reasoningTokens": 32000
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "eb ...\r\nUnpacking libsasl2-modules:amd64 (2.1.28+dfsg-10) ...\r\nSelecting previously unselected package publicsuffix.\r\nPreparing to unpack .../11-publicsuffix_20230209.2326-1_all.deb ...\r\nUnpacking publicsuffix (20230209.2326-1) ...\r\nSetting up libpsl5:amd64 (0.21.2-1) ...\r\nSetting up libsasl2-modules:amd64 (2.1.28+dfsg-10) ...\r\nSetting up libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...\r\nSetting up libldap-common (2.5.13+dfsg-5) ...\r\nSetting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...\r\nSetting u"
+        }
+      ],
+      "toolCalls": {
+        "bash": 2,
+        "read_file": 2
+      },
+      "wallMs": 288669,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "break-filter-js-from-html",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 13,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 73761,
+        "completionTokens": 14473,
+        "totalTokens": 88234,
+        "costUsd": 0.0025219429999999996,
+        "reasoningTokens": 12032
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]\nGet:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]\nGet:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]\nGet:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]\nGet:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]\nGet:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [355 kB]\nFetched 9394 kB in 1s (11.7 MB/s)\nRea"
+        }
+      ],
+      "toolCalls": {
+        "bash": 13,
+        "finish": 1
+      },
+      "wallMs": 118373,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "cobol-modernization",
+      "arm": "anchor",
+      "status": "timeout",
+      "error": "wall-clock budget of 900s exceeded",
+      "steps": 30,
+      "reason": "cancelled",
+      "usage": {
+        "promptTokens": 429558,
+        "completionTokens": 58994,
+        "totalTokens": 488552,
+        "costUsd": 0.01422681,
+        "reasoningTokens": 49492
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "n bookworm/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10 [20.3 kB]\nGet:2 http://deb.debian.org/debian bookworm/main amd64 libsasl2-2 amd64 2.1.28+dfsg-10 [59.7 kB]\nGet:3 http://deb.debian.org/debian bookworm/main amd64 libldap-2.5-0 amd64 2.5.13+dfsg-5 [183 kB]\nGet:4 http://deb.debian.org/debian bookworm/main amd64 libnghttp2-14 amd64 1.52.0-1+deb12u3 [72.4 kB]\nGet:5 http://deb.debian.org/debian bookworm/main amd64 libpsl5 amd64 0.21.2-1 [58.7 kB]\nGet:6 http://deb.debian.org/debian bookwor"
+        }
+      ],
+      "timedOut": true,
+      "toolCalls": {
+        "bash": 35,
+        "read_file": 1
+      },
+      "wallMs": 910685,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "build-cython-ext",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1103264,
+        "completionTokens": 20165,
+        "totalTokens": 1123429,
+        "costUsd": 0.010264065999999999,
+        "reasoningTokens": 11725
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "1.5 in /usr/local/lib/python3.13/site-packages (from pytest==8.4.1) (1.7.0)\nRequirement already satisfied: pygments>=2.7.2 in /usr/local/lib/python3.13/site-packages (from pytest==8.4.1) (2.21.0)\nDownloading pytest-8.4.1-py3-none-any.whl (365 kB)\nDownloading pytest_json_ctrf-0.3.5-py3-none-any.whl (6.8 kB)\nInstalling collected packages: pytest, pytest-json-ctrf\n  Attempting uninstall: pytest\n    Found existing installation: pytest 9.1.1\n    Uninstalling pytest-9.1.1:\n      Successfully uninstall"
+        }
+      ],
+      "toolCalls": {
+        "bash": 69,
+        "read_file": 3,
+        "edit_file": 2
+      },
+      "wallMs": 295527,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "code-from-image",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1104459,
+        "completionTokens": 50772,
+        "totalTokens": 1155231,
+        "costUsd": 0.036448112,
+        "reasoningTokens": 49882
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://deb.debian.org/debian bookworm InRelease\nHit:2 http://deb.debian.org/debian bookworm-updates InRelease\nHit:3 http://deb.debian.org/debian-security bookworm-security InRelease\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  curl\n0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.\nNeed to get 316 kB of archives.\nAfter this operation, 501 kB of additional disk space wi"
+        }
+      ],
+      "toolCalls": {
+        "bash": 50,
+        "set_phase": 1
+      },
+      "wallMs": 471414,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "cancel-async-tasks",
+      "arm": "anchor",
+      "status": "timeout",
+      "error": "wall-clock budget of 900s exceeded",
+      "steps": 29,
+      "reason": "cancelled",
+      "usage": {
+        "promptTokens": 319432,
+        "completionTokens": 58317,
+        "totalTokens": 377749,
+        "costUsd": 0.01299311576,
+        "reasoningTokens": 46220
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "    \n        The returned instance will have attributes args, returncode, stdout and\n        stderr. By default, stdout and stderr are not captured, and those attributes\n        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,\n        or pass capture_output=True to capture both.\n    \n        If check is True and the exit code was non-zero, it raises a\n        CalledProcessError. The CalledProcessError object will have the return code\n        in the returncode attribute"
+        }
+      ],
+      "timedOut": true,
+      "toolCalls": {
+        "bash": 27,
+        "set_phase": 1,
+        "read_file": 1
+      },
+      "wallMs": 909160,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "baseline",
+      "taskId": "compile-compcert",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 740580,
+        "completionTokens": 19718,
+        "totalTokens": 760298,
+        "costUsd": 0.010766292160000003,
+        "reasoningTokens": 10294
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease\nHit:2 http://security.ubuntu.com/ubuntu noble-security InRelease\nHit:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease\nHit:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\ncurl is already the newest version (8.5.0-2ubuntu10.16).\nbinutils is already the newest version (2.42-4ubuntu2.10).\nbinutils set to manually inst"
+        }
+      ],
+      "toolCalls": {
+        "bash": 71
+      },
+      "wallMs": 1469499,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "adaptive-rejection-sampler",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 24,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 606384,
+        "completionTokens": 27324,
+        "totalTokens": 633708,
+        "costUsd": 0.06505888,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease\nHit:2 http://archive.ubuntu.com/ubuntu noble-updates InRelease\nGet:3 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]\nHit:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease\nFetched 126 kB in 1s (105 kB/s)\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  curl\n0 upgraded, 1 newly installed, 0 to remove and 29 n"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 3,
+        "bash": 18,
+        "write_file": 1,
+        "read_file": 1,
+        "finish": 1
+      },
+      "wallMs": 576771,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "chess-best-move",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 37,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 1464899,
+        "completionTokens": 21429,
+        "totalTokens": 1486328,
+        "costUsd": 0.12199348,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]\nHit:2 http://archive.ubuntu.com/ubuntu noble InRelease\nGet:3 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2122 kB]\nGet:4 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]\nGet:5 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [55.6 kB]\nGet:6 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1549 kB]\nGet:7 http://security.ubuntu"
+        }
+      ],
+      "falseFinish": true,
+      "toolCalls": {
+        "read_file": 1,
+        "bash": 28,
+        "write_file": 1,
+        "set_phase": 3,
+        "run_tests": 3,
+        "finish": 1
+      },
+      "wallMs": 414393,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "bn-fit-modify",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 847271,
+        "completionTokens": 13550,
+        "totalTokens": 860821,
+        "costUsd": 0.07168531999999998,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "s will be upgraded:\n  curl libcurl4t64\n2 upgraded, 0 newly installed, 0 to remove and 114 not upgraded.\nNeed to get 571 kB of archives.\nAfter this operation, 6144 B of additional disk space will be used.\nGet:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 curl amd64 8.5.0-2ubuntu10.16 [226 kB]\nGet:2 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcurl4t64 amd64 8.5.0-2ubuntu10.16 [344 kB]\ndebconf: delaying package configuration, since apt-utils is not installed\nFetched 5"
+        }
+      ],
+      "toolCalls": {
+        "run_tests": 4,
+        "set_phase": 1,
+        "bash": 45
+      },
+      "wallMs": 404607,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "circuit-fibsqrt",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1825590,
+        "completionTokens": 36916,
+        "totalTokens": 1862506,
+        "costUsd": 0.15900679999999995,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "eb ...\r\nUnpacking libsasl2-modules:amd64 (2.1.28+dfsg-10) ...\r\nSelecting previously unselected package publicsuffix.\r\nPreparing to unpack .../11-publicsuffix_20230209.2326-1_all.deb ...\r\nUnpacking publicsuffix (20230209.2326-1) ...\r\nSetting up libpsl5:amd64 (0.21.2-1) ...\r\nSetting up libsasl2-modules:amd64 (2.1.28+dfsg-10) ...\r\nSetting up libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...\r\nSetting up libldap-common (2.5.13+dfsg-5) ...\r\nSetting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...\r\nSetting u"
+        }
+      ],
+      "toolCalls": {
+        "read_file": 3,
+        "run_tests": 19,
+        "write_file": 2,
+        "bash": 27
+      },
+      "wallMs": 699148,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "break-filter-js-from-html",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 686827,
+        "completionTokens": 12654,
+        "totalTokens": 699481,
+        "costUsd": 0.05944004,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]\nGet:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]\nGet:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]\nGet:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]\nGet:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]\nGet:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [355 kB]\nFetched 9394 kB in 1s (11.1 MB/s)\nRea"
+        }
+      ],
+      "toolCalls": {
+        "read_file": 3,
+        "run_tests": 3,
+        "bash": 44
+      },
+      "wallMs": 304483,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "cobol-modernization",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 37,
+      "reason": "error",
+      "usage": {
+        "promptTokens": 366659,
+        "completionTokens": 6216,
+        "totalTokens": 372875,
+        "costUsd": 0.03148228,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]\nGet:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]\nGet:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]\nGet:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]\nGet:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [355 kB]\nFetched 9387 kB in 1s (10.6 MB/s)\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReadin"
+        }
+      ],
+      "toolCalls": {
+        "read_file": 5,
+        "list_dir": 2,
+        "bash": 26,
+        "run_tests": 9,
+        "write": 1
+      },
+      "wallMs": 163479,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "build-cython-ext",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1110277,
+        "completionTokens": 5245,
+        "totalTokens": 1115522,
+        "costUsd": 0.08373644,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "precision. If you wish to review your current use, check the release note link for additional information.\nE           The aliases was originally deprecated in NumPy 1.20; for more details and guidance see the original release note at:\nE               https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations\n\n/usr/local/lib/python3.13/site-packages/numpy/__init__.py:778: AttributeError\n______________________________ test_example_usage ______________________________\n\n    def test_example_u"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 1,
+        "bash": 14,
+        "read_file": 20,
+        "edit_file": 17,
+        "run_phase": 1
+      },
+      "wallMs": 231773,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "code-from-image",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 1838846,
+        "completionTokens": 30704,
+        "totalTokens": 1869550,
+        "costUsd": 0.15614472,
+        "reasoningTokens": 0
+      },
+      "reward": 0,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": false,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://deb.debian.org/debian bookworm InRelease\nHit:2 http://deb.debian.org/debian bookworm-updates InRelease\nHit:3 http://deb.debian.org/debian-security bookworm-security InRelease\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  curl\n0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.\nNeed to get 316 kB of archives.\nAfter this operation, 501 kB of additional disk space wi"
+        }
+      ],
+      "toolCalls": {
+        "read_file": 1,
+        "bash": 40,
+        "set_phase": 1,
+        "run_tests": 8
+      },
+      "wallMs": 575951,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "cancel-async-tasks",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 26,
+      "reason": "finished",
+      "usage": {
+        "promptTokens": 167968,
+        "completionTokens": 6135,
+        "totalTokens": 174103,
+        "costUsd": 0.017094559999999998,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "deb12u5 [79.7 kB]\nGet:5 http://deb.debian.org/debian bookworm/main amd64 libkeyutils1 amd64 1.6.3-2 [8808 B]\nGet:6 http://deb.debian.org/debian bookworm/main amd64 libkrb5-3 amd64 1.20.1-2+deb12u5 [332 kB]\nGet:7 http://deb.debian.org/debian bookworm/main amd64 libgssapi-krb5-2 amd64 1.20.1-2+deb12u5 [135 kB]\nGet:8 http://deb.debian.org/debian bookworm/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10 [20.3 kB]\nGet:9 http://deb.debian.org/debian bookworm/main amd64 libsasl2-2 amd64 2.1.28+dfsg-"
+        }
+      ],
+      "toolCalls": {
+        "set_phase": 4,
+        "bash": 18,
+        "plan": 1,
+        "write": 1,
+        "read_file": 1,
+        "finish": 1
+      },
+      "wallMs": 146351,
+      "patchChars": 0
+    },
+    {
+      "bench": "terminal-bench",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "baseline",
+      "taskId": "compile-compcert",
+      "arm": "anchor",
+      "status": "completed",
+      "steps": 50,
+      "reason": "max_steps",
+      "usage": {
+        "promptTokens": 504160,
+        "completionTokens": 2964,
+        "totalTokens": 507124,
+        "costUsd": 0.038961600000000006,
+        "reasoningTokens": 0
+      },
+      "reward": 1,
+      "checks": [
+        {
+          "id": "task-verifier",
+          "ok": true,
+          "weight": 1,
+          "exitCode": 0,
+          "output": "Hit:1 http://security.ubuntu.com/ubuntu noble-security InRelease\nHit:2 http://archive.ubuntu.com/ubuntu noble InRelease\nHit:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease\nHit:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nbinutils is already the newest version (2.42-4ubuntu2.10).\nbinutils set to manually installed.\nThe following NEW packages will be installed:\n  cu"
+        }
+      ],
+      "toolCalls": {
+        "understand": 1,
+        "run_tests": 13,
+        "bash": 36
+      },
+      "wallMs": 1323099,
+      "patchChars": 0
     }
   ]
 }

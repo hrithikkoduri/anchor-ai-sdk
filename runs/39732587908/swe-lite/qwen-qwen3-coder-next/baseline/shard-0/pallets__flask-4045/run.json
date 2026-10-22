@@ -1,0 +1,32 @@
+{
+  "bench": "swe-lite",
+  "tasksFile": "benchmarks/swe-bench/data/swebench-lite-10-local.jsonl",
+  "kind": "mixed",
+  "arm": "anchor",
+  "variant": "baseline",
+  "model": "qwen/qwen3-coder-next",
+  "llm": "openrouter",
+  "baseUrl": "https://openrouter.ai/api/v1",
+  "timeBudgetSecs": 900,
+  "provider": "docker",
+  "tasks": 1,
+  "completed": 1,
+  "failed": 0,
+  "fullCredit": 0,
+  "meanReward": 0,
+  "falseFinishes": 0,
+  "timeouts": 0,
+  "checksPassed": 0,
+  "checksTotal": 2,
+  "totalUsd": 0.05148787999999999,
+  "wallMsP50": 163735,
+  "wallMsP95": 163735,
+  "startedAt": "2026-10-22T06:22:16.530Z",
+  "finishedAt": "2026-10-22T06:25:00.524Z",
+  "budgets": {
+    "maxTokens": 50000000,
+    "maxSteps": 50,
+    "maxUsd": 3
+  },
+  "contextWindow": 262144
+}
