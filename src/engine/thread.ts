@@ -18,6 +18,7 @@
  * sandbox checkpoints are the workspace-side counterpart.)
  */
 import type { LLMMessage } from "../llm/types.js";
+import type { ProgressLedger } from "../ledger/types.js";
 
 export interface StoredThread {
   /** Running summary of earlier, compacted turns (compaction maintains this). */
@@ -29,6 +30,8 @@ export interface StoredThread {
    * starts the next run here instead of at the first phase.
    */
   phase?: string;
+  /** Durable task contract + evidence references; owned by the SDK. */
+  ledger?: ProgressLedger;
 }
 
 export interface ThreadStore {

@@ -15,6 +15,8 @@ import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
 import type { InboxMessage, InboxStore, RunSummary } from "./inbox.js";
 import type { OperationStore, PendingOperation } from "./operations.js";
+import type { ProgressLedger } from "../ledger/types.js";
+import type { VerifierConfig } from "../ledger/config.js";
 
 export interface RunTask {
   task: string;
@@ -43,6 +45,16 @@ export interface EngineOptions {
   strategy?: AgentStrategy;
   sandbox?: Sandbox;
   tools?: Tool[];
+  /**
+   * Task-verification mode. `true` enables the SDK-owned ledger, intent gate,
+   * evidence capture, and phase/finish verification. A config supplies an
+   * optional cheap verifier LLM. Absent/false preserves today's behavior.
+   */
+  verifier?: boolean | VerifierConfig;
+  /** Explicit turn routing; default "auto" when verifier is enabled. */
+  intent?: "auto" | "chat" | "clarify" | "task";
+  /** Resume/inject an existing ledger (normally loaded from the thread). */
+  ledger?: ProgressLedger;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean };
   budgets?: Partial<BudgetLimits>;
@@ -298,6 +310,10 @@ export interface AgentResult {
    */
   pendingOperations?: PendingOperation[];
   phase?: string;
+  /** Ledger state after this run, when verifier/ledger mode was active. */
+  ledger?: ProgressLedger;
+  /** Whether the finish/phase gate accepted the claimed completion. */
+  verified?: boolean;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
   handoff?: Record<string, unknown>;
 }

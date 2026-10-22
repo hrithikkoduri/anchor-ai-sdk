@@ -151,7 +151,8 @@ export type AgentEvent =
         | "repeated_call"
         | "empty_turn"
         | "effect_without_journal"
-        | "operation_settle_failed";
+        | "operation_settle_failed"
+        | "verifier_failed";
       detail: string;
     }
   | {

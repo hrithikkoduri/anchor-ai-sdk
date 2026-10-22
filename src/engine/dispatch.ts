@@ -71,6 +71,8 @@ export interface ToolDispatchArgs {
   signal?: AbortSignal;
   /** Read live: a `pause` tool sets it during this very dispatch. */
   pauseRequested: () => boolean;
+  /** Engine-owned evidence capture; called once per tool result. */
+  onToolResult?: (call: LLMToolCall, result: ToolResult) => void;
 }
 
 export interface ToolDispatchOutcome {
@@ -179,6 +181,7 @@ export async function dispatchToolCalls(
     result: ToolResult,
     operationId?: string,
   ): void => {
+    args.onToolResult?.(call, result);
     evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
     emit({
       type: "tool_result",
