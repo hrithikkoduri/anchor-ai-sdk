@@ -33,6 +33,10 @@ on:
         description: Agent seconds per task (blank = task default)
         type: string
         default: ""
+      tasks:
+        description: Optional comma-separated task ids (smoke runs)
+        type: string
+        default: ""
       pro_shards:
         description: Shards for SWE-bench Pro (10 tasks split across shards)
         type: string
@@ -100,6 +104,7 @@ jobs:
       MAX_STEPS: ${{ inputs.max_steps }}
       MAX_USD: ${{ inputs.max_usd }}
       TIME_BUDGET: ${{ inputs.time_budget }}
+      TASKS: ${{ inputs.tasks }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
