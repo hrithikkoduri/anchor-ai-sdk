@@ -56,9 +56,15 @@ for (const row of rows) {
   );
   await writeFile(path.join(dir, "instruction.md"), row.problem_statement);
   await writeFile(path.join(dir, "tests", "test_patch.patch"), row.test_patch);
-  const tests = Array.isArray(row.FAIL_TO_PASS)
-    ? row.FAIL_TO_PASS
-    : JSON.parse(row.FAIL_TO_PASS ?? "[]");
+  const parseTests = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string" || value.trim() === "") return [];
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  };
+  // Grade the official SWE-bench contract, not only the new tests: a fix that
+  // breaks PASS_TO_PASS is not a pass.
+  const tests = [...new Set([...parseTests(row.FAIL_TO_PASS), ...parseTests(row.PASS_TO_PASS)])];
   const quoted = tests.map((test) => `'${String(test).replaceAll("'", "'\\''")}'`).join(" ");
   await writeFile(
     path.join(dir, "tests", "test.sh"),
@@ -67,7 +73,9 @@ for (const row of rows) {
       "set -uo pipefail",
       "cd /testbed || exit 1",
       "git apply /tests/test_patch.patch || exit 1",
-      `python -m pytest -q ${quoted}`,
+      "PYTHON=/opt/miniconda3/envs/testbed/bin/python",
+      "if [ ! -x \"$PYTHON\" ]; then PYTHON=python; fi",
+      `"$PYTHON" -m pytest -q ${quoted}`,
       "code=$?",
       "mkdir -p /logs/verifier",
       "if [ \"$code\" -eq 0 ]; then echo 1 > /logs/verifier/reward.txt; else echo 0 > /logs/verifier/reward.txt; fi",
