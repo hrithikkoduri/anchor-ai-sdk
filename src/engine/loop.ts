@@ -45,6 +45,7 @@ import {
   warnPercent as revivalWarnPercent,
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
+import { renderPromptBlocks, type PromptBlock } from "./prompt.js";
 import { resolveTurnIntent } from "./intent.js";
 import {
   addRequirement,
@@ -366,16 +367,50 @@ async function runOne(
   let revivalRequest: RevivalRequest | undefined;
   const phaseOn =
     strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
+  /**
+   * Stable blocks are the cacheable prefix; turn-scoped blocks are appended
+   * after the conversation. The ledger changes after every tool result, so it
+   * must never live in the system message.
+   */
+  const promptBlocks = (): PromptBlock[] => [
+    {
+      id: "agent",
+      text: strategy.systemPrompt({ task: task.task, context, summary }),
+      stability: "stable",
+    },
+    {
+      id: "phase-discipline",
+      text: phaseOn ? phaseDisciplineBlock(strategy.phases) : undefined,
+      stability: "stable",
+    },
+    {
+      id: "budget-revival",
+      text: revivalOn ? revivalBlock(revivalWarnAt) : undefined,
+      stability: "stable",
+    },
+    {
+      id: "ledger",
+      text: ledger
+        ? [
+            "## Runtime task state",
+            "This is authoritative state, not a new user request.",
+            renderLedger(ledger),
+            "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
+          ].join("\n\n")
+        : undefined,
+      stability: "turn",
+    },
+    {
+      id: "phase-state",
+      text: phase ? `Current phase: ${phase}` : undefined,
+      stability: "turn",
+    },
+  ];
   const system = () => ({
     role: "system" as const,
-    content:
-      strategy.systemPrompt({ task: task.task, context, summary }) +
-      (phaseOn ? `\n\n${phaseDisciplineBlock(strategy.phases)}` : "") +
-      (revivalOn ? `\n\n${revivalBlock(revivalWarnAt)}` : "") +
-      (ledger
-        ? `\n\nPROGRESS LEDGER (authoritative task state):\n${renderLedger(ledger)}\n\nUse update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.`
-        : ""),
+    content: renderPromptBlocks(promptBlocks(), "stable"),
   });
+  const turnState = () => renderPromptBlocks(promptBlocks(), "turn");
   if (ledger) {
     const updateLedger = defineTool(
       {
@@ -494,8 +529,22 @@ async function runOne(
   // The model's view of the transcript, bounded by assistant-text elision
   // (#77). `messages` stays whole — this only changes what is SENT.
   const elidedByMessage = new WeakMap<LLMMessage, LLMMessage>();
-  const forModel = (): LLMMessage[] =>
-    messages.map((m) => elidedByMessage.get(m) ?? m);
+  const forModel = (includeTurn = true): LLMMessage[] => {
+    const out = messages.map((m) => elidedByMessage.get(m) ?? m);
+    if (!includeTurn) return out;
+    const turn = turnState();
+    if (turn) {
+      // Keep the turn's final message last (tests and tool protocol both rely
+      // on it); put the changing runtime state immediately before it so the
+      // stable prefix is still reused.
+      const insertAt = Math.max(1, out.length - 1);
+      out.splice(insertAt, 0, {
+        role: "user",
+        content: turn,
+      });
+    }
+    return out;
+  };
   const evidence: ToolResultRecord[] = [];
   // Commands the provider detached. The engine owns their results: it polls at
   // every turn boundary and, before a normal finish, waits for what is left.
@@ -1177,7 +1226,7 @@ async function runOne(
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
         const folded = await compactConversation({
           llm: opts.llm,
-          messages: forModel(),
+          messages: forModel(false),
           runningSummary: summary,
           keepRecentTokens: compact.keepRecentTokens,
           signal,
@@ -1227,9 +1276,6 @@ async function runOne(
       // fold. A job that finished since the previous turn (including one
       // carried in from a previous run) rides this call, not the one after.
       await pollJobs();
-      // Refresh the authoritative contract every turn so evidence ids and
-      // status changes are visible after each tool result.
-      if (ledger) messages[0] = system();
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
       const response = await opts.llm.stream(

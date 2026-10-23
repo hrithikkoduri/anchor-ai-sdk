@@ -153,8 +153,9 @@ const provider = heyo({
 ```
 
 Use an artifact/store you can access and a toolchain suitable for the task.
-Heyo configures its image on the provider and rejects per-sandbox `image` and
-`workspacePath` overrides. `requiredEnv` is defined in the shared runner below.
+Heyo configures its default image on the provider. With `imageKind: "artifact"`,
+`spec.image` can override the artifact per sandbox. `workspacePath` can select
+a checkout already in the image. `requiredEnv` is defined in the shared runner below.
 
 </details>
 
@@ -232,25 +233,75 @@ try {
 
 Provider boot settings and optional capabilities differ. Per-sandbox
 `spec.image` is supported by Docker, E2B (as a template name), and Daytona (as a
-container image), and by Heyo for artifact refs; Local rejects it. Providers that can build/publish expose
-`imagePublisher`, also available as `anchor image publish`.
-Retention needs a cleanup policy; remote machines and model calls can cost money. Private HTTPS repositories
-can use `spec.git.token`, a caller-supplied credential callback.
+container image), and by Heyo for artifact refs; Local rejects it. Retention
+needs a cleanup policy; remote machines and model calls can cost money. Private
+HTTPS repositories can use `spec.git.token`, a caller-supplied credential
+callback.
 
-The latest Docker adapter also supports `spec.egress: "none"`: it disconnects
-container networks after `start()` setup. Other adapters reject that setting.
-This is not a claim that all providers offer equivalent isolation.
+The Docker adapter also supports `spec.egress: "none"`: it disconnects container
+networks after `start()` setup. Other adapters reject that setting. This is not a
+claim that all providers offer equivalent isolation.
 
-Providers that can build images expose the common `imagePublisher` contract and
-the `anchor image publish` command, so Docker, E2B, and Heyo each use their own
-native registry while the caller keeps one shape. Daytona publishes snapshots
-through Daytona's own tooling, so it has no `imagePublisher`.
-`anchor image publish --help` shows the flags. Per-provider instructions are in
+### Long-lived processes
+
+`exec()` is one-shot. When a consumer needs a REPL, watcher, dev server, or
+language server, providers that declare `capabilities.processStream` also expose
+`openProcess()`:
+
+```js
+const proc = await sandbox.openProcess("node", ["server.js"], {
+  cwd: sandbox.workspace,
+  timeoutSecs: 3600,
+});
+await proc.write("input\n");
+for await (const chunk of proc.stdout) process.stdout.write(chunk);
+await proc.endInput();
+await proc.wait();
+```
+
+Streams, `wait`, `kill`, deadline/abort handling, and destroy cleanup are
+available. Heyo uses a PTY: stderr is merged, EOF is Ctrl-D, and there is no
+transport drain signal. See the [process-stream contract](src/sandbox/README.md).
+
+### Publish sandbox images
+
+Providers that can publish expose the common `imagePublisher` contract and the
+`anchor image publish` command. Docker pushes a container image, E2B builds a
+template, and Heyo uploads an artifact through `heyctl`:
+
+```bash
+anchor image publish --provider docker --name ghcr.io/acme/agent:v1 \
+  --dockerfile Dockerfile --context .
+```
+
+Use the returned `ref` as `spec.image`, or merge Heyo's provider config. This is
+provider-native publishing, not a shared Anchor registry. Live registry paths
+are credential-gated; see
 [docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
+
+Daytona publishes snapshots through Daytona's own tooling, so it has no
+`imagePublisher`; pass a prepared snapshot name as `daytona({ snapshot })`.
+
+### Optional TypeScript LSP
+
+The optional `anchor-ai-sdk/lsp` entry point adds read-only TypeScript/JavaScript
+diagnostics, definition, references, and document symbols over process streams:
+
+```js
+import { createCodingAgent } from "anchor-ai-sdk";
+import { createLspTools } from "anchor-ai-sdk/lsp";
+
+const base = createCodingAgent();
+const agent = { ...base, tools: [...base.tools, ...createLspTools()] };
+```
+
+The sandbox image must provide `typescript-language-server` and `typescript`.
+Search and file reads remain the fallback. See [docs/lsp.md](docs/lsp.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
 **[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)** ·
-**[Optional LSP tools](docs/lsp.md)**
+**[Optional LSP tools](docs/lsp.md)** ·
+**[Changelog](https://anchor-sdk.dev/changelog.html)**
 
 ## Make the agent yours
 
@@ -326,7 +377,7 @@ Validate inputs and enforce permissions in your implementation.
 | Capability | Your controls |
 | --- | --- |
 | **Budgets and correction** | Step/token/known-dollar budgets, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
-| **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`xhigh`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
+| **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
 | **Context and memory** | Catalog-derived or explicit compaction, supplied thread stores, agent-authored notes, and best-effort output spill. |
 | **Revival and resume** | Opt-in budget warnings, `request_revival`, `planRevival`, and `ThreadBudget`. Your app persists state and decides whether to fund or enqueue another run. |
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |
@@ -424,7 +475,8 @@ guessing.
 
 `runSandboxConformance(provider)` from `anchor-ai-sdk/testing` exercises the
 public sandbox contract: command results, deadlines, environment handling, Git
-checkpoints, retention/adoption, and declared optional capabilities.
+checkpoints, retention/adoption, process streams, and declared optional image
+publishing capability.
 
 The repository configures local and Docker conformance in CI. Heyo, E2B, and
 Daytona live suites are opt-in and credential-gated; having a suite is not certification that
@@ -436,7 +488,42 @@ same contract and tests without rewriting the agent engine.
 
 ## Evaluated, with the limits visible
 
-The completed **Parasail GLM 5.3 / SWE-bench Lite-10** records show:
+### Latest complete harness round: v0.1.7
+
+Anchor versus the external arm (`SWE-agent` for SWE, `Terminus-2` for Terminal)
+on the same selected task set. Means are reported in parentheses.
+
+| Bench | Model | Anchor | External | Delta |
+|---|---|---:|---:|---:|
+| SWE Lite | DeepSeek V4.1 Flash | **7/9 (77.8%)** | 0/10 (0%) | +77.8 pp |
+| SWE Lite | Qwen3 Coder Next | **4/8 (50.0%)** | 0/10 (0%) | +50.0 pp |
+| SWE Pro | DeepSeek V4.1 Flash | **10/10 (100%)** | 6/10 (60%) | +40.0 pp |
+| SWE Pro | Qwen3 Coder Next | **5/10 (50%)** | 3/10 (30%) | +20.0 pp |
+| Terminal | DeepSeek V4.1 Flash | 7/10 (70%) | **8/10 (80%)** | -10.0 pp |
+| Terminal | Qwen3 Coder Next | 1/10 (10%) | **3/10 (30%)** | -20.0 pp |
+
+Anchor’s full-credit denominator excludes failed tasks; external counts all ten.
+The arms use different harnesses, task handling, and budgets. These are selected
+samples, not a general superiority claim. The canonical v0.1.7 artifact was
+measured at `2fbc92b`, while the `v0.1.7` tag points to `08472b1`.
+
+### v0.1.8
+
+The full v0.1.8 round was interrupted/cancelled. The only published rows are
+partial and are **not a release result**:
+
+| Bench | DeepSeek V4.1 Flash | Qwen3 Coder Next |
+|---|---:|---:|
+| SWE Lite | 5/6 (83.3%) | 2/7 (28.6%) |
+| SWE Pro | 10/10 (100%) | 2/10 (20%) |
+| Terminal | 5/10 (50%) | 6/10 (60%) |
+
+The external arm for v0.1.8 is also incomplete. Do not use these numbers for a
+release comparison; rerun the full round after the benchmark harness is fixed.
+
+### Historical selected sample
+
+The completed **Parasail GLM 5.3 / SWE-bench Lite-10** records remain available:
 
 | | Anchor | mini-swe-agent |
 | --- | --- | --- |
@@ -447,8 +534,7 @@ The completed **Parasail GLM 5.3 / SWE-bench Lite-10** records show:
 
 Both records name `zai-org/GLM-5.3` on Parasail, temperature 0, seed 42, and
 Docker-backed tasks. This is a selected ten-task sample with different budgets
-and an extraction failure, not the full benchmark or a general superiority
-claim. The older 7/10 OpenRouter cost comparison is separate historical context.
+and an extraction failure, not the full benchmark or a general superiority claim.
 
 **[Benchmark explorer](https://anchor-sdk.dev/benchmarks.html)** ·
 **[Anchor artifacts](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/evals/benchmarks/swe-bench/results/glm53-parasail)** ·
@@ -456,10 +542,11 @@ claim. The older 7/10 OpenRouter cost comparison is separate historical context.
 
 ## Status and contributing
 
-**Early alpha, 0.x.** Pin exact versions and test your integration. Provider and
-runtime features are version-specific; the current source may be ahead of the
-installed package. Agent teams and consumer skill bundles remain roadmap work in
-the reviewed source.
+**Early alpha, 0.x. Current tag: v0.1.8.** Pin exact versions and test your
+integration. Provider and runtime features are version-specific; the current
+source may be ahead of the installed package. Agent teams, context reset, MCP,
+and consumer skill bundles remain roadmap work in the reviewed source. See the
+[changelog](https://anchor-sdk.dev/changelog.html) for what landed in each tag.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in
 the SDK and product policy in the consumer; provider changes should include

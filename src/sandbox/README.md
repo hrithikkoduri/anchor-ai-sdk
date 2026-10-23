@@ -196,8 +196,9 @@ retryable/adoptable, and the boot itself lives in `start()`.
 
 ## Custom images
 
-`start()` never builds or pushes an image; publishing is an explicit, optional
-`imagePublisher` seam. `SandboxSpec.image` is a per-sandbox override only where
+Publishing is an explicit, optional `imagePublisher` seam, not a registry push
+inside `start()`. Heyo can still build a configured Dockerfile/git source during
+startup. `SandboxSpec.image` is a per-sandbox override only where
 the provider can vary its image. The consumer-facing guide is
 [docs/sandbox-image-publishing.md](../../docs/sandbox-image-publishing.md).
 

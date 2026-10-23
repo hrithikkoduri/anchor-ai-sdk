@@ -9,8 +9,9 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 
 1. Open an issue naming the item (one item per PR keeps review small).
 2. The rule that keeps the boundary honest: **mechanics here, policy in the
-   consumer**, and this package never reads configuration (options in,
-   nothing touches `process.env`); the guard suite enforces it.
+   consumer**. SDK entry points never read configuration; the optional
+   `anchor` CLI is the product boundary where credentials enter from the
+   environment, and the guard suite records that exception.
 3. Gate every change with `npm run typecheck && npm test`; CI runs the same,
    plus Docker conformance; live microVM tests are opt-in.
 4. When an item ships: delete it here and record the decision in
@@ -29,18 +30,9 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 - **Braintrust adapter (tracing + evals)**: the same stream also builds eval
   records. _Where:_ a companion package over `TraceSink`. _Trigger:_ actively
   using Braintrust. _Size:_ S.
-- **Export tool-author helpers**: `requireString`, `optionalString`,
-  `requireSandbox`, `formatExec` are internal to `src/tools/types.ts`.
-  _Where:_ export them from `src/tools/index.ts`. _Trigger:_ the next tool
-  authored outside the package. _Size:_ XS, good first issue.
 
 ## Sandbox providers
 
-- **E2B adapter**: implement the provider contract (exec, clone, checkpoint,
-  retain) and pass `runSandboxConformance`. A stub module exists in-repo
-  (`src/sandbox/e2b/`) but is **not exported** until the suite passes.
-  _Trigger:_ a second VM vendor is needed (region, cost, comparison).
-  _Size:_ M.
 - **Daytona fork/best-of-N**: the adapter ships (`src/sandbox/daytona/`) but
   declares `fork: false` — the API rejects forking of container-class
   sandboxes, so racing needs a rebuild-from-checkpoint path instead of a native
@@ -77,16 +69,17 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   a browser task needs exposed ports/preview routes on the deployment spec.
   _Where:_ `src/sandbox/heyo/index.ts` (`HeyoSandboxConfig.routes`, health
   port). _Trigger:_ the first non-coding consumer needing HTTP. _Size:_ S–M.
+- **Daytona image publishing**: implement `ImagePublisher` and
+  `capabilities.publishImage` for the adapter once the provider exists.
+  _Where:_ `src/sandbox/daytona/`. _Trigger:_ Daytona support lands. _Size:_ S.
+- **Live registry conformance**: opt-in tests that actually push a tiny image
+  or template for Docker/E2B and upload a Heyo artifact, then boot it. The
+  contract currently uses injected runners because credentials and daemons are
+  external. _Where:_ `tests/integration/` plus the image-publishing guide.
+  _Trigger:_ first production image-publishing consumer. _Size:_ M.
 
 ## Run pipeline
 
-- **Git-credential callback**: replace the one-shot `githubToken` with
-  `git: { token: () => Promise<string> }` so providers re-resolve credentials
-  per clone/push (installation tokens live an hour; longer runs silently push
-  with stale credentials) and the credential host stops being hardcoded to
-  `github.com`. _Where:_ `src/sandbox/types.ts` + adapters (Sailor already
-  passes the callback). _Trigger:_ none; correctness fix, ready now.
-  _Size:_ S–M.
 - **`createAnchor` facade**: ~20 lines of sugar over the run-pipeline calls
   (captures llm/provider/stores, returns `{ run, doctor }`). _Trigger:_ a
   second consumer wants the same wiring bundle (the eval CLI is the likely
@@ -96,8 +89,25 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   no baseline-passing test regresses. _Where:_ `src/tools/run-tests.ts` plus
   the eval task JSON under `evals/benchmarks/swe-bench/data/`. _Trigger:_ evals on real repos whose
   `main` is not green. _Size:_ M.
+- **Context reset + durable handoff**: at a context/step threshold, open a
+  fresh model window with a structured artifact (ledger + git state + last
+  observations) instead of relying on another summary. Revive the sandbox by
+  handle. _Where:_ `src/engine/compaction.ts` / `thread.ts` / `revival.ts`.
+  _Trigger:_ a multi-hour task whose compacted context loses constraints.
+  _Size:_ M.
+- **Abortable one-shot exec**: `ExecOptions.signal` and `ExecResult.cancelled`
+  across providers. PR #9 was closed before merge because the E2B and Docker
+  cancellation paths were unsafe; `openProcess` cancellation exists, but a
+  synchronous `exec` still waits for its deadline. _Trigger:_ a consumer needs
+  Stop to terminate a running command, not merely stop the run. _Size:_ M.
 
 ## Model providers
+
+- **Per-phase model / reasoning routing**: use a strong model for planning and
+  verification and a cheaper model for exploration/summarization. Reasoning
+  effort already exists per run/bundle; routing does not. _Where:_
+  `src/engine/` plus `src/llm/`. _Trigger:_ cost/quality data from an A/B run.
+  _Size:_ S–M.
 
 - **Native Anthropic / Gemini adapters**: first-class clients (not the
   OpenAI-compat shim), including **opaque reasoning replay** (carry signed
@@ -120,6 +130,17 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   `src/sandbox/` (materialization) + the option types in `src/engine/`.
   _Trigger:_ the first consumer with skills to load (Sailor is the likely
   first). _Size:_ M.
+
+- **MCP with lazy discovery**: `search_tools`, namespaced
+  `mcp__server__tool`, `EngineOptions.toolResolver`, and per-server allowlists.
+  Reuse the operation journal for effectful MCP calls. _Where:_
+  `src/tools/` + `src/engine/`. _Trigger:_ a consumer needs a large external
+  tool catalog. _Size:_ M.
+
+- **Single evaluator subagent**: one isolated, result-only subagent with a
+  skeptical prompt and test/browser tools. Build this before agent teams.
+  _Where:_ `src/engine/` + `src/agents/`. _Trigger:_ a task where the generator
+  cannot reliably judge its own completion. _Size:_ M.
 
 - **Parallel tool calls (full)**: read-only calls from one turn already
   dispatch concurrently (decision #69). Concurrent mutations are deferred:
@@ -157,15 +178,27 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   `src/agents/coding/index.ts`. _Trigger:_ the first consumer amending a rule
   (Sailor, now). _Size:_ S.
 
-## In flight (work, not deferred)
+## Recently shipped (do not re-add as deferred)
 
-- **Phase discipline is intrinsic** (decision #74, 2026-10-19): the engine
-  appends `phaseDisciplineBlock(strategy.phases)` after the strategy prompt,
-  gated on the same `intrinsics.phase` flag that registers the tool, and the
-  `set_phase` description no longer argues that its own call is optional.
-- **Background long commands landed** (decision #70, 2026-10-19):
-  `ExecOptions.backgroundAfterSecs`, `ExecResult.background`, `pollJob`/
-  `killJob`, the `background_started` engine event, and Sailor's
-  `background_jobs` + worker sweep. Trigger was the WebRover #19 wedge.
-- The benchmark rounds run from `evals/benchmarks/swe-bench/`: Opus 5.5 on Lite-10 (budgets
-  capped), then TerminalBench / METR / ProgramBench as `benchmarks/<name>/`.
+- v0.1.6: E2B adapter.
+- v0.1.7: background-result delivery, inbox/run-chain, Docker `egress: "none"`.
+- v0.1.8: verification ledger + gates, structured output, external-effect
+  recovery, terminal agent, bounded tool results, persistent process streams
+  (Local/Docker/E2B/Heyo), common image publishing + `anchor image publish`,
+  and optional TypeScript LSP.
+
+## In flight / paused
+
+- **Benchmark reruns**: the complete v0.1.7 combined result is committed at
+  `evals/results/v0.1.7-2fbc92b/` (measured at `2fbc92b`, not the `v0.1.7`
+  tag `08472b1`). The v0.1.8 full round was cancelled; partial numbers are not
+  a release result. Rerun the full Anchor + external matrix after the SWE Lite
+  external issue is fixed.
+- **SWE Lite external diagnosis**: investigate the incomplete/external result
+  path before the next eval round. Known external failures in the completed
+  round were task/agent failures, not a clean harness comparison; see
+  `evals/results/` and the `external-bench-results` branch.
+
+Benchmark suites live under `evals/benchmarks/swe-bench/` and
+`evals/benchmarks/terminal-bench/`; each round must record model, harness tag,
+budgets, task set, tokens, cost, and partial/full-credit outcomes.

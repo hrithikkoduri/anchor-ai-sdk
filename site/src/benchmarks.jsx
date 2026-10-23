@@ -297,9 +297,11 @@ function Benchmarks() {
       <div className="container benchmark-disclosure">
         <span>READ THE FINE PRINT</span>
         <p>
-          A deterministic 10-task subset, one per repository — not the full
-          SWE-bench Lite set. Mini’s cost and tokens are estimates. This round
-          is a baseline, not a general performance guarantee.
+          Round 01 is the 18 October published baseline: a deterministic
+          10-task subset, one per repository — not the full SWE-bench Lite set.
+          Mini’s cost and tokens are estimates. The latest complete harness
+          round is v0.1.7; the v0.1.8 round was interrupted. No v0.1.8 score is
+          claimed here.
         </p>
       </div>
 
