@@ -2012,6 +2012,40 @@
   .v017-table td {
     white-space: nowrap;
   }
+  .v017-table td.benchmark-better {
+    color: #315b26;
+    background: #edf4e5;
+    font-weight: 650;
+  }
+  .better-mark {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 2px 5px;
+    border: 1px solid #b9cda6;
+    border-radius: 2px;
+    font: 6px var(--mono);
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    vertical-align: 2px;
+    color: #315b26;
+    background: #e3efd8;
+  }
+  .benchmark-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 13px;
+    font: 9px var(--mono);
+    line-height: 1.7;
+    color: #7d8870;
+  }
+  .legend-swatch {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    background: #d9e8ca;
+    border: 1px solid #b9cda6;
+  }
   .v017-table td small {
     color: #899578;
     font-size: 9px;

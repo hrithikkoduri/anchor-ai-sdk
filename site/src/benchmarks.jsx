@@ -69,16 +69,25 @@ function Summary() {
           </tr>
         </thead>
         <tbody>
-          {rounds.map((round) => (
+          {rounds.map((round) => {
+            const winner =
+              round.anchor.full === round.external.full
+                ? "tie"
+                : round.anchor.full > round.external.full
+                  ? "anchor"
+                  : "external";
+            return (
             <tr key={`${round.bench}-${round.model}`}>
               <th scope="row">{round.benchLabel}</th>
               <td>{round.modelLabel}</td>
               <td>{round.harness}</td>
-              <td className="anchor-col">
+              <td className={`anchor-col ${winner === "anchor" ? "benchmark-better" : ""}`}>
                 {round.anchor.full}/{round.anchor.scored}
+                {winner === "anchor" ? <span className="better-mark">better</span> : null}
               </td>
-              <td>
+              <td className={winner === "external" ? "benchmark-better" : ""}>
                 {round.external.full}/{round.external.scored}
+                {winner === "external" ? <span className="better-mark">better</span> : null}
               </td>
               <td>
                 {percent(round.anchor.mean)} / {percent(round.external.mean)}
@@ -92,7 +101,8 @@ function Summary() {
                 {number(Math.round(round.external.p95 / 1000))}s
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -244,6 +254,11 @@ function Benchmarks() {
               View source data <ArrowUpRight size={13} />
             </a>
           </div>
+          <p className="benchmark-legend">
+            <span className="legend-swatch" /> Green marks the higher full-credit
+            count in that row. Denominators differ, so read the counts and the
+            note below; ties stay neutral.
+          </p>
           <Summary />
           <div className="ledger-footnote">
             <span>

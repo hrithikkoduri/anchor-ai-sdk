@@ -66,6 +66,7 @@ test("benchmark page exposes the complete v0.1.7 record", async ({ page }) => {
   await expect(page.locator(".v017-summary")).toContainText("15/20");
   await expect(page.locator(".v017-summary")).toContainText("8/20");
   await expect(page.locator(".v017-table").first().locator("tbody tr")).toHaveCount(6);
+  await expect(page.locator(".v017-table").first().locator(".benchmark-better")).toHaveCount(6);
   await expect(
     page.getByRole("region", { name: "SWE Lite DeepSeek v0.1.7 per-task ledger" })
       .locator("tbody tr"),
