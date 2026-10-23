@@ -58,6 +58,7 @@ import {
   verifyAlignment,
   type VerifierConfig,
 } from "../ledger/index.js";
+import type { ProgressLedger } from "../ledger/types.js";
 import { chatAgent } from "../agents/chat/index.js";
 import { codingAgent } from "../agents/coding/index.js";
 import type { EventSink, RevivalRequest } from "./events.js";
@@ -1648,6 +1649,62 @@ function usageDelta(
   };
 }
 
+/** A required obligation still needs work, or an open failure blocks finish. */
+function hasActiveLedger(ledger: ProgressLedger | undefined): boolean {
+  if (!ledger) return false;
+  const open = ledger.requirements.some(
+    (item) =>
+      item.required &&
+      item.status !== "verified" &&
+      item.status !== "waived" &&
+      item.status !== "superseded",
+  );
+  return open || ledger.openFailures.length > 0;
+}
+
+async function priorLedgerFor(
+  opts: EngineOptions,
+  verifierOn: boolean,
+): Promise<ProgressLedger | undefined> {
+  if (!verifierOn) return undefined;
+  if (opts.ledger) return opts.ledger;
+  if (!opts.thread) return undefined;
+  return (await opts.thread.store.load(opts.thread.id))?.ledger;
+}
+
+/**
+ * Resolve the route for one run. `intent: "auto"` is ledger-aware: an active
+ * task contract outranks text heuristics. Explicit chat/clarify/task still
+ * wins, and turns without verifier mode keep their existing behavior.
+ */
+function routeTurn(
+  task: RunTask,
+  opts: EngineOptions,
+  priorLedger: ProgressLedger | undefined,
+): EngineOptions {
+  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
+  if (!verifierOn) return { ...opts, agent: opts.agent ?? chatAgent };
+  const explicit = opts.intent ?? "auto";
+  const intent =
+    explicit === "auto" && hasActiveLedger(priorLedger)
+      ? "task"
+      : resolveTurnIntent(task.task, explicit);
+  if (intent !== "task") {
+    return {
+      ...opts,
+      agent: chatAgent,
+      verifier: false,
+      intent: "chat",
+      ledger: undefined,
+    };
+  }
+  return {
+    ...opts,
+    agent: opts.agent ?? codingAgent,
+    intent: "task",
+  };
+}
+
 /**
  * A run chain (decision #82): one run at a time, with the consumer's inbox as
  * the source of what comes next. The chain shares one budget and carries
@@ -1689,7 +1746,15 @@ async function runChain(
 
   for (;;) {
     const budget = seededBudget(opts, spend);
-    result = await runOne(current, opts, {
+    const routed = routeTurn(
+      current,
+      opts,
+      await priorLedgerFor(
+        opts,
+        opts.verifier !== undefined && opts.verifier !== false,
+      ),
+    );
+    result = await runOne(current, routed, {
       budget,
       stepsBefore,
       jobs,
@@ -1764,27 +1829,8 @@ export async function runAgent(
   task: RunTask,
   opts: EngineOptions,
 ): Promise<AgentResult> {
+  if (opts.inbox) return runChain(task, opts);
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  const intent = resolveTurnIntent(task.task, opts.intent ?? "auto");
-
-  // Conversation turns never create task state: no ledger, no verifier, no
-  // coding phases. A clear task uses the caller's agent, or the coding agent.
-  if (verifierOn && intent !== "task") {
-    const conversation: EngineOptions = {
-      ...opts,
-      agent: chatAgent,
-      verifier: false,
-      intent: "chat",
-      ledger: undefined,
-    };
-    return opts.inbox
-      ? runChain(task, conversation)
-      : runOne(task, conversation);
-  }
-
-  const effective: EngineOptions = {
-    ...opts,
-    agent: opts.agent ?? (verifierOn ? codingAgent : chatAgent),
-  };
-  return opts.inbox ? runChain(task, effective) : runOne(task, effective);
+  const priorLedger = await priorLedgerFor(opts, verifierOn);
+  return runOne(task, routeTurn(task, opts, priorLedger));
 }
