@@ -46,6 +46,10 @@
       "types": "./dist/sandbox/e2b/index.d.ts",
       "default": "./dist/sandbox/e2b/index.js"
     },
+    "./lsp": {
+      "types": "./dist/lsp/index.d.ts",
+      "default": "./dist/lsp/index.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"

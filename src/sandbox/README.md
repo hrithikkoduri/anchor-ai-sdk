@@ -142,7 +142,8 @@ Local, Docker, and E2B provide separate stderr. Heyo runs the process through
 its interactive PTY: stderr is merged into stdout, `endInput()` has Ctrl-D
 semantics, and the WebSocket has no drain signal. Use Local/Docker/E2B when a
 consumer needs strict stderr or real stdin backpressure. No LSP or JSON-RPC
-types belong in core; `anchor-ai-sdk/lsp` layers that protocol on this primitive.
+types belong in core; [`anchor-ai-sdk/lsp`](../../docs/lsp.md) layers that
+protocol on this primitive.
 
 **The conformance suite**: `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,

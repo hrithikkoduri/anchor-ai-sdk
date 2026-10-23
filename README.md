@@ -247,7 +247,8 @@ shows the flags. Per-provider instructions are in
 [docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
-**[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)**
+**[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)** ·
+**[Optional LSP tools](docs/lsp.md)**
 
 ## Make the agent yours
 
