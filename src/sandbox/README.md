@@ -49,6 +49,7 @@ product, and a handle owned by a different provider is skipped, not "gone".
 | `adopt(handle, spec?)` | the workspace comes from the retained disk; `start()` proves it still exists; a failure is *gone*, not *fatal* |
 | `release(handle)` | destroy by handle alone; no spec, no start; already-gone is not an error |
 | `probe()` | cheap health check, used by a `doctor` command |
+| `imagePublisher` | optional publish seam; declared by `capabilities.publishImage`. It is slow and credentialed, so it lives outside `start()` |
 | `prepare({ gitToken }?)` | optional pre-run maintenance (refreshed credentials, warmed caches). Best-effort by contract: the **caller** decides whether a failure is fatal. Heyo uses it to refresh the build secret its host-side image builds read |
 
 ## What `start()` must guarantee
@@ -146,7 +147,7 @@ types belong in core; `anchor-ai-sdk/lsp` layers that protocol on this primitive
 **The conformance suite**: `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
 self-containment, kill deadlines, env secrets, process streams (stdin, kill,
-timeout, destroy), checkpoints, retain/adopt, git identity, push-failure
+timeout, destroy), declared image-publisher presence, checkpoints, retain/adopt, git identity, push-failure
 reporting, clone, `hasChangesFrom`, `localPath` copies, bare-origin pushes, and
 `fork` where declared. Scenarios assert through `Sandbox`/`SandboxProvider`
 only, never backend internals. A backend is "done" when this passes (live
@@ -182,31 +183,76 @@ wait, clone, credentials) and 53s of actual agent work. Anything that compares
 "run duration" across backends must separate boot from work, or a fast adapter
 reads as a slow agent.
 
-## Custom images
-
-There is **no generic build-or-push API** in the Sandbox contract. Anchor does
-not publish images to a provider registry for you. `SandboxSpec.image` is a
-per-sandbox override only where the provider can vary its image; publishing is
-part of the consumer's image/deployment pipeline.
-
-| Provider | Default image | Per-sandbox `spec.image` | How a custom image gets there |
-|---|---|---|---|
-| **Docker** | `docker({ image })` | **Yes**; wins over the default | Build with `docker build` and push/pull with the Docker CLI yourself. `start()` pulls the name if it is not already local. |
-| **E2B** | `e2b({ template })` | **Yes**, but it is an E2B **template name or ID**, not a Docker image | Build and publish a template with E2B's `Template.build()`; repo scripts: `scripts/build-e2b-template.mjs` and `evals/scripts/build-e2b-templates.mjs`. Passing a Docker image fails with guidance. |
-| **Heyo** | `heyo({ image, imageKind, imageStore })` | **No**; rejected loudly | `imageKind: "artifact"` pulls a prebuilt rootfs from `imageStore` (default `https://hub.heyo.work`); `"dockerfile"` / `"git"` make the Heyo host build it. Publish artifacts outside Anchor. |
-| **Local** | none | **No**; rejected loudly | Host filesystem only; use `spec.localPath` or Docker. |
-| **Daytona** | planned | not available | Stub only; factory throws until it passes conformance. |
-
-If a task needs a prebaked repository, use `spec.workspacePath` on Docker, E2B,
-or Heyo so `start()` verifies the checkout instead of cloning. A uniform
-"build and publish this image" operation across providers is **not implemented**;
-it would need a separate image capability and conformance path rather than a
-field on `SandboxSpec`.
-
 The conformance suite deliberately asserts `start()`'s **guarantees** (workspace,
 git identity, credentials, scratch), not how long they take; measure boot per
 backend yourself. `create()` stays I/O-free precisely so the boot is
 retryable/adoptable, and the boot itself lives in `start()`.
+
+## Custom images
+
+`start()` never builds or pushes an image; publishing is an explicit, optional
+`imagePublisher` seam. `SandboxSpec.image` is a per-sandbox override only where
+the provider can vary its image.
+
+| Provider | Default image | Per-sandbox `spec.image` | How a custom image gets there |
+|---|---|---|---|
+| **Docker** | `docker({ image })` | **Yes**; wins over the default | `anchor image publish --provider docker ...` builds and pushes with the Docker CLI. `start()` pulls the name if it is not already local. |
+| **E2B** | `e2b({ template })` | **Yes**, but it is an E2B **template name or ID**, not a Docker image | `anchor image publish --provider e2b ...` builds/publishes a template with E2B's `Template.build()`; repo scripts also exist. Passing a Docker image fails with guidance. |
+| **Heyo** | `heyo({ image, imageKind, imageStore })` | **Artifact only**; dockerfile/git builds are provider-level and reject it | `anchor image publish --provider heyo ...` wraps `heyctl artifact push`. `imageKind: "artifact"` pulls a prebuilt rootfs from `imageStore` (default `https://hub.heyo.work`); `"dockerfile"` / `"git"` make the Heyo host build it. |
+| **Local** | none | **No**; rejected loudly | Host filesystem only; use `spec.localPath` or Docker. |
+| **Daytona** | planned | not available | Stub only; factory throws until it passes conformance. |
+
+If a task needs a prebaked repository, use `spec.workspacePath` on Docker, E2B,
+or Heyo so `start()` verifies the checkout instead of cloning.
+
+### Publishing through the common contract
+
+Providers that can publish set `capabilities.publishImage` and expose an
+`imagePublisher`. The publisher is a slow deployment seam, separate from
+`start()`:
+
+```ts
+const published = await provider.imagePublisher!.publish({
+  name: "acme/agent:v1",
+  source: { kind: "dockerfile", path: "Dockerfile", context: "." },
+});
+
+// Docker/E2B: use the ref per sandbox.
+const sandbox = provider.create({ image: published.ref });
+
+// Heyo: merge its provider-level image config, then optionally pass
+// `image: published.ref` per sandbox when imageKind is "artifact".
+```
+
+`ImagePublisher.sources` declares which of `dockerfile`, `image`, and `rootfs`
+the provider accepts. Unsupported sources fail loudly. Results say whether the
+ref belongs in `SandboxSpec.image` or in provider configuration.
+
+The CLI uses the same contract and loads only the selected provider:
+
+```bash
+# Docker: build and push a container image
+anchor image publish --provider docker --name ghcr.io/acme/agent:v1 \
+  --dockerfile Dockerfile --context .
+
+# E2B: build and publish a template
+anchor e2b image publish --name acme-agent:v1 --from-image ubuntu:24.04
+
+# Heyo: upload a rootfs to the namespace store
+anchor heyo image publish --name acme/agent:v1 --rootfs ./rootfs.ext4 --public
+```
+
+Provider-first (`anchor e2b image publish`) and `--provider` forms are
+equivalent. Docker uses the CLI login; E2B reads `E2B_API_KEY`; Heyo uses the
+`heyctl` login (set `HEYCTL_BIN` if it is not on `PATH`; `HEYO_IMAGE_STORE`
+is copied into the returned provider config). Local and the Daytona stub have
+no image publisher. Nothing in Anchor logs build arguments; treat
+provider build output as potentially sensitive.
+
+A uniform **build-and-push implementation** now exists through this seam, but
+it is still provider-native: Docker pushes to a container registry, E2B builds
+a template, and Heyo uploads an artifact. There is no cross-provider registry
+of Anchor images.
 
 ## Adding a provider: checklist
 
@@ -266,6 +312,8 @@ index.ts     openSandbox / openSandboxSession / releaseSandbox + stores
 provider.ts  the SandboxProvider contract (no implementations)
 types.ts     Sandbox, SandboxSpec, ExecResult, ProcessHandle, handles
 process.ts   provider-neutral ChildProcess stream handle (local/docker)
+image.ts     common image-publishing contract (ImagePublisher/ImageSource)
+command.ts   host-command runner for image publishers
 git.ts       shared git behavior (checkpoints, diffs, reserved scratch)
 heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers

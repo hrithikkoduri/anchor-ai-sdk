@@ -161,9 +161,10 @@ export interface SandboxSpec {
   /**
    * The image for THIS sandbox, when the provider can vary it per sandbox.
    * Docker interprets it as a container image; E2B interprets it as a
-   * template name or ID (E2B has no Docker-image-at-create). Providers with a
-   * configured fixed image (heyo) or none at all (local) reject it loudly —
-   * silently dropping an image would run the wrong environment.
+   * template name or ID (E2B has no Docker-image-at-create); Heyo interprets
+   * it as an artifact ref, but only when its configured `imageKind` is
+   * `"artifact"` (dockerfile/git builds are provider-level). Local rejects it
+   * loudly — silently dropping an image would run the wrong environment.
    */
   image?: string;
   /**

@@ -38,6 +38,7 @@ import {
   type ProcessOptions,
 } from "../types.js";
 import { ByteQueue } from "../process.js";
+import { e2bImagePublisher } from "./image.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -688,7 +689,12 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
       egressControl: false, // not exposed by this adapter yet
       localPath: false, // remote VM; no host-directory import
       processStream: true,
+      publishImage: true,
     },
+    imagePublisher: e2bImagePublisher({
+      apiKey: opts.apiKey,
+      domain: opts.domain,
+    }),
     create: (spec) => new E2BSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new E2BSandbox({ ...spec, adopt: handle.id }, opts),

@@ -23,6 +23,7 @@ import type { SandboxHandle, SandboxProvider } from "./provider.js";
 
 export * from "./types.js";
 export * from "./provider.js";
+export * from "./image.js";
 export type { HeyoSandboxConfig } from "./heyo/index.js";
 export type { LocalSandboxOptions } from "./local/index.js";
 

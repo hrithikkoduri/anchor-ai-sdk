@@ -28,9 +28,10 @@ describe("package genericity", () => {
     const offenders = files(SRC)
       .filter((file) => content(file).includes("process.env"))
       .map(rel)
-      // The one deliberate exception: relaying the host env to a local
-      // subprocess is execution, not configuration.
-      .filter((file) => file !== "sandbox/local/index.ts");
+      // Two deliberate exceptions: relaying the host env to a local
+      // subprocess is execution, not configuration; the CLI is the product
+      // boundary where credentials enter from the environment.
+      .filter((file) => file !== "sandbox/local/index.ts" && file !== "cli.ts");
     expect(offenders).toEqual([]);
   });
 

@@ -230,14 +230,20 @@ try {
 ```
 
 Provider boot settings and optional capabilities differ. Per-sandbox
-`spec.image` is supported by Docker and E2B (as a template name), fixed at the
-provider for Heyo, and rejected by Local; image build/push stays outside Anchor.
+`spec.image` is supported by Docker and E2B (as a template name), and by Heyo
+for artifact refs; Local rejects it. Providers that can build/publish expose
+`imagePublisher`, also available as `anchor image publish`.
 Retention needs a cleanup policy; remote machines and model calls can cost money. Private HTTPS repositories
 can use `spec.git.token`, a caller-supplied credential callback.
 
 The latest Docker adapter also supports `spec.egress: "none"`: it disconnects
 container networks after `start()` setup. Other adapters reject that setting.
 This is not a claim that all providers offer equivalent isolation.
+
+Providers that can build images expose the common `imagePublisher` contract and
+the `anchor image publish` command, so Docker, E2B, and Heyo each use their own
+native registry while the caller keeps one shape. `anchor image publish --help`
+shows the flags.
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
 **[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)**

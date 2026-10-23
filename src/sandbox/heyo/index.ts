@@ -18,6 +18,7 @@ import { Hws, type Shell } from "@heyocomputer/hws";
 import { HeyoGuestExecutor } from "./exec.js";
 import { upsertHeyoSecret } from "./secret.js";
 import { ByteQueue } from "../process.js";
+import { heyoImagePublisher } from "./image.js";
 import type { ProviderHealth, SandboxProvider } from "../provider.js";
 import {
   checkpointVia,
@@ -183,7 +184,9 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
       egressControl: false,
       localPath: false, // the VM is another machine
       processStream: true,
+      publishImage: true,
     },
+    imagePublisher: heyoImagePublisher({ imageStore: cfg.imageStore }),
     create: (spec) => new HeyoSandbox(spec, cfg),
     adopt: (handle, spec = {}) =>
       new HeyoSandbox({ ...spec, adopt: handle.id }, cfg),
@@ -250,9 +253,10 @@ export class HeyoSandbox implements Sandbox {
 
   async start(): Promise<void> {
     if (this.started) return;
-    if (this.spec.image) {
+    const imageKind = this.cfg.imageKind ?? "artifact";
+    if (this.spec.image && imageKind !== "artifact") {
       throw new Error(
-        "the heyo backend uses its configured image — a per-sandbox image belongs to the docker backend; use imageKind for a provider-level image",
+        "the heyo backend accepts a per-sandbox image only with imageKind \"artifact\"; dockerfile/git builds are provider-level",
       );
     }
     if (this.spec.egress === "none") {
@@ -291,7 +295,7 @@ export class HeyoSandbox implements Sandbox {
     // comes from the namespace store: a prebuilt artifact, or a Dockerfile
     // manifest the host builds itself.
     const imageSource =
-      this.cfg.imageKind === "dockerfile"
+      imageKind === "dockerfile"
         ? {
             build: {
               store: this.cfg.imageStore ?? "https://hub.heyo.work",
@@ -301,7 +305,7 @@ export class HeyoSandbox implements Sandbox {
                 : {}),
             },
           }
-        : this.cfg.imageKind === "git"
+        : imageKind === "git"
           ? {
               build: {
                 repo: this.cfg.imageRepo,
@@ -319,7 +323,7 @@ export class HeyoSandbox implements Sandbox {
           : {
               artifact: {
                 store: this.cfg.imageStore ?? "https://hub.heyo.work",
-                ref: this.cfg.image,
+                ref: this.spec.image ?? this.cfg.image,
               },
             };
     await this.lb.createDeployment({
@@ -345,7 +349,7 @@ export class HeyoSandbox implements Sandbox {
     // manifest or git source → the host builds the rootfs (slower the very
     // first time).
     const job =
-      this.cfg.imageKind === "artifact"
+      imageKind === "artifact"
         ? await this.lb.startPull(this.id)
         : await this.lb.startBuild(this.id);
     // A failed job is an answer, not an exception: waitForJob resolves and the
@@ -356,7 +360,7 @@ export class HeyoSandbox implements Sandbox {
     if (finished.status !== "succeeded") {
       const tail = finished.log.slice(-8).join("\n");
       throw new Error(
-        `image ${this.cfg.imageKind} job ${finished.status}: ${
+        `image ${imageKind} job ${finished.status}: ${
           finished.error ?? tail ?? "no builder log"
         }`,
       );

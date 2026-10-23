@@ -10,6 +10,7 @@
  * Mechanics live here; policy — which provider, which image, retention
  * rules — belongs to the consumer.
  */
+import type { ImagePublisher } from "./image.js";
 import type { Sandbox, SandboxSpec } from "./types.js";
 
 /** What a provider can actually do — products degrade instead of guessing. */
@@ -30,6 +31,8 @@ export interface SandboxCapabilities {
   localPath: boolean;
   /** Persistent stdin/stdout process streams (`Sandbox.openProcess`). */
   processStream?: boolean;
+  /** An `imagePublisher` is present and can publish a provider image. */
+  publishImage?: boolean;
   /**
    * Provider-specific flags beyond the contract — declared, never implied.
    * (Deliberately not an index signature: a typo must not type-check as a
@@ -70,6 +73,13 @@ export interface SandboxProvider {
   release(handle: SandboxHandle): Promise<void>;
   /** Cheap connectivity/health check — what `doctor` calls. */
   probe(): Promise<ProviderHealth>;
+  /**
+   * Optional image build/publish seam. `capabilities.publishImage` is the
+   * capability declaration; consumers can call it before creating a sandbox
+   * and pass the returned ref through `SandboxSpec.image` (or the provider
+   * config for provider-level images such as Heyo).
+   */
+  imagePublisher?: ImagePublisher;
   /**
    * Optional provider-side preparation before the first sandbox of a run is
    * opened — refreshed credentials, warmed caches, quota checks. `gitToken`

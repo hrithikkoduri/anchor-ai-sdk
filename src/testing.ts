@@ -220,6 +220,19 @@ const SCENARIOS: Scenario[] = [
   },
 
   {
+    name: "declares an image publisher when it claims publishImage",
+    skip: (ctx) =>
+      ctx.provider.capabilities.publishImage
+        ? undefined
+        : "provider does not publish images",
+    run: async ({ provider }) => {
+      expect(provider.imagePublisher).toBeDefined();
+      expect(provider.imagePublisher?.provider).toBe(provider.name);
+      expect(provider.imagePublisher!.sources.length).toBeGreaterThan(0);
+    },
+  },
+
+  {
     name: "process streams: stdin reaches stdout and exit status is reported",
     skip: hasProcessStream,
     run: async ({ provider }) => {

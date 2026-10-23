@@ -30,6 +30,7 @@ import {
   type ProcessOptions,
 } from "../types.js";
 import { ChildProcessHandle } from "../process.js";
+import { dockerImagePublisher } from "./image.js";
 import {
   checkpointVia,
   hasChangesFromVia,
@@ -647,7 +648,9 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       egressControl: true, // `--network none` shape via disconnect after setup
       localPath: false,
       processStream: true,
+      publishImage: true,
     },
+    imagePublisher: dockerImagePublisher({ dockerBin: opts.dockerBin }),
     create: (spec) => new DockerSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new DockerSandbox({ ...spec, adopt: handle.id }, opts),

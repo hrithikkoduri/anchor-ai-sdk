@@ -58,3 +58,16 @@ describe("persistent process streams", () => {
     expect(e2b({ template: "base", quiet: true }).capabilities.processStream).toBe(true);
   });
 });
+
+describe("image publishing declaration", () => {
+  it("exposes a publisher only where the provider can publish", () => {
+    expect(docker({ image: "ubuntu:24.04" }).capabilities.publishImage).toBe(true);
+    expect(docker({ image: "ubuntu:24.04" }).imagePublisher?.provider).toBe("docker");
+    expect(e2b({ template: "base", quiet: true }).capabilities.publishImage).toBe(true);
+    expect(e2b({ template: "base", quiet: true }).imagePublisher?.provider).toBe("e2b");
+    expect(heyo(heyoConfig).capabilities.publishImage).toBe(true);
+    expect(heyo(heyoConfig).imagePublisher?.provider).toBe("heyo");
+    expect(local().capabilities.publishImage).toBeUndefined();
+    expect(local().imagePublisher).toBeUndefined();
+  });
+});

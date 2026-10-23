@@ -89,6 +89,7 @@ describe("e2b provider", () => {
       egressControl: false,
       localPath: false,
       processStream: true,
+      publishImage: true,
     });
   });
 
