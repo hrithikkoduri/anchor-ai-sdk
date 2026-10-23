@@ -60,6 +60,7 @@ items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
   a browser task needs exposed ports/preview routes on the deployment spec.
   _Where:_ `src/sandbox/heyo/index.ts` (`HeyoSandboxConfig.routes`, health
   port). _Trigger:_ the first non-coding consumer needing HTTP. _Size:_ S–M.
+  _Context:_ see [`docs/heyo-provider-notes.md`](docs/heyo-provider-notes.md).
 - **Daytona image publishing**: implement `ImagePublisher` and
   `capabilities.publishImage` for the adapter once the provider exists.
   _Where:_ `src/sandbox/daytona/`. _Trigger:_ Daytona support lands. _Size:_ S.
