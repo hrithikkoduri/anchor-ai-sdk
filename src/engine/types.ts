@@ -53,6 +53,8 @@ export interface EngineOptions {
   verifier?: boolean | VerifierConfig;
   /** Explicit turn routing; default "auto" when verifier is enabled. */
   intent?: "auto" | "chat" | "clarify" | "task";
+  /** Stable id for the task contract; defaults to the thread id. */
+  taskId?: string;
   /** Resume/inject an existing ledger (normally loaded from the thread). */
   ledger?: ProgressLedger;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */

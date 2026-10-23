@@ -267,7 +267,7 @@ async function runOne(
   if (verifierOn && !ledger) {
     const compiled = await compileLedger({
       llm: verifierLlm,
-      taskId: opts.thread?.id ?? `task-${Date.now()}`,
+      taskId: opts.taskId ?? opts.thread?.id ?? `task-${Date.now()}`,
       task: task.task,
       phases: strategy.phases,
       reasoningEffort: "low",
