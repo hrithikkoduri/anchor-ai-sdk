@@ -208,7 +208,24 @@ await runAgent(
         PDF text/OCR, transcribe audio, and sample video frames in the consumer.</Callout>
     </Section>
 
-    <Section id="philosophy" number="23" title="Mechanics, not product policy">
+    <Section id="preview-ports" number="23" title="Preview ports">
+      <p>Some tasks need a URL for a process running inside the guest. Providers
+        that can expose one implement <code>exposePort(port)</code> and declare
+        <code>capabilities.previewPort: true</code>.</p>
+      <CodeBlock filename="preview-port.ts" code={`if (!sandbox.exposePort || !provider.capabilities.previewPort) {
+  throw new Error("This provider cannot expose a preview port");
+}
+const endpoint = await sandbox.exposePort(3000);
+console.log(endpoint.url); // https://<guest-host>`} />
+      <p>E2B is the first implementation. Its returned URL is <strong>public by
+        default</strong>. Local, Docker, Heyo, and Daytona declare
+        <code>previewPort: false</code>; they do not fake a preview URL.</p>
+      <Callout>Anchor supplies the endpoint only. Starting the app, waiting for
+        health, iframe policy, authentication, idle stop, logs, and the preview UI
+        remain consumer work. Do not put product preview configuration in the SDK.</Callout>
+    </Section>
+
+    <Section id="philosophy" number="24" title="Mechanics, not product policy">
       <p>Keep the model loop small and its decisions inspectable. Requirements
         should survive the conversation, evidence should be distinguishable from
         claims, and uncertain external effects should not be replayed as guesses.</p>

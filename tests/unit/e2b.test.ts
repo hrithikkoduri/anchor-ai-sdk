@@ -90,6 +90,7 @@ describe("e2b provider", () => {
       localPath: false,
       processStream: true,
       publishImage: true,
+      previewPort: true,
     });
   });
 

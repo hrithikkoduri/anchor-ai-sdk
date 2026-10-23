@@ -101,6 +101,13 @@ export interface ProcessHandle {
   kill(signal?: "SIGTERM" | "SIGKILL"): Promise<boolean>;
 }
 
+export interface PreviewEndpoint {
+  /** Public/private URL that reaches the guest port. */
+  url: string;
+  /** The guest port that was exposed. */
+  port: number;
+}
+
 export interface Checkpoint {
   /** Git commit sha the workspace was checkpointed at. */
   sha: string;
@@ -213,6 +220,11 @@ export interface Sandbox {
     args: string[],
     opts?: ProcessOptions,
   ): Promise<ProcessHandle>;
+  /**
+   * Expose a guest port to the consumer. Optional: providers that cannot do
+   * this omit it and declare `capabilities.previewPort: false`.
+   */
+  exposePort?(port: number): Promise<PreviewEndpoint>;
   /**
    * A backgrounded job's completion, or `undefined` while it is still
    * running. Throws when the job is unknown (already reaped, or the sandbox

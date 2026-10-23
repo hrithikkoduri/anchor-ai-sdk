@@ -233,6 +233,23 @@ const SCENARIOS: Scenario[] = [
   },
 
   {
+    name: "declares previewPort only when exposePort is implemented",
+    skip: (ctx) =>
+      ctx.provider.capabilities.previewPort
+        ? undefined
+        : "provider declares previewPort: false",
+    run: async ({ provider }) => {
+      const sb = provider.create({});
+      await sb.start();
+      try {
+        expect(typeof sb.exposePort).toBe("function");
+      } finally {
+        await sb.destroy();
+      }
+    },
+  },
+
+  {
     name: "process streams: stdin reaches stdout and exit status is reported",
     skip: hasProcessStream,
     run: async ({ provider }) => {

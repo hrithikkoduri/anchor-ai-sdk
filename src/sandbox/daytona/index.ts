@@ -41,7 +41,11 @@
  * explicit that a provider must omit `openProcess` rather than fake it.
  */
 import { Daytona, DaytonaNotFoundError } from "@daytonaio/sdk";
-import type { ProviderHealth, SandboxProvider } from "../provider.js";
+import type {
+  ProviderHealth,
+  SandboxCapabilities,
+  SandboxProvider,
+} from "../provider.js";
 import {
   clampTimeout,
   newSandboxId,
@@ -78,6 +82,22 @@ const GIT_TOKEN_TTL_MS = 5 * 60_000;
 const DEFAULT_AUTO_STOP_MINUTES = 0;
 /** How long create/start may take before the control plane gives up. */
 const START_TIMEOUT_SECS = 300;
+
+/**
+ * Daytona's honest capability declaration — the values the real adapter honors,
+ * replacing the stub's placeholders. `previewPort` is false: `getPreviewLink()`
+ * returns a URL, but against a live sandbox the proxy answers 502 for a guest
+ * server that is listening on 0.0.0.0, so no preview is claimed.
+ */
+export const daytonaCapabilities: SandboxCapabilities = {
+  fork: false,
+  retain: true,
+  remoteCheckpoint: true,
+  egressControl: false,
+  localPath: false,
+  processStream: false,
+  previewPort: false,
+};
 
 export interface DaytonaSandboxOptions {
   /** Daytona API key. Omit to let the SDK read `DAYTONA_API_KEY`. */
@@ -582,14 +602,9 @@ export class DaytonaSandbox implements Sandbox {
 export function daytona(opts: DaytonaSandboxOptions = {}): SandboxProvider {
   return {
     name: "daytona",
-    capabilities: {
-      fork: false, // API: 422 "Forking is not supported for this sandbox"
-      retain: true, // destroy() stops; adopt() gets + starts
-      remoteCheckpoint: true, // git push over the sandbox's network
-      egressControl: false, // networkBlockAll is create-time only
-      localPath: false, // remote VM; no host-directory import
-      processStream: false, // no stdin EOF, and the PTY is an interactive shell
-    },
+    // One source of truth: the exported declaration, so a consumer reading
+    // `daytonaCapabilities` and a provider's `capabilities` cannot disagree.
+    capabilities: daytonaCapabilities,
     create: (spec) => new DaytonaSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new DaytonaSandbox({ ...spec, adopt: handle.id }, opts),

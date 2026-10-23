@@ -33,6 +33,7 @@ function fakeClient(opts: {
         };
       },
     },
+    getHost: (port: number) => `sb-fake-${port}.e2b.test`,
     getInfo: async () => ({ metadata: opts.metadata ?? {} }),
     kill: async () => {
       killed.push("kill");
@@ -71,6 +72,33 @@ describe("e2b lifecycle (fake client)", () => {
     expect(fake.calls[1]).toContain("/testbed/.git");
     expect(fake.calls.some((c) => c.includes("user.name"))).toBe(true);
     expect(fake.killed).toHaveLength(0);
+  });
+
+  it("exposes a guest port as a public HTTPS URL", async () => {
+    const fake = fakeClient();
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+
+    await expect(sandbox.exposePort(3000)).resolves.toEqual({
+      url: "https://sb-fake-3000.e2b.test",
+      port: 3000,
+    });
+  });
+
+  it("rejects invalid preview ports", async () => {
+    const fake = fakeClient();
+    const sandbox = new E2BSandbox(
+      { workspacePath: "/testbed" },
+      { quiet: true, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+
+    for (const port of [0, 65_536, 1.5, -1]) {
+      await expect(sandbox.exposePort(port)).rejects.toThrow(/1\.\.65535/);
+    }
   });
 
   it("kills the sandbox it created when start fails", async () => {

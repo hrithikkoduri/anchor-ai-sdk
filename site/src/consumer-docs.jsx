@@ -5,7 +5,7 @@ import { CodeBlock, repo } from "./ui.jsx";
 // the application owns the database, transactions, leases, and credentials.
 export function ConsumerDocs({ Section, Callout }) {
   return <>
-    <Section id="thread-store" number="24" title="Thread store">
+    <Section id="thread-store" number="25" title="Thread store">
       <p><code>ThreadStore</code> is the one required persistence seam for
         multi-run continuity. Persist <code>messages</code>, <code>summary</code>,
         <code>compaction</code>, <code>phase</code>, and <code>ledger</code> in
@@ -44,7 +44,7 @@ export class PostgresThreadStore implements ThreadStore {
         storage failure; silent best-effort persistence is not continuity.</Callout>
     </Section>
 
-    <Section id="inbox-store" number="25" title="Inbox store">
+    <Section id="inbox-store" number="26" title="Inbox store">
       <p>The inbox is a queue with two delivery modes: <code>queue</code> waits
         for the next run; <code>interject</code> ends the current run at a turn
         boundary. <code>claimAll</code> must be atomic and leased. A crashed
@@ -147,7 +147,7 @@ export class PostgresInboxStore implements InboxStore {
         cancellation.</Callout>
     </Section>
 
-    <Section id="operation-store" number="26" title="Operation store">
+    <Section id="operation-store" number="27" title="Operation store">
       <p>Operation recovery protects writes outside the workspace. The
         <code>operationId</code> must be unique and <code>begin()</code> must be
         durable before the effect runs. A duplicate begin means “already
@@ -227,7 +227,7 @@ export class PostgresOperationStore implements OperationStore {
       <a className="doc-inline-link" href={`${repo}/blob/main/src/engine/operations.ts`}>OperationStore source ↗</a>
     </Section>
 
-    <Section id="sandbox-store" number="27" title="Sandbox store">
+    <Section id="sandbox-store" number="28" title="Sandbox store">
       <p><code>SandboxStore</code> stores only the retained handle, not the
         workspace or conversation. The key is consumer-owned: usually a thread
         or task id.</p>
@@ -262,7 +262,7 @@ export class PostgresSandboxStore implements SandboxStore {
         retention window.</Callout>
     </Section>
 
-    <Section id="compaction-contract" number="28" title="Compaction handoff">
+    <Section id="compaction-contract" number="29" title="Compaction handoff">
       <p>For task/verifier runs, the SDK now uses a structured
         <code>CompactionHandoff</code> instead of another prose summary. The
         consumer does not define a second store or summarizer — it persists the

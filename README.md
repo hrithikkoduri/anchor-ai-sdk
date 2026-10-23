@@ -263,6 +263,13 @@ Streams, `wait`, `kill`, deadline/abort handling, and destroy cleanup are
 available. Heyo uses a PTY: stderr is merged, EOF is Ctrl-D, and there is no
 transport drain signal. See the [process-stream contract](src/sandbox/README.md).
 
+### Preview a guest port
+
+Providers that declare `capabilities.previewPort` implement
+`sandbox.exposePort(port)`. E2B is the first provider: it returns a public
+`https://` host for the guest port. Anchor does not add preview authentication,
+health checks, iframes, or product UI; that policy belongs to the consumer.
+
 ### Publish sandbox images
 
 Providers that can publish expose the common `imagePublisher` contract and the

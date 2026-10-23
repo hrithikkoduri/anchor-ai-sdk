@@ -649,6 +649,7 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       localPath: false,
       processStream: true,
       publishImage: true,
+      previewPort: false,
     },
     imagePublisher: dockerImagePublisher({ dockerBin: opts.dockerBin }),
     create: (spec) => new DockerSandbox(spec, opts),

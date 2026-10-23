@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   DaytonaSandbox,
   daytona,
+  daytonaCapabilities,
   type DaytonaClientFactory,
   type DaytonaSandboxClient,
 } from "../../src/sandbox/daytona/index.js";
@@ -331,13 +332,21 @@ describe("daytona lifecycle (fake client)", () => {
       egressControl: false,
       localPath: false,
       processStream: false,
+      previewPort: false,
     });
     // No publisher is claimed, so none is exposed.
     expect(provider.capabilities.publishImage).toBeFalsy();
     expect(provider.imagePublisher).toBeUndefined();
 
+    // `daytonaCapabilities` is the exported single source of truth — a typed
+    // consumer reading it must see exactly what the provider reports.
+    expect(provider.capabilities).toEqual(daytonaCapabilities);
+
     const sb = provider.create({});
     expect(sb.openProcess).toBeUndefined();
+    // No preview is claimed, so none is exposed (the declaration is a promise
+    // the conformance suite gates on).
+    expect(sb.exposePort).toBeUndefined();
     expect("pollJob" in sb).toBe(false);
   });
 

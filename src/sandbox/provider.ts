@@ -33,6 +33,8 @@ export interface SandboxCapabilities {
   processStream?: boolean;
   /** An `imagePublisher` is present and can publish a provider image. */
   publishImage?: boolean;
+  /** `Sandbox.exposePort()` is implemented. */
+  previewPort: boolean;
   /**
    * Provider-specific flags beyond the contract — declared, never implied.
    * (Deliberately not an index signature: a typo must not type-check as a

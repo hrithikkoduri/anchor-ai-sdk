@@ -55,6 +55,7 @@ product, and a handle owned by a different provider is skipped, not "gone".
 | `release(handle)` | destroy by handle alone; no spec, no start; already-gone is not an error |
 | `probe()` | cheap health check, used by a `doctor` command |
 | `imagePublisher` | optional publish seam; declared by `capabilities.publishImage`. It is slow and credentialed, so it lives outside `start()` |
+| `exposePort(port)` | optional preview endpoint; declared by `capabilities.previewPort`. It returns a URL to a guest port and does not add preview auth or iframe policy |
 | `prepare({ gitToken }?)` | optional pre-run maintenance (refreshed credentials, warmed caches). Best-effort by contract: the **caller** decides whether a failure is fatal. Heyo uses it to refresh the build secret its host-side image builds read |
 
 ## What `start()` must guarantee
@@ -133,6 +134,17 @@ bounded by the job's deadline; only a job that outlives that is reported on
 the next run. The model never polls. Heyo's `poll`/`kill` also work from a
 *fresh* adopted instance (no in-memory registry), which is what the wait uses.
 
+**Preview ports.** Providers that can expose a guest HTTP port implement
+`exposePort(port)` and declare `capabilities.previewPort: true`. E2B returns
+`https://<sandbox-host>` for the port; E2B URLs are public by default. Local,
+Docker, Heyo, and Daytona declare `previewPort: false`; no provider is allowed
+to fake a preview. Anchor does not add authentication, health checks, or UI.
+Daytona is the measured case: `sandbox.getPreviewLink(port)` does return a URL
+(and a preview token; the URL answers 401 without it), but against a live
+sandbox the proxy returned 502 for a guest server listening on
+`0.0.0.0:<port>`, so the adapter claims no preview rather than hand back a URL
+that does not serve.
+
 **Persistent process streams.** `exec()` is one-shot. For LSPs, REPLs, dev
 servers, watchers, and interactive CLIs, `Sandbox.openProcess(command, args,
 opts)` starts a process that stays alive: `write()`/`endInput()` feed stdin,
@@ -153,7 +165,7 @@ protocol on this primitive.
 **The conformance suite**: `runSandboxConformance(provider)` from
 `anchor-ai-sdk/testing` is the acceptance test for an adapter: exec fidelity,
 self-containment, kill deadlines, env secrets, process streams (stdin, kill,
-timeout, destroy), declared image-publisher presence, checkpoints, retain/adopt, git identity, push-failure
+timeout, destroy), preview-port declaration, declared image-publisher presence, checkpoints, retain/adopt, git identity, push-failure
 reporting, clone, `hasChangesFrom`, `localPath` copies, bare-origin pushes, and
 `fork` where declared. Scenarios assert through `Sandbox`/`SandboxProvider`
 only, never backend internals. A backend is "done" when this passes (live
@@ -329,6 +341,9 @@ are credential- and network-gated and are not part of CI.
 - **No process streams.** A session command has no stdin EOF (Ctrl-D arrives as
   literal data) and the PTY is an interactive shell that echoes input, so
   `openProcess()` is omitted rather than faked.
+- **No preview ports.** `getPreviewLink(port)` returns a URL and a preview
+  token, but the proxy answered 502 for a live guest server on `0.0.0.0`, so
+  `previewPort: false` and no `exposePort()`.
 - **Timeout.** Every command is wrapped in guest-side `timeout -k`; the
   session's own timeout is only a slightly longer transport guard.
 - **Credentials.** `git.token` is resolved into `GIT_TOKEN` and a repo-local
