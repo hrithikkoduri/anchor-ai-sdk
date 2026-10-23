@@ -36,6 +36,7 @@ import {
   type SandboxSpec,
   type ProcessHandle,
   type ProcessOptions,
+  type PreviewEndpoint,
 } from "../types.js";
 import { ByteQueue } from "../process.js";
 import { e2bImagePublisher } from "./image.js";
@@ -332,6 +333,15 @@ export class E2BSandbox implements Sandbox {
   async hasChangesFrom(ref: string): Promise<boolean> {
     this.assertUsable();
     return hasChangesFromVia(this.gitAccess(), ref);
+  }
+
+  async exposePort(port: number): Promise<PreviewEndpoint> {
+    this.assertUsable();
+    if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+      throw new Error(`port must be an integer in 1..65535, got ${port}`);
+    }
+    // E2B's host is public by default. Anchor does not add a fake auth layer.
+    return { url: `https://${this.client!.getHost(port)}`, port };
   }
 
   async fork(ref?: string): Promise<Sandbox> {
@@ -690,6 +700,7 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
       localPath: false, // remote VM; no host-directory import
       processStream: true,
       publishImage: true,
+      previewPort: true,
     },
     imagePublisher: e2bImagePublisher({
       apiKey: opts.apiKey,

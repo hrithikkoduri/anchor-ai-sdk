@@ -399,6 +399,7 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
       egressControl: false,
       localPath: true,
       processStream: true,
+      previewPort: false,
     },
     create: (spec) => new LocalSandbox(spec, opts),
     adopt: (handle, spec = {}) =>

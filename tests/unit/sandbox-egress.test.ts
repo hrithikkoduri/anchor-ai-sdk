@@ -70,4 +70,11 @@ describe("image publishing declaration", () => {
     expect(local().capabilities.publishImage).toBeUndefined();
     expect(local().imagePublisher).toBeUndefined();
   });
+
+  it("declares previewPort explicitly and only E2B implements it", () => {
+    expect(local().capabilities.previewPort).toBe(false);
+    expect(docker({ image: "ubuntu:24.04" }).capabilities.previewPort).toBe(false);
+    expect(heyo(heyoConfig).capabilities.previewPort).toBe(false);
+    expect(e2b({ template: "base", quiet: true }).capabilities.previewPort).toBe(true);
+  });
 });

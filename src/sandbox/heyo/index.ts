@@ -185,6 +185,7 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
       localPath: false, // the VM is another machine
       processStream: true,
       publishImage: true,
+      previewPort: false,
     },
     imagePublisher: heyoImagePublisher({ imageStore: cfg.imageStore }),
     create: (spec) => new HeyoSandbox(spec, cfg),

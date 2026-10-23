@@ -65,6 +65,7 @@ const groups = [
       ["compaction-contract", "Compaction handoff"],
       ["process-streams", "Persistent processes"],
       ["images", "Image context"],
+      ["preview-ports", "Preview ports"],
       ["image-publishing", "Publish sandbox images"],
       ["lsp", "Optional TypeScript LSP"],
       ["philosophy", "Philosophy"],
@@ -760,7 +761,7 @@ return {
           <FeatureDocs Section={DocSection} Callout={Callout} />
           <ConsumerDocs Section={DocSection} Callout={Callout} />
 
-          <DocSection id="status" number="29" title="Status & versioning">
+          <DocSection id="status" number="30" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams,

@@ -6,7 +6,17 @@
  * and `runSandboxConformance` (`anchor-ai-sdk/testing`) is the acceptance test
  * that decides when this adapter is done.
  */
-import type { SandboxProvider } from "../provider.js";
+import type { SandboxCapabilities, SandboxProvider } from "../provider.js";
+
+/** Declared up front so a future adapter cannot silently claim previews. */
+export const daytonaCapabilities: SandboxCapabilities = {
+  fork: false,
+  retain: false,
+  remoteCheckpoint: false,
+  egressControl: false,
+  localPath: false,
+  previewPort: false,
+};
 
 export interface DaytonaSandboxOptions {
   /** Daytona API key. */
