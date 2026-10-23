@@ -254,6 +254,29 @@ it is still provider-native: Docker pushes to a container registry, E2B builds
 a template, and Heyo uploads an artifact. There is no cross-provider registry
 of Anchor images.
 
+### Publishing troubleshooting
+
+- **`anchor: command not found`** — the package is not installed (or the local
+  build has not produced `dist/cli.js`). Install it, run `npm run build`, or
+  invoke the package's bin path explicitly.
+- **`docker ... not found on PATH`** — install Docker or set
+  `ANCHOR_DOCKER_BIN`/`DOCKER_BIN`. A failed `docker push` is usually registry
+  auth or network, not an Anchor command error.
+- **E2B module missing** — install the optional `e2b` peer dependency.
+  `--context` is rejected because E2B's `fromDockerfile` has no separate build
+  context.
+- **Heyo publishing fails** — `heyctl` must be installed, logged in, and able to
+  reach the namespace store; it is not bundled with Anchor. Its install builds
+  are currently Linux x86_64. `HEYO_IMAGE_STORE` is copied into the returned
+  config when set.
+- **Heyo Dockerfile/git images** — per-sandbox `spec.image` is accepted only for
+  `imageKind: "artifact"`; use the returned provider config for the other
+  kinds.
+
+These are integration prerequisites rather than sandbox-contract failures. The
+unit suite exercises the contract with injected runners; real registry pushes
+are credential- and network-gated and are not part of CI.
+
 ## Adding a provider: checklist
 
 > **Boot cost is part of the contract.** Prefer `artifact` images and measure

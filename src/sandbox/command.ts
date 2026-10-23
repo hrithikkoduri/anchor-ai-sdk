@@ -42,10 +42,14 @@ export async function runCommand(
     };
     child.stdout?.on("data", take);
     child.stderr?.on("data", take);
-    child.once("error", (error) => {
+    child.once("error", (error: NodeJS.ErrnoException) => {
       clearTimeout(timer);
       opts.signal?.removeEventListener("abort", onAbort);
-      reject(new Error(`${command} ${args[0] ?? ""} failed: ${error.message}`));
+      const hint =
+        error.code === "ENOENT"
+          ? ` (not found on PATH; install ${command} or point the CLI at it)`
+          : "";
+      reject(new Error(`${command} ${args[0] ?? ""} failed: ${error.message}${hint}`));
     });
     child.once("close", (code) => {
       clearTimeout(timer);
