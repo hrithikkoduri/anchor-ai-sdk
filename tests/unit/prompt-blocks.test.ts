@@ -7,17 +7,30 @@ import type {
 import { runAgent } from "../../src/engine/loop.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
 import { createLedger } from "../../src/ledger/index.js";
+import { defineTool } from "../../src/tools/types.js";
 import type { Agent } from "../../src/agents/types.js";
 
-function response(text: string): LLMResponse {
+function response(
+  text: string,
+  toolCalls: LLMResponse["toolCalls"] = [],
+): LLMResponse {
   return {
     text,
-    toolCalls: [],
+    toolCalls,
     usage: { promptTokens: 10, completionTokens: 2, totalTokens: 12 },
     model: "fake",
     latencyMs: 1,
   };
 }
+
+const probe = defineTool(
+  {
+    name: "probe",
+    description: "look at the work",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  async () => ({ ok: true, content: "probe passed" }),
+);
 
 const agent: Agent = {
   name: "test",
@@ -26,12 +39,13 @@ const agent: Agent = {
     phases: [{ id: "act", goal: "do the work" }],
     systemPrompt: () => "STABLE SYSTEM",
   },
-  tools: [],
+  tools: [probe],
 };
 
 describe("prompt blocks", () => {
-  it("keeps the stable system prefix free of the changing ledger", async () => {
+  it("keeps the stable system prefix identical while the ledger moves", async () => {
     const seen: LLMRequest[] = [];
+    let call = 0;
     const llm: LLMClient = {
       model: "fake",
       complete: async (request) => {
@@ -40,8 +54,14 @@ describe("prompt blocks", () => {
       },
       stream: async (request, onDelta) => {
         seen.push(request);
-        const result = response("done");
-        onDelta(result.text);
+        call += 1;
+        const result =
+          call === 1
+            ? response("", [
+                { id: "c1", name: "probe", arguments: "{}" },
+              ])
+            : response("done");
+        if (result.text) onDelta(result.text);
         return result;
       },
     };
@@ -62,19 +82,28 @@ describe("prompt blocks", () => {
       },
     );
 
-    const messages = seen[0]!.messages;
-    expect(messages[0]?.content).toContain("STABLE SYSTEM");
-    expect(messages[0]?.content).not.toContain("Runtime task state");
-    expect(messages[0]?.content).not.toContain("Ship the change");
-    expect(messages.at(-1)).toMatchObject({
+    expect(seen).toHaveLength(2);
+    const first = seen[0]!.messages;
+    const second = seen[1]!.messages;
+    expect(first[0]?.content).toContain("STABLE SYSTEM");
+    expect(first[0]?.content).not.toContain("Runtime task state");
+    expect(first[0]?.content).not.toContain("Ship the change");
+    expect(second[0]).toEqual(first[0]);
+    expect(first.at(-1)).toMatchObject({
       role: "user",
       content: "Do the work",
     });
-    const turn = messages.findIndex((message) =>
+
+    const firstTurn = first.findIndex((message) =>
       message.content?.includes("Runtime task state"),
     );
-    expect(turn).toBeGreaterThan(0);
-    expect(turn).toBeLessThan(messages.length - 1);
-    expect(messages[turn]?.content).toContain("Ship the change");
+    const secondTurn = second.findIndex((message) =>
+      message.content?.includes("Runtime task state"),
+    );
+    expect(firstTurn).toBeGreaterThan(0);
+    expect(firstTurn).toBeLessThan(first.length - 1);
+    expect(secondTurn).toBeGreaterThan(firstTurn);
+    expect(first[firstTurn]?.content).toContain("Ship the change");
+    expect(second[secondTurn]?.content).toContain("Ship the change");
   });
 });
