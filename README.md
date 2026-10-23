@@ -549,6 +549,7 @@ the SDK and product policy in the consumer; provider changes should include
 conformance coverage and an honest capability declaration.
 
 **[Issues](https://github.com/hrithikkoduri/anchor-ai-sdk/issues)** ·
+**[Release status](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/docs/release-status.md)** ·
 **[Roadmap](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/ROADMAP.md)** ·
 **[Engineering decisions](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/DECISIONS.md)** ·
 **[MIT license](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/LICENSE)**

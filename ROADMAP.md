@@ -3,7 +3,8 @@
 Everything here is a decision already made and work intentionally not built
 yet. Each item names the event that pulls it back ("trigger"), where it lives,
 and its rough size, so anyone can pick one up without reading the whole
-history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
+history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.** For the
+current release snapshot, see [`docs/release-status.md`](docs/release-status.md).
 
 **How to pick one up**
 
