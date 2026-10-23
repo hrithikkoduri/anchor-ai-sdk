@@ -8,7 +8,7 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
-## v0.2.0 — task contracts (implemented, unreleased)
+## v0.2.0 — task contracts (released)
 
 - [x] One agent, one input shape: `RunInput`, `userTurn`, and no turn routing,
       `intent`, chat/coding swap, or compile-at-start default.

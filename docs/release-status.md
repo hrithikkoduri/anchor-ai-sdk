@@ -1,7 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, `0.2.0` task-contract release candidate on `main`.
-v0.1.9 remains the published npm/tag release.
+Status: **2026-10-23**, v0.2.0 released: npm `0.2.0`, Git tag `v0.2.0`, and GitHub Release are published.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -10,27 +9,10 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
-**v0.1.9** is the current npm/tag release. Its release notes are on
+**v0.2.0** is the current npm/tag release. Its release notes are on
 [GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
 
-### v0.1.9 contents
-
-- Ledger-aware turn routing: active ledger keeps `auto` follow-ups on the task
-  path; explicit intent still wins; inbox batches re-route per run.
-- Structured task compaction: SDK-owned `CompactionHandoff`, persisted as
-  `StoredThread.compaction`; fresh window with pinned ledger/handoff plus a
-  recent verbatim tail. Chat keeps the legacy prose summary path.
-- Image context: `ImageAttachment` on run inputs, user messages, and inbox
-  messages; OpenAI-compatible `image_url` serialization. Bytes, upload,
-  validation, signed URLs, and retention remain consumer responsibilities.
-- E2B preview ports: `Sandbox.exposePort(port)` and `previewPort` capability;
-  E2B returns a public HTTPS URL. Other providers declare `false`.
-- Consumer docs: Postgres implementations for thread, inbox, operation, and
-  sandbox stores, plus compaction handoff.
-- Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
-  benchmark record.
-
-## v0.2.0 — task contracts (unreleased)
+### v0.2.0 contents
 
 - One agent and one input shape. `RunTask` is gone; `runAgent(input: RunInput, opts)`
   takes a message delta. Turn routing, `intent`, the chat-agent swap, and
@@ -52,7 +34,24 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   `{ text, messages?, phases }`; `task_created` and `phase_verdict` events are
   emitted.
 
-## After v0.1.9 — on main, unreleased
+### v0.1.9 contents
+
+- Ledger-aware turn routing: active ledger keeps `auto` follow-ups on the task
+  path; explicit intent still wins; inbox batches re-route per run.
+- Structured task compaction: SDK-owned `CompactionHandoff`, persisted as
+  `StoredThread.compaction`; fresh window with pinned ledger/handoff plus a
+  recent verbatim tail. Chat keeps the legacy prose summary path.
+- Image context: `ImageAttachment` on run inputs, user messages, and inbox
+  messages; OpenAI-compatible `image_url` serialization. Bytes, upload,
+  validation, signed URLs, and retention remain consumer responsibilities.
+- E2B preview ports: `Sandbox.exposePort(port)` and `previewPort` capability;
+  E2B returns a public HTTPS URL. Other providers declare `false`.
+- Consumer docs: Postgres implementations for thread, inbox, operation, and
+  sandbox stores, plus compaction handoff.
+- Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
+  benchmark record.
+
+## Earlier post-v0.1.9 work included in v0.2.0
 
 - Generic LSP server definitions: `LspServerConfig` plus `LspServer`, with
   extension-based selection and per-sandbox/server client caching.
@@ -84,15 +83,15 @@ Verification after the LSP, prompt-cache, and composition changes:
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
 
-## v0.1.9 release checklist
+## v0.2.0 release checklist
 
-1. [x] Bump `package.json` to `0.1.9` (package-lock updated).
-2. [x] Add the v0.1.9 entry to `site/src/releases.json`.
-3. [x] Create the GitHub Release at the v0.1.9 tag.
-4. [x] Re-run typecheck, full tests, build, and site build.
-5. [x] Publish npm `0.1.9`.
-6. Do not label any v0.1.8/v0.1.9 benchmark as a result. The only recorded
-   complete benchmark is `evals/results/v0.1.7-2fbc92b/`.
+1. [x] Bump `package.json` to `0.2.0` (package-lock updated).
+2. [x] Add the v0.2.0 entry to `site/src/releases.json`.
+3. [x] Create the GitHub Release at the v0.2.0 tag.
+4. [x] Re-run typecheck, full tests, build, live LSP smoke, and site checks.
+5. [x] Publish npm `0.2.0`.
+6. No v0.2.0 benchmark result is claimed. The only recorded complete benchmark
+   is `evals/results/v0.1.7-2fbc92b/`.
 
 ## Deferred list
 
