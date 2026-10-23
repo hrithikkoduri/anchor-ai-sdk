@@ -111,12 +111,11 @@ open and still blocks `finish`.
 The judge is a seam, not an LLM call hidden inside the engine:
 
 ```ts
-import { jevJudge, llmJudge } from "anchor-ai-sdk";
+import { llmJudge } from "anchor-ai-sdk";
 
 verifier: {
   create: "agent",                 // or "start" to compile before the first call
   judge: llmJudge(cheapLlm),      // prose judge; per-requirement verdicts
-  // judge: jevJudge({ apiKey, thresholds: { cleared: 0.8, rejected: 0.5 } }),
   gates: ["phase", "finish"],
   maxCallsPerTask: 8,
   maxRejectionsPerPhase: 3,
@@ -124,10 +123,9 @@ verifier: {
 }
 ```
 
-`llmJudge` asks for per-requirement `cleared | insufficient | unproven`
-verdicts. `jevJudge` sends binary `noul` questions to TypeSafe's typed decision
-model and maps calibrated probabilities to the same shape; it is not an
-`LLMClient`. A prose-only final response is gated like `finish`. `finish({
+`llmJudge` is the existing prose verifier adapted to the `Judge` seam. It asks
+for per-requirement `cleared | insufficient | unproven` verdicts. A prose-only
+final response is gated like `finish`. `finish({
 success: false })` ends honestly with `ok: false` and records open requirements
 as failures instead of looping into `stalled`.
 

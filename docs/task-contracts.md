@@ -1,4 +1,4 @@
-# Task contracts — one agent, contracts the agent creates, a typed judge
+# Task contracts — one agent, contracts the agent creates, the existing verifier
 
 This brief is self-contained: read it top to bottom before changing code.
 
@@ -53,9 +53,8 @@ and letting the agent answer it with a tool call.
 - **A contract exists only because the agent called `create_task`.** A run
   without one is a conversation with the same tools; no ledger, no gate, no
   compile call.
-- **A judge (Jeff) verifies at phase boundaries and at finish**, with
-  per-requirement verdicts. The agent writes the evidence case; the judge
-  scores it.
+- **The existing verifier scores the evidence case at phase boundaries and at
+  finish**, with per-requirement verdicts. The agent writes the evidence case.
 - **Requirements own a phase**, so leaving a phase has a meaning and skipping
   one is self-defeating rather than forbidden.
 
@@ -249,13 +248,11 @@ export interface VerifierConfig {
 }
 ```
 
-Ship two adapters:
+Ship one adapter:
 
 - `llmJudge(llm)` — today's `verifyAlignment`, reshaped to `JudgeCase` /
   `JudgeVerdict`. Its schema must return per-requirement verdicts plus a
-  rationale, not one global `allow`.
-- `jevJudge({ apiKey, model?, endpoint?, thresholds? })` — TypeSafe AI's Jev
-  (see §4).
+  rationale, not one global `allow`. Jev is not part of this release.
 
 ### 3.7 Phase-owned requirements and the boundary gate
 
@@ -295,68 +292,6 @@ that the judge did not produce.
 
 ---
 
-## 4. Jev
-
-Jev is TypeSafe AI's "System One" model (`jev-1.13.0`, alias `jev-latest`;
-`jev-1.14.0` behind `jev-preview`). It does not generate text. You send a
-`state` plus named questions and get typed answers with calibrated
-probabilities:
-
-- `noul` — yes/no probability
-- `choice` — one of ≤255 labelled options
-- `score` — a point on a 2–10 level rubric
-
-Facts that matter for us:
-
-- ~$0.042 per MTok **input**, output free; 70–500 ms per call.
-- Per-request context 64k (`state` + all questions), per-question 32k.
-- All questions are answered in parallel in one round trip.
-- It cannot hallucinate an option, but it can pick a wrong one — hence the
-  probabilities.
-- Independent evals: strong on binary `noul` (≈1.8% error on the cases it
-  decides), but it abstains often, and binary probabilities **must be
-  thresholded on our own data** — 0.5 is badly placed.
-- It is weak at fine-grained multi-way choice, counting, and arithmetic. Use
-  `noul`, not a many-way `choice`, and never ask it to do maths.
-- Access: `POST /v1/systemone` (early access), or via OpenRouter's Decisions
-  API (`/api/alpha/decisions`) or Vercel AI Gateway. It is **not** a
-  chat-completions endpoint.
-
-`jevJudge` shape:
-
-```
-state = {
-  request, phase: {id, goal},
-  requirements: [{ id, text, phase, status, claim,
-                   evidence: [{ tool, ok, summary, meta }] }],
-  agentReason
-}
-
-questions = {
-  phase_complete: noul("The agent's work in this phase is complete enough to leave it."),
-  r1: noul("The cited evidence establishes: <r1.text>. The agent's claim is: <r1.claim>.
-            Reject claims that restate the requirement, name a test without its
-            output, or cite an edit without a passing check."),
-  r2: noul(…),
-  …
-}
-
-thresholds = { cleared: 0.8, rejected: 0.5 }
-```
-
-Verdict mapping: per-requirement `noul >= cleared` → `cleared`; `<= rejected` →
-`unproven`; between → `insufficient`. Phase `cleared` only if every required
-requirement with this phase is `cleared` and `phase_complete >= cleared`.
-`confidence` is the minimum probability involved.
-
-If a prose judge is also configured, low-confidence cases may be escalated to it
-once; that is optional and must respect `maxCallsPerTask`.
-
-Do not ask Jev for the gap text. Compose the send-back deterministically from
-the requirement text, its claim and its probability.
-
----
-
 ## 5. Tests (acceptance)
 
 Keep the suite green; add:
@@ -373,9 +308,7 @@ Keep the suite green; add:
 7. A fully settled prior ledger does not attach and does not block `create_task`.
 8. `RunInput.messages` appends to stored history and does not duplicate it;
    `renderInboxTurn` produces one message per inbox row.
-9. `jevJudge` maps `noul` bounds to cleared/insufficient/unproven and respects
-   the configured thresholds (fake HTTP, no network in tests).
-10. Removing routing: a chat-shaped request and a task-shaped request run the
+9. Removing routing: a chat-shaped request and a task-shaped request run the
     same agent with the same tools; only `create_task` changes the run.
 
 Delete the four routing tests in `tests/unit/engine-verifier.test.ts` and the

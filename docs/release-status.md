@@ -43,9 +43,9 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   require a claim; `op: "verify"` links and verifies in one call. Rejections name
   unmet requirements and probabilities; after the limit, transition is forced
   but finish stays gated.
-- Judge seam: `Judge` in `src/verify/judge.ts`, with `llmJudge` and `jevJudge`
-  adapters returning per-requirement verdicts. `jevJudge` uses TypeSafe Jev
-  `noul` probabilities. `VerifierConfig.llm` remains sugar for `llmJudge`.
+- Judge seam: `Judge` in `src/verify/judge.ts`, with `llmJudge` adapting the
+  existing prose verifier to per-requirement verdicts. `VerifierConfig.llm`
+  remains sugar for `llmJudge`.
 - `finish({ success: false })` ends `ok: false` with `reason: "finished"` and
   records open requirements as failures.
 - `renderInboxTurn` keeps one user message per inbox row. `run_started` carries
@@ -80,7 +80,7 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
 
 Verification after the LSP, prompt-cache, and composition changes:
-`npm run typecheck`, `npm test` (375 passed, 23 skipped), `npm run build`, live
+`npm run typecheck`, `npm test` (373 passed, 23 skipped), `npm run build`, live
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
 

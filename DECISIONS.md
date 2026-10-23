@@ -479,9 +479,8 @@ user messages and validates phases/source quotes. Requirements own a phase, so
 `set_phase` verifies the outgoing phase. Evidence must carry an agent-authored
 claim; `verify` links and verifies in one call.
 
-The verifier is now a `Judge` seam. `llmJudge` is the prose adapter; `jevJudge`
-is TypeSafe's typed `noul` decision model. Both return per-requirement verdicts,
-never one global allow. `finish({ success: false })` is an honest blocked exit:
+The verifier is now a `Judge` seam. `llmJudge` adapts the existing prose
+verifier and returns per-requirement verdicts, never one global allow. `finish({ success: false })` is an honest blocked exit:
 the gate records open requirements as failures and returns `ok: false` rather
 than looping into `stalled`.
 

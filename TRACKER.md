@@ -17,8 +17,8 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 - [x] Claimed evidence, `verify` one-call linking, outgoing-phase gates,
       forced transitions after the rejection limit, and honest
       `finish({ success: false })`.
-- [x] `Judge` seam with `llmJudge` and TypeSafe `jevJudge`; per-requirement
-      verdicts and `phase_verdict`/`task_created` events.
+- [x] `Judge` seam using the existing prose verifier (`llmJudge`) with
+      per-requirement verdicts and `phase_verdict`/`task_created` events.
 - [x] `renderInboxTurn` one-message-per-row input and migrated `RunInput` tests.
 
 ## After v0.1.9 — on main, unreleased

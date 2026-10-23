@@ -24,10 +24,9 @@ console.log(result.ledger, result.evidence);`} />
         phase. Evidence links require an agent-authored claim, and
         <code>op: "verify"</code> links + verifies in one call. The judge returns
         per-requirement <code>cleared</code>, <code>insufficient</code>, or
-        <code>unproven</code> verdicts. Supply <code>llmJudge</code> for prose or
-        <code>jevJudge</code> for TypeSafe Jev's calibrated <code>noul</code>
-        decisions. <code>finish(&#123; success: false &#125;)</code> ends honestly with open
-        failures instead of looping into <code>stalled</code>.</p>
+        <code>unproven</code> verdicts. Supply the existing prose verifier through
+        <code>llmJudge</code>. <code>finish(&#123; success: false &#125;)</code> ends honestly
+        with open failures instead of looping into <code>stalled</code>.</p>
       <Callout>Contracts are created by the agent, never by text routing.
         <code>create: "start"</code> is the only compile-at-start path. A settled
         ledger is history, not an active gate. The judge is a guard against
