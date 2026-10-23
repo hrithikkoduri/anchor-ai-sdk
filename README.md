@@ -132,6 +132,58 @@ as failures instead of looping into `stalled`.
 Compile/verifier usage counts against the run budget. `compileLedger` remains
 exported; `create: "start"` is its only path into a run.
 
+## Peer-repository workspaces
+
+A sandbox workspace can contain several peer repositories. The workspace root
+is a container, not a git repository:
+
+```text
+/workspace
+  api/    (repo A, own .git)
+  web/    (repo B, own .git)
+  infra/  (repo C, own .git)
+```
+
+Declare them with `repos`:
+
+```ts
+const result = await runAgent(
+  { messages: [{ role: "user", content: "Fix the API and its web test" }] },
+  {
+    llm,
+    sandbox,
+    agent: codingAgent,
+    repos: [
+      { name: "acme/api", path: "api" },
+      { name: "acme/web", path: "web" },
+    ],
+  },
+);
+```
+
+Tools target **one repository per call**:
+
+- `bash({ repository: "acme/api", command: "npm test" })`
+- `run_tests({ repository: "acme/api" })`
+- `edit_file` attributes its path to the longest matching repo prefix.
+
+There is deliberately no list-shaped “run in all repos” tool. Separate calls
+keep results small, attributable, and below the truncation/spill boundary.
+
+Read-only calls keep running in parallel. In a turn containing mutations,
+different repository keys may run concurrently; calls in the same repository
+serialize. Omit `repository` only for a command that intentionally spans
+repositories — it runs at the workspace root and serializes globally. Effectful
+tools remain serial and ordered.
+
+`run_tests` in a multi-repo workspace requires `repository`; its metadata
+includes that repo and a tree hash computed there. LSP servers are rooted per
+repo when you pass `repos` to `createLspTools({ repos })`.
+
+With no `repos`, every tool behaves exactly as before: the workspace root is
+the repo. Checkpoints remain single-root; per-repo snapshots are supplied by the
+consumer through `EngineOptions.snapshot`.
+
 ## One sandbox interface
 
 **Configure the provider once. Keep the agent-facing machine interface the same.**

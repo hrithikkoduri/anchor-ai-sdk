@@ -286,6 +286,101 @@ export async function dispatchToolCalls(
     return { runaway, jobs, settlements, ...(declared ? { declared } : {}) };
   }
 
+  // Resource-grouped mutation path. Only non-effect mutations with distinct
+  // repository keys are eligible; anything global/effectful/finish falls back
+  // to the fully ordered path below. Results are still emitted in call order.
+  if (calls.length > 1 && !declared && !args.pauseRequested() && !signal?.aborted) {
+    const prepared = calls.map((call) => {
+      const tool = available.get(call.name);
+      const { input, invalid } = parseInput(call);
+      const verb = toolVerb(call.name, input, tool?.verb);
+      const key =
+        invalid === undefined &&
+        tool &&
+        tool.readOnly !== true &&
+        tool.effect === undefined &&
+        tool.resource
+          ? (() => {
+              try {
+                return tool.resource!(input, toolContext);
+              } catch {
+                return undefined;
+              }
+            })()
+          : undefined;
+      return { call, tool, input, invalid, verb, key };
+    });
+    const keys = prepared.map((item) => item.key);
+    const grouped =
+      keys.every((key): key is string => typeof key === "string") &&
+      new Set(keys).size > 1;
+    if (grouped) {
+      for (const item of prepared) {
+        if (repeat.record(`${item.call.name}:${item.call.arguments}`)) {
+          runaway = true;
+        }
+        emit({
+          type: "tool_call",
+          name: item.call.name,
+          callId: item.call.id,
+          input: item.input,
+          verb: item.verb,
+          phase,
+          step: steps,
+        });
+      }
+      const groups = new Map<string, typeof prepared>();
+      for (const item of prepared) {
+        const key = item.key!;
+        const list = groups.get(key) ?? [];
+        list.push(item);
+        groups.set(key, list);
+      }
+      const results = new Map<string, ToolResult>();
+      await Promise.all(
+        [...groups.values()].map(async (group) => {
+          for (const item of group) {
+            if (runaway || signal?.aborted || args.pauseRequested()) {
+              results.set(
+                item.call.id,
+                {
+                  ok: false,
+                  content: runaway
+                    ? "Not executed: repeated identical calls reached the loop limit."
+                    : signal?.aborted
+                      ? "Not executed: cancelled by signal."
+                      : "Not executed: the caller requested a pause.",
+                },
+              );
+              continue;
+            }
+            if (item.invalid) {
+              results.set(item.call.id, { ok: false, content: item.invalid });
+              continue;
+            }
+            const outcome = await invoke(
+              item.tool,
+              item.call.name,
+              item.input,
+              toolContext,
+              available,
+            );
+            results.set(
+              item.call.id,
+              "invalid" in outcome
+                ? { ok: false, content: outcome.invalid }
+                : outcome.result,
+            );
+          }
+        }),
+      );
+      for (const item of prepared) {
+        emitResult(item.call, item.verb, results.get(item.call.id)!);
+      }
+      return { runaway, jobs, settlements };
+    }
+  }
+
   for (const call of calls) {
     const tool = available.get(call.name);
     const { input, invalid } = parseInput(call);

@@ -12,6 +12,7 @@
  */
 import type { Sandbox } from "../sandbox/types.js";
 import type { ExecResult } from "../sandbox/types.js";
+import type { RepoRef } from "../repo.js";
 
 export interface ToolDefinition {
   name: string;
@@ -27,6 +28,8 @@ export interface ToolContext {
    * with a clear message instead of crashing the run.
    */
   sandbox?: Sandbox;
+  /** Peer repositories in the sandbox workspace; absent = workspace root repo. */
+  repos?: RepoRef[];
   /**
    * Stable identity for THIS effect, minted before the call and preserved
    * across crashes/retries. Forward it to the target as its idempotency key
@@ -166,6 +169,11 @@ export interface Tool {
    * behavior exactly: no journal, no operation id.
    */
   effect?: ToolEffect;
+  /**
+   * Mutually exclusive resource for mutation dispatch. A repository name
+   * serializes only calls in that repo; undefined is the global group.
+   */
+  resource?: (input: Record<string, unknown>, ctx: ToolContext) => string | undefined;
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -176,7 +184,7 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb" | "readOnly" | "background" | "effect"> = {},
+  options: Pick<Tool, "verb" | "readOnly" | "background" | "effect" | "resource"> = {},
 ): Tool {
   return {
     definition,

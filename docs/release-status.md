@@ -51,6 +51,16 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 - Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
   benchmark record.
 
+## After v0.2.0 — on main, unreleased
+
+- Peer-repository workspaces: `RepoRef`/`EngineOptions.repos`, one-call-per-repo
+  `bash` and `run_tests`, repo-attributed `edit_file`, resource-keyed mutation
+  dispatch, per-repo LSP roots, and unchanged single-root checkpoints. No-repo
+  behavior is unchanged.
+
+Verification for this change: `npm run typecheck`, `npm test` (383 passed, 23
+skipped), `npm run build`, and dist-export verification.
+
 ## Earlier post-v0.1.9 work included in v0.2.0
 
 - Generic LSP server definitions: `LspServerConfig` plus `LspServer`, with

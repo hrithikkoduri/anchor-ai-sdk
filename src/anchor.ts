@@ -13,6 +13,7 @@ import { userTurn } from "./engine/types.js";
 import type { Agent } from "./agents/types.js";
 import type { LLMClient } from "./llm/types.js";
 import type { Sandbox } from "./sandbox/types.js";
+import type { RepoRef } from "./repo.js";
 import type { Tool } from "./tools/types.js";
 
 export type AnchorDefaults = Omit<
@@ -25,6 +26,7 @@ export interface CreateAnchorOptions {
   agent?: Agent;
   sandbox?: Sandbox;
   tools?: Tool[];
+  repos?: RepoRef[];
   thread?: EngineOptions["thread"];
   /** Runtime options applied to every run; per-run overrides win. */
   defaults?: AnchorDefaults;
@@ -65,6 +67,7 @@ export function createAnchor(options: CreateAnchorOptions): Anchor {
       ...(options.agent ? { agent: options.agent } : {}),
       ...(options.sandbox ? { sandbox: options.sandbox } : {}),
       ...(options.tools ? { tools: options.tools } : {}),
+      ...(options.repos ? { repos: options.repos } : {}),
       ...(options.thread ? { thread: options.thread } : {}),
       ...overrides,
     });

@@ -8,6 +8,7 @@ import type { LLMMessage } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
+import { validateRepos } from "../repo.js";
 import {
   BudgetTracker,
   DEFAULT_BUDGET_LIMITS,
@@ -175,11 +176,16 @@ async function runOne(
       // A subscriber must never kill the run — same rule as sinks.
     }
   };
+  if (opts.repos?.length) {
+    if (!opts.sandbox) throw new Error("EngineOptions.repos requires a sandbox");
+    validateRepos(opts.repos, opts.sandbox.workspace);
+  }
   const tools = opts.tools ?? opts.agent?.tools ?? [];
   const available = new Map(tools.map((tool) => [tool.definition.name, tool]));
   /** The context every tool gets — including the host's background policy. */
   const toolContext = {
     sandbox: opts.sandbox,
+    ...(opts.repos?.length ? { repos: opts.repos } : {}),
     ...(opts.backgroundAfterSecs !== undefined
       ? { backgroundAfterSecs: opts.backgroundAfterSecs }
       : {}),

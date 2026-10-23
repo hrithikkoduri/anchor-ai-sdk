@@ -134,11 +134,6 @@ tracker for these deferred items.
   _Where:_ `src/engine/` + `src/agents/`. _Trigger:_ a task where the generator
   cannot reliably judge its own completion. _Size:_ M.
 
-- **Parallel tool calls (full)**: read-only calls from one turn already
-  dispatch concurrently (decision #69). Concurrent mutations are deferred:
-  they need per-tool concurrency metadata plus isolation/ordering guarantees
-  the single-flight sandbox gate deliberately avoids. _Size:_ L.
-
 - **Agent teams (lead + teammates)**: today a run is one `Agent`, one loop,
   one conversation. Teams let the consumer declare a roster (`lead` +
   teammates, each with its own prompt, tool subset, and budget share) and have

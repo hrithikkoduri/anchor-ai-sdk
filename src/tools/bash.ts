@@ -4,6 +4,7 @@
  * self-contained per the tool-call contract.
  */
 import { spillOrTruncate } from "./truncate.js";
+import { resourceForRepo, selectRepo } from "./repo.js";
 import {
   defineTool,
   execPolicy,
@@ -17,8 +18,10 @@ export const bashTool = defineTool(
   {
     name: "bash",
     description:
-      "Run a shell command inside the sandbox (starts in the repo root). " +
+      "Run a shell command inside one named repository. " +
       "Commands are self-contained — cd/export do not persist between calls. " +
+      "Omit repository only for a command that intentionally spans repositories; " +
+      "such a call runs at the workspace root and is serialized. " +
       "Use for git, builds, tests, installs, and scripts. " +
       "Do not search or read text with it: use search to find text and read_file " +
       "to read files — they are read-only, and several in one turn run together.",
@@ -26,6 +29,11 @@ export const bashTool = defineTool(
       type: "object",
       properties: {
         command: { type: "string", description: "The shell command to run." },
+        repository: {
+          type: "string",
+          description:
+            "Repository name (e.g. acme/api). Omit only for a spanning command.",
+        },
         timeout_secs: {
           type: "integer",
           description: "Kill deadline in seconds (default 120, max 3600).",
@@ -37,12 +45,17 @@ export const bashTool = defineTool(
   },
   async (input, ctx) => {
     const command = requireString(input, "command");
+    const repository =
+      typeof input.repository === "string" ? input.repository : undefined;
+    const selected = selectRepo(ctx, repository);
+    if (selected.error) return { ok: false, content: selected.error };
     const explicit = optionalNumber(input, "timeout_secs", 0);
     const sandbox = requireSandbox(ctx);
     // `background: true` is this tool's permission; execPolicy decides whether
     // the consumer opted in, the sandbox can poll, and the command outlives it.
     const { timeoutSecs, backgroundAfterSecs } = execPolicy(ctx, explicit);
     const r = await sandbox.exec(command, {
+      cwd: selected.cwd,
       timeoutSecs,
       ...(backgroundAfterSecs !== undefined ? { backgroundAfterSecs } : {}),
     });
@@ -57,6 +70,7 @@ export const bashTool = defineTool(
         ].join("\n"),
         meta: {
           command,
+          ...(selected.repo ? { repository: selected.repo.name } : {}),
           background: r.background,
           durationMs: r.durationMs,
           timeoutSecs,
@@ -71,6 +85,7 @@ export const bashTool = defineTool(
       }),
       meta: {
         command,
+        ...(selected.repo ? { repository: selected.repo.name } : {}),
         exitCode: r.exitCode,
         timedOut: r.timedOut,
         durationMs: r.durationMs,
@@ -78,5 +93,12 @@ export const bashTool = defineTool(
       },
     };
   },
-  { background: true },
+  {
+    background: true,
+    resource: (input, ctx) =>
+      resourceForRepo(
+        ctx,
+        typeof input.repository === "string" ? input.repository : undefined,
+      ),
+  },
 );

@@ -10,6 +10,7 @@
  * (package.json/pytest/Makefile).
  */
 import { spillOrTruncate } from "./truncate.js";
+import { resourceForRepo, selectRepo } from "./repo.js";
 import {
   defineTool,
   formatExec,
@@ -48,12 +49,16 @@ interface ResolvedCommand {
 async function resolveCommand(
   input: Record<string, unknown>,
   ctx: ToolContext,
+  cwd: string,
   fallback?: string,
 ): Promise<ResolvedCommand | null> {
   const explicit = optionalString(input, "command");
   if (explicit) return { command: explicit, defaultCommand: false };
   if (fallback) return { command: fallback, defaultCommand: true };
-  const probe = await requireSandbox(ctx).exec(DETECT, { timeoutSecs: 60 });
+  const probe = await requireSandbox(ctx).exec(DETECT, {
+    cwd,
+    timeoutSecs: 60,
+  });
   const detected = probe.stdout.trim();
   return detected === "" || detected === "none"
     ? null
@@ -75,14 +80,19 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
     {
       name: "run_tests",
       description:
-        "Run the repository's test suite (or an explicit command). Returns the test " +
-        "output and a real exit status — use this to reproduce failures and to verify fixes.",
+        "Run one repository's test suite (or an explicit command). " +
+        "In a multi-repo workspace, call it once per repository; omitting repository fails. " +
+        "Returns the test output and a real exit status — use this to reproduce failures and verify fixes.",
       parameters: {
         type: "object",
         properties: {
           command: {
             type: "string",
             description: "Override the test command (e.g. a single test file).",
+          },
+          repository: {
+            type: "string",
+            description: "Repository name (e.g. acme/api).",
           },
           timeout_secs: {
             type: "integer",
@@ -93,7 +103,24 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
       },
     },
     async (input, ctx) => {
-      const resolved = await resolveCommand(input, ctx, opts.defaultCommand);
+      const repository =
+        typeof input.repository === "string" ? input.repository : undefined;
+      if (!repository && (ctx.repos?.length ?? 0) > 1) {
+        return {
+          ok: false,
+          content:
+            "run_tests needs a repository in a multi-repo workspace (one call per repo).",
+          meta: {},
+        };
+      }
+      const selected = selectRepo(ctx, repository);
+      if (selected.error) return { ok: false, content: selected.error };
+      const resolved = await resolveCommand(
+        input,
+        ctx,
+        selected.cwd,
+        opts.defaultCommand,
+      );
       if (!resolved) {
         return {
           ok: false,
@@ -108,10 +135,16 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
         Math.min(3600, optionalNumber(input, "timeout_secs", 600)),
       );
       const sandbox = requireSandbox(ctx);
-      const r = await sandbox.exec(command, { timeoutSecs });
+      const r = await sandbox.exec(command, {
+        cwd: selected.cwd,
+        timeoutSecs,
+      });
       // Freshness evidence: the tree hash at this moment. Checks compare it at
       // move time — "green" only counts if the tree still matches (decision #38).
-      const tree = await sandbox.exec(TREE_HASH_CMD, { timeoutSecs: 60 });
+      const tree = await sandbox.exec(TREE_HASH_CMD, {
+        cwd: selected.cwd,
+        timeoutSecs: 60,
+      });
       const treeHash = /^[0-9a-f]{40}$/.test(tree.stdout.trim())
         ? tree.stdout.trim()
         : undefined;
@@ -126,6 +159,7 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
         // suite from a targeted run — strategies gate evidence on both.
         meta: {
           command,
+          ...(selected.repo ? { repository: selected.repo.name } : {}),
           ran: true,
           defaultCommand,
           exitCode: r.exitCode,
@@ -135,6 +169,13 @@ export function runTestsTool(opts: RunTestsOptions = {}) {
           ...(treeHash !== undefined ? { treeHash } : {}),
         },
       };
+    },
+    {
+      resource: (input, ctx) =>
+        resourceForRepo(
+          ctx,
+          typeof input.repository === "string" ? input.repository : undefined,
+        ),
     },
   );
 }

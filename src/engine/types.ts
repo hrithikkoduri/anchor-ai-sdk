@@ -18,6 +18,7 @@ import type { InboxMessage, InboxStore, RunSummary } from "./inbox.js";
 import type { OperationStore, PendingOperation } from "./operations.js";
 import type { ProgressLedger } from "../ledger/types.js";
 import type { VerifierConfig } from "../ledger/config.js";
+import type { RepoRef } from "../repo.js";
 
 export interface RunInput {
   /**
@@ -69,6 +70,8 @@ export interface EngineOptions {
   strategy?: AgentStrategy;
   sandbox?: Sandbox;
   tools?: Tool[];
+  /** Peer repositories inside the sandbox workspace. Absent = one root repo. */
+  repos?: RepoRef[];
   /**
    * Task-contract mode. `true` enables the create_task intrinsic, ledger,
    * evidence capture, and phase/finish judge gates. A config supplies the

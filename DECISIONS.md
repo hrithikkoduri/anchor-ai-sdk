@@ -1297,3 +1297,36 @@ policy and credentials in the application.
 
 Regressions: `tests/unit/anchor.test.ts`,
 `tests/unit/coding-prompts.test.ts`, and `tests/unit/view-image.test.ts`.
+
+## Decision #97: Peer repositories are addressed one call at a time
+
+A consumer is moving to a workspace that is a container of peer repositories,
+each with its own `.git`. The engine's single-root assumptions blocked
+attributable per-repo work: `bash` and `run_tests` started at the workspace
+root, checkpoints and tree hashes were workspace-wide, and LSP had one fixed
+root.
+
+The contract is now `RepoRef { name, path, baseRef? }`, supplied through
+`EngineOptions.repos` and `ToolContext.repos`. Paths are relative and must
+resolve beneath `sandbox.workspace`. With no `repos`, behavior is unchanged:
+the workspace root is the repo.
+
+Tools target one repository per call. `bash` and `run_tests` accept
+`repository`; `edit_file` attributes a path to the longest matching repo
+prefix. There is deliberately no list-shaped tool: one combined result would
+mix contexts, grow past the truncation/spill boundary, and lose per-repo
+evidence attribution.
+
+Mutation dispatch uses a resource key. Non-effect mutations with distinct
+repo keys may run concurrently; calls with the same key serialize; calls with
+no key and all effectful calls stay on the global serial/ordered path. Results
+are always emitted in model-call order. This keeps `finish`, effects, and
+spanning commands deterministic while allowing independent repo edits/builds
+to overlap.
+
+LSP builds one server config per repo (`<server>:<repo>`) with that repo's
+`rootUri`, selected lazily by the file path at tool-call time. Checkpoints stay
+single-root: `Sandbox.checkpoint` and `hasChangesFrom` are unchanged, and
+per-repo snapshots belong to the consumer's `EngineOptions.snapshot`.
+
+Regressions: `tests/unit/multi-repo.test.ts`, plus the existing no-repo suite.

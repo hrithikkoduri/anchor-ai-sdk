@@ -6,6 +6,7 @@
  */
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { repoCwd, repoForPath, type RepoRef } from "../repo.js";
 import type { Sandbox } from "../sandbox/types.js";
 import { spillOrTruncate } from "../tools/truncate.js";
 import {
@@ -55,6 +56,8 @@ export type LspToolFeature =
 export interface LspToolsOptions extends TypeScriptLspOptions {
   /** One or more language servers; defaults to the TypeScript/JavaScript preset. */
   servers?: LspServerConfig[];
+  /** Peer repositories; server roots are selected by file path. */
+  repos?: RepoRef[];
   /**
    * Core is always included. Add extra read-only tools with an array, or use
    * `"all"` for the full common editor surface. `format`/`rename` return edits;
@@ -62,6 +65,8 @@ export interface LspToolsOptions extends TypeScriptLspOptions {
    */
   features?: "all" | LspToolFeature[];
 }
+
+export { configsForRepo };
 
 const sessions = new WeakMap<Sandbox, Map<string, LspServer>>();
 
@@ -89,13 +94,35 @@ async function clientForConfig(
   return client;
 }
 
+function configsForRepo(
+  servers: LspServerConfig[],
+  repo: RepoRef | undefined,
+  workspace: string,
+): LspServerConfig[] {
+  if (!repo) return servers;
+  const rootUri = pathToFileURL(repoCwd(workspace, repo)).href;
+  return servers.map((server) => ({
+    ...server,
+    id: `${server.id}:${repo.name}`,
+    rootUri,
+  }));
+}
+
 async function clientFor(
   ctx: ToolContext,
   file: string,
   servers: LspServerConfig[],
+  repos?: RepoRef[],
 ): Promise<LspServer> {
+  const sandbox = requireSandbox(ctx);
+  const repo = repoForPath(
+    repos ?? ctx.repos,
+    file,
+    sandbox.workspace,
+  );
+  const active = configsForRepo(servers, repo, sandbox.workspace);
   const extension = path.extname(file).toLowerCase();
-  const config = servers.find((server) => server.languageIds[extension]);
+  const config = active.find((server) => server.languageIds[extension]);
   if (!config) {
     const supported = [...new Set(servers.flatMap((server) => Object.keys(server.languageIds)))];
     throw new Error(
@@ -297,6 +324,7 @@ function formatInlayHints(hints: LspInlayHint[]): string {
 
 export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
   const servers = opts.servers ?? [typescriptLanguageServer(opts)];
+  const repos = opts.repos;
   const diagnosticsTool = defineTool(
     {
       name: "lsp_diagnostics",
@@ -317,7 +345,7 @@ export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
     },
     async (input, ctx) => {
       const file = requireString(input, "path");
-      const client = await clientFor(ctx, file, servers);
+      const client = await clientFor(ctx, file, servers, repos);
       const diagnostics = await client.diagnostics(file);
       const sandbox = requireSandbox(ctx);
       const uri = pathToFileURL(client.resolvePath(file)).href;
@@ -359,7 +387,7 @@ export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
       const file = requireString(input, "path");
       const line = Math.max(1, Math.floor(optionalNumber(input, "line", 1)));
       const column = Math.max(1, Math.floor(optionalNumber(input, "column", 1)));
-      const client = await clientFor(ctx, file, servers);
+      const client = await clientFor(ctx, file, servers, repos);
       const locations = await client.definition(file, line, column);
       const sandbox = requireSandbox(ctx);
       return {
@@ -402,7 +430,7 @@ export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
       const line = Math.max(1, Math.floor(optionalNumber(input, "line", 1)));
       const column = Math.max(1, Math.floor(optionalNumber(input, "column", 1)));
       const includeDeclaration = optionalBoolean(input, "include_declaration") ?? true;
-      const client = await clientFor(ctx, file, servers);
+      const client = await clientFor(ctx, file, servers, repos);
       const locations = await client.references(
         file,
         line,
@@ -447,7 +475,7 @@ export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
     },
     async (input, ctx) => {
       const file = requireString(input, "path");
-      const client = await clientFor(ctx, file, servers);
+      const client = await clientFor(ctx, file, servers, repos);
       const symbols = await client.symbols(file);
       const sandbox = requireSandbox(ctx);
       const lines = formatSymbols(symbols);
@@ -468,7 +496,7 @@ export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
   const core = [diagnosticsTool, definitionTool, referencesTool, symbolsTool];
   const features =
     opts.features === "all" ? [...ALL_LSP_FEATURES] : (opts.features ?? []);
-  return [...core, ...createAdvancedLspTools(servers, features)];
+  return [...core, ...createAdvancedLspTools(servers, opts.repos, features)];
 }
 
 const ALL_LSP_FEATURES: LspToolFeature[] = [
@@ -489,6 +517,7 @@ const ALL_LSP_FEATURES: LspToolFeature[] = [
 
 function createAdvancedLspTools(
   servers: LspServerConfig[],
+  repos: RepoRef[] | undefined,
   features: LspToolFeature[],
 ): Tool[] {
   const enabled = new Set(features);
@@ -521,7 +550,7 @@ function createAdvancedLspTools(
             1,
             Math.floor(optionalNumber(input, "column", 1)),
           );
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const hover = await client.hover(file, line, column);
           return {
             ok: true,
@@ -576,7 +605,7 @@ function createAdvancedLspTools(
             typeof input.trigger_character === "string"
               ? input.trigger_character
               : undefined;
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const items = await client.completion(
             file,
             line,
@@ -620,7 +649,7 @@ function createAdvancedLspTools(
             1,
             Math.floor(optionalNumber(input, "column", 1)),
           );
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const help = await client.signatureHelp(file, line, column);
           return {
             ok: true,
@@ -658,7 +687,7 @@ function createAdvancedLspTools(
             1,
             Math.floor(optionalNumber(input, "column", 1)),
           );
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const highlights = await client.documentHighlights(
             file,
             line,
@@ -723,7 +752,7 @@ function createAdvancedLspTools(
             1,
             Math.floor(optionalNumber(input, "end_column", startColumn)),
           );
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const actions = await client.codeActions(
             file,
             startLine,
@@ -825,7 +854,7 @@ function createAdvancedLspTools(
             ),
             insertSpaces: optionalBoolean(input, "insert_spaces") ?? true,
           };
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const hasRange =
             input.start_line !== undefined ||
             input.start_column !== undefined ||
@@ -899,7 +928,7 @@ function createAdvancedLspTools(
             Math.floor(optionalNumber(input, "column", 1)),
           );
           const newName = requireString(input, "new_name");
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const edit = await client.rename(file, line, column, newName);
           const sandbox = requireSandbox(ctx);
           return {
@@ -940,7 +969,7 @@ function createAdvancedLspTools(
         },
         async (input, ctx) => {
           const file = requireString(input, "path");
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const ranges = await client.foldingRanges(file);
           return {
             ok: true,
@@ -978,7 +1007,7 @@ function createAdvancedLspTools(
         },
         async (input, ctx) => {
           const file = requireString(input, "path");
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const hints = await client.inlayHints(
             file,
             Math.max(1, Math.floor(optionalNumber(input, "start_line", 1))),
@@ -1033,7 +1062,7 @@ function createAdvancedLspTools(
             1,
             Math.floor(optionalNumber(input, "column", 1)),
           );
-          const client = await clientFor(ctx, file, servers);
+          const client = await clientFor(ctx, file, servers, repos);
           const locations = await client[method](file, line, column);
           const sandbox = requireSandbox(ctx);
           return {

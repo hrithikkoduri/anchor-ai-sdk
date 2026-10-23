@@ -16,6 +16,7 @@
  * GNU and BSD userlands (macOS dev + Linux guests).
  */
 import { shq } from "../sandbox/types.js";
+import { resourceForPath } from "./repo.js";
 import { defineTool, requireSandbox, requireString } from "./types.js";
 
 const MAX_EDIT_BYTES = 200_000;
@@ -153,6 +154,13 @@ export const editFileTool = defineTool(
         newChars: newString.length,
       },
     };
+  },
+  {
+    resource: (input, ctx) =>
+      resourceForPath(
+        ctx,
+        typeof input.path === "string" ? input.path : "",
+      ),
   },
 );
 
