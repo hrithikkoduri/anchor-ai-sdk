@@ -1,4 +1,71 @@
 {
-  "generatedAt": "2026-10-23T10:17:52.330Z",
-  "runs": []
+  "generatedAt": "2026-10-23T10:28:20.966Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 619238,
+            "completionTokens": 431,
+            "totalTokens": 619669
+          },
+          "wallMs": 357519
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "tokens": {
+        "prompt": 619238,
+        "completion": 431,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 357519,
+      "p95WallMs": 357519
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 0,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 2087316,
+            "completionTokens": 3259,
+            "totalTokens": 2090575
+          },
+          "wallMs": 442235
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 0,
+      "meanReward": 0,
+      "tokens": {
+        "prompt": 2087316,
+        "completion": 3259,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 442235,
+      "p95WallMs": 442235
+    }
+  ]
 }
