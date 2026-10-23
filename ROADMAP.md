@@ -78,12 +78,6 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   no baseline-passing test regresses. _Where:_ `src/tools/run-tests.ts` plus
   the eval task JSON under `evals/benchmarks/swe-bench/data/`. _Trigger:_ evals on real repos whose
   `main` is not green. _Size:_ M.
-- **Context reset + durable handoff**: at a context/step threshold, open a
-  fresh model window with a structured artifact (ledger + git state + last
-  observations) instead of relying on another summary. Revive the sandbox by
-  handle. _Where:_ `src/engine/compaction.ts` / `thread.ts` / `revival.ts`.
-  _Trigger:_ a multi-hour task whose compacted context loses constraints.
-  _Size:_ M.
 - **Abortable one-shot exec**: `ExecOptions.signal` and `ExecResult.cancelled`
   across providers. PR #9 was closed before merge because the E2B and Docker
   cancellation paths were unsafe; `openProcess` cancellation exists, but a
@@ -105,12 +99,6 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   native adapters must preserve the provider-specific image formats. _Where:_
   `src/llm/` plus the shared attachment/message contract. _Trigger:_ actually
   running those models with screenshots, diagrams, or photos. _Size:_ M / S.
-- **Multimodal input contract**: add `ImageAttachment` to `RunTask` and user
-  messages, with URL/data-URI references, MIME, dimensions, and hash. Keep bytes
-  in consumer object storage; never put base64 in the thread or trace. This is
-  the prerequisite for the native image adapters. _Where:_ `src/llm/types.ts`,
-  `src/engine/types.ts`, and provider adapters. _Trigger:_ first consumer image
-  upload. _Size:_ S–M.
 - **Documents/audio/video**: not first-class model inputs. Extract PDFs to text
   (or OCR) in the consumer; transcribe audio before the run; sample video frames
   only when a specific vision task needs them. Arbitrary files belong in the
@@ -190,6 +178,9 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   recovery, terminal agent, bounded tool results, persistent process streams
   (Local/Docker/E2B/Heyo), common image publishing + `anchor image publish`,
   and optional TypeScript LSP.
+- v0.1.9 (main, unreleased): ledger-aware turn routing, structured task
+  compaction/handoff, image references on task/inbox/user messages with OpenAI
+  `image_url` serialization, E2B preview ports, and consumer-store docs.
 
 ## In flight / paused
 
