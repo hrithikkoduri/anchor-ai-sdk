@@ -549,7 +549,7 @@ function App() {
                 ],
                 [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. The API can change before 1.0, so pin an exact version and test your integration. E2B, Daytona, and agent teams are not shipped features.",
+                  "Anchor is early alpha. The API can change before 1.0, so pin an exact version and test your integration. Agent teams and consumer skill bundles are not shipped features.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>

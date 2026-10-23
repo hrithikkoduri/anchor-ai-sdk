@@ -41,8 +41,19 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   (`src/sandbox/e2b/`) but is **not exported** until the suite passes.
   _Trigger:_ a second VM vendor is needed (region, cost, comparison).
   _Size:_ M.
-- **Daytona adapter**: same shape as E2B (`src/sandbox/daytona/`). _Trigger:_
-  same. _Size:_ M.
+- **Daytona fork/best-of-N**: the adapter ships (`src/sandbox/daytona/`) but
+  declares `fork: false` — the API rejects forking of container-class
+  sandboxes, so racing needs a rebuild-from-checkpoint path instead of a native
+  fork. _Where:_ `src/sandbox/daytona/index.ts`. _Trigger:_ a best-of-N run on
+  Daytona. _Size:_ M.
+- **Daytona process streams**: `openProcess()` is omitted because a session
+  command has no stdin EOF and the PTY is an interactive shell. A real fix
+  needs a session variant with a proper close, or a guest-side FIFO supervisor
+  like Heyo's. _Where:_ `src/sandbox/daytona/`. _Trigger:_ an LSP/REPL over
+  Daytona. _Size:_ M.
+- **Daytona image publishing**: snapshot creation is reachable
+  (`daytona.snapshot.create`) but needs an account tier that grants it; wiring
+  it to `ImagePublisher` is the remaining seam. _Size:_ S.
 - **Egress allowlists**: Docker now enforces `egress: "none"` (disconnect
   after setup) and declares the capability; the eval exposes `--egress none`.
   Missing is the middle setting, allow only a package index or a host list,

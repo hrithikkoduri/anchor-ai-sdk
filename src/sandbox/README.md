@@ -12,12 +12,17 @@ sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
 sandbox/e2b               e2b/ (index, exec)          E2B cloud sandboxes (remote)
+sandbox/daytona           daytona/ (index, exec)      Daytona cloud sandboxes (remote)
 sandbox/local             local/index.ts              the host, NO isolation: dev/CI
 ```
 
-Daytona is **planned**: its stub module exists in-repo (`daytona/`) so the
-shape is visible, but it is not an exported subpath and its factory throws
-until it passes the conformance suite.
+Daytona boots a **Docker image** (`spec.image`, built dynamically) or a prepared
+**snapshot** (`daytona({ snapshot })`) — the SDK's own `create({ image | snapshot })`
+split. With neither, the account's default snapshot is used; it ships `bash`,
+`git`, coreutils (`timeout`), Python, and Node. Exec runs as a one-shot
+**session** command per call: `process.executeCommand()` merges stderr into
+stdout, while `executeSessionCommand()` returns both streams and the exit code
+separately.
 
 E2B boots a **template**, not an arbitrary Docker image at create time. Pass
 `template` to `e2b()` (or let `SandboxSpec.image` name one) and build it with
@@ -202,7 +207,7 @@ the provider can vary its image. The consumer-facing guide is
 | **E2B** | `e2b({ template })` | **Yes**, but it is an E2B **template name or ID**, not a Docker image | `anchor image publish --provider e2b ...` builds/publishes a template with E2B's `Template.build()`; repo scripts also exist. Passing a Docker image fails with guidance. |
 | **Heyo** | `heyo({ image, imageKind, imageStore })` | **Artifact only**; dockerfile/git builds are provider-level and reject it | `anchor image publish --provider heyo ...` wraps `heyctl artifact push`. `imageKind: "artifact"` pulls a prebuilt rootfs from `imageStore` (default `https://hub.heyo.work`); `"dockerfile"` / `"git"` make the Heyo host build it. |
 | **Local** | none | **No**; rejected loudly | Host filesystem only; use `spec.localPath` or Docker. |
-| **Daytona** | planned | not available | Stub only; factory throws until it passes conformance. |
+| **Daytona** | account default | **Yes**; a container image reference | `spec.image` is built dynamically by Daytona; `daytona({ snapshot })` names a prepared snapshot instead. There is no image publisher — snapshot creation is a separate credentialed service. |
 
 If a task needs a prebaked repository, use `spec.workspacePath` on Docker, E2B,
 or Heyo so `start()` verifies the checkout instead of cloning.
@@ -247,8 +252,8 @@ anchor heyo image publish --name acme/agent:v1 --rootfs ./rootfs.ext4 --public
 Provider-first (`anchor e2b image publish`) and `--provider` forms are
 equivalent. Docker uses the CLI login; E2B reads `E2B_API_KEY`; Heyo uses the
 `heyctl` login (set `HEYCTL_BIN` if it is not on `PATH`; `HEYO_IMAGE_STORE`
-is copied into the returned provider config). Local and the Daytona stub have
-no image publisher. Nothing in Anchor logs build arguments; treat
+is copied into the returned provider config). Local and Daytona have no image
+publisher. Nothing in Anchor logs build arguments; treat
 provider build output as potentially sensitive.
 
 A uniform **build-and-push implementation** now exists through this seam, but
@@ -267,6 +272,9 @@ of Anchor images.
 - **E2B module missing** — install the optional `e2b` peer dependency.
   `--context` is rejected because E2B's `fromDockerfile` has no separate build
   context.
+- **Daytona has no image publisher** — `anchor image publish --provider daytona`
+  fails by design. Build the snapshot with Daytona's own tooling and pass its
+  name as `daytona({ snapshot })`.
 - **Heyo publishing fails** — `heyctl` must be installed, logged in, and able to
   reach the namespace store; it is not bundled with Anchor. Its install builds
   are currently Linux x86_64. `HEYO_IMAGE_STORE` is copied into the returned
@@ -306,9 +314,25 @@ are credential- and network-gated and are not part of CI.
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-Daytona is planned: its stub module stays in-repo as a signpost but is not
-exported; its factory throws with a pointer here until it passes the
-conformance suite.
+## Daytona notes
+
+- **No fork, no pause.** The API answers 422 "Forking is not supported for this
+  sandbox" for the container-class sandboxes this adapter creates; `fork()`
+  throws with that reason and the provider declares `fork: false`.
+- **Retain = stop.** `destroy()` stops a retained sandbox (the filesystem
+  survives) and `adopt()` re-opens it by id and starts it again. `keep` leaves
+  it running for debugging.
+- **No egress control.** `networkBlockAll` is settable at CREATE time only and
+  `start()` needs network to clone; post-create `updateNetworkSettings()` is
+  rejected on restricted tiers. `spec.egress: "none"` is rejected loudly.
+- **No process streams.** A session command has no stdin EOF (Ctrl-D arrives as
+  literal data) and the PTY is an interactive shell that echoes input, so
+  `openProcess()` is omitted rather than faked.
+- **Timeout.** Every command is wrapped in guest-side `timeout -k`; the
+  session's own timeout is only a slightly longer transport guard.
+- **Credentials.** `git.token` is resolved into `GIT_TOKEN` and a repo-local
+  credential helper; the token never enters the workspace. One mint is reused
+  for five minutes.
 
 ### E2B notes
 
@@ -344,5 +368,5 @@ heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
 e2b/         E2B cloud sandboxes: index (provider), exec (command/result)
 local/       the host itself: dev/CI only, no isolation
-daytona/     stub: planned, not exported
+daytona/     Daytona cloud sandboxes: index (provider), exec (command/result)
 ```

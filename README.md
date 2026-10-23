@@ -37,7 +37,7 @@ release policy.** There is no requirement to turn an agent into a workflow graph
 | Build around | What Anchor supplies |
 | --- | --- |
 | **Your agent** | Chat and coding bundles, or your own strategy and toolset. Phases label the approach; they are not permissions. |
-| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Docker, and local development. |
+| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Daytona, Docker, and local development. |
 | **Longer tasks** | Conversation compaction, thread-store interfaces, working notes, checkpoints, and opt-in revival planning. |
 | **Observable execution** | Streaming events, tool-result metadata, NDJSON/custom trace sinks, and replay helpers. |
 
@@ -123,6 +123,7 @@ stdin/stdout primitive; check `provider.capabilities.processStream` first.
 | --- | --- | --- |
 | **Heyo Computer** | `anchor-ai-sdk/sandbox/heyo` | Image artifact/store on the provider; host-built image kinds are also supported. |
 | **E2B** | `anchor-ai-sdk/sandbox/e2b` | A prepared template name or ID, **not** an arbitrary Docker image at create time. |
+| **Daytona** | `anchor-ai-sdk/sandbox/daytona` | A container image reference (built dynamically) or a prepared snapshot name. |
 | **Docker** | `anchor-ai-sdk/sandbox/docker` | An explicit container image, Docker CLI, and running daemon. |
 | **Local** | `anchor-ai-sdk/sandbox/local` | Host processes and a working directory. **No isolation; trusted dev/CI only.** |
 
@@ -230,8 +231,8 @@ try {
 ```
 
 Provider boot settings and optional capabilities differ. Per-sandbox
-`spec.image` is supported by Docker and E2B (as a template name), and by Heyo
-for artifact refs; Local rejects it. Providers that can build/publish expose
+`spec.image` is supported by Docker, E2B (as a template name), and Daytona (as a
+container image), and by Heyo for artifact refs; Local rejects it. Providers that can build/publish expose
 `imagePublisher`, also available as `anchor image publish`.
 Retention needs a cleanup policy; remote machines and model calls can cost money. Private HTTPS repositories
 can use `spec.git.token`, a caller-supplied credential callback.
@@ -242,8 +243,9 @@ This is not a claim that all providers offer equivalent isolation.
 
 Providers that can build images expose the common `imagePublisher` contract and
 the `anchor image publish` command, so Docker, E2B, and Heyo each use their own
-native registry while the caller keeps one shape. `anchor image publish --help`
-shows the flags. Per-provider instructions are in
+native registry while the caller keeps one shape. Daytona publishes snapshots
+through Daytona's own tooling, so it has no `imagePublisher`.
+`anchor image publish --help` shows the flags. Per-provider instructions are in
 [docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
@@ -424,8 +426,8 @@ guessing.
 public sandbox contract: command results, deadlines, environment handling, Git
 checkpoints, retention/adoption, and declared optional capabilities.
 
-The repository configures local and Docker conformance in CI. Heyo and E2B live
-suites are opt-in and credential-gated; having a suite is not certification that
+The repository configures local and Docker conformance in CI. Heyo, E2B, and
+Daytona live suites are opt-in and credential-gated; having a suite is not certification that
 every account, image, or template has passed it. Custom providers can use the
 same contract and tests without rewriting the agent engine.
 
@@ -456,8 +458,8 @@ claim. The older 7/10 OpenRouter cost comparison is separate historical context.
 
 **Early alpha, 0.x.** Pin exact versions and test your integration. Provider and
 runtime features are version-specific; the current source may be ahead of the
-installed package. Daytona, agent teams, and consumer skill bundles remain
-roadmap work in the reviewed source.
+installed package. Agent teams and consumer skill bundles remain roadmap work in
+the reviewed source.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in
 the SDK and product policy in the consumer; provider changes should include

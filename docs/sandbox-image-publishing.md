@@ -28,7 +28,7 @@ Support is intentionally provider-specific:
 | E2B | Yes | An E2B template name or ID, **not** a Docker image. |
 | Heyo | Artifact only | An artifact ref when `heyo({ imageKind: "artifact" })`. Dockerfile/git builds are provider-level and reject per-sandbox images. |
 | Local | No | Host filesystem only; use `localPath` or Docker. |
-| Daytona | Not yet | Stub only. |
+| Daytona | Yes | A container image name. Daytona builds it dynamically at sandbox creation; a prepared snapshot goes in `daytona({ snapshot })` instead. |
 
 `start()` never builds or pushes. Publishing is an explicit step before the run.
 

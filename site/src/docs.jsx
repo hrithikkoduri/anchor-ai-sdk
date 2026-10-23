@@ -604,6 +604,16 @@ function Docs() {
                   "CLI-backed · conformance-tested in CI",
                 ],
                 [
+                  "e2b",
+                  "E2B cloud sandboxes",
+                  "Template-backed · live conformance path",
+                ],
+                [
+                  "daytona",
+                  "Daytona cloud sandboxes",
+                  "Image or snapshot · no fork, stop-based retain",
+                ],
+                [
                   "local",
                   "Processes on this host",
                   "No isolation · development / CI only",
@@ -620,8 +630,9 @@ function Docs() {
               ))}
             </div>
             <p className="doc-small">
-              E2B and Daytona are planned adapters, not supported backends
-              today.
+              Each adapter declares what it can honor: Daytona has no fork, no
+              post-setup egress cut, and no process streams, and rejects those
+              requests instead of ignoring them.
             </p>
           </DocSection>
 
@@ -704,7 +715,7 @@ function Docs() {
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams,
-              consumer skill bundles, E2B, and Daytona are roadmap work.
+              consumer skill bundles are roadmap work.
             </p>
             <a
               className="doc-inline-link"

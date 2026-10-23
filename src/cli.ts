@@ -18,6 +18,12 @@ import type {
 } from "./sandbox/image.js";
 
 const PUBLISHERS = ["docker", "e2b", "heyo"] as const;
+/**
+ * Known providers. `daytona` and `local` are accepted so `anchor daytona image
+ * publish` reaches the publisher lookup and fails with the real reason
+ * (Daytona snapshot creation is a separate credentialed service), not with
+ * "unknown command".
+ */
 const PROVIDERS = ["docker", "e2b", "heyo", "daytona", "local"] as const;
 type ProviderName = (typeof PROVIDERS)[number];
 
