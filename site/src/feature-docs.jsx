@@ -179,7 +179,36 @@ const agent = { ...base, tools: [...base.tools, ...createLspTools()] };
       <a className="doc-inline-link" href={`${repo}/blob/main/docs/lsp.md`}>Direct client and lifecycle guide ↗</a>
     </Section>
 
-    <Section id="philosophy" number="22" title="Mechanics, not product policy">
+    <Section id="images" number="22" title="Image context">
+      <p><code>ImageAttachment</code> is a reference, not bytes in the transcript. The consumer
+        uploads and validates the file, then passes a signed URL or data URI with
+        the run. Anchor maps it to the provider message shape; the bytes remain
+        in consumer storage.</p>
+      <CodeBlock filename="image-run.ts" code={`import { runAgent } from "anchor-ai-sdk";
+
+await runAgent(
+  {
+    task: "What does this screenshot show?",
+    images: [{
+      id: "img_123",
+      mime: "image/png",
+      url: "https://storage.example/img_123.png?signature=...",
+      alt: "settings page",
+    }],
+  },
+  { llm, agent: chatAgent },
+);`} />
+      <p>The OpenAI-compatible adapter serializes user images as
+        <code>image_url</code> content parts. Native Anthropic/Gemini adapters
+        will map the same reference to their own image blocks.</p>
+      <Callout>Keep base64 out of <code>ThreadStore</code> and traces. Validate
+        MIME, size, and dimensions; strip EXIF; sign URLs; enforce retention and
+        provider reachability. Images in replay history may be billed on every
+        model call. PDFs, audio, and video are not first-class inputs: extract
+        PDF text/OCR, transcribe audio, and sample video frames in the consumer.</Callout>
+    </Section>
+
+    <Section id="philosophy" number="23" title="Mechanics, not product policy">
       <p>Keep the model loop small and its decisions inspectable. Requirements
         should survive the conversation, evidence should be distinguishable from
         claims, and uncertain external effects should not be replayed as guesses.</p>

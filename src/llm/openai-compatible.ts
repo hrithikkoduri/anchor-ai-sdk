@@ -168,6 +168,18 @@ function toWireMessages(messages: LLMMessage[]): unknown[] {
         content: m.content ?? "",
       };
     }
+    if (m.role === "user" && m.images && m.images.length > 0) {
+      return {
+        role: "user",
+        content: [
+          ...(m.content ? [{ type: "text", text: m.content }] : []),
+          ...m.images.map((image) => ({
+            type: "image_url",
+            image_url: { url: image.url },
+          })),
+        ],
+      };
+    }
     return { role: m.role, content: m.content ?? "" };
   });
 }

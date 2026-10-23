@@ -47,7 +47,7 @@ test("new feature docs have deep links and honest provider limits", async ({ pag
   await expect(page.getByRole("heading", { name: "Ledger & verification", exact: true })).toBeInViewport();
   for (const id of [
     "verification", "structured-output", "operations",
-    "process-streams", "image-publishing", "lsp", "philosophy",
+    "process-streams", "image-publishing", "lsp", "images", "philosophy",
     "thread-store", "inbox-store", "operation-store", "sandbox-store",
     "compaction-contract",
   ]) {
@@ -60,4 +60,5 @@ test("new feature docs have deep links and honest provider limits", async ({ pag
   await expect(page.locator("#inbox-store")).toContainText("for update skip locked");
   await expect(page.locator("#operation-store")).toContainText("operationId");
   await expect(page.locator("#compaction-contract")).toContainText("CompactionHandoff");
+  await expect(page.locator("#images")).toContainText("ImageAttachment");
 });

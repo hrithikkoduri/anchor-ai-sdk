@@ -233,6 +233,11 @@ export function estimateTokens(messages: LLMMessage[]): number {
   let chars = 0;
   for (const m of messages) {
     chars += m.content?.length ?? 0;
+    // Provider image pricing varies; count the URL/alt plus a small fixed
+    // overhead so an image-bearing turn is not estimated as free.
+    for (const image of m.images ?? []) {
+      chars += image.url.length + (image.alt?.length ?? 0) + 400;
+    }
     for (const tc of m.tool_calls ?? []) {
       chars += tc.name.length + tc.arguments.length;
     }
@@ -297,6 +302,11 @@ function renderTranscript(messages: LLMMessage[]): string {
       parts.push(`tool result: ${m.content ?? ""}`);
     } else {
       parts.push(`${m.role}: ${m.content ?? ""}`);
+    }
+    for (const image of m.images ?? []) {
+      parts.push(
+        `[image ${image.id} ${image.mime}${image.alt ? `: ${image.alt}` : ""}]`,
+      );
     }
   }
   return parts.join("\n");

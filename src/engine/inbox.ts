@@ -20,7 +20,7 @@
  * older ones), then queued messages oldest-first. A store that cannot express
  * that ordering cannot implement this interface.
  */
-import type { LLMUsage } from "../llm/types.js";
+import type { ImageAttachment, LLMUsage } from "../llm/types.js";
 import type { FinishReason } from "./types.js";
 
 export type InboxDelivery = "queue" | "interject";
@@ -38,6 +38,8 @@ export interface InboxMessage {
   text: string;
   /** Optional application context for the run this message starts. */
   context?: string;
+  /** Image references for the run this message starts. */
+  images?: ImageAttachment[];
   delivery: InboxDelivery;
 }
 
@@ -180,7 +182,7 @@ export class MemoryInboxStore implements InboxStore {
  */
 export function renderInboxTask(
   messages: InboxMessage[],
-): { task: string; context?: string } {
+): { task: string; context?: string; images?: ImageAttachment[] } {
   const task = messages
     .map((message) => message.text)
     .filter((text) => text.trim() !== "")
@@ -189,5 +191,10 @@ export function renderInboxTask(
     .map((message) => message.context)
     .filter((value): value is string => typeof value === "string" && value !== "")
     .join("\n\n");
-  return context === "" ? { task } : { task, context };
+  const images = messages.flatMap((message) => message.images ?? []);
+  return {
+    task,
+    ...(context === "" ? {} : { context }),
+    ...(images.length ? { images } : {}),
+  };
 }
