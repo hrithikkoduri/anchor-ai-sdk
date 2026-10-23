@@ -8,7 +8,7 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
-## v0.1.9 — release candidate (package version 0.1.9)
+## v0.1.9 — released
 
 - [x] Ledger-aware turn routing: an active required ledger makes `auto`
       follow-ups task turns; explicit `chat`/`clarify`/`task` still wins; inbox

@@ -1,6 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.1.9 release candidate. Package version is `0.1.9`; the tag and npm publication are the remaining release steps.
+Status: **2026-10-23**, v0.1.9 released. npm package `0.1.9` is published; the Git tag and GitHub release are being finalized.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural

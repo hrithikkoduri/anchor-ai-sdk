@@ -537,7 +537,7 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.1.9; latest published release: v0.1.8.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.1.9; latest published release: v0.1.9.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
 source may be ahead of the installed package. Daytona, agent teams, context
 reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
