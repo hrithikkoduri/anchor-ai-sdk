@@ -30,11 +30,10 @@ import {
   assistantMessage,
   conversationHistory,
   toolResultMessage,
-  userMessage,
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
 import {
-  renderInboxTask,
+  renderInboxTurn,
   type InboxMessage,
   type RunSummary,
 } from "./inbox.js";
@@ -48,21 +47,22 @@ import {
 } from "./revival.js";
 import { phaseDisciplineBlock } from "./phase-discipline.js";
 import { renderPromptBlocks, type PromptBlock } from "./prompt.js";
-import { resolveTurnIntent } from "./intent.js";
 import {
   addRequirement,
   compileLedger,
+  createLedger,
   ledgerGate,
   linkEvidence,
   recordEvidence,
   renderLedger,
   setRequirementStatus,
-  verifyAlignment,
   type VerifierConfig,
 } from "../ledger/index.js";
-import type { ProgressLedger } from "../ledger/types.js";
-import { chatAgent } from "../agents/chat/index.js";
-import { codingAgent } from "../agents/coding/index.js";
+import { llmJudge, type Judge, type JudgeVerdict } from "../verify/index.js";
+import type {
+  LedgerEvidenceRef,
+  ProgressLedger,
+} from "../ledger/types.js";
 import type { EventSink, RevivalRequest } from "./events.js";
 import {
   dispatchToolCalls,
@@ -87,7 +87,7 @@ import {
   visibleOutputTokens,
 } from "./guardrails.js";
 import type {
-  RunTask,
+  RunInput,
   EngineOptions,
   AgentResult,
   BackgroundJob,
@@ -103,12 +103,13 @@ import {
 } from "./background.js";
 
 export type {
-  RunTask,
+  RunInput,
   EngineOptions,
   AgentResult,
   FinishReason,
   GuardrailConfig,
 } from "./types.js";
+export { userTurn } from "./types.js";
 
 /**
  * What a chained call carries from one run into the next. Absent for a
@@ -131,7 +132,7 @@ interface ChainRun {
 }
 
 async function runOne(
-  task: RunTask,
+  input: RunInput,
   opts: EngineOptions,
   chain: ChainRun = {},
 ): Promise<AgentResult> {
@@ -243,8 +244,12 @@ async function runOne(
       `startPhase "${opts.startPhase}" is not a phase of strategy "${strategy.name}"`,
     );
   }
+  const requestText = input.messages
+    .filter((message) => message.role === "user" && message.content?.trim())
+    .map((message) => message.content!)
+    .join("\n\n");
   const context =
-    task.context ?? (await strategy.prepareContext?.(opts.sandbox, task.task));
+    input.context ?? (await strategy.prepareContext?.(opts.sandbox, requestText));
   const prior = await opts.thread?.store.load(opts.thread.id);
   if (
     !opts.startPhase &&
@@ -257,175 +262,91 @@ async function runOne(
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
 
-  // ---- Task verification ------------------------------------------------
+  // ---- Task contracts and the judge --------------------------------------
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
   const verifierConfig: VerifierConfig =
     verifierOn && typeof opts.verifier === "object" ? opts.verifier : {};
-  const verifierLlm = verifierConfig.llm ?? opts.llm;
   const verifierGates = new Set(
     verifierConfig.gates ?? ["phase", "finish"],
   );
-  const maxVerifierCalls = verifierConfig.maxCallsPerTask ?? 6;
-  let verifierCalls = 0;
+  const judge: Judge | undefined = verifierOn
+    ? (verifierConfig.judge ?? llmJudge(verifierConfig.llm ?? opts.llm))
+    : undefined;
+  const maxJudgeCalls = verifierConfig.maxCallsPerTask ?? 8;
+  const maxPhaseRejections = verifierConfig.maxRejectionsPerPhase ?? 3;
+  let judgeCalls = 0;
+  let phaseRejections = 0;
+  let phaseEvidence: LedgerEvidenceRef[] = [];
+  const contractTaskId =
+    opts.taskId ?? opts.thread?.id ?? `task-${Date.now()}`;
   let ledger = opts.ledger ?? (verifierOn ? prior?.ledger : undefined);
-  if (verifierOn && !ledger) {
-    const compiled = await compileLedger({
-      llm: verifierLlm,
-      taskId: opts.taskId ?? opts.thread?.id ?? `task-${Date.now()}`,
-      task: task.task,
-      phases: strategy.phases,
-      reasoningEffort: "low",
-    });
-    ledger = compiled.ledger;
-    if (compiled.usage) budget.record(compiled.usage);
-  }
-  const recentEvidence = (): string => {
-    if (!ledger) return "(none)";
-    return Object.values(ledger.evidence)
-      .slice(-6)
-      .map(
-        (item) =>
-          `${item.id} ${item.tool}${item.summary ? `: ${item.summary}` : ""}${item.ok ? "" : " (failed)"}`,
-      )
-      .join("\n");
-  };
-  const callVerifier = async (
+  // A settled ledger is history, not an active contract.
+  if (ledger && !hasActiveLedger(ledger)) ledger = undefined;
+
+  const callJudge = async (
     phaseGoal: { id: string; goal: string; guidance?: string },
-  ) => {
-    if (!verifierOn || !ledger || verifierCalls >= maxVerifierCalls) {
-      return { allow: true } as const;
-    }
-    verifierCalls += 1;
+    requirements: ProgressLedger["requirements"],
+    agentReason?: string,
+  ): Promise<JudgeVerdict | undefined> => {
+    if (!judge || !ledger || judgeCalls >= maxJudgeCalls) return undefined;
+    judgeCalls += 1;
     try {
-      const { verdict, usage } = await verifyAlignment({
-        llm: verifierLlm,
-        task: task.task,
-        phase: phaseGoal,
-        ledger,
-        recentEvidence: recentEvidence(),
-        reasoningEffort: "low",
+      const verdict = await judge.judge(
+        {
+          request: requestText,
+          phase: phaseGoal,
+          ledger,
+          evidenceSincePhase: [...phaseEvidence],
+          ...(agentReason ? { agentReason } : {}),
+        },
+        signal,
+      );
+      if (verdict.usage) budget.record(verdict.usage);
+      const wanted = new Set(requirements.map((item) => item.id));
+      const judged = verdict.requirements.filter((item) =>
+        wanted.has(item.id),
+      );
+      emit({
+        type: "phase_verdict",
+        phase: phaseGoal.id,
+        cleared: verdict.cleared,
+        confidence: verdict.confidence,
+        judge: judge.name,
+        requirements: judged.map((item) => ({
+          id: item.id,
+          status: item.status,
+          ...(item.probability !== undefined
+            ? { probability: item.probability }
+            : {}),
+        })),
       });
-      if (usage) budget.record(usage);
       return verdict;
     } catch (error) {
       emit({
         type: "advisory",
         kind: "verifier_failed",
-        detail:
-          error instanceof Error ? error.message : String(error),
+        detail: error instanceof Error ? error.message : String(error),
       });
-      return {
-        allow: verifierConfig.onError !== "block",
-        aligned: false,
-        justified: true,
-        reason: "verifier unavailable",
-        requiredAction: "none" as const,
-        confidence: 0,
-      };
-    }
-  };
-  if (verifierOn && ledger) {
-    completionGate = async (summaryText) => {
-      const structural = ledgerGate(ledger!, {
-        allowWaived: verifierConfig.allowWaived,
-      });
-      if (!structural.allow) {
+      if (verifierConfig.onError === "block") {
         return {
-          ok: false,
-          content: [
-            "Verification gate: required work is not complete.",
-            `open: ${structural.open.join(", ") || "none"}`,
-            `missingEvidence: ${structural.missingEvidence.join(", ") || "none"}`,
-            `failures: ${structural.failures.join(" | ") || "none"}`,
-            "Attach evidence to each requirement with update_ledger, resolve failures, and try again.",
-          ].join("\n"),
+          cleared: false,
+          requirements: requirements.map((item) => ({
+            id: item.id,
+            status: "unproven" as const,
+          })),
+          confidence: 0,
         };
       }
-      if (!verifierGates.has("finish")) {
-        verified = true;
-        return { ok: true, content: "" };
-      }
-      const verdict = await callVerifier({
-        id: "finish",
-        goal: "Deliver the task outcome with evidence.",
-      });
-      if (verdict.allow) {
-        verified = true;
-        return { ok: true, content: "" };
-      }
-      return {
-        ok: false,
-        content:
-          `Verification gate rejected completion: ${verdict.reason ?? "unsupported claim"}. ` +
-          `Required action: ${verdict.requiredAction ?? "gather_evidence"}. ` +
-          `Claim: ${summaryText.slice(0, 400)}`,
-      };
-    };
-  }
-  const currentRequest = userMessage(task.task, task.images);
-  const revivalOn = !!opts.revival;
-  const revivalWarnAt = revivalWarnPercent(
-    opts.revival ? opts.revival.warnAtPercent : undefined,
-  );
-  let revivalWarned = false;
-  let revivalRequest: RevivalRequest | undefined;
-  const phaseOn =
-    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
-  /**
-   * Stable blocks are the cacheable prefix; turn-scoped blocks are appended
-   * after the conversation. The ledger changes after every tool result, so it
-   * must never live in the system message.
-   */
-  const promptBlocks = (): PromptBlock[] => [
-    {
-      id: "agent",
-      text: strategy.systemPrompt({ task: task.task, context, summary }),
-      stability: "stable",
-    },
-    {
-      id: "phase-discipline",
-      text: phaseOn ? phaseDisciplineBlock(strategy.phases) : undefined,
-      stability: "stable",
-    },
-    {
-      id: "budget-revival",
-      text: revivalOn ? revivalBlock(revivalWarnAt) : undefined,
-      stability: "stable",
-    },
-    {
-      id: "ledger",
-      text: ledger
-        ? [
-            "## Runtime task state",
-            "This is authoritative state, not a new user request.",
-            renderLedger(ledger),
-            "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
-          ].join("\n\n")
-        : undefined,
-      stability: "turn",
-    },
-    {
-      id: "compaction",
-      text: compaction ? renderCompactionHandoff(compaction) : undefined,
-      stability: "turn",
-    },
-    {
-      id: "phase-state",
-      text: phase ? `Current phase: ${phase}` : undefined,
-      stability: "turn",
-    },
-  ];
-  const system = () => ({
-    role: "system" as const,
-    content: renderPromptBlocks(promptBlocks(), "stable"),
-  });
-  const turnState = () => renderPromptBlocks(promptBlocks(), "turn");
-  if (ledger) {
-    const updateLedger = defineTool(
+      return undefined;
+    }
+  };
+
+  const updateLedger = () => {
+    const tool = defineTool(
       {
         name: "update_ledger",
         description:
-          "Update the task contract. Use it after gathering evidence: link a tool result to a requirement, mark it verified, record an open failure, or set the next step. Never invent evidence ids.",
+          "Update the task contract. Link a tool result to a requirement with a claim, verify it, record an open failure, or set the next step. Never invent evidence ids.",
         parameters: {
           type: "object",
           properties: {
@@ -434,6 +355,7 @@ async function runOne(
               enum: [
                 "add_requirement",
                 "link_evidence",
+                "verify",
                 "set_status",
                 "set_next_step",
                 "add_failure",
@@ -442,8 +364,10 @@ async function runOne(
             },
             text: { type: "string" },
             required: { type: "boolean" },
+            phase: { type: "string" },
             requirementId: { type: "string" },
             evidenceId: { type: "string" },
+            claim: { type: "string" },
             status: {
               type: "string",
               enum: ["open", "in_progress", "verified", "blocked", "waived"],
@@ -461,7 +385,13 @@ async function runOne(
           if (!text) return { ok: false, content: "text is required" };
           const requirement = addRequirement(
             ledger!,
-            { text, required: input.required !== false },
+            {
+              text,
+              required: input.required !== false,
+              ...(typeof input.phase === "string" && input.phase
+                ? { phase: input.phase }
+                : {}),
+            },
             "agent",
           );
           return {
@@ -470,12 +400,38 @@ async function runOne(
           };
         }
         if (op === "link_evidence") {
+          const claim = String(input.claim ?? "").trim();
+          if (!claim) {
+            return {
+              ok: false,
+              content: "claim is required: explain why this evidence establishes the requirement",
+            };
+          }
           linkEvidence(
             ledger!,
             String(input.requirementId ?? ""),
             String(input.evidenceId ?? ""),
+            claim,
           );
           return { ok: true, content: "evidence linked" };
+        }
+        if (op === "verify") {
+          const claim = String(input.claim ?? "").trim();
+          if (!claim) {
+            return {
+              ok: false,
+              content: "claim is required: explain why this evidence establishes the requirement",
+            };
+          }
+          const requirementId = String(input.requirementId ?? "");
+          linkEvidence(
+            ledger!,
+            requirementId,
+            String(input.evidenceId ?? ""),
+            claim,
+          );
+          setRequirementStatus(ledger!, requirementId, "verified");
+          return { ok: true, content: "evidence linked and requirement verified" };
         }
         if (op === "set_status") {
           const status = String(input.status ?? "");
@@ -523,13 +479,181 @@ async function runOne(
       },
       { verb: "Updating the progress ledger" },
     );
-    available.set("update_ledger", updateLedger);
+    available.set("update_ledger", tool);
+    return tool;
+  };
+
+  const installCompletionGate = () => {
+    completionGate = async (summaryText, success) => {
+      const active = ledger!;
+      const structural = ledgerGate(active, {
+        allowWaived: verifierConfig.allowWaived,
+      });
+      if (!structural.allow) {
+        if (!success) {
+          // The agent explicitly reported a blocked/unsuccessful outcome. End
+          // honestly instead of forcing it into the stalled path.
+          for (const id of [...structural.open, ...structural.missingEvidence]) {
+            const requirement = active.requirements.find((item) => item.id === id);
+            if (requirement) {
+              const note = `${id}: ${requirement.text}`;
+              if (!active.openFailures.includes(note)) active.openFailures.push(note);
+            }
+          }
+          for (const failure of structural.failures) {
+            if (!active.openFailures.includes(failure)) {
+              active.openFailures.push(failure);
+            }
+          }
+          return { ok: true, content: "" };
+        }
+        return {
+          ok: false,
+          content: [
+            "Verification gate: required work is not complete.",
+            `open: ${structural.open.join(", ") || "none"}`,
+            `missingEvidence: ${structural.missingEvidence.join(", ") || "none"}`,
+            `failures: ${structural.failures.join(" | ") || "none"}`,
+            "Attach evidence to each requirement with update_ledger, resolve failures, and try again.",
+          ].join("\n"),
+        };
+      }
+      if (!success) return { ok: true, content: "" };
+      if (!verifierGates.has("finish")) {
+        verified = true;
+        return { ok: true, content: "" };
+      }
+      const required = active.requirements.filter(
+        (item) => item.required && item.status !== "superseded",
+      );
+      const verdict = await callJudge(
+        { id: "finish", goal: "Deliver the task outcome with evidence." },
+        required,
+        summaryText,
+      );
+      if (!verdict) {
+        verified = verifierConfig.onError !== "block";
+        return verified
+          ? { ok: true, content: "" }
+          : {
+              ok: false,
+              content:
+                "Verification gate unavailable and onError is block; retry the judge before finishing.",
+            };
+      }
+      const wanted = new Set(required.map((item) => item.id));
+      const unmet = verdict.requirements.filter(
+        (item) => wanted.has(item.id) && item.status !== "cleared",
+      );
+      if (verdict.cleared && unmet.length === 0) {
+        verified = true;
+        return { ok: true, content: "" };
+      }
+      const details = unmet.map((item) => {
+        const requirement = active.requirements.find((r) => r.id === item.id);
+        const claim = requirement?.evidenceIds
+          .map((id) => active.evidence[id]?.claim)
+          .find(Boolean);
+        const probability =
+          item.probability !== undefined
+            ? ` p=${item.probability.toFixed(2)}`
+            : "";
+        return `${item.id}${probability} ${item.status}: ${requirement?.text ?? "unknown requirement"}${claim ? `; claim: ${claim}` : ""}`;
+      });
+      return {
+        ok: false,
+        content:
+          `Verification gate rejected completion: ${verdict.rationale ?? "unsupported claim"}.\n` +
+          (details.length
+            ? `Unmet requirements:\n${details.join("\n")}`
+            : "The judge did not clear the contract."),
+      };
+    };
+  };
+
+  const attachLedger = (next: ProgressLedger) => {
+    ledger = next;
+    phaseRejections = 0;
+    phaseEvidence = [];
+    updateLedger();
+    installCompletionGate();
+  };
+  if (verifierOn && ledger) attachLedger(ledger);
+  else if (verifierOn && verifierConfig.create === "start") {
+    const compiled = await compileLedger({
+      llm: verifierConfig.llm ?? opts.llm,
+      taskId: contractTaskId,
+      source: requestText,
+      phases: strategy.phases,
+      reasoningEffort: "low",
+    });
+    if (compiled.usage) budget.record(compiled.usage);
+    attachLedger(compiled.ledger);
   }
+
+  const currentRequests = input.messages;
+  const revivalOn = !!opts.revival;
+  const revivalWarnAt = revivalWarnPercent(
+    opts.revival ? opts.revival.warnAtPercent : undefined,
+  );
+  let revivalWarned = false;
+  let revivalRequest: RevivalRequest | undefined;
+  const phaseOn =
+    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
+  /**
+   * Stable blocks are the cacheable prefix; turn-scoped blocks are appended
+   * after the conversation. The ledger changes after every tool result, so it
+   * must never live in the system message.
+   */
+  const promptBlocks = (): PromptBlock[] => [
+    {
+      id: "agent",
+      text: strategy.systemPrompt({ context, summary }),
+      stability: "stable",
+    },
+    {
+      id: "phase-discipline",
+      text: phaseOn ? phaseDisciplineBlock(strategy.phases) : undefined,
+      stability: "stable",
+    },
+    {
+      id: "budget-revival",
+      text: revivalOn ? revivalBlock(revivalWarnAt) : undefined,
+      stability: "stable",
+    },
+    {
+      id: "ledger",
+      text: ledger
+        ? [
+            "## Runtime task state",
+            "This is authoritative state, not a new user request.",
+            renderLedger(ledger),
+            "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
+          ].join("\n\n")
+        : undefined,
+      stability: "turn",
+    },
+    {
+      id: "compaction",
+      text: compaction ? renderCompactionHandoff(compaction) : undefined,
+      stability: "turn",
+    },
+    {
+      id: "phase-state",
+      text: phase ? `Current phase: ${phase}` : undefined,
+      stability: "turn",
+    },
+  ];
+  const system = () => ({
+    role: "system" as const,
+    content: renderPromptBlocks(promptBlocks(), "stable"),
+  });
+  const turnState = () => renderPromptBlocks(promptBlocks(), "turn");
 
   const messages: LLMMessage[] = [
     system(),
     ...conversationHistory(prior?.messages ?? []),
-    currentRequest,
+    ...currentRequests,
   ];
   const compact =
     opts.compaction === false
@@ -790,33 +914,91 @@ async function runOne(
               content: `Unknown phase. Available: ${strategy.phases.map((item) => item.id).join(", ")}.`,
             };
           const previous = phase;
-          if (
-            verifierOn &&
-            ledger &&
-            verifierGates.has("phase") &&
-            target.id !== previous
-          ) {
-            const verdict = await callVerifier(target);
-            if (!verdict.allow) {
-              emit({
-                type: "guardrail",
-                kind: "transition_rejected",
-                detail: `${previous} -> ${target.id}: ${verdict.reason}`,
-              });
-              return {
-                ok: false,
-                content: [
-                  `Phase transition rejected: ${verdict.reason}`,
-                  `Required action: ${verdict.requiredAction}`,
-                  "Gather the missing evidence or update the ledger, then transition again.",
-                ].join("\n"),
-              };
+          let forced = false;
+          if (target.id !== previous && ledger && verifierGates.has("phase")) {
+            const owned = ledger.requirements.filter(
+              (item) =>
+                item.required &&
+                item.phase === previous &&
+                item.status !== "verified" &&
+                item.status !== "waived" &&
+                item.status !== "superseded",
+            );
+            if (owned.length > 0) {
+              const outgoing =
+                strategy.phases.find((item) => item.id === previous) ?? {
+                  id: previous,
+                  goal: previous,
+                };
+              const verdict = await callJudge(
+                outgoing,
+                owned,
+                typeof input.reason === "string" ? input.reason : undefined,
+              );
+              const wanted = new Set(owned.map((item) => item.id));
+              const unmet = verdict
+                ? verdict.requirements.filter(
+                    (item) =>
+                      wanted.has(item.id) && item.status !== "cleared",
+                  )
+                : [];
+              if (verdict && (!verdict.cleared || unmet.length > 0)) {
+                phaseRejections += 1;
+                const details = unmet.map((item) => {
+                  const requirement = ledger!.requirements.find(
+                    (row) => row.id === item.id,
+                  );
+                  const claim = requirement?.evidenceIds
+                    .map((id) => ledger!.evidence[id]?.claim)
+                    .find(Boolean);
+                  const probability =
+                    item.probability !== undefined
+                      ? ` p=${item.probability.toFixed(2)}`
+                      : "";
+                  return `${item.id}${probability} ${item.status}: ${requirement?.text ?? "unknown requirement"}${claim ? `; claim: ${claim}` : ""}`;
+                });
+                const detail =
+                  `Phase ${previous} has unmet requirements.` +
+                  (details.length ? `\n${details.join("\n")}` : "");
+                emit({
+                  type: "guardrail",
+                  kind: "transition_rejected",
+                  detail: `${previous} -> ${target.id}: ${detail}`,
+                });
+                if (phaseRejections <= maxPhaseRejections) {
+                  return {
+                    ok: false,
+                    content: [
+                      `Phase transition rejected: ${previous} is not complete.`,
+                      ...(details.length ? details : ["The judge did not clear the phase."]),
+                      `Stay in ${previous}, finish the owned requirements, then transition again.`,
+                    ].join("\n"),
+                  };
+                }
+                for (const item of owned) {
+                  if (item.status !== "blocked" && item.status !== "verified") {
+                    setRequirementStatus(ledger!, item.id, "in_progress");
+                  }
+                }
+                forced = true;
+                emit({
+                  type: "guardrail",
+                  kind: "transition_rejected",
+                  detail: `forcing ${previous} -> ${target.id} after ${phaseRejections} rejection(s); requirements remain open and finish is still gated`,
+                });
+              }
             }
           }
           phase = target.id;
+          phaseRejections = 0;
+          phaseEvidence = [];
           pauseRequested =
             opts.pauseAfterPhase === previous && previous !== phase;
-          emit({ type: "phase_started", phase });
+          emit({
+            type: "phase_started",
+            phase,
+            ...(forced ? { via: "advance_forced" as const } : {}),
+          });
           return {
             ok: true,
             content: `Current approach: ${target.id} — ${target.goal}`,
@@ -883,6 +1065,139 @@ async function runOne(
           };
         },
         { verb: "Requesting budget for the remaining work" },
+      ),
+    );
+  }
+
+  if (verifierOn && opts.intrinsics?.task !== false) {
+    available.set(
+      "create_task",
+      defineTool(
+        {
+          name: "create_task",
+          description:
+            "Create the task contract for this turn when the user asked for real work. " +
+            "State a measurable goal and 1-12 independently checkable requirements, each assigned " +
+            "to one of the strategy's phases. Do not include a source field; the engine derives " +
+            "the authoritative request from the user's messages.",
+          parameters: {
+            type: "object",
+            properties: {
+              goal: { type: "string" },
+              requirements: {
+                type: "array",
+                minItems: 1,
+                maxItems: 12,
+                items: {
+                  type: "object",
+                  properties: {
+                    text: { type: "string" },
+                    required: { type: "boolean" },
+                    phase: {
+                      type: "string",
+                      enum: strategy.phases.map((item) => item.id),
+                    },
+                    sourceQuote: { type: "string" },
+                  },
+                  required: ["text", "phase"],
+                  additionalProperties: false,
+                },
+              },
+              nextStep: { type: "string" },
+            },
+            required: ["goal", "requirements"],
+            additionalProperties: false,
+          },
+        },
+        async (input) => {
+          if (ledger) {
+            return {
+              ok: false,
+              content:
+                "the contract is already active; use update_ledger to change its state",
+            };
+          }
+          const goal = String(input.goal ?? "").trim();
+          if (!goal) return { ok: false, content: "goal is required" };
+          const rows = Array.isArray(input.requirements)
+            ? input.requirements
+            : [];
+          if (rows.length < 1 || rows.length > 12) {
+            return {
+              ok: false,
+              content: "requirements must contain 1-12 items",
+            };
+          }
+          const phaseIds = new Set(strategy.phases.map((item) => item.id));
+          const requirements: Array<{
+            text: string;
+            required: boolean;
+            phase: string;
+            sourceQuote?: string;
+          }> = [];
+          for (const [index, row] of rows.entries()) {
+            if (!row || typeof row !== "object" || Array.isArray(row)) {
+              return {
+                ok: false,
+                content: `requirement ${index} must be an object`,
+              };
+            }
+            const entry = row as Record<string, unknown>;
+            const text = String(entry.text ?? "").trim();
+            const phase = String(entry.phase ?? "");
+            if (!text) {
+              return { ok: false, content: `requirement ${index} needs text` };
+            }
+            if (!phaseIds.has(phase)) {
+              return {
+                ok: false,
+                content: `requirement ${index} has unknown phase "${phase}"`,
+              };
+            }
+            const sourceQuote =
+              typeof entry.sourceQuote === "string"
+                ? entry.sourceQuote
+                : undefined;
+            if (sourceQuote && !requestText.includes(sourceQuote)) {
+              return {
+                ok: false,
+                content: `requirement ${index} sourceQuote is not in the user's request`,
+              };
+            }
+            requirements.push({
+              text,
+              required: entry.required !== false,
+              phase,
+              ...(sourceQuote ? { sourceQuote } : {}),
+            });
+          }
+          const next = createLedger({
+            taskId: contractTaskId,
+            source: { kind: "user", text: requestText },
+            goal,
+            requirements: requirements.map((item) => ({
+              ...item,
+              origin: "agent" as const,
+            })),
+          });
+          if (typeof input.nextStep === "string" && input.nextStep.trim()) {
+            next.nextStep = input.nextStep.trim();
+          }
+          attachLedger(next);
+          emit({ type: "task_created", ledger: next });
+          return {
+            ok: true,
+            content: [
+              `Contract created: ${next.goal}`,
+              ...next.requirements.map(
+                (item) => `${item.id}: ${item.text} (phase ${item.phase ?? "any"})`,
+              ),
+              "Use update_ledger to link evidence with a claim and verify each requirement.",
+            ].join("\n"),
+            meta: { ledger: next },
+          };
+        },
+        { verb: "Creating the task contract" },
       ),
     );
   }
@@ -1108,7 +1423,8 @@ async function runOne(
   }
   emit({
     type: "run_started",
-    task: task.task,
+    text: requestText,
+    ...(input.messages.length ? { messages: input.messages } : {}),
     phases: strategy.phases.map((item) => item.id),
   });
   if (chain.delivered?.length)
@@ -1313,7 +1629,7 @@ async function runOne(
             0,
             messages.length,
             system(),
-            ...(tail.includes(currentRequest) ? [] : [currentRequest]),
+            ...currentRequests.filter((message) => !tail.includes(message)),
             foldNote,
             ...tail,
           );
@@ -1554,13 +1870,14 @@ async function runOne(
           ) {
             return;
           }
-          recordEvidence(ledger, {
+          const evidenceRef = recordEvidence(ledger, {
             tool: call.name,
             ref: `call:${call.id}`,
             ok: result.ok,
             summary: result.content.replace(/\s+/g, " ").slice(0, 500),
             ...(result.meta ? { meta: result.meta } : {}),
           });
+          phaseEvidence.push(evidenceRef);
         },
       });
       runaway = outcome.runaway;
@@ -1717,57 +2034,7 @@ function usageDelta(
 /** A required obligation still needs work, or an open failure blocks finish. */
 function hasActiveLedger(ledger: ProgressLedger | undefined): boolean {
   if (!ledger) return false;
-  const open = ledger.requirements.some(
-    (item) =>
-      item.required &&
-      item.status !== "verified" &&
-      item.status !== "waived" &&
-      item.status !== "superseded",
-  );
-  return open || ledger.openFailures.length > 0;
-}
-
-async function priorLedgerFor(
-  opts: EngineOptions,
-  verifierOn: boolean,
-): Promise<ProgressLedger | undefined> {
-  if (!verifierOn) return undefined;
-  if (opts.ledger) return opts.ledger;
-  if (!opts.thread) return undefined;
-  return (await opts.thread.store.load(opts.thread.id))?.ledger;
-}
-
-/**
- * Resolve the route for one run. `intent: "auto"` is ledger-aware: an active
- * task contract outranks text heuristics. Explicit chat/clarify/task still
- * wins, and turns without verifier mode keep their existing behavior.
- */
-function routeTurn(
-  task: RunTask,
-  opts: EngineOptions,
-  priorLedger: ProgressLedger | undefined,
-): EngineOptions {
-  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  if (!verifierOn) return { ...opts, agent: opts.agent ?? chatAgent };
-  const explicit = opts.intent ?? "auto";
-  const intent =
-    explicit === "auto" && hasActiveLedger(priorLedger)
-      ? "task"
-      : resolveTurnIntent(task.task, explicit);
-  if (intent !== "task") {
-    return {
-      ...opts,
-      agent: chatAgent,
-      verifier: false,
-      intent: "chat",
-      ledger: undefined,
-    };
-  }
-  return {
-    ...opts,
-    agent: opts.agent ?? codingAgent,
-    intent: "task",
-  };
+  return !ledgerGate(ledger).allow;
 }
 
 /**
@@ -1781,7 +2048,7 @@ function routeTurn(
  * the last run's result with every run summarized on `.runs`.
  */
 async function runChain(
-  task: RunTask,
+  input: RunInput,
   opts: EngineOptions,
 ): Promise<AgentResult> {
   const inbox = opts.inbox!;
@@ -1804,22 +2071,14 @@ async function runChain(
   };
   let stepsBefore = 0;
   let jobs: BackgroundJob[] | undefined;
-  let current: RunTask = task;
+  let current: RunInput = input;
   let delivered: InboxMessage[] | undefined;
   let claimed: string[] = [];
   let result: AgentResult | undefined;
 
   for (;;) {
     const budget = seededBudget(opts, spend);
-    const routed = routeTurn(
-      current,
-      opts,
-      await priorLedgerFor(
-        opts,
-        opts.verifier !== undefined && opts.verifier !== false,
-      ),
-    );
-    result = await runOne(current, routed, {
+    result = await runOne(current, opts, {
       budget,
       stepsBefore,
       jobs,
@@ -1882,7 +2141,7 @@ async function runChain(
 
     claimed = batch.map((message) => message.id);
     delivered = batch;
-    current = inbox.render ? inbox.render(batch) : renderInboxTask(batch);
+    current = inbox.render ? inbox.render(batch) : renderInboxTurn(batch);
   }
 
   // The zero-progress guard fired. Report the last run as it stands; `.runs`
@@ -1891,11 +2150,9 @@ async function runChain(
 }
 
 export async function runAgent(
-  task: RunTask,
+  input: RunInput,
   opts: EngineOptions,
 ): Promise<AgentResult> {
-  if (opts.inbox) return runChain(task, opts);
-  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  const priorLedger = await priorLedgerFor(opts, verifierOn);
-  return runOne(task, routeTurn(task, opts, priorLedger));
+  if (opts.inbox) return runChain(input, opts);
+  return runOne(input, opts);
 }

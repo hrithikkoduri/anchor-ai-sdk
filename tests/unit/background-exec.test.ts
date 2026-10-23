@@ -10,6 +10,7 @@ import type {
   LLMRequest,
   LLMResponse,
 } from "../../src/llm/types.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const completed = (code = 0, stdout = "done\n"): ExecResult => ({
   exitCode: code,
@@ -153,7 +154,7 @@ describe("engine background delivery", () => {
     );
 
     const outcome = await runAgent(
-      { task: "run the suite" },
+      userTurn("run the suite"),
       {
         llm,
         agent: chatAgent,
@@ -233,7 +234,7 @@ describe("engine background delivery", () => {
     );
 
     const outcome = await runAgent(
-      { task: "run the suite" },
+      userTurn("run the suite"),
       { llm, agent: chatAgent, sandbox, tools: [bg] },
     );
 
@@ -282,7 +283,7 @@ describe("engine background delivery", () => {
     );
 
     const outcome = await runAgent(
-      { task: "resume" },
+      userTurn("resume"),
       {
         llm,
         agent: chatAgent,
@@ -342,7 +343,7 @@ describe("engine background delivery", () => {
     );
     // No sandbox: nothing can poll, so the run must not hang.
     const outcome = await runAgent(
-      { task: "start it" },
+      userTurn("start it"),
       { llm, agent: chatAgent, tools: [bg] },
     );
     expect(outcome.ok).toBe(true);
@@ -391,7 +392,7 @@ describe("engine background delivery", () => {
       }),
     );
     const outcome = await runAgent(
-      { task: "start the repro" },
+      userTurn("start the repro"),
       {
         llm,
         agent: chatAgent,

@@ -10,6 +10,7 @@ import { chatAgent } from "../../src/agents/chat/index.js";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 /** The per-call output cap: bounded by default, overridable, and loud when hit. */
 describe("max output tokens", () => {
@@ -30,21 +31,21 @@ describe("max output tokens", () => {
 
   it("sends the 16k default on every call", async () => {
     const llm = scripted(ok());
-    await runAgent({ task: "Explain the code" }, { llm, sandbox, agent: codingAgent });
+    await runAgent(userTurn("Explain the code"), { llm, sandbox, agent: codingAgent });
     expect(DEFAULT_MAX_OUTPUT_TOKENS).toBe(16_000);
     expect(llm.seen[0]!.maxTokens).toBe(16_000);
   });
 
   it("applies the same default to a non-coding agent", async () => {
     const llm = scripted(ok("Understood."));
-    await runAgent({ task: "Say hi" }, { llm, agent: chatAgent });
+    await runAgent(userTurn("Say hi"), { llm, agent: chatAgent });
     expect(llm.seen[0]!.maxTokens).toBe(16_000);
   });
 
   it("lets an explicit engine option win over the agent's suggestion", async () => {
     const llm = scripted(ok());
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -58,7 +59,7 @@ describe("max output tokens", () => {
   it("honours the coding agent's own setting", async () => {
     const llm = scripted(ok());
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: createCodingAgent({ maxOutputTokens: 4_000 }) },
     );
     expect(llm.seen[0]!.maxTokens).toBe(4_000);
@@ -67,7 +68,7 @@ describe("max output tokens", () => {
   it("leaves output unbounded when the cap is false", async () => {
     const llm = scripted(ok());
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, maxOutputTokens: false },
     );
     expect(llm.seen[0]!.maxTokens).toBeUndefined();
@@ -80,7 +81,7 @@ describe("max output tokens", () => {
       { text: "still writing the same essay", finishReason: "length" },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, maxOutputTokens: 1_000, onEvent: (e) => events.push(e) },
     );
     const truncated = events.find(
@@ -114,7 +115,7 @@ describe("max output tokens", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, maxOutputTokens: 1_000 },
     );
     expect(result.ok).toBe(true);
@@ -125,7 +126,7 @@ describe("max output tokens", () => {
   it("still stalls immediately when the prose checkpoint is off", async () => {
     const llm = scripted([{ text: "cut off", finishReason: "length" }]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -148,7 +149,7 @@ describe("max output tokens", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, maxOutputTokens: 1_000 },
     );
     expect(result.steps).toBe(2);
@@ -159,7 +160,7 @@ describe("max output tokens", () => {
     const events: AgentEvent[] = [];
     const llm = scripted([{ text: "Done.", finishReason: "stop" }]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     expect(
@@ -181,7 +182,7 @@ describe("max output tokens", () => {
     for (const opts of bad) {
       await expect(
         runAgent(
-          { task: "Explain the code" },
+          userTurn("Explain the code"),
           { llm: scripted(ok()), sandbox, agent: codingAgent, ...opts },
         ),
       ).rejects.toThrow(/must be a positive number or false/);
@@ -189,7 +190,7 @@ describe("max output tokens", () => {
     // The switch still works.
     const llm = scripted(ok());
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, maxOutputTokens: false },
     );
     expect(llm.seen[0]!.maxTokens).toBeUndefined();

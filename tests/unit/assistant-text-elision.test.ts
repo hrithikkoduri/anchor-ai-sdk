@@ -14,6 +14,7 @@ import { chatAgent } from "../../src/agents/chat/index.js";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 /**
  * Assistant-text elision (#77). The transcript stays whole; the model's view
@@ -49,7 +50,7 @@ describe("assistant text elision", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
 
@@ -93,7 +94,7 @@ describe("assistant text elision", () => {
       { text: "Done." },
     ]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     const replayed = llm.seen[1]!.messages.find(
@@ -113,7 +114,7 @@ describe("assistant text elision", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     const sent = llm.seen[1]!.messages.find(
@@ -142,7 +143,7 @@ describe("assistant text elision", () => {
       { text: "d".repeat(15_000), tools: [readTool], finishReason: "length" },
       { text: "Done." },
     ]);
-    await runAgent({ task: "Explain the code" }, { llm, sandbox, agent: codingAgent });
+    await runAgent(userTurn("Explain the code"), { llm, sandbox, agent: codingAgent });
     const sent = llm.seen[1]!.messages.find(
       (m) => m.role === "assistant" && m.tool_calls?.length,
     )!;
@@ -155,7 +156,7 @@ describe("assistant text elision", () => {
       { text: "Done." },
     ]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, truncatedReplyChars: 3_000 },
     );
     const sent = llm.seen[1]!.messages.find(
@@ -171,7 +172,7 @@ describe("assistant text elision", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm: llmOff,
         sandbox,
@@ -195,7 +196,7 @@ describe("assistant text elision", () => {
       { text: "Done." },
     ]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -213,7 +214,7 @@ describe("assistant text elision", () => {
     const events: AgentEvent[] = [];
     const llm = scripted([{ text: huge }]);
     await runAgent(
-      { task: "Say hi" },
+      userTurn("Say hi"),
       { llm, agent: chatAgent, onEvent: (e) => events.push(e) },
     );
     const advisory = events.find(

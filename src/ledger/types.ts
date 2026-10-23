@@ -30,6 +30,8 @@ export interface LedgerRequirement {
   text: string;
   /** Required for completion; optional items never block the gate. */
   required: boolean;
+  /** Phase that owns this requirement. */
+  phase?: string;
   status: RequirementStatus;
   evidenceIds: string[];
   /** User/source requirements are locked; agents may add, never delete. */
@@ -53,6 +55,8 @@ export interface LedgerEvidenceRef {
   capturedAt: string;
   /** Short, human-readable summary; never the full output. */
   summary?: string;
+  /** Why this evidence establishes the linked requirement (agent-authored). */
+  claim?: string;
   meta?: Record<string, unknown>;
 }
 
@@ -79,6 +83,7 @@ export interface CreateLedgerInput {
     required?: boolean;
     origin?: LedgerRequirement["origin"];
     sourceQuote?: string;
+    phase?: string;
   }>;
   now?: string;
 }

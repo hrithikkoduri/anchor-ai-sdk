@@ -15,6 +15,7 @@ import { MemoryThreadStore } from "../../src/engine/thread.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import { codingAgent } from "../../src/agents/coding/index.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
+import { userTurn } from "../../src/engine/types.js";
 
 type Scripted = {
   text?: string;
@@ -102,7 +103,7 @@ describe("consumer-shaped handoffs", () => {
     const store = new MemoryThreadStore();
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "fix negatives" },
+      userTurn("fix negatives"),
       {
         llm: scripted([
           ...FIX_STEPS,
@@ -144,7 +145,7 @@ describe("consumer-shaped handoffs", () => {
     await sandbox.start();
     const store = new MemoryThreadStore();
     const result = await runAgent(
-      { task: "fix negatives" },
+      userTurn("fix negatives"),
       {
         llm: scripted([
           ...FIX_STEPS,
@@ -173,7 +174,7 @@ describe("consumer-shaped handoffs", () => {
     await sandbox.start();
     const store = new MemoryThreadStore();
     const result = await runAgent(
-      { task: "fix negatives" },
+      userTurn("fix negatives"),
       {
         llm: scripted([
           ...FIX_STEPS,
@@ -207,7 +208,7 @@ describe("consumer-shaped handoffs", () => {
     await sandbox.start();
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "fix negatives" },
+      userTurn("fix negatives"),
       {
         llm: scripted([
           ...FIX_STEPS,

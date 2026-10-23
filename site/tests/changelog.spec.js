@@ -44,7 +44,7 @@ for (const width of [320, 375, 768, 1024, 1440]) {
 
 test("new feature docs have deep links and honest provider limits", async ({ page }) => {
   await page.goto("/docs.html#verification");
-  await expect(page.getByRole("heading", { name: "Ledger & verification", exact: true })).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "Task contracts & the judge", exact: true })).toBeInViewport();
   for (const id of [
     "verification", "structured-output", "operations",
     "process-streams", "image-publishing", "lsp", "images", "preview-ports",

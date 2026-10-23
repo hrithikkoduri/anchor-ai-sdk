@@ -7,8 +7,9 @@ import { runAgent } from "./engine/loop.js";
 import type {
   AgentResult,
   EngineOptions,
-  RunTask,
+  RunInput,
 } from "./engine/types.js";
+import { userTurn } from "./engine/types.js";
 import type { Agent } from "./agents/types.js";
 import type { LLMClient } from "./llm/types.js";
 import type { Sandbox } from "./sandbox/types.js";
@@ -45,7 +46,7 @@ export interface AnchorDoctor {
 
 export interface Anchor {
   run(
-    task: RunTask | string,
+    task: RunInput | string,
     overrides?: Partial<EngineOptions>,
   ): Promise<AgentResult>;
   /** Cheap configuration/connectivity check; does not start a sandbox. */
@@ -55,10 +56,10 @@ export interface Anchor {
 export function createAnchor(options: CreateAnchorOptions): Anchor {
   const defaults = options.defaults ?? {};
   const run = async (
-    task: RunTask | string,
+    task: RunInput | string,
     overrides: Partial<EngineOptions> = {},
   ): Promise<AgentResult> =>
-    runAgent(typeof task === "string" ? { task } : task, {
+    runAgent(typeof task === "string" ? userTurn(task) : task, {
       ...defaults,
       llm: options.llm,
       ...(options.agent ? { agent: options.agent } : {}),

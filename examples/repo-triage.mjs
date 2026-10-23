@@ -15,6 +15,7 @@ import {
   JsonlTrace,
   llmFromCatalog,
   runAgent,
+  userTurn,
 } from "anchor-ai-sdk";
 
 const target = process.argv[2] ?? "README.md";
@@ -77,7 +78,7 @@ const { llm } = await llmFromCatalog({
 const trace = new JsonlTrace("./triage-trace.jsonl");
 
 const result = await runAgent(
-  { task: `Analyze ${target}: what is it about, per the word counts?` },
+  userTurn(`Analyze ${target}: what is it about, per the word counts?`),
   {
     llm,
     strategy: triageStrategy,

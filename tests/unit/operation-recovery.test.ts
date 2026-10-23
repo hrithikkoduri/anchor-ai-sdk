@@ -16,6 +16,7 @@ import {
 import { MemoryThreadStore } from "../../src/engine/thread.js";
 import { defineTool } from "../../src/tools/types.js";
 import { call, scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const strategy: AgentStrategy = {
   name: "test",
@@ -60,7 +61,7 @@ describe("external effect recovery", () => {
     ]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -125,7 +126,7 @@ describe("external effect recovery", () => {
     const llm = scripted([]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -177,7 +178,7 @@ describe("external effect recovery", () => {
     const llm = scripted([{ text: "Finished." }]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -218,7 +219,7 @@ describe("external effect recovery", () => {
     const llm = scripted([{ text: "Finished." }]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -262,7 +263,7 @@ describe("external effect recovery", () => {
     ]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -299,7 +300,7 @@ describe("external effect recovery", () => {
     ]);
 
     const result = await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -347,7 +348,7 @@ describe("external effect recovery", () => {
     ]);
 
     await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -384,7 +385,7 @@ describe("external effect recovery", () => {
     ]);
 
     await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -423,7 +424,7 @@ describe("external effect recovery", () => {
     );
 
     await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,
@@ -474,7 +475,7 @@ describe("external effect recovery", () => {
     ]);
 
     await runAgent(
-      { task: "write it" },
+      userTurn("write it"),
       {
         llm,
         strategy,

@@ -6,6 +6,7 @@ import { codingPhases } from "../../src/agents/coding/phases.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import { call, scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const strategy: AgentStrategy = {
   name: "phased",
@@ -17,7 +18,7 @@ describe("agent-controlled approach phases", () => {
   it("can skip directly to respond and conclude without tests or force flags", async () => {
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "Explain" },
+      userTurn("Explain"),
       {
         llm: scripted([
           call("set_phase", {
@@ -41,7 +42,7 @@ describe("agent-controlled approach phases", () => {
 
   it("can revisit an earlier phase when new evidence changes the approach", async () => {
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         strategy,
         llm: scripted([
@@ -59,7 +60,7 @@ describe("agent-controlled approach phases", () => {
 
   it("an invalid phase label is a tool error, not an obligation to stay in a loop", async () => {
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         strategy,
         llm: scripted([
@@ -75,7 +76,7 @@ describe("agent-controlled approach phases", () => {
   it("phase reporting can be disabled without changing natural completion", async () => {
     const llm = scripted([{ text: "Answer." }]);
     await runAgent(
-      { task: "Explain" },
+      userTurn("Explain"),
       { strategy, llm, intrinsics: { phase: false } },
     );
     expect(
@@ -86,7 +87,7 @@ describe("agent-controlled approach phases", () => {
   it("can pause at a caller-requested phase boundary and resume with real conversation", async () => {
     const store = new MemoryThreadStore();
     const first = await runAgent(
-      { task: "Inspect before editing" },
+      userTurn("Inspect before editing"),
       {
         strategy,
         thread: { store, id: "t" },
@@ -98,7 +99,7 @@ describe("agent-controlled approach phases", () => {
     expect((await store.load("t"))!.phase).toBe("act");
     const llm = scripted([{ text: "Reviewed, no changes needed." }]);
     const second = await runAgent(
-      { task: "Actually review only" },
+      userTurn("Actually review only"),
       { strategy, thread: { store, id: "t" }, llm },
     );
     expect(second.phase).toBe("act");

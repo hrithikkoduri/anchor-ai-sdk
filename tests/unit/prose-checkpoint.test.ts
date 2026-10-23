@@ -8,6 +8,7 @@ import { codingAgent } from "../../src/agents/coding/index.js";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 /**
  * #78 — a prose reply that answers an engine nudge is a checkpoint, not
@@ -62,7 +63,7 @@ describe("prose checkpoint", () => {
       { text: "Now fixed.", tools: [finishTool] },
     ]);
     const result = await runAgent(
-      { task: "Fix the bug" },
+      userTurn("Fix the bug"),
       {
         llm,
         sandbox,
@@ -94,7 +95,7 @@ describe("prose checkpoint", () => {
       { text: "Nothing needed changing." },
     ]);
     const result = await runAgent(
-      { task: "Check the code" },
+      userTurn("Check the code"),
       {
         llm,
         sandbox,
@@ -119,7 +120,7 @@ describe("prose checkpoint", () => {
       { text: "Here is what I found." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
 
@@ -132,7 +133,7 @@ describe("prose checkpoint", () => {
     const events: AgentEvent[] = [];
     const llm = scripted([{ text: "The answer is 42." }]);
     const result = await runAgent(
-      { task: "What is the answer?" },
+      userTurn("What is the answer?"),
       {
         llm,
         sandbox,
@@ -156,7 +157,7 @@ describe("prose checkpoint", () => {
       { text: "Here is what I found." },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -182,7 +183,7 @@ describe("prose checkpoint", () => {
       { text: "Status: mid-fix." },
     ]);
     const result = await runAgent(
-      { task: "Fix the bug" },
+      userTurn("Fix the bug"),
       {
         llm,
         sandbox,
@@ -204,7 +205,7 @@ describe("prose checkpoint", () => {
       { text: "Done.", tools: [finishTool] },
     ]);
     const result = await runAgent(
-      { task: "Fix the bug" },
+      userTurn("Fix the bug"),
       {
         llm,
         sandbox,
@@ -226,7 +227,7 @@ describe("prose checkpoint", () => {
       { text: "cut off again", finishReason: "length" },
     ]);
     const result = await runAgent(
-      { task: "Fix the bug" },
+      userTurn("Fix the bug"),
       {
         llm,
         sandbox,

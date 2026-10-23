@@ -60,7 +60,7 @@ const { llm, compaction } = await llmFromCatalog({
 });
 
 const result = await runAgent(
-  { task: "Explain exponential backoff in plain English" },
+  { messages: [{ role: "user", content: "Explain exponential backoff in plain English" }] },
   { llm, compaction, agent: chatAgent },
 );
 
@@ -77,13 +77,15 @@ No sandbox is needed for this chat example. Model calls may incur cost.
 pass its returned `compaction` settings to the engine as shown. Catalog lookup is
 best-effort; configure overrides and fallbacks for endpoints without this metadata.
 
-## Task verification
+## Task contracts and the judge
 
-For tasks that need evidence before completion, enable the opt-in verifier:
+One agent handles every turn. There is no chat/coding split and no text-based
+intent routing. Enable verification and the agent can create a contract itself
+when the request is real work:
 
 ```ts
 const result = await runAgent(
-  { task: "Investigate where auth is refreshed" },
+  { messages: [{ role: "user", content: "Investigate where auth is refreshed" }] },
   {
     llm,
     sandbox,
@@ -93,23 +95,44 @@ const result = await runAgent(
 );
 ```
 
-The SDK owns the ledger, intent routing, evidence capture, and phase/finish
-checks. The consumer supplies only the normal `ThreadStore` (the ledger is an
-optional field on `StoredThread`) and the model. Greetings and other chat turns
-create no ledger and make no verifier call. A separate cheap verifier model is
-optional:
+The `create_task` intrinsic is available when `verifier` is enabled and no
+contract is active. The agent supplies a goal and 1–12 requirements, each owned
+by one of the strategy's phases. The engine derives the authoritative request
+text from the user messages; the agent cannot supply or rewrite the standard it
+is judged against. A turn without `create_task` is an ordinary conversation with
+the same tools and no ledger or completion gate.
+
+`update_ledger` links evidence with a required claim. `op: "verify"` links and
+marks a requirement verified in one call. Phase transitions verify the outgoing
+phase; a rejection names each unmet requirement and its probability. After the
+configured rejection limit the transition is forced, but the requirement stays
+open and still blocks `finish`.
+
+The judge is a seam, not an LLM call hidden inside the engine:
 
 ```ts
+import { jevJudge, llmJudge } from "anchor-ai-sdk";
+
 verifier: {
-  llm: cheapLlm,
+  create: "agent",                 // or "start" to compile before the first call
+  judge: llmJudge(cheapLlm),      // prose judge; per-requirement verdicts
+  // judge: jevJudge({ apiKey, thresholds: { cleared: 0.8, rejected: 0.5 } }),
   gates: ["phase", "finish"],
-  allowWaived: true,
+  maxCallsPerTask: 8,
+  maxRejectionsPerPhase: 3,
+  onError: "allow",
 }
 ```
 
-`finish` is rejected while a required ledger item is open or lacks linked
-evidence; the agent loops with the missing-evidence feedback. Compiler and
-verifier token usage is counted against the run budget.
+`llmJudge` asks for per-requirement `cleared | insufficient | unproven`
+verdicts. `jevJudge` sends binary `noul` questions to TypeSafe's typed decision
+model and maps calibrated probabilities to the same shape; it is not an
+`LLMClient`. A prose-only final response is gated like `finish`. `finish({
+success: false })` ends honestly with `ok: false` and records open requirements
+as failures instead of looping into `stalled`.
+
+Compile/verifier usage counts against the run budget. `compileLedger` remains
+exported; `create: "start"` is its only path into a run.
 
 ## One sandbox interface
 
@@ -221,7 +244,7 @@ const sandbox = provider.create({
 try {
   await sandbox.start();
   const result = await runAgent(
-    { task: "Run the tests and report the results" },
+    { messages: [{ role: "user", content: "Run the tests and report the results" }] },
     { llm, compaction, agent: codingAgent, sandbox },
   );
   console.log(result.summary, result.reason, result.evidence);
@@ -321,7 +344,7 @@ preset, or `pyright` for Python. Search and file reads remain the fallback. See
 Agent       = name + strategy + tools
 Strategy    = system prompt + phases + optional context preparation
 Tool        = model-visible JSON Schema + your handler
-runAgent    = task + agent + model + optional sandbox + runtime settings
+runAgent    = messages + agent + model + optional sandbox + runtime settings
 ```
 
 Use `chatAgent` or `codingAgent`, compose a bundle, or pass `strategy` and `tools`
@@ -369,7 +392,7 @@ const policyAgent = {
 };
 
 const answer = await runAgent(
-  { task: "Can I get a refund after 20 days?" },
+  { messages: [{ role: "user", content: "Can I get a refund after 20 days?" }] },
   { llm, compaction, agent: policyAgent },
 );
 console.log(answer.summary);
@@ -405,27 +428,32 @@ Validate inputs and enforce permissions in your implementation.
 Runtime options for a model and started sandbox configured by your host:
 
 ```js
-import { JsonlTrace } from "anchor-ai-sdk";
+import { JsonlTrace, userTurn } from "anchor-ai-sdk";
 import { randomUUID } from "node:crypto";
 
 const tracePath = "./traces/" + randomUUID() + ".ndjson";
 
-const result = await runAgent({ task: "Investigate the failing test" }, {
-  llm, sandbox, agent: codingAgent,
-  budgets: { maxSteps: 60, maxUsd: 3 },
-  compaction: { maxEstimatedTokens: 60_000, keepRecentTokens: 15_000 },
-  guardrails: {
-    repeatedToolCallLimit: 3,
-    toolOnlyNudgeLimit: 8,
-    verboseTurnLimit: 8_000,
-    proseCheckpoint: true,
+const result = await runAgent(
+  { messages: [{ role: "user", content: "Investigate the failing test" }] },
+  {
+    llm,
+    sandbox,
+    agent: codingAgent,
+    budgets: { maxSteps: 60, maxUsd: 3 },
+    compaction: { maxEstimatedTokens: 60_000, keepRecentTokens: 15_000 },
+    guardrails: {
+      repeatedToolCallLimit: 3,
+      toolOnlyNudgeLimit: 8,
+      verboseTurnLimit: 8_000,
+      proseCheckpoint: true,
+    },
+    maxOutputTokens: 16_000,
+    traceSinks: [new JsonlTrace(tracePath)],
+    onEvent(event) {
+      if (event.type === "llm_text_delta") process.stdout.write(event.text);
+    },
   },
-  maxOutputTokens: 16_000,
-  traceSinks: [new JsonlTrace(tracePath)],
-  onEvent(event) {
-    if (event.type === "llm_text_delta") process.stdout.write(event.text);
-  },
-});
+);
 ```
 
 Run usage is checked between calls and can overshoot a budget. Output limits are
@@ -454,6 +482,8 @@ the workspace declares an effect; the engine then records the intent before the
 call and settles it after:
 
 ```js
+import { defineTool, userTurn } from "anchor-ai-sdk";
+
 const createIssue = defineTool({ name: "create_issue", /* ... */ }, async (input, ctx) => {
   const issue = await github.createIssue(input, {
     idempotencyKey: ctx.operationId, // stable across retries
@@ -471,7 +501,7 @@ const createIssue = defineTool({ name: "create_issue", /* ... */ }, async (input
   },
 });
 
-await runAgent(task, {
+await runAgent(userTurn("Investigate the failing test"), {
   llm, agent, sandbox,
   operations: { store }, // a durable table in production
 });

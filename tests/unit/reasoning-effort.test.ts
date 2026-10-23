@@ -3,6 +3,7 @@ import { runAgent } from "../../src/engine/loop.js";
 import type { AgentStrategy } from "../../src/engine/strategy.js";
 import type { Agent } from "../../src/agents/types.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const strategy: AgentStrategy = {
   name: "test",
@@ -14,7 +15,7 @@ describe("reasoning effort", () => {
   it("travels from EngineOptions to the model request", async () => {
     const llm = scripted([{ text: "done" }]);
     await runAgent(
-      { task: "say done" },
+      userTurn("say done"),
       { llm, strategy, reasoningEffort: "high" },
     );
     expect(llm.seen[0]?.reasoningEffort).toBe("high");
@@ -28,12 +29,12 @@ describe("reasoning effort", () => {
       reasoningEffort: "low",
     };
     const fromBundle = scripted([{ text: "done" }]);
-    await runAgent({ task: "say done" }, { llm: fromBundle, agent });
+    await runAgent(userTurn("say done"), { llm: fromBundle, agent });
     expect(fromBundle.seen[0]?.reasoningEffort).toBe("low");
 
     const overridden = scripted([{ text: "done" }]);
     await runAgent(
-      { task: "say done" },
+      userTurn("say done"),
       { llm: overridden, agent, reasoningEffort: "xhigh" },
     );
     expect(overridden.seen[0]?.reasoningEffort).toBe("xhigh");

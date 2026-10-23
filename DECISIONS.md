@@ -461,6 +461,36 @@ not call it as ceremony" framing, which read as permission to skip, is
 gone. Small wording, real consequence: the timeline reports the actual
 approach instead of a constant.
 
+## Decision #67: contracts are created by the agent; one agent, no modes; the judge is a seam
+
+A clear work request in Sailor — "implement Daytona support in the Anchor SDK" —
+was routed to `agent = "chat"`, answered with "I can do this, but not from here",
+and never created work. The run had three stacks of policy answering one
+question: *does this turn get a contract?* Sailor routed by event provenance,
+`agent = "chat"` replaced tools with read-only stubs, and Anchor's verifier
+regex-routed the text and compiled a ledger at run start for every turn,
+including greetings. The model was not at fault.
+
+The question is deleted. There is one agent. `runAgent` takes a `RunInput`
+message delta, not a task string. A turn without `create_task` is a normal
+conversation with the same tools and no ledger or finish gate. The agent creates
+the contract mid-run; the engine derives the authoritative request text from the
+user messages and validates phases/source quotes. Requirements own a phase, so
+`set_phase` verifies the outgoing phase. Evidence must carry an agent-authored
+claim; `verify` links and verifies in one call.
+
+The verifier is now a `Judge` seam. `llmJudge` is the prose adapter; `jevJudge`
+is TypeSafe's typed `noul` decision model. Both return per-requirement verdicts,
+never one global allow. `finish({ success: false })` is an honest blocked exit:
+the gate records open requirements as failures and returns `ok: false` rather
+than looping into `stalled`.
+
+`compileLedger` remains exported; `VerifierConfig.create: "start"` is its only
+path into a run. No routing, intent, mode profiles, or tool stubs remain.
+
+Regressions: `tests/unit/engine-verifier.test.ts`, `tests/unit/judge.test.ts`,
+`tests/unit/inbox.test.ts`, and the migrated `RunInput` suite.
+
 ## Decision #68: a lost exec receipt fails one command, never the sandbox
 
 A Heyo guest job can lose its completion receipt (a detached Chromium/Playwright

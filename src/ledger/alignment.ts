@@ -29,7 +29,7 @@ export interface AlignmentVerdict {
 
 export interface VerifyAlignmentOptions {
   llm: LLMClient;
-  task: string;
+  request: string;
   phase: PhaseGoal;
   ledger: ProgressLedger;
   /** Compact recent evidence lines; full evidence is not needed. */
@@ -145,7 +145,7 @@ export async function verifyAlignment(
       {
         role: "user",
         content: [
-          `TASK:\n${opts.task}`,
+          `REQUEST:\n${opts.request}`,
           `PHASE:\n- ${opts.phase.id}: ${opts.phase.goal}${opts.phase.guidance ? ` ${opts.phase.guidance}` : ""}`,
           `LEDGER:\n${ledger}`,
           `RECENT EVIDENCE:\n${opts.recentEvidence ?? "(none)"}`,

@@ -20,7 +20,7 @@
  * older ones), then queued messages oldest-first. A store that cannot express
  * that ordering cannot implement this interface.
  */
-import type { ImageAttachment, LLMUsage } from "../llm/types.js";
+import type { ImageAttachment, LLMMessage, LLMUsage } from "../llm/types.js";
 import type { FinishReason } from "./types.js";
 
 export type InboxDelivery = "queue" | "interject";
@@ -174,27 +174,25 @@ export class MemoryInboxStore implements InboxStore {
 }
 
 /**
- * Turn a claimed batch into the next run's task.
- *
- * Everything in the batch is rendered in contract order, so the model reads
- * the newest correction before the older queued work. A consumer that needs a
- * different voice supplies `render` on `EngineOptions.inbox`.
+ * Turn a claimed batch into the next run's input. One message per inbox row:
+ * a coalesced batch stays a sequence of user turns rather than becoming a
+ * synthetic single blob. Context is application metadata, so it is joined
+ * separately and never persisted as a message.
  */
-export function renderInboxTask(
-  messages: InboxMessage[],
-): { task: string; context?: string; images?: ImageAttachment[] } {
-  const task = messages
-    .map((message) => message.text)
-    .filter((text) => text.trim() !== "")
-    .join("\n\n");
+export function renderInboxTurn(messages: InboxMessage[]): {
+  messages: LLMMessage[];
+  context?: string;
+} {
   const context = messages
     .map((message) => message.context)
     .filter((value): value is string => typeof value === "string" && value !== "")
     .join("\n\n");
-  const images = messages.flatMap((message) => message.images ?? []);
   return {
-    task,
+    messages: messages.map((message) => ({
+      role: "user" as const,
+      content: message.text,
+      ...(message.images?.length ? { images: message.images } : {}),
+    })),
     ...(context === "" ? {} : { context }),
-    ...(images.length ? { images } : {}),
   };
 }

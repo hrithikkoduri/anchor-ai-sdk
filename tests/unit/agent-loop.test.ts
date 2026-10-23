@@ -13,6 +13,7 @@ import type {
   LLMResponse,
 } from "../../src/llm/types.js";
 import type { AgentEvent } from "../../src/engine/events.js";
+import { userTurn } from "../../src/engine/types.js";
 
 function model(
   turns: Array<{
@@ -109,7 +110,7 @@ describe("natural agent loop", () => {
     ]);
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task },
+      userTurn(task),
       {
         llm,
         sandbox,
@@ -173,7 +174,7 @@ describe("natural agent loop", () => {
       },
     ]);
     const result = await runAgent(
-      { task: "inspect the result" },
+      userTurn("inspect the result"),
       { llm, strategy: chatStrategy, tools: [fail] },
     );
     expect(result).toMatchObject({
@@ -206,7 +207,7 @@ describe("natural agent loop", () => {
     });
     const llm = model([{ text: "Here are my findings; I made no changes." }]);
     await runAgent(
-      { task: "Review only. Do not edit." },
+      userTurn("Review only. Do not edit."),
       { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     const history = llm.seen[0]!.messages;
@@ -238,7 +239,7 @@ describe("natural agent loop", () => {
       return response;
     };
     const result = await runAgent(
-      { task: "work" },
+      userTurn("work"),
       {
         llm,
         strategy: chatStrategy,
@@ -256,7 +257,7 @@ describe("natural agent loop", () => {
   it("course-corrects one empty turn, then stalls on a second", async () => {
     const events: AgentEvent[] = [];
     const continued = await runAgent(
-      { task: "inspect" },
+      userTurn("inspect"),
       {
         llm: model([{}, { text: "Done." }, { text: "Done." }]),
         strategy: chatStrategy,
@@ -269,7 +270,7 @@ describe("natural agent loop", () => {
     ).toBe(true);
 
     const stalled = await runAgent(
-      { task: "inspect" },
+      userTurn("inspect"),
       { llm: model([{}, {}]), strategy: chatStrategy },
     );
     expect(stalled.reason).toBe("stalled");
@@ -292,7 +293,7 @@ describe("natural agent loop", () => {
       { text: "Done a different way." },
     ]);
     const result = await runAgent(
-      { task: "inspect" },
+      userTurn("inspect"),
       {
         llm,
         strategy: chatStrategy,
@@ -325,7 +326,7 @@ describe("natural agent loop", () => {
       Array.from({ length: 6 }, () => ({ calls: [{ name: "inspect" }] })),
     );
     const result = await runAgent(
-      { task: "inspect" },
+      userTurn("inspect"),
       { llm, strategy: chatStrategy, tools: [inspect] },
     );
     expect(result.reason).toBe("stalled");
@@ -348,7 +349,7 @@ describe("natural agent loop", () => {
       { text: "Here is the status you asked for." },
     ]);
     const result = await runAgent(
-      { task: "Status?" },
+      userTurn("Status?"),
       {
         llm,
         sandbox,
@@ -391,7 +392,7 @@ describe("natural agent loop", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Status?" },
+      userTurn("Status?"),
       {
         llm,
         sandbox,
@@ -417,7 +418,7 @@ describe("natural agent loop", () => {
     ]);
     const quiet: AgentEvent[] = [];
     await runAgent(
-      { task: "Status?" },
+      userTurn("Status?"),
       {
         llm: off,
         sandbox,

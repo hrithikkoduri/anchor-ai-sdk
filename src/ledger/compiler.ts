@@ -20,7 +20,7 @@ export interface PhaseGoal {
 export interface CompileLedgerOptions {
   llm: LLMClient;
   taskId: string;
-  task: string;
+  source: string;
   phases: readonly PhaseGoal[];
   maxTokens?: number;
   temperature?: number;
@@ -38,6 +38,7 @@ interface Draft {
   requirements: Array<{
     text: string;
     required: boolean;
+    phase?: string;
     sourceQuote?: string;
   }>;
 }
@@ -53,6 +54,7 @@ const SCHEMA: Record<string, unknown> = {
         properties: {
           text: { type: "string" },
           required: { type: "boolean" },
+          phase: { type: "string" },
           sourceQuote: { type: "string" },
         },
         required: ["text", "required"],
@@ -94,9 +96,13 @@ function parseDraft(value: unknown): Draft {
       ) {
         throw new Error(`requirement ${index} has an invalid sourceQuote`);
       }
+      if (req.phase !== undefined && typeof req.phase !== "string") {
+        throw new Error(`requirement ${index} has an invalid phase`);
+      }
       return {
         text: req.text.trim(),
         required: req.required,
+        ...(req.phase ? { phase: req.phase } : {}),
         ...(req.sourceQuote ? { sourceQuote: req.sourceQuote } : {}),
       };
     }),
@@ -134,12 +140,12 @@ export async function compileLedger(
           "Each requirement must be concrete and independently checkable. Mark optional follow-ups required=false.",
           "When a requirement comes from an explicit user sentence, put that exact substring in sourceQuote. Omit sourceQuote when inferring.",
           "The goal is one sentence describing the requested outcome.",
-          "Use the phase goals only as context for what kinds of work are expected; do not turn phases into requirements.",
+          "Use the phase goals to assign each requirement to the phase that owns its evidence.",
         ].join("\n"),
       },
       {
         role: "user",
-        content: `TASK:\n${opts.task}\n\nPHASES:\n${phases}`,
+        content: `REQUEST:\n${opts.source}\n\nPHASES:\n${phases}`,
       },
     ],
   });
@@ -147,12 +153,13 @@ export async function compileLedger(
   const draft = result.value;
   const quoted = draft.requirements.map((requirement) => {
     const sourceQuote =
-      requirement.sourceQuote && opts.task.includes(requirement.sourceQuote)
+      requirement.sourceQuote && opts.source.includes(requirement.sourceQuote)
         ? requirement.sourceQuote
         : undefined;
     return {
       text: requirement.text,
       required: requirement.required,
+      ...(requirement.phase ? { phase: requirement.phase } : {}),
       ...(sourceQuote ? { sourceQuote } : {}),
       origin: "compiled" as const,
     };
@@ -160,7 +167,7 @@ export async function compileLedger(
 
   const ledger = createLedger({
     taskId: opts.taskId,
-    source: opts.task,
+    source: opts.source,
     goal: draft.goal,
     requirements:
       quoted.length > 0
@@ -170,7 +177,7 @@ export async function compileLedger(
               text: draft.goal,
               required: true,
               origin: "compiled",
-              sourceQuote: opts.task,
+              sourceQuote: opts.source,
             },
           ],
   });

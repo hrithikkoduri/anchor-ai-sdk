@@ -13,6 +13,7 @@ import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import type { LLMClient } from "../../src/llm/types.js";
 import type { TraceSink, TracedEvent } from "../../src/trace/sink.js";
 import { call, scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 describe("runAgent lifecycle", () => {
   it("fans every event to the sinks, one sequence, flushed before resolving", async () => {
@@ -31,7 +32,7 @@ describe("runAgent lifecycle", () => {
       },
     };
     const result = await runAgent(
-      { task: "say hello" },
+      userTurn("say hello"),
       {
         llm: scripted([{ text: "hello" }]),
         agent: chatAgent,
@@ -53,7 +54,7 @@ describe("runAgent lifecycle", () => {
   it("contains a broken sink without killing the run", async () => {
     const seen: TracedEvent[] = [];
     const result = await runAgent(
-      { task: "say hello" },
+      userTurn("say hello"),
       {
         llm: scripted([{ text: "hello" }]),
         agent: chatAgent,
@@ -80,7 +81,7 @@ describe("runAgent lifecycle", () => {
   it("heartbeats immediately and while the run lives, then stops", async () => {
     let beats = 0;
     const result = await runAgent(
-      { task: "say hello" },
+      userTurn("say hello"),
       {
         llm: scripted([{ text: "hi" }]),
         agent: chatAgent,
@@ -116,7 +117,7 @@ describe("runAgent lifecycle", () => {
     };
     let polls = 0;
     const result = await runAgent(
-      { task: "long work" },
+      userTurn("long work"),
       {
         llm: slow,
         agent: chatAgent,
@@ -151,7 +152,7 @@ describe("snapshots", () => {
   it("reports a custom hook's result, reason, and label", async () => {
     const calls: Array<{ reason: string; label: string }> = [];
     const result = await runAgent(
-      { task: "say hello" },
+      userTurn("say hello"),
       {
         llm: scripted([{ text: "hello" }]),
         agent: chatAgent,
@@ -168,7 +169,7 @@ describe("snapshots", () => {
 
   it("a throwing hook is best-effort — the run still succeeds", async () => {
     const result = await runAgent(
-      { task: "say hello" },
+      userTurn("say hello"),
       {
         llm: scripted([{ text: "hello" }]),
         agent: chatAgent,

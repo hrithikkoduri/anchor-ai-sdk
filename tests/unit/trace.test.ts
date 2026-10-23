@@ -40,7 +40,7 @@ describe("TraceFanout", () => {
     ]);
     const token = `ghs_${"c".repeat(30)}`;
     expect(
-      fanout.record({ type: "run_started", task: "fix it", phases: ["fix"] }),
+      fanout.record({ type: "run_started", text: "fix it", phases: ["fix"] }),
     ).toBe(0);
     expect(
       fanout.record({
@@ -86,8 +86,8 @@ describe("TraceFanout", () => {
     const fanout = new TraceFanout([slow, broken], {
       onError: (sink) => void errors.push(sink.name),
     });
-    fanout.record({ type: "run_started", task: "one", phases: [] });
-    fanout.record({ type: "run_started", task: "two", phases: [] });
+    fanout.record({ type: "run_started", text: "one", phases: [] });
+    fanout.record({ type: "run_started", text: "two", phases: [] });
     await fanout.flush();
 
     // Never two in flight for one sink — no self-reordering under load.
@@ -103,7 +103,7 @@ describe("JsonlTrace", () => {
     try {
       const trace = new JsonlTrace(path.join(dir, "nested", "run.jsonl"));
       const fanout = new TraceFanout([trace]);
-      fanout.record({ type: "run_started", task: "fix it", phases: ["fix"] });
+      fanout.record({ type: "run_started", text: "fix it", phases: ["fix"] });
       fanout.record({
         type: "error",
         message: "leak: sk-abcdefgh12345678",

@@ -16,6 +16,7 @@ import { bashTool } from "../../src/tools/bash.js";
 import { defineTool } from "../../src/tools/types.js";
 import { chatAgent, chatStrategy } from "../../src/agents/chat/index.js";
 import { codingAgent, codingStrategy } from "../../src/agents/coding/index.js";
+import { userTurn } from "../../src/engine/types.js";
 
 type Scripted = {
   text?: string;
@@ -73,7 +74,7 @@ describe("zero-config runs", () => {
       { text: "Done." },
     ]);
     await runAgent(
-      { task: "lookup" },
+      userTurn("lookup"),
       {
         llm,
         strategy: chatStrategy,
@@ -97,7 +98,7 @@ describe("zero-config runs", () => {
   it("runs with a bare agent — no sandbox, no consumer tools", async () => {
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "say hi" },
+      userTurn("say hi"),
       {
         llm: scriptedLLM([{ text: "Hi there!" }]),
         agent: chatAgent,
@@ -122,7 +123,7 @@ describe("zero-config runs", () => {
       { text: "All done." },
     ]);
     const result = await runAgent(
-      { task: "do a thing" },
+      userTurn("do a thing"),
       { llm, strategy: chatStrategy, tools: [bashTool] },
     );
 
@@ -138,7 +139,7 @@ describe("zero-config runs", () => {
   it("validates strategy requirements at startup: codingStrategy needs a sandbox", async () => {
     await expect(
       runAgent(
-        { task: "x" },
+        userTurn("x"),
         { llm: scriptedLLM([]), tools: allTools, strategy: codingStrategy },
       ),
     ).rejects.toThrow(/requires a sandbox/);
@@ -147,13 +148,13 @@ describe("zero-config runs", () => {
   it("an Agent preset bundles strategy + tools; explicit options override per-field", async () => {
     // The preset supplies both — startup reaches the sandbox check (tools satisfied).
     await expect(
-      runAgent({ task: "x" }, { llm: scriptedLLM([]), agent: codingAgent }),
+      runAgent(userTurn("x"), { llm: scriptedLLM([]), agent: codingAgent }),
     ).rejects.toThrow(/requires a sandbox/);
 
     // Explicit tools win over the preset's toolbox — the requiredTools check fails fast.
     await expect(
       runAgent(
-        { task: "x" },
+        userTurn("x"),
         { llm: scriptedLLM([]), agent: codingAgent, tools: [bashTool] },
       ),
     ).rejects.toThrow(
@@ -173,7 +174,7 @@ describe("zero-config runs", () => {
       },
     ]);
     const result = await runAgent(
-      { task: "say hi" },
+      userTurn("say hi"),
       { llm, agent: chatAgent },
     );
 
@@ -193,7 +194,7 @@ describe("zero-config runs", () => {
       { text: "fallback reply" },
     ]);
     const result = await runAgent(
-      { task: "say hi" },
+      userTurn("say hi"),
       { llm, agent: chatAgent, intrinsics: { finish: false } },
     );
 

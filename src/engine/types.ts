@@ -19,11 +19,32 @@ import type { OperationStore, PendingOperation } from "./operations.js";
 import type { ProgressLedger } from "../ledger/types.js";
 import type { VerifierConfig } from "../ledger/config.js";
 
-export interface RunTask {
-  task: string;
+export interface RunInput {
+  /**
+   * The new turn's messages, oldest first. Appended to the thread's stored
+   * conversation by the engine. Usually one user message; a coalesced inbox
+   * batch may be several.
+   */
+  messages: LLMMessage[];
+  /** Repo map / workspace description. Never persisted as a message. */
   context?: string;
-  /** Image references for the initial user turn; bytes stay consumer-owned. */
-  images?: ImageAttachment[];
+}
+
+/** Tiny helper for tests, CLIs, and examples. */
+export function userTurn(
+  text: string,
+  extra: { context?: string; images?: ImageAttachment[] } = {},
+): RunInput {
+  return {
+    messages: [
+      {
+        role: "user",
+        content: text,
+        ...(extra.images?.length ? { images: extra.images } : {}),
+      },
+    ],
+    ...(extra.context ? { context: extra.context } : {}),
+  };
 }
 
 /**
@@ -49,19 +70,17 @@ export interface EngineOptions {
   sandbox?: Sandbox;
   tools?: Tool[];
   /**
-   * Task-verification mode. `true` enables the SDK-owned ledger, intent gate,
-   * evidence capture, and phase/finish verification. A config supplies an
-   * optional cheap verifier LLM. Absent/false preserves today's behavior.
+   * Task-contract mode. `true` enables the create_task intrinsic, ledger,
+   * evidence capture, and phase/finish judge gates. A config supplies the
+   * judge and gates. Absent/false preserves the unverified loop.
    */
   verifier?: boolean | VerifierConfig;
-  /** Explicit turn routing; default "auto" when verifier is enabled. */
-  intent?: "auto" | "chat" | "clarify" | "task";
   /** Stable id for the task contract; defaults to the thread id. */
   taskId?: string;
   /** Resume/inject an existing ledger (normally loaded from the thread). */
   ledger?: ProgressLedger;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
-  intrinsics?: { finish?: boolean; phase?: boolean };
+  intrinsics?: { finish?: boolean; phase?: boolean; task?: boolean };
   budgets?: Partial<BudgetLimits>;
   /**
    * Per-call cap on one model response (reasoning + text + tool calls).
@@ -189,8 +208,8 @@ export interface EngineOptions {
     store: InboxStore;
     /** Work-stream key — usually the thread id. */
     channel: string;
-    /** Build the next run's task from a claimed batch. Default joins text. */
-    render?: (messages: InboxMessage[]) => RunTask;
+    /** Build the next run's input from a claimed batch. */
+    render?: (messages: InboxMessage[]) => RunInput;
   };
   /**
    * Durable recovery for tools that declare an `effect` (external writes).

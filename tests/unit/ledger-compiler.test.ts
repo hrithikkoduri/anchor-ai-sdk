@@ -72,7 +72,7 @@ describe("compileLedger", () => {
     const result = await compileLedger({
       llm,
       taskId: "t1",
-      task: "Fix the redirect method bug.",
+      source: "Fix the redirect method bug.",
       phases,
     });
 
@@ -109,7 +109,7 @@ describe("compileLedger", () => {
     const result = await compileLedger({
       llm,
       taskId: "t1",
-      task: "Do the thing",
+      source: "Do the thing",
       phases,
     });
     expect(result.ledger.requirements[0]?.sourceQuote).toBeUndefined();
@@ -122,7 +122,7 @@ describe("compileLedger", () => {
     const result = await compileLedger({
       llm,
       taskId: "t1",
-      task: "Investigate auth",
+      source: "Investigate auth",
       phases,
     });
     expect(result.ledger.requirements).toHaveLength(1);
@@ -157,7 +157,7 @@ describe("verifyAlignment", () => {
 
     const result = await verifyAlignment({
       llm,
-      task: "Fix the redirect bug.",
+      request: "Fix the redirect bug.",
       phase: phases[1]!,
       ledger,
     });
@@ -183,7 +183,7 @@ describe("verifyAlignment", () => {
     await expect(
       verifyAlignment({
         llm,
-        task: "Fix the redirect bug.",
+        request: "Fix the redirect bug.",
         phase: phases[1]!,
         ledger,
       }),

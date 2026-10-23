@@ -219,7 +219,7 @@ describe("live projection", () => {
     ]);
     fanout.record({
       type: "run_started",
-      task: "t",
+      text: "t",
       phases: ["understand", "act", "validate", "respond"],
     });
     await fanout.flush();

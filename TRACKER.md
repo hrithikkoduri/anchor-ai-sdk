@@ -8,6 +8,19 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.2.0 — task contracts (implemented, unreleased)
+
+- [x] One agent, one input shape: `RunInput`, `userTurn`, and no turn routing,
+      `intent`, chat/coding swap, or compile-at-start default.
+- [x] Agent-created `create_task` intrinsic with derived request source,
+      phase-owned requirements, and dynamic ledger attachment.
+- [x] Claimed evidence, `verify` one-call linking, outgoing-phase gates,
+      forced transitions after the rejection limit, and honest
+      `finish({ success: false })`.
+- [x] `Judge` seam with `llmJudge` and TypeSafe `jevJudge`; per-requirement
+      verdicts and `phase_verdict`/`task_created` events.
+- [x] `renderInboxTurn` one-message-per-row input and migrated `RunInput` tests.
+
 ## After v0.1.9 — on main, unreleased
 
 - [x] SWE Lite external arm: use `/testbed` for Lite, run pytest from the

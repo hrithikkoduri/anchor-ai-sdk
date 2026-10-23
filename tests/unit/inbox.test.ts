@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { runAgent } from "../../src/engine/loop.js";
 import {
   MemoryInboxStore,
-  renderInboxTask,
+  renderInboxTurn,
   type InboxMessage,
 } from "../../src/engine/inbox.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
@@ -14,6 +14,7 @@ import { bashTool } from "../../src/tools/bash.js";
 import type { ExecResult, Sandbox } from "../../src/sandbox/types.js";
 import type { LLMClient, LLMRequest } from "../../src/llm/types.js";
 import { call, scripted, type Turn } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const noop = defineTool(
   {
@@ -62,7 +63,7 @@ const base: Pick<EngineOptions, "agent" | "tools" | "snapshot"> = {
 describe("runAgent without an inbox", () => {
   it("is exactly one run, with no chain surface", async () => {
     const result = await runAgent(
-      { task: "say hi" },
+      userTurn("say hi"),
       { ...base, llm: scripted([{ text: "hi" }]) },
     );
     expect(result.runs).toBeUndefined();
@@ -82,7 +83,7 @@ describe("queued messages", () => {
       },
     );
     const result = await runAgent(
-      { task: "Fix the retry bug" },
+      userTurn("Fix the retry bug"),
       {
         ...base,
         llm,
@@ -114,7 +115,7 @@ describe("queued messages", () => {
       await store.push(message("t", "second note", "queue"));
     });
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { ...base, llm, inbox: { store, channel: "t" } },
     );
 
@@ -129,16 +130,17 @@ describe("queued messages", () => {
       if (n === 1) await store.push(message("t", "note", "queue"));
     });
     await runAgent(
-      { task: "start" },
+      userTurn("start"),
       {
         ...base,
         llm,
         inbox: {
           store,
           channel: "t",
-          render: (messages) => ({
-            task: `[inbox] ${messages.map((m) => m.text).join(" + ")}`,
-          }),
+          render: (messages) =>
+            userTurn(
+              `[inbox] ${messages.map((m) => m.text).join(" + ")}`,
+            ),
         },
       },
     );
@@ -158,7 +160,7 @@ describe("interjections", () => {
       },
     );
     const result = await runAgent(
-      { task: "Fix the retry bug" },
+      userTurn("Fix the retry bug"),
       {
         ...base,
         llm,
@@ -187,7 +189,7 @@ describe("interjections", () => {
       await store.push(message("t", "newest correction", "interject"));
     });
     await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { ...base, llm, inbox: { store, channel: "t" } },
     );
 
@@ -208,7 +210,7 @@ describe("chain boundaries", () => {
       },
     );
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { ...base, llm, budgets: { maxSteps: 3 }, inbox: { store, channel: "t" } },
     );
 
@@ -225,7 +227,7 @@ describe("chain boundaries", () => {
       if (n === 1) await store.push(message("t", "more", "queue"));
     });
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { ...base, llm, inbox: { store, channel: "t" } },
     );
 
@@ -249,7 +251,7 @@ describe("chain boundaries", () => {
       controller.abort();
     });
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       {
         ...base,
         llm,
@@ -269,7 +271,7 @@ describe("chain boundaries", () => {
     });
     // Turn three is missing: the scripted model throws inside run two.
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { ...base, llm, inbox: { store, channel: "t" } },
     );
 
@@ -330,7 +332,7 @@ describe("background jobs across a chain", () => {
     );
 
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       {
         agent: chatAgent,
         tools: [bashTool],
@@ -405,7 +407,7 @@ describe("background jobs with inbox work waiting", () => {
     ]);
 
     const result = await runAgent(
-      { task: "start" },
+      userTurn("start"),
       {
         agent: chatAgent,
         tools: [bashTool],
@@ -492,9 +494,9 @@ describe("MemoryInboxStore", () => {
   });
 });
 
-describe("renderInboxTask", () => {
-  it("joins text and context, omitting empty context", async () => {
-    const rendered = renderInboxTask([
+describe("renderInboxTurn", () => {
+  it("keeps one message per row and separates context", async () => {
+    const rendered = renderInboxTurn([
       {
         id: "1",
         channel: "t",
@@ -509,6 +511,12 @@ describe("renderInboxTask", () => {
         delivery: "queue",
       } as InboxMessage,
     ]);
-    expect(rendered).toEqual({ task: "do this\n\nthen that", context: "facts" });
+    expect(rendered).toEqual({
+      messages: [
+        { role: "user", content: "do this" },
+        { role: "user", content: "then that" },
+      ],
+      context: "facts",
+    });
   });
 });

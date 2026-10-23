@@ -3,13 +3,13 @@ import { runAgent } from "../../src/engine/loop.js";
 import { chatAgent } from "../../src/agents/chat/index.js";
 import { scripted } from "../helpers/scripted.js";
 import { MemoryInboxStore } from "../../src/engine/inbox.js";
+import { userTurn } from "../../src/engine/types.js";
 
 describe("image context", () => {
   it("carries image references into the initial user turn", async () => {
     const llm = scripted([{ text: "I can see the diagram." }]);
     await runAgent(
-      {
-        task: "What does this diagram show?",
+      userTurn("What does this diagram show?", {
         images: [
           {
             id: "img_1",
@@ -18,7 +18,7 @@ describe("image context", () => {
             alt: "architecture diagram",
           },
         ],
-      },
+      }),
       { llm, agent: chatAgent },
     );
 
@@ -49,7 +49,7 @@ describe("image context", () => {
     });
     const llm = scripted([{ text: "first" }, { text: "second" }]);
     await runAgent(
-      { task: "start" },
+      userTurn("start"),
       { llm, agent: chatAgent, inbox: { store: inbox, channel: "thread" } },
     );
     const second = llm.seen[1]?.messages.at(-1);

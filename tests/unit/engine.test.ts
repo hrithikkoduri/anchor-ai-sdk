@@ -15,6 +15,7 @@ import {
 import type { AgentEvent } from "../../src/engine/events.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { call, scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 const edit = () =>
   call("edit_file", {
@@ -49,7 +50,7 @@ describe("agent runtime", () => {
       { text: "Fixed negative handling; the existing tests pass." },
     ]);
     const result = await runAgent(
-      { task: "Fix negative handling" },
+      userTurn("Fix negative handling"),
       {
         llm,
         sandbox,
@@ -85,7 +86,7 @@ describe("agent runtime", () => {
   it("marks the stable prompt prefix with cache breakpoints", async () => {
     const llm = scripted([{ text: "hello" }]);
     await runAgent(
-      { task: "hello" },
+      userTurn("hello"),
       { llm, agent: chatAgent },
     );
     const request = llm.seen[0]!;
@@ -96,7 +97,7 @@ describe("agent runtime", () => {
 
   it("can finish from understand without claiming tests passed or entering every phase", async () => {
     const result = await runAgent(
-      { task: "Explain the code without editing" },
+      userTurn("Explain the code without editing"),
       {
         llm: scripted([
           {
@@ -114,7 +115,7 @@ describe("agent runtime", () => {
 
   it("allows an optional structured finish without test gates", async () => {
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm: scripted([
           call("finish", {
@@ -140,7 +141,7 @@ describe("agent runtime", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         llm,
         sandbox,
@@ -168,7 +169,7 @@ describe("agent runtime", () => {
       { text: "Done." },
     ]);
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         llm,
         sandbox,
@@ -185,7 +186,7 @@ describe("agent runtime", () => {
       call("bash", { command: "echo 2" }),
     ]);
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       { llm, sandbox, agent: codingAgent, budgets: { maxSteps: 2 } },
     );
     expect(result).toMatchObject({ ok: false, reason: "max_steps", steps: 2 });
@@ -194,19 +195,19 @@ describe("agent runtime", () => {
   it("fails fast on an incompatible tool set or missing sandbox", async () => {
     await expect(
       runAgent(
-        { task: "x" },
+        userTurn("x"),
         { llm: scripted([]), agent: codingAgent, tools: [] },
       ),
     ).rejects.toThrow("requires tools");
     await expect(
-      runAgent({ task: "x" }, { llm: scripted([]), agent: codingAgent }),
+      runAgent(userTurn("x"), { llm: scripted([]), agent: codingAgent }),
     ).rejects.toThrow("requires a sandbox");
   });
 
   it("records the actual user request in durable conversation across turns", async () => {
     const store = new MemoryThreadStore();
     await runAgent(
-      { task: "First question" },
+      userTurn("First question"),
       {
         llm: scripted([{ text: "First answer" }]),
         agent: chatAgent,
@@ -215,7 +216,7 @@ describe("agent runtime", () => {
     );
     const llm = scripted([{ text: "Review findings, without edits" }]);
     await runAgent(
-      { task: "Now review only" },
+      userTurn("Now review only"),
       { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     const messages = llm.seen[0]!.messages;
@@ -249,7 +250,7 @@ describe("agent runtime", () => {
     });
     const llm = scripted([{ text: "Understood." }]);
     await runAgent(
-      { task: "Discuss the title" },
+      userTurn("Discuss the title"),
       { llm, agent: chatAgent, thread: { store, id: "t" } },
     );
     expect(
@@ -273,7 +274,7 @@ describe("agent runtime", () => {
       { text: "Current response." },
     ]);
     const result = await runAgent(
-      { task: "Review only now" },
+      userTurn("Review only now"),
       {
         llm,
         sandbox,
@@ -312,7 +313,7 @@ describe("agent runtime", () => {
     }
     const store = new CountingStore();
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         llm: scripted([
           call("bash", { command: "echo one" }),
@@ -337,7 +338,7 @@ describe("agent runtime", () => {
       { text: "These calls were invalid; I did not execute them." },
     ]);
     const result = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       {
         llm,
         sandbox,
@@ -361,7 +362,7 @@ describe("agent runtime", () => {
       throw new Error("provider unavailable");
     };
     const failed = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       { llm, agent: chatAgent },
     );
     expect(failed).toMatchObject({
@@ -372,7 +373,7 @@ describe("agent runtime", () => {
     const controller = new AbortController();
     controller.abort();
     const cancelled = await runAgent(
-      { task: "Inspect" },
+      userTurn("Inspect"),
       { llm, agent: chatAgent, signal: controller.signal },
     );
     expect(cancelled).toMatchObject({ ok: false, reason: "cancelled" });
@@ -381,7 +382,7 @@ describe("agent runtime", () => {
   it("rejects an unknown explicitly requested initial phase", async () => {
     await expect(
       runAgent(
-        { task: "Inspect" },
+        userTurn("Inspect"),
         {
           llm: scripted([]),
           sandbox,

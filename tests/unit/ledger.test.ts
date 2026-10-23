@@ -43,7 +43,7 @@ describe("progress ledger", () => {
       ok: true,
       summary: "pytest test_redirect.py — exit 0",
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
 
     expect(evidence.id).toBe("e1");
     expect(ledger.requirements[0]?.evidenceIds).toEqual(["e1"]);
@@ -59,7 +59,7 @@ describe("progress ledger", () => {
       ref: "message:msg_1",
       ok: true,
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
     expect(ledgerGate(ledger)).toMatchObject({
       allow: false,
       open: ["r1"],
@@ -86,7 +86,7 @@ describe("progress ledger", () => {
       ref: "message:msg_1",
       ok: true,
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
     addRequirement(ledger, { text: "Consider a docs update", required: false });
     setRequirementStatus(ledger, "r1", "verified");
     expect(ledgerGate(ledger).allow).toBe(true);
@@ -100,7 +100,7 @@ describe("progress ledger", () => {
       ok: false,
       summary: "known flaky test: 2 pass / 1 fail",
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
     setRequirementStatus(ledger, "r1", "waived");
 
     expect(ledgerGate(ledger).allow).toBe(false);
@@ -114,7 +114,7 @@ describe("progress ledger", () => {
       ref: "message:msg_1",
       ok: true,
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
     setRequirementStatus(ledger, "r1", "verified");
     expect(ledgerGate(ledger).allow).toBe(true);
 
@@ -148,12 +148,12 @@ describe("progress ledger", () => {
       ok: true,
       summary: "pytest — exit 0",
     });
-    linkEvidence(ledger, "r1", evidence.id);
+    linkEvidence(ledger, "r1", evidence.id, "test output proves it");
 
     const prompt = renderLedger(ledger);
     expect(prompt).toContain("Fix the redirect bug");
     expect(prompt).toContain("r1 [open] Preserve GET");
-    expect(prompt).toContain("e1 bash: pytest — exit 0");
+    expect(prompt).toContain("e1 bash claim=test output proves it: pytest — exit 0");
     expect(prompt).toContain("NEXT:");
   });
 });

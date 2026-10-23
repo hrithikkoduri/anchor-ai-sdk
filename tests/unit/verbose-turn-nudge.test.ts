@@ -8,6 +8,7 @@ import { codingAgent } from "../../src/agents/coding/index.js";
 import { LocalSandbox } from "../../src/sandbox/local/index.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 /** The mirror of the silent-tool nudge: one advisory when a turn writes too much. */
 describe("verbose turn nudge", () => {
@@ -41,7 +42,7 @@ describe("verbose turn nudge", () => {
       { text: "Done.", usage: small },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     const nudges = events.filter(
@@ -76,7 +77,7 @@ describe("verbose turn nudge", () => {
       { text: "Done.", usage: small },
     ]);
     const result = await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     expect(
@@ -102,7 +103,7 @@ describe("verbose turn nudge", () => {
       { text: "Done.", usage: small },
     ]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     const nudges = events.filter(
@@ -124,7 +125,7 @@ describe("verbose turn nudge", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     expect(
@@ -139,7 +140,7 @@ describe("verbose turn nudge", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     expect(
@@ -154,7 +155,7 @@ describe("verbose turn nudge", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -175,7 +176,7 @@ describe("verbose turn nudge", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       {
         llm,
         sandbox,
@@ -198,7 +199,7 @@ describe("verbose turn nudge", () => {
     ]);
     const events: AgentEvent[] = [];
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, onEvent: (e) => events.push(e) },
     );
     expect(

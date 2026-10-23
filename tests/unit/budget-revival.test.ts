@@ -10,6 +10,7 @@ import { codingAgent } from "../../src/agents/coding/index.js";
 import { runAgent } from "../../src/engine/loop.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { LLMClient, LLMRequest } from "../../src/llm/types.js";
+import { userTurn } from "../../src/engine/types.js";
 
 type Turn = {
   text?: string;
@@ -99,7 +100,7 @@ describe("budget revival", () => {
     ]);
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "Fix the parser." },
+      userTurn("Fix the parser."),
       {
         llm,
         sandbox,
@@ -158,7 +159,7 @@ describe("budget revival", () => {
     ]);
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "Fix the parser." },
+      userTurn("Fix the parser."),
       {
         llm,
         sandbox,
@@ -188,7 +189,7 @@ describe("budget revival", () => {
     );
     const events: AgentEvent[] = [];
     const result = await runAgent(
-      { task: "Fix the parser." },
+      userTurn("Fix the parser."),
       {
         llm,
         sandbox,

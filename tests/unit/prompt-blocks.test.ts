@@ -9,6 +9,7 @@ import { MemoryThreadStore } from "../../src/engine/thread.js";
 import { createLedger } from "../../src/ledger/index.js";
 import { defineTool } from "../../src/tools/types.js";
 import type { Agent } from "../../src/agents/types.js";
+import { userTurn } from "../../src/engine/types.js";
 
 function response(
   text: string,
@@ -73,7 +74,7 @@ describe("prompt blocks", () => {
     });
 
     await runAgent(
-      { task: "Do the work" },
+      userTurn("Do the work"),
       {
         llm,
         agent,

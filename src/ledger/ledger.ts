@@ -59,6 +59,7 @@ export function addRequirement(
     text: string;
     required?: boolean;
     sourceQuote?: string;
+    phase?: string;
   },
   origin: LedgerRequirement["origin"] = "agent",
 ): LedgerRequirement {
@@ -68,6 +69,7 @@ export function addRequirement(
     id: nextId("r", ledger.requirements.map((item) => item.id)),
     text,
     required: input.required ?? true,
+    ...(input.phase ? { phase: input.phase } : {}),
     status: "open",
     evidenceIds: [],
     locked: origin !== "agent",
@@ -102,11 +104,16 @@ export function linkEvidence(
   ledger: ProgressLedger,
   requirementId: string,
   evidenceId: string,
+  claim: string,
 ): void {
   const requirement = findRequirement(ledger, requirementId);
-  if (!ledger.evidence[evidenceId]) {
-    throw new Error(`unknown evidence id "${evidenceId}"`);
+  const evidence = ledger.evidence[evidenceId];
+  if (!evidence) throw new Error(`unknown evidence id "${evidenceId}"`);
+  const text = claim.trim();
+  if (!text || text.length > 400) {
+    throw new Error("claim must be 1-400 characters");
   }
+  evidence.claim = text;
   if (!requirement.evidenceIds.includes(evidenceId)) {
     requirement.evidenceIds.push(evidenceId);
   }
@@ -248,7 +255,7 @@ export function renderLedger(
   if (active.length === 0) lines.push("- (none yet)");
   for (const item of active) {
     lines.push(
-      `- ${item.id} [${item.status}]${item.required ? "" : " optional"} ${item.text}`,
+      `- ${item.id} [${item.status}]${item.phase ? ` phase=${item.phase}` : ""}${item.required ? "" : " optional"} ${item.text}`,
     );
   }
   if (includeEvidence) {
@@ -257,7 +264,7 @@ export function renderLedger(
     if (refs.length === 0) lines.push("- (none yet)");
     for (const evidence of refs) {
       lines.push(
-        `- ${evidence.id} ${evidence.tool}${evidence.summary ? `: ${evidence.summary}` : ""}${evidence.ok ? "" : " (failed)"}`,
+        `- ${evidence.id} ${evidence.tool}${evidence.claim ? ` claim=${evidence.claim}` : ""}${evidence.summary ? `: ${evidence.summary}` : ""}${evidence.ok ? "" : " (failed)"}`,
       );
     }
   }

@@ -6,8 +6,9 @@
  * it as the journal, the dashboard/chat SSE (steps 17–18) relay it. The engine
  * itself never formats anything — it only emits.
  */
-import type { LLMToolCall, LLMUsage } from "../llm/types.js";
+import type { LLMMessage, LLMToolCall, LLMUsage } from "../llm/types.js";
 import type { CompactionHandoff } from "./compaction.js";
+import type { ProgressLedger } from "../ledger/types.js";
 
 /** What a budget-limited run says it still needs — see EngineOptions.revival. */
 export interface RevivalRequest {
@@ -19,7 +20,27 @@ export interface RevivalRequest {
 }
 
 export type AgentEvent =
-  | { type: "run_started"; task: string; phases: string[] }
+  | {
+      type: "run_started";
+      /** Human-readable text of this turn's input messages. */
+      text: string;
+      /** The input message delta, when the consumer supplied messages. */
+      messages?: LLMMessage[];
+      phases: string[];
+    }
+  | { type: "task_created"; ledger: ProgressLedger }
+  | {
+      type: "phase_verdict";
+      phase: string;
+      cleared: boolean;
+      confidence: number;
+      judge: string;
+      requirements: Array<{
+        id: string;
+        status: "cleared" | "insufficient" | "unproven";
+        probability?: number;
+      }>;
+    }
   | {
       type: "phase_started";
       phase: string;

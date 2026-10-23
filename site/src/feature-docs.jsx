@@ -5,38 +5,40 @@ import { CodeBlock, repo } from "./ui.jsx";
 // readable without pulling provider SDKs into the static documentation app.
 export function FeatureDocs({ Section, Callout }) {
   return <>
-    <Section id="verification" number="16" title="Ledger & verification">
-      <p>Opt into task verification with <code>verifier</code>. Anchor compiles
-        the request into an append-only progress ledger, captures tool-result
-        evidence, and checks requirement coverage at phase and finish boundaries.
-        It adds <code>update_ledger</code> to the task toolbox; you do not need a new storage service.</p>
-      <CodeBlock filename="verified-run.ts" code={`// llm and sandbox are configured and started by your app.
-const result = await runAgent(
-  { task: "Fix the retry bug and add a regression test" },
+    <Section id="verification" number="16" title="Task contracts & the judge">
+      <p>One agent handles every turn. Enable <code>verifier</code> and the agent
+        can call <code>create_task</code> when the request is real work. The engine
+        derives the request from the user messages, attaches the ledger, adds
+        <code>update_ledger</code>, and arms phase/finish gates. A turn without a
+        contract is a normal conversation with the same tools and no ledger.</p>
+      <CodeBlock filename="task-contract.ts" code={`const result = await runAgent(
+  { messages: [{ role: "user", content: "Fix the retry bug" }] },
   {
     llm, sandbox, agent: codingAgent,
-    verifier: { onError: "block", maxCallsPerTask: 6 },
+    verifier: { judge: llmJudge(cheapLlm), onError: "block" },
     thread: { store: threadStore, id: "retry-fix" },
   },
 );
 console.log(result.ledger, result.evidence);`} />
-      <p>Locked source requirements cannot be deleted or weakened by the agent.
-        Tool results become evidence references; marking a requirement verified
-        requires linked evidence. A separate structured model call judges whether
-        that evidence supports the claim. The compiler and verifier consume the run budget.</p>
-      <Callout><code>verifier: true</code> uses the run model for separate checks.
-        Supply <code>verifier.llm</code> for a different client. Default outage
-        behavior is allow-with-warning; the example uses <code>onError: "block"</code>.
-        This is a guard against unsupported completion, not proof of correctness.</Callout>
-      <p>The ledger lives on <code>StoredThread</code>. Provide a durable
-        <code>ThreadStore</code> in production. Intent routing distinguishes tasks
-        from conversation; chat turns do not create a task ledger or make verifier calls.</p>
+      <p>Requirements own phases; <code>set_phase</code> verifies the outgoing
+        phase. Evidence links require an agent-authored claim, and
+        <code>op: "verify"</code> links + verifies in one call. The judge returns
+        per-requirement <code>cleared</code>, <code>insufficient</code>, or
+        <code>unproven</code> verdicts. Supply <code>llmJudge</code> for prose or
+        <code>jevJudge</code> for TypeSafe Jev's calibrated <code>noul</code>
+        decisions. <code>finish(&#123; success: false &#125;)</code> ends honestly with open
+        failures instead of looping into <code>stalled</code>.</p>
+      <Callout>Contracts are created by the agent, never by text routing.
+        <code>create: "start"</code> is the only compile-at-start path. A settled
+        ledger is history, not an active gate. The judge is a guard against
+        unsupported completion, not proof of correctness.</Callout>
+      <a className="doc-inline-link" href={`${repo}/blob/main/docs/task-contracts.md`}>Task-contract design brief ↗</a>
     </Section>
 
     <Section id="structured-output" number="17" title="Structured output">
       <p><code>LLMRequest.responseFormat</code> carries a schema-bound response
         request. <code>completeStructured</code> parses and validates the result;
-        the task compiler and alignment verifier use it instead of scraping prose.</p>
+        the task judge and structured-output callers use it instead of scraping prose.</p>
       <p>Provider schema support varies. Inspect errors and provide explicit
         validation rather than assuming that a JSON-shaped response is trustworthy.</p>
       <CodeBlock filename="structured-output.ts" code={`import { completeStructured } from "anchor-ai-sdk";

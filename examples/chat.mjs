@@ -6,7 +6,7 @@
  * An agent, a model, nothing else: no sandbox, no tools, no product stack.
  * A final text response ends the turn — that IS the reply.
  */
-import { chatAgent, llmFromCatalog, runAgent } from "anchor-ai-sdk";
+import { chatAgent, llmFromCatalog, runAgent, userTurn } from "anchor-ai-sdk";
 
 const task =
   process.argv.slice(2).join(" ") || "Say hello and name one thing you do.";
@@ -26,7 +26,7 @@ const { llm, catalog } = await llmFromCatalog({
   model,
 });
 
-const result = await runAgent({ task }, { llm, agent: chatAgent });
+const result = await runAgent(userTurn(task), { llm, agent: chatAgent });
 
 console.log(`\n${result.summary ?? "(no summary)"}\n`);
 console.log(

@@ -7,6 +7,7 @@ import type {
   LLMRequest,
   LLMResponse,
 } from "../../src/llm/types.js";
+import { userTurn } from "../../src/engine/types.js";
 
 function model(
   turns: Array<{
@@ -64,7 +65,7 @@ describe("parallel read-only tool calls", () => {
       slowRead("read_c", counter),
     ];
     const result = await runAgent(
-      { task: "read three things" },
+      userTurn("read three things"),
       {
         llm: model([
           {
@@ -99,7 +100,7 @@ describe("parallel read-only tool calls", () => {
       },
     );
     await runAgent(
-      { task: "read and write" },
+      userTurn("read and write"),
       {
         llm: model([
           { calls: [{ name: "read_a" }, { name: "write_a" }] },

@@ -25,7 +25,6 @@ export interface AgentStrategy {
     task: string,
   ): Promise<string | undefined>;
   systemPrompt(args: {
-    task: string;
     context?: string;
     summary?: string;
   }): string;

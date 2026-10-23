@@ -8,6 +8,7 @@ import { codingAgent } from "../../src/agents/coding/index.js";
 import { runAgent } from "../../src/engine/loop.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { scripted } from "../helpers/scripted.js";
+import { userTurn } from "../../src/engine/types.js";
 
 /** The phase block is intrinsic: the engine appends it, the strategy does
  * not provide it, and the same `intrinsics.phase` switch governs the tool. */
@@ -28,7 +29,7 @@ describe("phase discipline", () => {
   it("appends the intrinsic block to a multi-phase strategy", async () => {
     const llm = scripted([{ text: "No changes." }]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent },
     );
     const system = llm.seen[0]!.messages[0]!;
@@ -43,7 +44,7 @@ describe("phase discipline", () => {
   it("registers set_phase as a focus/intent tool, without permission framing", async () => {
     const llm = scripted([{ text: "No changes." }]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent },
     );
     const tool = llm.seen[0]!.tools?.find((item) => item.function.name === "set_phase");
@@ -56,7 +57,7 @@ describe("phase discipline", () => {
   it("switches the block and the tool off together", async () => {
     const llm = scripted([{ text: "No changes." }]);
     await runAgent(
-      { task: "Explain the code" },
+      userTurn("Explain the code"),
       { llm, sandbox, agent: codingAgent, intrinsics: { phase: false } },
     );
     expect(llm.seen[0]!.messages[0]!.content).not.toContain("Staying on phase");
@@ -67,7 +68,7 @@ describe("phase discipline", () => {
 
   it("stays out of a single-phase strategy", async () => {
     const llm = scripted([{ text: "Understood." }]);
-    await runAgent({ task: "Say hi" }, { llm, agent: chatAgent });
+    await runAgent(userTurn("Say hi"), { llm, agent: chatAgent });
     expect(llm.seen[0]!.messages[0]!.content).not.toContain("Staying on phase");
     expect(llm.seen[0]!.tools?.some((tool) => tool.function.name === "set_phase")).toBe(
       false,

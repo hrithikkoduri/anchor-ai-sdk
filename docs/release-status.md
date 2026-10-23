@@ -1,6 +1,7 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.1.9 released: npm `0.1.9`, Git tag `v0.1.9`, and GitHub Release are published.
+Status: **2026-10-23**, `0.2.0` task-contract release candidate on `main`.
+v0.1.9 remains the published npm/tag release.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -19,7 +20,7 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 - Structured task compaction: SDK-owned `CompactionHandoff`, persisted as
   `StoredThread.compaction`; fresh window with pinned ledger/handoff plus a
   recent verbatim tail. Chat keeps the legacy prose summary path.
-- Image context: `ImageAttachment` on `RunTask`, user messages, and inbox
+- Image context: `ImageAttachment` on run inputs, user messages, and inbox
   messages; OpenAI-compatible `image_url` serialization. Bytes, upload,
   validation, signed URLs, and retention remain consumer responsibilities.
 - E2B preview ports: `Sandbox.exposePort(port)` and `previewPort` capability;
@@ -28,6 +29,28 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   sandbox stores, plus compaction handoff.
 - Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
   benchmark record.
+
+## v0.2.0 — task contracts (unreleased)
+
+- One agent and one input shape. `RunTask` is gone; `runAgent(input: RunInput, opts)`
+  takes a message delta. Turn routing, `intent`, the chat-agent swap, and
+  compile-at-start are removed.
+- `create_task` is an engine intrinsic. The agent creates the contract mid-run;
+  the engine derives the request source from user messages, attaches the ledger,
+  registers `update_ledger`, and arms phase/finish gates. `create: "start"` is the
+  only compile-at-start path.
+- Requirements own phases; `set_phase` judges the outgoing phase. Evidence links
+  require a claim; `op: "verify"` links and verifies in one call. Rejections name
+  unmet requirements and probabilities; after the limit, transition is forced
+  but finish stays gated.
+- Judge seam: `Judge` in `src/verify/judge.ts`, with `llmJudge` and `jevJudge`
+  adapters returning per-requirement verdicts. `jevJudge` uses TypeSafe Jev
+  `noul` probabilities. `VerifierConfig.llm` remains sugar for `llmJudge`.
+- `finish({ success: false })` ends `ok: false` with `reason: "finished"` and
+  records open requirements as failures.
+- `renderInboxTurn` keeps one user message per inbox row. `run_started` carries
+  `{ text, messages?, phases }`; `task_created` and `phase_verdict` events are
+  emitted.
 
 ## After v0.1.9 — on main, unreleased
 
@@ -57,7 +80,7 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
 
 Verification after the LSP, prompt-cache, and composition changes:
-`npm run typecheck`, `npm test` (372 passed, 23 skipped), `npm run build`, live
+`npm run typecheck`, `npm test` (375 passed, 23 skipped), `npm run build`, live
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
 

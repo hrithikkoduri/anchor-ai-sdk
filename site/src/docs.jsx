@@ -47,7 +47,7 @@ const groups = [
       ["memory", "Filesystem memory"],
       ["revival", "Revival & resume"],
       ["evidence", "Evidence"],
-      ["verification", "Ledger & verification"],
+      ["verification", "Task contracts & judge"],
       ["structured-output", "Structured output"],
       ["operations", "External-effect recovery"],
       ["traces", "Streaming & traces"],
@@ -574,7 +574,7 @@ function Docs() {
             </p>
             <p className="doc-small">A post-command hash is not an immutable
               tested snapshot and does not prove test coverage. For an opt-in
-              requirement/evidence gate, see <a href="#verification">Ledger &amp; verification</a>.</p>
+              requirement/evidence gate, see <a href="#verification">Task contracts &amp; the judge</a>.</p>
           </DocSection>
 
           <DocSection id="traces" number="10" title="Streaming & traces">
