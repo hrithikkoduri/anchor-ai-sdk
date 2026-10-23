@@ -99,9 +99,24 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
   _Size:_ S–M.
 
 - **Native Anthropic / Gemini adapters**: first-class clients (not the
-  OpenAI-compat shim), including **opaque reasoning replay** (carry signed
-  reasoning blocks across turns). _Where:_ `src/llm/`. _Trigger:_ actually
-  running those models. _Size:_ M / S.
+  OpenAI-compat shim), including **image input** (`ImageAttachment` → native
+  image blocks) and **opaque reasoning replay** (carry signed reasoning blocks
+  across turns). The OpenAI-compatible client gets `image_url` support first;
+  native adapters must preserve the provider-specific image formats. _Where:_
+  `src/llm/` plus the shared attachment/message contract. _Trigger:_ actually
+  running those models with screenshots, diagrams, or photos. _Size:_ M / S.
+- **Multimodal input contract**: add `ImageAttachment` to `RunTask` and user
+  messages, with URL/data-URI references, MIME, dimensions, and hash. Keep bytes
+  in consumer object storage; never put base64 in the thread or trace. This is
+  the prerequisite for the native image adapters. _Where:_ `src/llm/types.ts`,
+  `src/engine/types.ts`, and provider adapters. _Trigger:_ first consumer image
+  upload. _Size:_ S–M.
+- **Documents/audio/video**: not first-class model inputs. Extract PDFs to text
+  (or OCR) in the consumer; transcribe audio before the run; sample video frames
+  only when a specific vision task needs them. Arbitrary files belong in the
+  sandbox/workspace and are read through tools, not sent as multimedia. Add
+  native provider file/audio/video inputs only after a concrete consumer needs
+  them; they carry large token/cost and retention risks.
 - **`cache_control` markers**: for providers that require explicit cache
   breakpoints. _Where:_ `src/llm/`. _Trigger:_ an opt-in-caching provider is
   used. _Size:_ XS.

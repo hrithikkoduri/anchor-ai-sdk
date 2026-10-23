@@ -1170,3 +1170,28 @@ state.
 
 Regressions: `tests/unit/engine-verifier.test.ts` and
 `tests/unit/compaction.test.ts`.
+
+
+## Decision #93: Image input is the first multimodal contract
+
+The first multimodal input is images, not arbitrary files. The shared contract
+is an image reference (`ImageAttachment`: id, MIME, URL or data URI, optional
+dimensions/hash/alt). The consumer owns upload validation, object storage,
+access control, retention, and signed URLs; Anchor maps the reference into the
+provider's message shape and never stores base64 bytes in `ThreadStore` or
+trace records.
+
+The OpenAI-compatible adapter gets `image_url` first. Native Anthropic and
+Gemini adapters must map the same reference to their own image blocks alongside
+opaque reasoning replay. Images already in message history can be resent and
+charged on every model call; consumers should cap count/resolution or extract
+text once when the task does not need repeated visual inspection.
+
+PDFs, audio, and video are deliberately deferred. Extract PDF text or OCR in the
+consumer, transcribe audio before the run, and sample video frames only for a
+specific vision task. Arbitrary files are workspace inputs read through tools,
+not multimodal chat parts. A `view_image` tool for text-only models is optional
+consumer tooling; it is not required when the model accepts images directly.
+
+Regressions: none yet; add serialization, persistence, compaction/drop, and
+provider-capability tests with the first implementation.
