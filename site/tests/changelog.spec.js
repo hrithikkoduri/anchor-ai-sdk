@@ -45,10 +45,19 @@ for (const width of [320, 375, 768, 1024, 1440]) {
 test("new feature docs have deep links and honest provider limits", async ({ page }) => {
   await page.goto("/docs.html#verification");
   await expect(page.getByRole("heading", { name: "Ledger & verification", exact: true })).toBeInViewport();
-  for (const id of ["verification", "structured-output", "operations", "process-streams", "image-publishing", "lsp", "philosophy"]) {
+  for (const id of [
+    "verification", "structured-output", "operations",
+    "process-streams", "image-publishing", "lsp", "philosophy",
+    "thread-store", "inbox-store", "operation-store", "sandbox-store",
+    "compaction-contract",
+  ]) {
     await expect(page.locator(`#${id}`)).toHaveCount(1);
   }
   await expect(page.locator("#providers")).toContainText("E2B is exported since v0.1.6");
   await expect(page.locator("#image-publishing")).toContainText("live registry publication has not been verified");
   await expect(page.locator("#lsp")).toContainText("raw-byte behavior is unverified");
+  await expect(page.locator("#thread-store")).toContainText("PostgresThreadStore");
+  await expect(page.locator("#inbox-store")).toContainText("for update skip locked");
+  await expect(page.locator("#operation-store")).toContainText("operationId");
+  await expect(page.locator("#compaction-contract")).toContainText("CompactionHandoff");
 });

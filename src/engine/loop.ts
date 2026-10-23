@@ -21,8 +21,10 @@ import {
 } from "./elision.js";
 import {
   compactConversation,
+  compactConversationStructured,
   DEFAULT_COMPACTION,
   estimateTokens,
+  renderCompactionHandoff,
 } from "./compaction.js";
 import {
   assistantMessage,
@@ -251,6 +253,7 @@ async function runOne(
   )
     phase = prior.phase;
   let summary = prior?.summary;
+  let compaction = prior?.compaction;
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
 
@@ -399,6 +402,11 @@ async function runOne(
             "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
           ].join("\n\n")
         : undefined,
+      stability: "turn",
+    },
+    {
+      id: "compaction",
+      text: compaction ? renderCompactionHandoff(compaction) : undefined,
       stability: "turn",
     },
     {
@@ -881,6 +889,7 @@ async function runOne(
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
+        ...(compaction ? { compaction } : {}),
         ...(ledger ?? prior?.ledger
           ? { ledger: ledger ?? prior?.ledger }
           : {}),
@@ -975,6 +984,7 @@ async function runOne(
       phase,
       evidence,
       ...(ledger ? { ledger } : {}),
+      ...(compaction ? { compaction } : {}),
       ...(verifierOn ? { verified } : {}),
       ...(revivalRequest &&
       (reason === "budget_exceeded" || reason === "max_steps")
@@ -1225,25 +1235,53 @@ async function runOne(
         }
       }
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
-        const folded = await compactConversation({
-          llm: opts.llm,
-          messages: forModel(false),
-          runningSummary: summary,
-          keepRecentTokens: compact.keepRecentTokens,
-          signal,
-        });
+        let folded = null as Awaited<
+          ReturnType<typeof compactConversation>
+        > | null;
+        if (ledger) {
+          try {
+            folded = await compactConversationStructured({
+              llm: opts.llm,
+              messages: forModel(false),
+              ...(summary ? { previousSummary: summary } : {}),
+              ...(compaction ? { previousHandoff: compaction } : {}),
+              ledger,
+              ...(checkpointRef ? { git: { checkpoint: checkpointRef } } : {}),
+              keepRecentTokens: compact.keepRecentTokens,
+              signal,
+            });
+          } catch {
+            folded = null;
+          }
+        }
+        if (!folded) {
+          folded = await compactConversation({
+            llm: opts.llm,
+            messages: forModel(false),
+            runningSummary: summary,
+            keepRecentTokens: compact.keepRecentTokens,
+            signal,
+          });
+        }
         if (folded) {
           budget.record(folded.usage);
-          summary = folded.summary;
+          if (folded.handoff) {
+            compaction = folded.handoff;
+            summary = undefined;
+          } else {
+            summary = folded.summary;
+            compaction = undefined;
+          }
           const tail = folded.keptMessages;
-          // After a fold the model's earlier detail is gone from context;
-          // point it at the durable record (see the Working notes section).
+          // After a task reset the handoff is the durable record. A legacy
+          // fold still points at the working-notes file.
           const foldNote = {
             role: "user" as const,
-            content:
-              "[runtime] Context was folded to stay within the window. Your working notes " +
-              "file (.anchor/notes.md, git-excluded) is the durable record of findings and " +
-              "next steps — re-read it when you need detail from before the fold.",
+            content: folded.handoff
+              ? "[runtime] Context was reset to a durable task handoff. The authoritative task, requirements, evidence, failures, next steps, and recent observations are in the turn-scoped handoff; recent messages are retained verbatim."
+              : "[runtime] Context was folded to stay within the window. Your working notes " +
+                "file (.anchor/notes.md, git-excluded) is the durable record of findings and " +
+                "next steps — re-read it when you need detail from before the fold.",
           };
           // Preserve the actual current request even if its earlier position
           // was folded. Do not replace it with a generic "Begin" instruction.
@@ -1259,8 +1297,9 @@ async function runOne(
             type: "compacted",
             removedMessages: folded.removedCount,
             keptMessages: tail.length,
-            summaryChars: summary.length,
-            summary,
+            summaryChars: folded.summary.length,
+            summary: folded.summary,
+            ...(folded.handoff ? { compaction: folded.handoff } : {}),
             folding: folded.foldingPreview,
             usage: folded.usage,
           });

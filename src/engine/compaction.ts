@@ -14,6 +14,9 @@
  * message, so every kept assistant-with-tool_calls has its results with it.
  */
 import type { LLMClient, LLMMessage, LLMUsage } from "../llm/types.js";
+import { completeStructured } from "../llm/structured.js";
+import type { ProgressLedger } from "../ledger/types.js";
+import { renderLedger } from "../ledger/ledger.js";
 import { conversationHistory } from "./context.js";
 
 export interface CompactionConfig {
@@ -21,6 +24,171 @@ export interface CompactionConfig {
   maxEstimatedTokens?: number;
   /** How much of the tail to keep verbatim. */
   keepRecentTokens?: number;
+}
+
+/**
+ * Durable state that replaces the folded part of a task conversation. The
+ * engine builds this with structured output; consumers persist it through
+ * their existing ThreadStore. The core fields are SDK-owned so the next
+ * window can be reconstructed without trusting a prose summary.
+ */
+export interface CompactionHandoff {
+  task: string;
+  requirements: Array<{
+    id: string;
+    text: string;
+    status: string;
+    evidence: string[];
+  }>;
+  completed: string[];
+  currentState: string;
+  openFailures: string[];
+  nextSteps: string[];
+  constraints: string[];
+  lastObservations: string[];
+  git: {
+    head?: string;
+    checkpoint?: string;
+    dirty?: boolean;
+  };
+}
+
+const HANDOFF_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    task: { type: "string" },
+    requirements: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          text: { type: "string" },
+          status: { type: "string" },
+          evidence: { type: "array", items: { type: "string" } },
+        },
+        required: ["id", "text", "status", "evidence"],
+        additionalProperties: false,
+      },
+    },
+    completed: { type: "array", items: { type: "string" } },
+    currentState: { type: "string" },
+    openFailures: { type: "array", items: { type: "string" } },
+    nextSteps: { type: "array", items: { type: "string" } },
+    constraints: { type: "array", items: { type: "string" } },
+    lastObservations: { type: "array", items: { type: "string" } },
+    git: {
+      type: "object",
+      properties: {
+        head: { type: "string" },
+        checkpoint: { type: "string" },
+        dirty: { type: "boolean" },
+      },
+      additionalProperties: false,
+    },
+  },
+  required: [
+    "task",
+    "requirements",
+    "completed",
+    "currentState",
+    "openFailures",
+    "nextSteps",
+    "constraints",
+    "lastObservations",
+    "git",
+  ],
+  additionalProperties: false,
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function strings(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new Error("expected an array of strings");
+  return value.map((item) => {
+    if (typeof item !== "string") throw new Error("expected a string");
+    return item;
+  });
+}
+
+function parseCompactionHandoff(value: unknown): CompactionHandoff {
+  if (!isRecord(value)) throw new Error("expected an object");
+  if (typeof value.task !== "string") throw new Error("task must be a string");
+  if (typeof value.currentState !== "string")
+    throw new Error("currentState must be a string");
+  if (!Array.isArray(value.requirements))
+    throw new Error("requirements must be an array");
+  const requirements = value.requirements.map((item) => {
+    if (!isRecord(item)) throw new Error("requirement must be an object");
+    if (typeof item.id !== "string" || typeof item.text !== "string")
+      throw new Error("requirement id/text must be strings");
+    if (typeof item.status !== "string")
+      throw new Error("requirement status must be a string");
+    return {
+      id: item.id,
+      text: item.text,
+      status: item.status,
+      evidence: strings(item.evidence),
+    };
+  });
+  const git = isRecord(value.git) ? value.git : {};
+  return {
+    task: value.task,
+    requirements,
+    completed: strings(value.completed),
+    currentState: value.currentState,
+    openFailures: strings(value.openFailures),
+    nextSteps: strings(value.nextSteps),
+    constraints: strings(value.constraints),
+    lastObservations: strings(value.lastObservations),
+    git: {
+      ...(typeof git.head === "string" ? { head: git.head } : {}),
+      ...(typeof git.checkpoint === "string"
+        ? { checkpoint: git.checkpoint }
+        : {}),
+      ...(typeof git.dirty === "boolean" ? { dirty: git.dirty } : {}),
+    },
+  };
+}
+
+/** Render the durable handoff as the turn-scoped state block. */
+export function renderCompactionHandoff(handoff: CompactionHandoff): string {
+  const list = (items: string[]) =>
+    items.length ? items.map((item) => `- ${item}`).join("\n") : "- none";
+  return [
+    "## Durable task handoff",
+    "This is authoritative state restored after a context reset, not a new user request.",
+    `TASK: ${handoff.task}`,
+    `CURRENT STATE: ${handoff.currentState}`,
+    "",
+    "REQUIREMENTS:",
+    list(
+      handoff.requirements.map(
+        (item) =>
+          `${item.id} [${item.status}] ${item.text}${item.evidence.length ? ` (evidence: ${item.evidence.join(", ")})` : ""}`,
+      ),
+    ),
+    "",
+    "COMPLETED:",
+    list(handoff.completed),
+    "OPEN FAILURES:",
+    list(handoff.openFailures),
+    "NEXT STEPS:",
+    list(handoff.nextSteps),
+    "CONSTRAINTS:",
+    list(handoff.constraints),
+    "LAST OBSERVATIONS:",
+    list(handoff.lastObservations),
+    ...(handoff.git.head || handoff.git.checkpoint
+      ? [
+          "GIT:",
+          `- head: ${handoff.git.head ?? "unknown"}`,
+          `- checkpoint: ${handoff.git.checkpoint ?? "none"}`,
+        ]
+      : []),
+  ].join("\n");
 }
 
 export const DEFAULT_COMPACTION = {
@@ -100,8 +268,10 @@ export function findCompactionCut(
 }
 
 export interface CompactionOutcome {
-  /** The new running summary (prior summary + folded transcript). */
+  /** A compact prose view for compatibility/events; structured path also has handoff. */
   summary: string;
+  /** Structured state, when the task/ledger path produced it. */
+  handoff?: CompactionHandoff;
   /** The verbatim tail that was kept. */
   keptMessages: LLMMessage[];
   removedCount: number;
@@ -185,4 +355,86 @@ export async function compactConversation(args: {
         : folded,
     usage: response.usage,
   };
+}
+
+
+/**
+ * Fold a task conversation into the SDK-owned handoff contract. This is used
+ * only when a ledger/verifier is active; plain chat keeps the legacy summary
+ * path. A malformed response returns null so the caller retains the intact
+ * conversation rather than silently losing state.
+ */
+export async function compactConversationStructured(args: {
+  llm: LLMClient;
+  messages: LLMMessage[];
+  previousSummary?: string;
+  previousHandoff?: CompactionHandoff;
+  ledger?: ProgressLedger;
+  git?: CompactionHandoff["git"];
+  keepRecentTokens: number;
+  signal?: AbortSignal;
+}): Promise<CompactionOutcome | null> {
+  const cut = findCompactionCut(args.messages, args.keepRecentTokens);
+  if (cut === -1) return null;
+
+  const summarizable = args.messages.slice(1, cut);
+  if (summarizable.length === 0 || estimateTokens(summarizable) === 0)
+    return null;
+
+  const userContent = [
+    args.previousSummary
+      ? `Previous prose summary:\n${args.previousSummary}\n`
+      : "",
+    args.previousHandoff
+      ? `Previous durable handoff:\n${renderCompactionHandoff(args.previousHandoff)}\n`
+      : "",
+    args.ledger ? `Authoritative ledger:\n${renderLedger(args.ledger)}\n` : "",
+    args.git
+      ? `Git state: ${JSON.stringify(args.git)}\n`
+      : "Git state: unknown\n",
+    `Transcript to fold in:\n${renderTranscript(summarizable)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const structured = await completeStructured(args.llm, {
+      name: "compaction_handoff",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You compact an agent task into a durable handoff. Preserve the task, requirements and their status, evidence ids, completed work, current state, open failures, next steps, constraints, and last observations. Do not invent completed work or evidence. The ledger is authoritative; keep its requirement ids and statuses. Return only the schema-bound object.",
+        },
+        { role: "user", content: userContent },
+      ],
+      schema: HANDOFF_SCHEMA,
+      parse: parseCompactionHandoff,
+      maxTokens: 2400,
+      signal: args.signal,
+    });
+    return {
+      handoff: {
+        ...structured.value,
+        ...(args.git ? { git: { ...structured.value.git, ...args.git } } : {}),
+      },
+      summary: renderCompactionHandoff({
+        ...structured.value,
+        ...(args.git ? { git: { ...structured.value.git, ...args.git } } : {}),
+      }),
+      keptMessages: args.messages.slice(cut),
+      removedCount: summarizable.length,
+      foldingPreview: previewFold(summarizable),
+      usage: structured.response.usage,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function previewFold(messages: LLMMessage[]): string {
+  const folded = renderTranscript(messages);
+  return folded.length > FOLDING_PREVIEW_CHARS
+    ? `${folded.slice(0, FOLDING_PREVIEW_CHARS)}\n[... folded transcript truncated for the record — ${folded.length} chars total ...]`
+    : folded;
 }

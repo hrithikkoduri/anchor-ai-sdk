@@ -1149,3 +1149,24 @@ The reporting rules are:
 
 Regressions: `evals/scripts/aggregate-bench.mjs`,
 `evals/scripts/aggregate-external.mjs`, and the benchmark workflow metadata.
+
+## Decision #92: Task compaction uses an SDK-owned structured handoff
+
+Task/verifier runs do not replace the conversation with another prose summary.
+At the compaction threshold the engine produces a schema-bound
+`CompactionHandoff` with `completeStructured()`: task, requirements/status/
+evidence, completed work, current state, open failures, next steps, constraints,
+last observations, and git references. The handoff is saved on the existing
+`StoredThread` as `compaction`; no second store or consumer-defined summarizer is
+required.
+
+The reset starts a fresh message window with the stable system/task prompt, the
+turn-scoped ledger and handoff, the current request, and a recent verbatim tail.
+The ledger is not moved into the system message. Old transcript detail stays in
+the trace/thread record; it is not replayed into the new window. Legacy chat
+threads keep the prose `summary` path, and a malformed structured response or
+store failure must retain the intact conversation rather than silently clear
+state.
+
+Regressions: `tests/unit/engine-verifier.test.ts` and
+`tests/unit/compaction.test.ts`.

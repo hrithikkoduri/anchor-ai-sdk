@@ -49,6 +49,31 @@ function agentLlm(
     }
     if (
       req.responseFormat?.type === "json_schema" &&
+      req.responseFormat.name === "compaction_handoff"
+    ) {
+      return response(
+        JSON.stringify({
+          task: "Fix the retry bug",
+          requirements: [
+            {
+              id: "r1",
+              text: "Patch the deadline",
+              status: "open",
+              evidence: [],
+            },
+          ],
+          completed: ["Read the retry path"],
+          currentState: "The deadline patch is still open.",
+          openFailures: [],
+          nextSteps: ["Patch the deadline"],
+          constraints: ["Do not claim completion without evidence"],
+          lastObservations: ["The retry resets the deadline"],
+          git: { checkpoint: "abc123" },
+        }),
+      );
+    }
+    if (
+      req.responseFormat?.type === "json_schema" &&
       req.responseFormat.name === "phase_alignment"
     ) {
       return response(
@@ -303,6 +328,57 @@ describe("engine verifier integration", () => {
     const tools = taskRequest?.tools?.map((tool) => tool.function.name) ?? [];
     expect(tools).toContain("probe");
     expect(tools).toContain("update_ledger");
+  });
+
+  it("resets a task window with a structured handoff and keeps the recent tail", async () => {
+    const store = new MemoryThreadStore();
+    const ledger = createLedger({ taskId: "t", source: "Fix the retry bug" });
+    addRequirement(ledger, { text: "Patch the deadline" });
+    await store.save("thread", {
+      messages: [
+        { role: "user", content: "old request" },
+        { role: "assistant", content: "x".repeat(20_000) },
+        { role: "user", content: "recent context" },
+        {
+          role: "assistant",
+          content: "recent context ".repeat(80),
+        },
+      ],
+      ledger,
+    });
+    const llm = agentLlm([
+      response("After the reset."),
+      response("Done."),
+      response("Done."),
+    ]);
+
+    const result = await runAgent(
+      { task: "continue" },
+      {
+        llm,
+        verifier: true,
+        agent: testAgent,
+        thread: { store, id: "thread" },
+        compaction: { maxEstimatedTokens: 3_000, keepRecentTokens: 20 },
+      },
+    );
+
+    expect(result.compaction).toMatchObject({
+      task: "Fix the retry bug",
+      currentState: "The deadline patch is still open.",
+    });
+    const after = llm.seen.find((request) =>
+      request.tools?.some((tool) => tool.function.name === "probe"),
+    );
+    const text = JSON.stringify(after?.messages);
+    expect(text).toContain("Durable task handoff");
+    expect(text).toContain("Patch the deadline");
+    expect(text).toContain("recent context");
+    expect(text).not.toContain("x".repeat(20_000));
+    expect(result.steps).toBeGreaterThan(0);
+    expect((await store.load("thread"))?.compaction?.task).toBe(
+      "Fix the retry bug",
+    );
   });
 
   it("honors explicit chat even when a required ledger item is open", async () => {
