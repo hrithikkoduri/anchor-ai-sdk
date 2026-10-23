@@ -243,7 +243,8 @@ This is not a claim that all providers offer equivalent isolation.
 Providers that can build images expose the common `imagePublisher` contract and
 the `anchor image publish` command, so Docker, E2B, and Heyo each use their own
 native registry while the caller keeps one shape. `anchor image publish --help`
-shows the flags.
+shows the flags. Per-provider instructions are in
+[docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
 **[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)**

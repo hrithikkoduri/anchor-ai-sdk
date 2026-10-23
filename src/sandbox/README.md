@@ -192,7 +192,8 @@ retryable/adoptable, and the boot itself lives in `start()`.
 
 `start()` never builds or pushes an image; publishing is an explicit, optional
 `imagePublisher` seam. `SandboxSpec.image` is a per-sandbox override only where
-the provider can vary its image.
+the provider can vary its image. The consumer-facing guide is
+[docs/sandbox-image-publishing.md](../../docs/sandbox-image-publishing.md).
 
 | Provider | Default image | Per-sandbox `spec.image` | How a custom image gets there |
 |---|---|---|---|
