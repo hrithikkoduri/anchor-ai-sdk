@@ -1051,8 +1051,101 @@ Docker, or E2B. Sandbox `destroy()` closes
 every open process; each backend caps concurrent streams and rejects clearly
 above the cap.
 
-No LSP or JSON-RPC types live in core. `anchor-ai-sdk/lsp` can layer framing and
+No LSP or JSON-RPC types live in core. `anchor-ai-sdk/lsp` layers framing and
 language-server behavior on this primitive.
 
 Regressions: `tests/unit/local-process.test.ts`,
 `tests/unit/sandbox-egress.test.ts`.
+
+## Decision #87: Image publishing is a provider-native seam, not a second sandbox
+
+`SandboxSpec.image` selects an environment per sandbox where the provider can
+vary it. Publishing the artifact is a separate, credentialed deployment step:
+an optional `ImagePublisher` on the provider, declared by
+`capabilities.publishImage`, with `dockerfile`, `image`, and `rootfs` source
+kinds and a result that says whether the ref belongs in `SandboxSpec.image` or
+in provider configuration. The `anchor image publish` CLI is a thin adapter over
+the same contract.
+
+Docker builds/tags/pushes a container image; E2B builds/publishes a template
+(`Template.build`); Heyo wraps `heyctl artifact push` / `push-dockerfile` and
+returns provider config. Anchor does not own a registry, push credentials, or a
+build daemon. Unsupported source kinds fail loudly. Heyo accepts a per-sandbox
+`spec.image` only for `imageKind: "artifact"`; Dockerfile/git builds remain
+provider-level. The publisher is deliberately outside `start()` so sandbox
+creation stays retryable and does not silently perform a slow registry write.
+
+The contract and CLI are unit-tested with injected runners. Live registry
+publication is credential- and network-gated and is not part of the default CI
+suite.
+
+Regressions: `tests/unit/image-publish.test.ts`,
+`tests/unit/sandbox-egress.test.ts`.
+
+## Decision #88: LSP is optional, read-only, and outside core
+
+`anchor-ai-sdk/lsp` is the first consumer of `Sandbox.openProcess`, but it owns
+the entire JSON-RPC/LSP layer: Content-Length framing, initialize/shutdown,
+diagnostics notifications, definition/reference normalization, and TypeScript
+language IDs. Core never imports LSP types and keeps its small tool surface.
+
+The first entry point supports TypeScript/JavaScript only, with four read-only
+tools: `lsp_diagnostics`, `lsp_definition`, `lsp_references`, and
+`lsp_symbols`. Positions are 1-based at the tool boundary and converted to LSP's
+0-based positions. The consumer supplies the language-server command and must
+install `typescript-language-server` plus `typescript` in the sandbox image;
+Anchor does not install tools into the image. Missing servers fail with an
+actionable result. `search` and `read_file` remain the fallback rather than an
+implicit substitution.
+
+Heyo's process stream is a PTY, not a raw pipe: LSP framing is byte-sensitive,
+so LSP operation over Heyo is not live-verified. Local/Docker/E2B are the
+pipe-backed paths. A fixture-server test exercises the real client and framing;
+a live TypeScript server is image configuration, not a package dependency.
+
+Regressions: `tests/unit/lsp.test.ts`.
+
+## Decision #89: Terminal tasks get their own agent bundle
+
+Terminal-style tasks run in an already-provisioned environment, not a repository
+checkout. `terminalAgent` is a separate bundle with a terminal-oriented strategy
+and the familiar shell/file/test tools, rather than a flag that mutates the
+coding prompt. Consumers choose the bundle per run; the shared engine, sandbox,
+budgets, and evidence rules stay unchanged. Eval auto-selection uses the bundle
+for in-place Harbor tasks.
+
+## Decision #90: Tool output is bounded at the dispatch boundary
+
+Every tool result passes through the bounded-result path before it enters the
+model context. Built-in tools use the same path; `boundToolResult` is exported
+for consumer tools so a product never has to reimplement truncation or spill.
+The result keeps a readable head/tail preview and, when scratch storage is
+available, a durable path for paged reads or search. This is a context-safety
+boundary, not a claim that the underlying evidence was verified.
+
+## Decision #91: Benchmark results are release- and commit-specific
+
+A benchmark result is a record of one model, one harness, one task set, one
+budget, and one source commit. It is not a general property of the package, and
+a partial or interrupted run is not a release result. The v0.1.7 combined
+artifact lives at `evals/results/v0.1.7-2fbc92b/` even though the Git tag
+`v0.1.7` points to `08472b1`; the measured source was `2fbc92b`. The v0.1.8
+full round was cancelled, so its partial rows are retained only as operational
+data.
+
+The reporting rules are:
+
+- Name the arm: Anchor or the external harness (SWE-agent / Terminus-2). Never
+  compare model scores across different harnesses.
+- Record model id, harness/tag/SHA, task set, budgets, steps, prompt/completion/
+  cached tokens, cost, full-credit rate, mean partial reward, timeouts, false
+  finishes, and wall time where available.
+- Keep Anchor and external denominators visible; failed tasks and ungraded
+  tasks are not silently removed from the claim.
+- Do not publish a partial or cancelled round as a version result. Rerun it or
+  label it explicitly as incomplete.
+- Keep raw artifacts out of the main branch and publish summaries separately;
+  the current result directories retain the per-task records.
+
+Regressions: `evals/scripts/aggregate-bench.mjs`,
+`evals/scripts/aggregate-external.mjs`, and the benchmark workflow metadata.
