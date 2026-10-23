@@ -7,6 +7,7 @@
  * itself never formats anything — it only emits.
  */
 import type { LLMToolCall, LLMUsage } from "../llm/types.js";
+import type { CompactionHandoff } from "./compaction.js";
 
 /** What a budget-limited run says it still needs — see EngineOptions.revival. */
 export interface RevivalRequest {
@@ -177,6 +178,8 @@ export type AgentEvent =
       summaryChars: number;
       /** The summary that replaced the folded span — the compaction's output. */
       summary?: string;
+      /** Structured handoff used by a task/ledger reset. */
+      compaction?: CompactionHandoff;
       /** Truncated transcript of the folded span — the compaction's input. */
       folding?: string;
       usage: LLMUsage;

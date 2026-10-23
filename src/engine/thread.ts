@@ -19,10 +19,13 @@
  */
 import type { LLMMessage } from "../llm/types.js";
 import type { ProgressLedger } from "../ledger/types.js";
+import type { CompactionHandoff } from "./compaction.js";
 
 export interface StoredThread {
-  /** Running summary of earlier, compacted turns (compaction maintains this). */
+  /** Running prose summary, kept for chat/legacy compaction compatibility. */
   summary?: string;
+  /** Durable structured state restored after a task context reset. */
+  compaction?: CompactionHandoff;
   /** Verbatim recent conversation (no system message; the engine adds a fresh one each run). */
   messages: LLMMessage[];
   /**

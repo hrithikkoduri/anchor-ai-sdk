@@ -21,6 +21,7 @@ import {
 import { CodeBlock, CopyButton, PageShell, repo } from "./ui.jsx";
 import { CustomAgentExample } from "./agent-example.jsx";
 import { FeatureDocs } from "./feature-docs.jsx";
+import { ConsumerDocs } from "./consumer-docs.jsx";
 import "./styles.css";
 import "./pages.css";
 import "./typography.css";
@@ -57,6 +58,11 @@ const groups = [
       ["contract", "The contract"],
       ["conformance", "Conformance"],
       ["tools", "Tools & strategies"],
+      ["thread-store", "Thread store"],
+      ["inbox-store", "Inbox store"],
+      ["operation-store", "Operation store"],
+      ["sandbox-store", "Sandbox store"],
+      ["compaction-contract", "Compaction handoff"],
       ["process-streams", "Persistent processes"],
       ["image-publishing", "Publish sandbox images"],
       ["lsp", "Optional TypeScript LSP"],
@@ -758,8 +764,9 @@ return {
           </DocSection>
 
           <FeatureDocs Section={DocSection} Callout={Callout} />
+          <ConsumerDocs Section={DocSection} Callout={Callout} />
 
-          <DocSection id="status" number="23" title="Status & versioning">
+          <DocSection id="status" number="28" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams and

@@ -21,8 +21,10 @@ import {
 } from "./elision.js";
 import {
   compactConversation,
+  compactConversationStructured,
   DEFAULT_COMPACTION,
   estimateTokens,
+  renderCompactionHandoff,
 } from "./compaction.js";
 import {
   assistantMessage,
@@ -58,6 +60,7 @@ import {
   verifyAlignment,
   type VerifierConfig,
 } from "../ledger/index.js";
+import type { ProgressLedger } from "../ledger/types.js";
 import { chatAgent } from "../agents/chat/index.js";
 import { codingAgent } from "../agents/coding/index.js";
 import type { EventSink, RevivalRequest } from "./events.js";
@@ -250,6 +253,7 @@ async function runOne(
   )
     phase = prior.phase;
   let summary = prior?.summary;
+  let compaction = prior?.compaction;
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
 
@@ -267,7 +271,7 @@ async function runOne(
   if (verifierOn && !ledger) {
     const compiled = await compileLedger({
       llm: verifierLlm,
-      taskId: opts.thread?.id ?? `task-${Date.now()}`,
+      taskId: opts.taskId ?? opts.thread?.id ?? `task-${Date.now()}`,
       task: task.task,
       phases: strategy.phases,
       reasoningEffort: "low",
@@ -398,6 +402,11 @@ async function runOne(
             "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
           ].join("\n\n")
         : undefined,
+      stability: "turn",
+    },
+    {
+      id: "compaction",
+      text: compaction ? renderCompactionHandoff(compaction) : undefined,
       stability: "turn",
     },
     {
@@ -880,6 +889,7 @@ async function runOne(
         summary,
         messages: conversationHistory(messages),
         phase: done ? resumePhase : phase,
+        ...(compaction ? { compaction } : {}),
         ...(ledger ?? prior?.ledger
           ? { ledger: ledger ?? prior?.ledger }
           : {}),
@@ -974,6 +984,7 @@ async function runOne(
       phase,
       evidence,
       ...(ledger ? { ledger } : {}),
+      ...(compaction ? { compaction } : {}),
       ...(verifierOn ? { verified } : {}),
       ...(revivalRequest &&
       (reason === "budget_exceeded" || reason === "max_steps")
@@ -1224,25 +1235,53 @@ async function runOne(
         }
       }
       if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
-        const folded = await compactConversation({
-          llm: opts.llm,
-          messages: forModel(false),
-          runningSummary: summary,
-          keepRecentTokens: compact.keepRecentTokens,
-          signal,
-        });
+        let folded = null as Awaited<
+          ReturnType<typeof compactConversation>
+        > | null;
+        if (ledger) {
+          try {
+            folded = await compactConversationStructured({
+              llm: opts.llm,
+              messages: forModel(false),
+              ...(summary ? { previousSummary: summary } : {}),
+              ...(compaction ? { previousHandoff: compaction } : {}),
+              ledger,
+              ...(checkpointRef ? { git: { checkpoint: checkpointRef } } : {}),
+              keepRecentTokens: compact.keepRecentTokens,
+              signal,
+            });
+          } catch {
+            folded = null;
+          }
+        }
+        if (!folded) {
+          folded = await compactConversation({
+            llm: opts.llm,
+            messages: forModel(false),
+            runningSummary: summary,
+            keepRecentTokens: compact.keepRecentTokens,
+            signal,
+          });
+        }
         if (folded) {
           budget.record(folded.usage);
-          summary = folded.summary;
+          if (folded.handoff) {
+            compaction = folded.handoff;
+            summary = undefined;
+          } else {
+            summary = folded.summary;
+            compaction = undefined;
+          }
           const tail = folded.keptMessages;
-          // After a fold the model's earlier detail is gone from context;
-          // point it at the durable record (see the Working notes section).
+          // After a task reset the handoff is the durable record. A legacy
+          // fold still points at the working-notes file.
           const foldNote = {
             role: "user" as const,
-            content:
-              "[runtime] Context was folded to stay within the window. Your working notes " +
-              "file (.anchor/notes.md, git-excluded) is the durable record of findings and " +
-              "next steps — re-read it when you need detail from before the fold.",
+            content: folded.handoff
+              ? "[runtime] Context was reset to a durable task handoff. The authoritative task, requirements, evidence, failures, next steps, and recent observations are in the turn-scoped handoff; recent messages are retained verbatim."
+              : "[runtime] Context was folded to stay within the window. Your working notes " +
+                "file (.anchor/notes.md, git-excluded) is the durable record of findings and " +
+                "next steps — re-read it when you need detail from before the fold.",
           };
           // Preserve the actual current request even if its earlier position
           // was folded. Do not replace it with a generic "Begin" instruction.
@@ -1258,8 +1297,9 @@ async function runOne(
             type: "compacted",
             removedMessages: folded.removedCount,
             keptMessages: tail.length,
-            summaryChars: summary.length,
-            summary,
+            summaryChars: folded.summary.length,
+            summary: folded.summary,
+            ...(folded.handoff ? { compaction: folded.handoff } : {}),
             folding: folded.foldingPreview,
             usage: folded.usage,
           });
@@ -1648,6 +1688,62 @@ function usageDelta(
   };
 }
 
+/** A required obligation still needs work, or an open failure blocks finish. */
+function hasActiveLedger(ledger: ProgressLedger | undefined): boolean {
+  if (!ledger) return false;
+  const open = ledger.requirements.some(
+    (item) =>
+      item.required &&
+      item.status !== "verified" &&
+      item.status !== "waived" &&
+      item.status !== "superseded",
+  );
+  return open || ledger.openFailures.length > 0;
+}
+
+async function priorLedgerFor(
+  opts: EngineOptions,
+  verifierOn: boolean,
+): Promise<ProgressLedger | undefined> {
+  if (!verifierOn) return undefined;
+  if (opts.ledger) return opts.ledger;
+  if (!opts.thread) return undefined;
+  return (await opts.thread.store.load(opts.thread.id))?.ledger;
+}
+
+/**
+ * Resolve the route for one run. `intent: "auto"` is ledger-aware: an active
+ * task contract outranks text heuristics. Explicit chat/clarify/task still
+ * wins, and turns without verifier mode keep their existing behavior.
+ */
+function routeTurn(
+  task: RunTask,
+  opts: EngineOptions,
+  priorLedger: ProgressLedger | undefined,
+): EngineOptions {
+  const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
+  if (!verifierOn) return { ...opts, agent: opts.agent ?? chatAgent };
+  const explicit = opts.intent ?? "auto";
+  const intent =
+    explicit === "auto" && hasActiveLedger(priorLedger)
+      ? "task"
+      : resolveTurnIntent(task.task, explicit);
+  if (intent !== "task") {
+    return {
+      ...opts,
+      agent: chatAgent,
+      verifier: false,
+      intent: "chat",
+      ledger: undefined,
+    };
+  }
+  return {
+    ...opts,
+    agent: opts.agent ?? codingAgent,
+    intent: "task",
+  };
+}
+
 /**
  * A run chain (decision #82): one run at a time, with the consumer's inbox as
  * the source of what comes next. The chain shares one budget and carries
@@ -1689,7 +1785,15 @@ async function runChain(
 
   for (;;) {
     const budget = seededBudget(opts, spend);
-    result = await runOne(current, opts, {
+    const routed = routeTurn(
+      current,
+      opts,
+      await priorLedgerFor(
+        opts,
+        opts.verifier !== undefined && opts.verifier !== false,
+      ),
+    );
+    result = await runOne(current, routed, {
       budget,
       stepsBefore,
       jobs,
@@ -1764,27 +1868,8 @@ export async function runAgent(
   task: RunTask,
   opts: EngineOptions,
 ): Promise<AgentResult> {
+  if (opts.inbox) return runChain(task, opts);
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
-  const intent = resolveTurnIntent(task.task, opts.intent ?? "auto");
-
-  // Conversation turns never create task state: no ledger, no verifier, no
-  // coding phases. A clear task uses the caller's agent, or the coding agent.
-  if (verifierOn && intent !== "task") {
-    const conversation: EngineOptions = {
-      ...opts,
-      agent: chatAgent,
-      verifier: false,
-      intent: "chat",
-      ledger: undefined,
-    };
-    return opts.inbox
-      ? runChain(task, conversation)
-      : runOne(task, conversation);
-  }
-
-  const effective: EngineOptions = {
-    ...opts,
-    agent: opts.agent ?? (verifierOn ? codingAgent : chatAgent),
-  };
-  return opts.inbox ? runChain(task, effective) : runOne(task, effective);
+  const priorLedger = await priorLedgerFor(opts, verifierOn);
+  return runOne(task, routeTurn(task, opts, priorLedger));
 }

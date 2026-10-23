@@ -22,7 +22,7 @@ site/
   src/pages.css     documentation + benchmark styles
   src/typography.css shared readable type scale + responsive reflow
   src/theme.css     white/black signal identity + contrast palette
-  src/benchmark-data.js published Round 1 figures
+  src/benchmark-data.js complete v0.1.7 combined figures
   docs.html         documentation (single page, anchored sections)
   benchmarks.html   the eval story + results table
   changelog.html    release history, benefits, limits, and tagged source links

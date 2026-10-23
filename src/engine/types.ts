@@ -9,7 +9,7 @@ import type { Sandbox } from "../sandbox/types.js";
 import type { Tool } from "../tools/types.js";
 import type { TraceSink } from "../trace/sink.js";
 import type { BudgetLimits } from "./budgets.js";
-import type { CompactionConfig } from "./compaction.js";
+import type { CompactionConfig, CompactionHandoff } from "./compaction.js";
 import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
@@ -53,6 +53,8 @@ export interface EngineOptions {
   verifier?: boolean | VerifierConfig;
   /** Explicit turn routing; default "auto" when verifier is enabled. */
   intent?: "auto" | "chat" | "clarify" | "task";
+  /** Stable id for the task contract; defaults to the thread id. */
+  taskId?: string;
   /** Resume/inject an existing ledger (normally loaded from the thread). */
   ledger?: ProgressLedger;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
@@ -312,6 +314,8 @@ export interface AgentResult {
   phase?: string;
   /** Ledger state after this run, when verifier/ledger mode was active. */
   ledger?: ProgressLedger;
+  /** Durable structured state carried across a task context reset. */
+  compaction?: CompactionHandoff;
   /** Whether the finish/phase gate accepted the claimed completion. */
   verified?: boolean;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */

@@ -1129,9 +1129,9 @@ A benchmark result is a record of one model, one harness, one task set, one
 budget, and one source commit. It is not a general property of the package, and
 a partial or interrupted run is not a release result. The v0.1.7 combined
 artifact lives at `evals/results/v0.1.7-2fbc92b/` even though the Git tag
-`v0.1.7` points to `08472b1`; the measured source was `2fbc92b`. The v0.1.8
-full round was cancelled, so its partial rows are retained only as operational
-data.
+`v0.1.7` points to `08472b1`; the measured source was `2fbc92b`. v0.1.8 has no
+recorded benchmark result: its full round was cancelled before both arms
+completed, and partial rows are not published as a version record.
 
 The reporting rules are:
 
@@ -1142,15 +1142,36 @@ The reporting rules are:
   finishes, and wall time where available.
 - Keep Anchor and external denominators visible; failed tasks and ungraded
   tasks are not silently removed from the claim.
-- Do not publish a partial or cancelled round as a version result. Rerun it or
-  label it explicitly as incomplete.
+- Do not publish a partial or cancelled round. A version gets a benchmark record
+  only when the full Anchor and external arms complete.
 - Keep raw artifacts out of the main branch and publish summaries separately;
   the current result directories retain the per-task records.
 
 Regressions: `evals/scripts/aggregate-bench.mjs`,
 `evals/scripts/aggregate-external.mjs`, and the benchmark workflow metadata.
 
-## Decision #92: Daytona is a provider with four honest "no"s
+## Decision #92: Task compaction uses an SDK-owned structured handoff
+
+Task/verifier runs do not replace the conversation with another prose summary.
+At the compaction threshold the engine produces a schema-bound
+`CompactionHandoff` with `completeStructured()`: task, requirements/status/
+evidence, completed work, current state, open failures, next steps, constraints,
+last observations, and git references. The handoff is saved on the existing
+`StoredThread` as `compaction`; no second store or consumer-defined summarizer is
+required.
+
+The reset starts a fresh message window with the stable system/task prompt, the
+turn-scoped ledger and handoff, the current request, and a recent verbatim tail.
+The ledger is not moved into the system message. Old transcript detail stays in
+the trace/thread record; it is not replayed into the new window. Legacy chat
+threads keep the prose `summary` path, and a malformed structured response or
+store failure must retain the intact conversation rather than silently clear
+state.
+
+Regressions: `tests/unit/engine-verifier.test.ts` and
+`tests/unit/compaction.test.ts`.
+
+## Decision #93: Daytona is a provider with four honest "no"s
 
 Daytona ships as `anchor-ai-sdk/sandbox/daytona` (`daytona()`,
 `DaytonaSandbox`) and passes `runSandboxConformance` on a live account. It is

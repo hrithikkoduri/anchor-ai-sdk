@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
-import * as Tabs from "@animate-ui/react/primitives/radix-ui/tabs";
 import * as Accordion from "@animate-ui/react/primitives/radix-ui/accordion";
-import { motion } from "motion/react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,188 +12,162 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { CodeBlock, PageShell, repo } from "./ui.jsx";
-import { tasks, totals } from "./benchmark-data.js";
+import { rounds, sweLiteDeepSeek } from "./benchmark-data.js";
 import logo from "../assets/logo.svg";
 import "./styles.css";
 import "./pages.css";
 import "./typography.css";
 import "./theme.css";
 
-const source = `${repo}/blob/main/evals/benchmarks/swe-bench`;
-const number = (n) => n.toLocaleString("en-US");
-const metrics = [
-  {
-    id: "cost",
-    label: "Run cost",
-    unit: "USD / ALL 10 TASKS",
-    a: totals.anchor.usd,
-    b: totals.mini.usd,
-    aLabel: "$0.6036",
-    bLabel: "≈$1.9871",
-    note: "Anchor: provider usage at live catalog rates. Mini: estimated tokens priced at model rates.",
-  },
-  {
-    id: "tokens",
-    label: "Tokens",
-    unit: "TOKENS / ALL 10 TASKS",
-    a: totals.anchor.tokens,
-    b: totals.mini.tokens,
-    aLabel: "5.28M",
-    bLabel: "≈16.99M",
-    note: "Mini tokens are estimated from serialized history ÷ 4. These are not equivalent accounting methods.",
-  },
-  {
-    id: "time",
-    label: "Wall time",
-    unit: "SECONDS / ALL 10 TASKS",
-    a: totals.anchor.seconds,
-    b: totals.mini.seconds,
-    aLabel: "4,137s",
-    bLabel: "2,182s",
-    note: "The trade-off: Anchor took about 1.9× the wall time in this round. Both arms used emulated amd64 containers.",
-  },
-];
+const source = `${repo}/blob/main/evals/results/v0.1.7-2fbc92b`;
+const number = (n) => (n == null ? "—" : n.toLocaleString("en-US"));
+const percent = (n) => (n == null ? "—" : `${(n * 100).toFixed(1)}%`);
+const money = (n) => (n == null ? "—" : `$${n.toFixed(2)}`);
 
-function Outcome({ resolved }) {
+function Outcome({ reward, status }) {
+  const resolved = reward === 1;
+  const label =
+    status === "failed"
+      ? "Failed"
+      : resolved
+        ? "Resolved"
+        : status === "completed"
+          ? "Unresolved"
+          : status;
   return (
     <span className={`outcome ${resolved ? "resolved" : "unresolved"}`}>
       {resolved ? <Check size={11} /> : <span>—</span>}
-      {resolved ? "Resolved" : "Unresolved"}
+      {label}
     </span>
   );
 }
 
-function Ledger({ full }) {
+function Summary() {
   return (
     <div
       className="ledger-scroll"
       tabIndex={0}
       role="region"
-      aria-label={
-        full
-          ? "Full benchmark ledger, scroll horizontally for all columns"
-          : "Task outcome and cost comparison"
-      }
+      aria-label="v0.1.7 combined benchmark summary"
     >
-      <table className={`ledger ${full ? "full-ledger" : ""}`}>
+      <table className="ledger v017-table">
         <caption className="sr-only">
-          Round 1 SWE-bench Lite results for ten tasks. Mini token and cost
-          values are estimates.
+          v0.1.7 Anchor and external harness results across SWE Lite, SWE Pro,
+          and Terminal on the selected ten-task sets.
         </caption>
         <thead>
-          {full ? (
-            <>
-              <tr>
-                <th rowSpan={2} scope="col">
-                  Task
-                </th>
-                <th colSpan={5} scope="colgroup" className="anchor-col">
-                  Anchor
-                </th>
-                <th colSpan={5} scope="colgroup">
-                  mini-swe-agent
-                </th>
-              </tr>
-              <tr>
-                {["Anchor", "Mini"].map((arm) => (
-                  <React.Fragment key={arm}>
-                    {[
-                      "Result",
-                      "Steps",
-                      "Time",
-                      arm === "Mini" ? "Tokens ≈" : "Tokens",
-                      arm === "Mini" ? "USD ≈" : "USD",
-                    ].map((name) => (
-                      <th key={name} scope="col">
-                        {name}
-                      </th>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tr>
-            </>
-          ) : (
-            <tr>
-              <th scope="col">Task</th>
-              <th scope="col" className="anchor-col">
-                Anchor
-              </th>
-              <th scope="col">mini-swe-agent</th>
-              <th scope="col" className="anchor-col">
-                Anchor $
-              </th>
-              <th scope="col">Mini $ ≈</th>
-            </tr>
-          )}
+          <tr>
+            <th scope="col">Bench</th>
+            <th scope="col">Model</th>
+            <th scope="col">External</th>
+            <th className="anchor-col" scope="col">Anchor full credit</th>
+            <th scope="col">External full credit</th>
+            <th scope="col">Mean reward A / E</th>
+            <th scope="col">Prompt tokens A / E</th>
+            <th scope="col">Cost A</th>
+            <th scope="col">p95 A / E</th>
+          </tr>
         </thead>
         <tbody>
-          {tasks.map((task) => (
-            <tr
-              key={task.id}
-              className={task.anchor[0] !== task.mini[0] ? "divergent" : ""}
-            >
-              <th scope="row">
-                <span className="task-indicator" />
-                {task.id}
-              </th>
-              {full ? (
-                ["anchor", "mini"].map((arm) => (
-                  <React.Fragment key={arm}>
-                    <td>
-                      <Outcome resolved={task[arm][0]} />
-                    </td>
-                    <td>{task[arm][1]}</td>
-                    <td>{task[arm][2]}s</td>
-                    <td>
-                      {arm === "mini" ? "≈" : ""}
-                      {number(task[arm][3])}
-                    </td>
-                    <td>
-                      {arm === "mini" ? "≈" : ""}${task[arm][4].toFixed(4)}
-                    </td>
-                  </React.Fragment>
-                ))
-              ) : (
-                <>
-                  <td>
-                    <Outcome resolved={task.anchor[0]} />
-                  </td>
-                  <td>
-                    <Outcome resolved={task.mini[0]} />
-                  </td>
-                  <td>${task.anchor[4].toFixed(4)}</td>
-                  <td>≈${task.mini[4].toFixed(4)}</td>
-                </>
-              )}
+          {rounds.map((round) => {
+            const winner =
+              round.anchor.full === round.external.full
+                ? "tie"
+                : round.anchor.full > round.external.full
+                  ? "anchor"
+                  : "external";
+            return (
+            <tr key={`${round.bench}-${round.model}`}>
+              <th scope="row">{round.benchLabel}</th>
+              <td>{round.modelLabel}</td>
+              <td>{round.harness}</td>
+              <td className={`anchor-col ${winner === "anchor" ? "benchmark-better" : ""}`}>
+                {round.anchor.full}/{round.anchor.scored}
+                {winner === "anchor" ? <span className="better-mark">better</span> : null}
+              </td>
+              <td className={winner === "external" ? "benchmark-better" : ""}>
+                {round.external.full}/{round.external.scored}
+                {winner === "external" ? <span className="better-mark">better</span> : null}
+              </td>
+              <td>
+                {percent(round.anchor.mean)} / {percent(round.external.mean)}
+              </td>
+              <td>
+                {number(round.anchor.prompt)} / {number(round.external.prompt)}
+              </td>
+              <td>{money(round.anchor.usd)}</td>
+              <td>
+                {number(Math.round(round.anchor.p95 / 1000))}s /{" "}
+                {number(Math.round(round.external.p95 / 1000))}s
+              </td>
+            </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TaskLedger() {
+  return (
+    <div
+      className="ledger-scroll"
+      tabIndex={0}
+      role="region"
+      aria-label="SWE Lite DeepSeek v0.1.7 per-task ledger"
+    >
+      <table className="ledger v017-table">
+        <caption className="sr-only">
+          SWE Lite, DeepSeek V4.1 Flash: Anchor and SWE-agent per-task results.
+          Anchor had one failed task; failed tasks are excluded from its
+          full-credit denominator.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Task</th>
+            <th className="anchor-col" scope="col">Anchor</th>
+            <th scope="col">SWE-agent</th>
+            <th scope="col">Anchor time</th>
+            <th scope="col">External time</th>
+            <th scope="col">Anchor tokens</th>
+            <th scope="col">External tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sweLiteDeepSeek.tasks.map((task) => (
+            <tr key={task.id}>
+              <th scope="row">{task.id}</th>
+              <td className="anchor-col">
+                <Outcome reward={task.anchor.reward} status={task.anchor.status} />
+                {task.anchor.falseFinish ? <small> false finish</small> : null}
+              </td>
+              <td>
+                <Outcome
+                  reward={task.external.reward}
+                  status={task.external.status}
+                />
+              </td>
+              <td>{number(Math.round(task.anchor.wallMs / 1000))}s</td>
+              <td>
+                {task.external.wallMs == null
+                  ? "—"
+                  : `${number(Math.round(task.external.wallMs / 1000))}s`}
+              </td>
+              <td>{number(task.anchor.tokens)}</td>
+              <td>{number(task.external.tokens)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr>
             <th scope="row">TOTAL / 10 TASKS</th>
-            {full ? (
-              ["anchor", "mini"].map((arm) => (
-                <React.Fragment key={arm}>
-                  <td>7/10</td>
-                  <td>{totals[arm].steps}</td>
-                  <td>{number(totals[arm].seconds)}s</td>
-                  <td>
-                    {arm === "mini" ? "≈" : ""}
-                    {number(totals[arm].tokens)}
-                  </td>
-                  <td>
-                    {arm === "mini" ? "≈" : ""}${totals[arm].usd.toFixed(4)}
-                  </td>
-                </React.Fragment>
-              ))
-            ) : (
-              <>
-                <td>7/10</td>
-                <td>7/10</td>
-                <td>$0.6036</td>
-                <td>≈$1.9871</td>
-              </>
-            )}
+            <td className="anchor-col">7/9 scored</td>
+            <td>0/10</td>
+            <td>{number(Math.round(rounds[0].anchor.p50 / 1000))}s p50</td>
+            <td>{number(Math.round(rounds[0].external.p50 / 1000))}s p50</td>
+            <td>{number(rounds[0].anchor.prompt)}</td>
+            <td>{number(rounds[0].external.prompt)}</td>
           </tr>
         </tfoot>
       </table>
@@ -204,104 +176,64 @@ function Ledger({ full }) {
 }
 
 function Benchmarks() {
-  const [metric, setMetric] = useState("cost");
   return (
     <PageShell page="benchmarks">
       <section className="container bench-hero">
         <div className="bench-hero-copy">
           <span className="eyebrow">
-            <span className="cross">+</span> BENCHMARKS / ROUND 01
+            <span className="cross">+</span> BENCHMARKS / V0.1.7
           </span>
           <h1>
-            Same score.
+            Both arms.
             <br />
-            <span>Different ledger.</span>
+            <span>The receipts.</span>
           </h1>
           <p>
-            We put the harness on the official grader.
+            Anchor against SWE-agent and Terminus-2.
             <br />
-            Here’s what it solved, spent, and didn’t.
+            Three suites. Two models. The complete v0.1.7 record.
           </p>
           <div className="round-tag">
-            <span className="status-dot" /> PUBLISHED BASELINE{" "}
-            <span>18 OCT 2026</span>
+            <span className="status-dot" /> COMPLETE ROUND{" "}
+            <span>MEASURED 2FBC92B</span>
           </div>
           <a className="text-link" href="#results">
-            Every task, every result <ArrowRight size={15} />
+            Every result, every limit <ArrowRight size={15} />
           </a>
         </div>
         <div className="benchmark-dashboard">
           <div className="dashboard-title">
             <FlaskConical size={14} />
-            <span>SWE-BENCH LITE / GLM 5.3</span>
-            <span className="dashboard-status">OFFICIAL GRADER</span>
+            <span>ANCHOR VS EXTERNAL / V0.1.7</span>
+            <span className="dashboard-status">SELECTED SETS</span>
           </div>
-          <div className="scoreboard">
-            <div>
-              <img src={logo} alt="" />
-              <span>Anchor</span>
-              <strong>
-                7<span>/10</span>
-              </strong>
-            </div>
-            <span className="scoreboard-equal">=</span>
-            <div>
-              <GitBranch size={20} />
-              <span>mini-swe-agent</span>
-              <strong>
-                7<span>/10</span>
-              </strong>
-            </div>
-          </div>
-          <Tabs.Root value={metric} onValueChange={setMetric}>
-            <Tabs.List className="metric-tabs" aria-label="Comparison metric">
-              {metrics.map((m) => (
-                <Tabs.Trigger key={m.id} value={m.id}>
-                  {m.label}
-                </Tabs.Trigger>
-              ))}
-            </Tabs.List>
-            {metrics.map((m) => (
-              <Tabs.Content key={m.id} value={m.id} className="metric-panel">
-                <span className="metric-unit">{m.unit}</span>
-                {[
-                  ["Anchor", m.a, m.aLabel, "anchor"],
-                  ["mini-swe-agent", m.b, m.bLabel, "mini"],
-                ].map(([name, value, label, arm]) => (
-                  <div className="dashboard-bar-row" key={arm}>
-                    <div>
-                      <span>{name}</span>
-                      <strong>{label}</strong>
-                    </div>
-                    <div className="dashboard-bar-track">
-                      <motion.div
-                        className={`dashboard-bar ${arm}`}
-                        initial={{ opacity: 0.7 }}
-                        animate={{ opacity: 1 }}
-                        style={{
-                          width: `${(value / Math.max(m.a, m.b)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-                <p>{m.note}</p>
-              </Tabs.Content>
+          <div className="v017-summary">
+            {[
+              ["SWE LITE", "11/17", "Anchor vs 0/20 external"],
+              ["SWE PRO", "15/20", "Anchor vs 9/20 external"],
+              ["TERMINAL", "8/20", "Anchor vs 11/20 external"],
+            ].map(([label, value, detail]) => (
+              <div key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+                <small>{detail}</small>
+              </div>
             ))}
-          </Tabs.Root>
+          </div>
           <div className="dashboard-bottom">
-            <ShieldCheck size={12} /> Same images. Same model. Same grader.
+            <ShieldCheck size={12} /> Same selected tasks. Different harnesses.
           </div>
         </div>
       </section>
+
       <div className="container benchmark-disclosure">
         <span>READ THE FINE PRINT</span>
         <p>
-          Round 01 is the 18 October published baseline: a deterministic
-          10-task subset, one per repository — not the full SWE-bench Lite set.
-          Mini’s cost and tokens are estimates. The latest complete harness
-          round is v0.1.7; the v0.1.8 round was interrupted. No v0.1.8 score is
-          claimed here.
+          This is the complete v0.1.7 combined round. Anchor’s full-credit
+          denominator excludes failed tasks; external counts all ten. The two
+          arms use different harnesses, task handling, and budgets. These are
+          selected samples, not a general performance guarantee. v0.1.8 has no
+          recorded benchmark result.
         </p>
       </div>
 
@@ -310,7 +242,7 @@ function Benchmarks() {
           <div className="section-heading">
             <div>
               <span className="eyebrow">
-                <span className="cross">+</span> 01 / THE COMPLETE LEDGER
+                <span className="cross">+</span> 01 / THE COMPLETE RECORD
               </span>
               <h2>
                 No aggregate
@@ -318,85 +250,101 @@ function Benchmarks() {
                 without the details.
               </h2>
             </div>
-            <a
-              className="doc-inline-link"
-              href={`${source}/results/comparison.md`}
-            >
+            <a className="doc-inline-link" href={`${source}/summary.md`}>
               View source data <ArrowUpRight size={13} />
             </a>
           </div>
-          <Tabs.Root defaultValue="summary" className="ledger-tabs">
-            <div className="ledger-toolbar">
-              <div>
-                <span className="status-dot" /> z-ai/glm-5.3{" "}
-                <span>10 TASKS</span>
-              </div>
-              <Tabs.List aria-label="Results detail">
-                <Tabs.Trigger value="summary">Outcome & cost</Tabs.Trigger>
-                <Tabs.Trigger value="full">Full ledger</Tabs.Trigger>
-              </Tabs.List>
-            </div>
-            <Tabs.Content value="summary">
-              <Ledger full={false} />
-            </Tabs.Content>
-            <Tabs.Content value="full">
-              <Ledger full />
-            </Tabs.Content>
-          </Tabs.Root>
+          <p className="benchmark-legend">
+            <span className="legend-swatch" /> Green marks the higher full-credit
+            count in that row. Denominators differ, so read the counts and the
+            note below; ties stay neutral.
+          </p>
+          <Summary />
           <div className="ledger-footnote">
             <span>
-              <i /> Different outcomes — one task each.
+              <i /> Full credit is one task.
             </span>
             <p>
-              Mini values marked ≈ are estimates. Totals reflect the published
-              source; rounded rows may not sum exactly. On narrow screens,
-              scroll the table to inspect every column.
+              External SWE-agent did not report cache or cost; those values are
+              shown as —. Anchor costs are provider-reported. p95 is wall time,
+              including task setup and verification where available.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="container bench-detail-section" id="detail">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">
+              <span className="cross">+</span> 02 / ONE SUITE IN DETAIL
+            </span>
+            <h2>
+              SWE Lite,
+              <br />
+              task by task.
+            </h2>
+          </div>
+          <p>
+            The same ten tasks, the same model. The detailed ledger shows why a
+            single aggregate is never the whole story.
+          </p>
+        </div>
+        <TaskLedger />
+        <div className="ledger-footnote">
+          <span>
+            <i /> An empty cell is not a pass.
+          </span>
+          <p>
+            One Anchor task failed before grading and is excluded from the 7/9
+            denominator. All ten SWE-agent tasks were scored; none received
+            full credit. Times are wall time, not a claim about model latency.
+          </p>
         </div>
       </section>
 
       <section className="container benchmark-takeaways">
         <div>
           <span className="eyebrow">
-            <span className="cross">+</span> 02 / THE HONEST READ
+            <span className="cross">+</span> 03 / THE HONEST READ
           </span>
           <h2>
-            A smaller bill.
+            A lead here.
             <br />
-            Not a clean sweep.
+            A trade-off there.
           </h2>
         </div>
         <div className="takeaway-list">
           <div>
             <span>01</span>
             <div>
-              <h3>Equal resolution. Different wins.</h3>
+              <h3>Anchor leads both SWE suites.</h3>
               <p>
-                Anchor resolved matplotlib-18869; mini resolved seaborn-2848.
-                Flask-4045 and sympy-11400 stayed unresolved for both.
+                SWE Lite: 7/9 and 4/8 for Anchor vs 0/10 for SWE-agent. SWE Pro:
+                10/10 and 5/10 vs 6/10 and 3/10. Full-credit denominators differ;
+                failed Anchor tasks are not counted as passes.
               </p>
             </div>
           </div>
           <div>
             <span>02</span>
             <div>
-              <h3>About a third of the estimated cost.</h3>
+              <h3>Terminus-2 wins Terminal.</h3>
               <p>
-                $0.60 vs ≈$1.99 across this subset. The accounting methods
-                differ, so the ratio is indicative — not an exact like-for-like
-                billing claim.
+                The external arm took 8/10 and 3/10 against Anchor’s 7/10 and
+                1/10. The Qwen Terminal result is the largest gap and the clearest
+                next investigation, not a general harness verdict.
               </p>
             </div>
           </div>
           <div>
             <span>03</span>
             <div>
-              <h3>Wall time went the other way.</h3>
+              <h3>Qwen is not one number.</h3>
               <p>
-                Anchor took 4,137s total vs mini’s 2,182s. This round doesn’t
-                establish why, and we don’t trade a latency loss for a hidden
-                asterisk.
+                Qwen’s SWE Pro result is 5/10 with Anchor and 3/10 external;
+                Terminal is 1/10 and 3/10. The spread is a warning against
+                ranking harnesses from one benchmark.
               </p>
             </div>
           </div>
@@ -407,7 +355,7 @@ function Benchmarks() {
         <div className="container method-grid">
           <div>
             <span className="eyebrow">
-              <span className="cross">+</span> 03 / REPRODUCIBLE, NOT MYSTERIOUS
+              <span className="cross">+</span> 04 / REPRODUCIBLE, NOT MYSTERIOUS
             </span>
             <h2>
               Open the hood.
@@ -415,15 +363,19 @@ function Benchmarks() {
               Check our work.
             </h2>
             <p>
-              Published results, official verdicts, and the runner are all in
-              the repository.
+              The complete round and both arms are in the repository. The
+              measured source is <code>2fbc92b</code>; the v0.1.7 tag points to
+              <code> 08472b1</code>. Keep that distinction visible.
             </p>
             <div className="artifact-links">
-              <a href={`${source}/results/comparison.md`}>
-                comparison.md <ArrowUpRight size={13} />
+              <a href={`${source}/anchor/summary.md`}>
+                Anchor summary <ArrowUpRight size={13} />
               </a>
-              <a href={`${source}/results/verdicts.jsonl`}>
-                verdicts.jsonl <ArrowUpRight size={13} />
+              <a href={`${source}/external/summary.md`}>
+                External summary <ArrowUpRight size={13} />
+              </a>
+              <a href={`${source}/manifest.json`}>
+                manifest.json <ArrowUpRight size={13} />
               </a>
             </div>
           </div>
@@ -436,23 +388,23 @@ function Benchmarks() {
             {[
               [
                 "setup",
-                "The environment",
-                "Both arms used official amd64 task images, emulated on Apple Silicon. Patches were extracted by the same runner and judged by the official SWE-bench grader.",
+                "The task sets",
+                "SWE Lite and SWE Pro use the selected ten-task sets; Terminal uses its selected ten-task set. Both arms run against the same task set, but the harness and its sandbox lifecycle differ.",
               ],
               [
-                "baseline",
-                "The baseline agent",
-                "mini-swe-agent ran through its Python bindings with its SWE-bench template in non-interactive mode. Its environment management was bypassed so both arms used the same task-container setup.",
+                "models",
+                "The models",
+                "DeepSeek V4.1 Flash and Qwen3 Coder Next ran with reasoning effort high for Anchor. The external models were served through the same OpenRouter endpoint where reported.",
               ],
               [
                 "accounting",
                 "The accounting caveat",
-                "Anchor tokens came from provider-reported usage and costs from live catalog rates. Mini tokens were estimated from serialized history divided by four, then priced from that estimate because litellm had no GLM 5.3 pricing entry.",
+                "External SWE-agent did not report cache or cost, so those values are unknown rather than zero. Anchor costs are provider-reported. p95 is wall time, not model-only latency.",
               ],
               [
                 "limits",
                 "What this round cannot tell you",
-                "Ten tasks, one model, one run per arm is not enough to claim statistical significance or performance across models and workloads. Routing, stochastic generation, accounting estimates, and emulation constrain interpretation. No newer round is claimed here without published results.",
+                "Ten tasks per suite, two models, one harness per arm, and differing full-credit denominators. This is a selected sample, not a statistical claim or a ranking across all workloads. v0.1.8 has no recorded result.",
               ],
             ].map(([id, title, body]) => (
               <Accordion.Item key={id} value={id}>
@@ -474,7 +426,7 @@ function Benchmarks() {
       <section className="container reproduce-section">
         <div>
           <span className="eyebrow">
-            <span className="cross">+</span> 04 / RUN YOUR OWN ROUND
+            <span className="cross">+</span> 05 / RUN YOUR OWN ROUND
           </span>
           <h2>
             Don’t take the chart
@@ -482,20 +434,28 @@ function Benchmarks() {
             at face value.
           </h2>
           <p>
-            These commands start new runs on the current code, not an exact
-            recreation of the historical score. Build the SDK, install eval
-            dependencies, and follow the setup guide first.
+            Use the pinned benchmark ref, a model, and a budget. The workflow
+            records the measured SHA; do not move a tag to make an old result
+            look current.
           </p>
-          <a className="doc-inline-link" href={`${source}/README.md`}>
-            Environment & grading guide <ArrowUpRight size={13} />
+          <a className="doc-inline-link" href={`${repo}/tree/main/evals`}>
+            Eval runner and task data <ArrowUpRight size={13} />
           </a>
         </div>
         <CodeBlock
-          code={`# From the repository root, after eval setup\n# Docker must be running and on PATH.\nnpm run eval --prefix evals -- \\\n  --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \\\n  --provider docker --arm anchor \\\n  --model z-ai/glm-5.3 --max-steps 60\n\n# Baseline: same task subset and model\nnpm run eval --prefix evals -- \\\n  --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \\\n  --provider docker --arm mini \\\n  --model z-ai/glm-5.3`}
+          code={`# After eval setup; Docker must be running and on PATH.
+npm run eval --prefix evals -- \\
+  --tasks benchmarks/swe-bench/data/swebench-lite-10.jsonl \\
+  --provider docker --model deepseek/deepseek-v4.1-flash-1017 \\
+  --max-steps 300 --max-tokens 50000000
+
+# External arm: Harbor workflow, SWE-agent for SWE, Terminus-2 for Terminal.
+# See .github/workflows/external-bench.yml.`}
           filename="run-benchmark.sh"
           language="SHELL"
         />
       </section>
+
       <div className="container benchmark-cta">
         <span>
           <Clock3 size={17} /> Measure the harness against your workload.

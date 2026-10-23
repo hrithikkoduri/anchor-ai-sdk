@@ -55,34 +55,26 @@ test("mobile documentation contents closes after choosing a topic", async ({
   ).toHaveAttribute("aria-expanded", "false");
 });
 
-test("benchmark metric views and ledger expose the original results", async ({
-  page,
-}) => {
+test("benchmark page exposes the complete v0.1.7 record", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/benchmarks.html");
-  await page.getByRole("tab", { name: "Wall time" }).click();
-  await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "4,137s",
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Both arms",
   );
-  await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "1.9×",
-  );
-  await page.getByRole("tab", { name: "Tokens", exact: true }).click();
-  await expect(page.locator(".metric-panel[data-state=active]")).toContainText(
-    "5.28M",
-  );
-  await page.getByRole("tab", { name: "Full ledger" }).click();
-  const ledger = page.getByRole("region", {
-    name: "Full benchmark ledger, scroll horizontally for all columns",
-  });
-  await expect(ledger).toBeVisible();
-  await expect(ledger.locator("tbody tr")).toHaveCount(10);
-  await expect(ledger.locator("tfoot")).toContainText("5,284,937");
-  await expect(ledger.locator("tfoot")).toContainText("16,994,719");
+  await expect(page.locator(".v017-summary")).toContainText("11/17");
+  await expect(page.locator(".v017-summary")).toContainText("15/20");
+  await expect(page.locator(".v017-summary")).toContainText("8/20");
+  await expect(page.locator(".v017-table").first().locator("tbody tr")).toHaveCount(6);
+  await expect(page.locator(".v017-table").first().locator(".benchmark-better")).toHaveCount(6);
+  await expect(
+    page.getByRole("region", { name: "SWE Lite DeepSeek v0.1.7 per-task ledger" })
+      .locator("tbody tr"),
+  ).toHaveCount(10);
+  await expect(page.getByText("v0.1.8 has no recorded benchmark result", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "The accounting caveat" }).click();
   await expect(
-    page.getByText("Mini tokens were estimated", { exact: false }),
+    page.getByText("External SWE-agent did not report cache or cost", { exact: false }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

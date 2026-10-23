@@ -191,9 +191,9 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.**
 
 - **Benchmark reruns**: the complete v0.1.7 combined result is committed at
   `evals/results/v0.1.7-2fbc92b/` (measured at `2fbc92b`, not the `v0.1.7`
-  tag `08472b1`). The v0.1.8 full round was cancelled; partial numbers are not
-  a release result. Rerun the full Anchor + external matrix after the SWE Lite
-  external issue is fixed.
+  tag `08472b1`). v0.1.8 has no recorded benchmark result; its full round was
+  cancelled before both arms completed. Rerun the full Anchor + external matrix
+  after the SWE Lite external issue is fixed.
 - **SWE Lite external diagnosis**: investigate the incomplete/external result
   path before the next eval round. Known external failures in the completed
   round were task/agent failures, not a clean harness comparison; see
