@@ -7,6 +7,10 @@ history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.** Complete
 items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
 [`docs/release-status.md`](docs/release-status.md).
 
+**Linear tracker:** [Anchor SDK Roadmap](https://linear.app/sailor-work/project/anchor-sdk-roadmap-917a61620696)
+(team `ANC`). The repo remains the source of truth; Linear is the execution
+tracker for these deferred items.
+
 **How to pick one up**
 
 1. Open an issue naming the item (one item per PR keeps review small).
