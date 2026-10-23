@@ -1,5 +1,6 @@
 import type { Agent } from "../agents/types.js";
 import type {
+  ImageAttachment,
   LLMClient,
   LLMMessage,
   LLMUsage,
@@ -21,6 +22,8 @@ import type { VerifierConfig } from "../ledger/config.js";
 export interface RunTask {
   task: string;
   context?: string;
+  /** Image references for the initial user turn; bytes stay consumer-owned. */
+  images?: ImageAttachment[];
 }
 
 /**
@@ -187,7 +190,7 @@ export interface EngineOptions {
     /** Work-stream key — usually the thread id. */
     channel: string;
     /** Build the next run's task from a claimed batch. Default joins text. */
-    render?: (messages: InboxMessage[]) => { task: string; context?: string };
+    render?: (messages: InboxMessage[]) => RunTask;
   };
   /**
    * Durable recovery for tools that declare an `effect` (external writes).

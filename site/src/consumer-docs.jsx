@@ -5,7 +5,7 @@ import { CodeBlock, repo } from "./ui.jsx";
 // the application owns the database, transactions, leases, and credentials.
 export function ConsumerDocs({ Section, Callout }) {
   return <>
-    <Section id="thread-store" number="23" title="Thread store">
+    <Section id="thread-store" number="24" title="Thread store">
       <p><code>ThreadStore</code> is the one required persistence seam for
         multi-run continuity. Persist <code>messages</code>, <code>summary</code>,
         <code>compaction</code>, <code>phase</code>, and <code>ledger</code> in
@@ -44,7 +44,7 @@ export class PostgresThreadStore implements ThreadStore {
         storage failure; silent best-effort persistence is not continuity.</Callout>
     </Section>
 
-    <Section id="inbox-store" number="24" title="Inbox store">
+    <Section id="inbox-store" number="25" title="Inbox store">
       <p>The inbox is a queue with two delivery modes: <code>queue</code> waits
         for the next run; <code>interject</code> ends the current run at a turn
         boundary. <code>claimAll</code> must be atomic and leased. A crashed
@@ -54,6 +54,7 @@ export class PostgresThreadStore implements ThreadStore {
   channel text not null,
   body text not null,
   context text,
+  images jsonb,
   delivery text not null check (delivery in ('queue', 'interject')),
   status text not null default 'pending'
     check (status in ('pending', 'claimed', 'consumed')),
@@ -71,11 +72,13 @@ export class PostgresInboxStore implements InboxStore {
   async push(message: InboxMessage): Promise<"queued" | "duplicate"> {
     const result = await this.pool.query(
       \`insert into anchor_inbox
-         (id, channel, body, context, delivery)
-       values ($1, $2, $3, $4, $5)
+         (id, channel, body, context, images, delivery)
+       values ($1, $2, $3, $4, $5::jsonb, $6)
        on conflict do nothing\`,
       [message.id, message.channel, message.text,
-       message.context ?? null, message.delivery],
+       message.context ?? null,
+       message.images?.length ? JSON.stringify(message.images) : null,
+       message.delivery],
     );
     return result.rowCount ? "queued" : "duplicate";
   }
@@ -94,7 +97,7 @@ export class PostgresInboxStore implements InboxStore {
     try {
       await client.query("begin");
       const { rows } = await client.query(
-        \`select id, channel, body, context, delivery
+        \`select id, channel, body, context, images, delivery
          from anchor_inbox
          where channel = $1 and status = 'pending'
            and (claimed_at is null or claimed_at < now() - interval '5 minutes')
@@ -112,6 +115,7 @@ export class PostgresInboxStore implements InboxStore {
       return rows.map((row) => ({
         id: row.id, channel: row.channel, text: row.body,
         ...(row.context ? { context: row.context } : {}),
+        ...(row.images?.length ? { images: row.images } : {}),
         delivery: row.delivery,
       }));
     } catch (error) {
@@ -143,7 +147,7 @@ export class PostgresInboxStore implements InboxStore {
         cancellation.</Callout>
     </Section>
 
-    <Section id="operation-store" number="25" title="Operation store">
+    <Section id="operation-store" number="26" title="Operation store">
       <p>Operation recovery protects writes outside the workspace. The
         <code>operationId</code> must be unique and <code>begin()</code> must be
         durable before the effect runs. A duplicate begin means “already
@@ -223,7 +227,7 @@ export class PostgresOperationStore implements OperationStore {
       <a className="doc-inline-link" href={`${repo}/blob/main/src/engine/operations.ts`}>OperationStore source ↗</a>
     </Section>
 
-    <Section id="sandbox-store" number="26" title="Sandbox store">
+    <Section id="sandbox-store" number="27" title="Sandbox store">
       <p><code>SandboxStore</code> stores only the retained handle, not the
         workspace or conversation. The key is consumer-owned: usually a thread
         or task id.</p>
@@ -258,7 +262,7 @@ export class PostgresSandboxStore implements SandboxStore {
         retention window.</Callout>
     </Section>
 
-    <Section id="compaction-contract" number="27" title="Compaction handoff">
+    <Section id="compaction-contract" number="28" title="Compaction handoff">
       <p>For task/verifier runs, the SDK now uses a structured
         <code>CompactionHandoff</code> instead of another prose summary. The
         consumer does not define a second store or summarizer — it persists the

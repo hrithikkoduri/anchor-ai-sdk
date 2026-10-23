@@ -26,8 +26,15 @@ export function toolResultMessage(
   return { role: "tool", tool_call_id: toolCallId, content };
 }
 
-export function userMessage(content: string): LLMMessage {
-  return { role: "user", content };
+export function userMessage(
+  content: string,
+  images?: LLMMessage["images"],
+): LLMMessage {
+  return {
+    role: "user",
+    content,
+    ...(images && images.length ? { images } : {}),
+  };
 }
 
 /** Working memory contains real conversation and observations, not system

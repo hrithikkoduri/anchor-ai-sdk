@@ -362,7 +362,7 @@ async function runOne(
       };
     };
   }
-  const currentRequest = userMessage(task.task);
+  const currentRequest = userMessage(task.task, task.images);
   const revivalOn = !!opts.revival;
   const revivalWarnAt = revivalWarnPercent(
     opts.revival ? opts.revival.warnAtPercent : undefined,

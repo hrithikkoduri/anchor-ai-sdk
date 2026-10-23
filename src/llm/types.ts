@@ -14,10 +14,24 @@ export interface LLMToolCall {
   arguments: string;
 }
 
+export interface ImageAttachment {
+  /** Consumer-assigned stable id; also useful for storage and traces. */
+  id: string;
+  mime: "image/png" | "image/jpeg" | "image/webp";
+  /** A signed HTTPS URL or a data URI the provider can read. */
+  url: string;
+  width?: number;
+  height?: number;
+  sha256?: string;
+  alt?: string;
+}
+
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
   /** null is legal for an assistant message that is pure tool calls. */
   content: string | null;
+  /** User messages only; provider adapters map these to image parts. */
+  images?: ImageAttachment[];
   /**
    * Runtime provenance. Never serialized to the provider.
    * - `engine`: a nudge/checkpoint. Dropped from the persisted thread.

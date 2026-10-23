@@ -443,4 +443,39 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.usage).toEqual({ include: true });
     expect(response.usage.costUsd).toBe(0.0042);
   });
+  it("serializes user image references as OpenAI content parts", async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      body = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl).complete({
+      messages: [
+        {
+          role: "user",
+          content: "What does this diagram show?",
+          images: [
+            {
+              id: "img_1",
+              mime: "image/png",
+              url: "data:image/png;base64,AAAA",
+              alt: "architecture diagram",
+            },
+          ],
+        },
+      ],
+    });
+    const wire = body.messages as Array<Record<string, unknown>>;
+    expect(wire[0]).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "What does this diagram show?" },
+        {
+          type: "image_url",
+          image_url: { url: "data:image/png;base64,AAAA" },
+        },
+      ],
+    });
+  });
+
 });
