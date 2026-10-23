@@ -30,7 +30,10 @@ Support is intentionally provider-specific:
 | Local | No | Host filesystem only; use `localPath` or Docker. |
 | Daytona | Not yet | Stub only. |
 
-`start()` never builds or pushes. Publishing is an explicit step before the run.
+Registry publishing is an explicit step before the run. Docker and E2B boot a
+prepared image/template; Heyo may still build its configured Dockerfile/git
+source during `start()`. Uploading a Heyo Dockerfile manifest publishes a
+recipe, not a ready-to-boot rootfs.
 
 ## Common contract
 
@@ -244,6 +247,8 @@ const provider = heyo({
   image: "acme/agent:v1",
   imageKind: "artifact", // or "dockerfile"
   imageStore: process.env.HEYO_IMAGE_STORE,
+  sizeClass: "small",
+  diskSizeGb: 10,
 });
 ```
 

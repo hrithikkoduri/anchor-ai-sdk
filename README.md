@@ -152,8 +152,9 @@ const provider = heyo({
 ```
 
 Use an artifact/store you can access and a toolchain suitable for the task.
-Heyo configures its image on the provider and rejects per-sandbox `image` and
-`workspacePath` overrides. `requiredEnv` is defined in the shared runner below.
+Heyo configures its default image on the provider. With `imageKind: "artifact"`,
+`spec.image` can override the artifact per sandbox. `workspacePath` can select
+a checkout already in the image. `requiredEnv` is defined in the shared runner below.
 
 </details>
 

@@ -29,6 +29,10 @@ for (const [path, selectors] of [
     ],
   ],
   [
+    "/changelog.html",
+    [".changelog-intro > p", ".release-body > p", ".release-body li", ".release-stamp time", ".release-links a"],
+  ],
+  [
     "/benchmarks.html",
     [
       ".ledger td",

@@ -11,6 +11,7 @@ test("capability tabs and FAQ expose the right content", async ({ page }) => {
     ["Course correction", "Off course is not the end of the run."],
     ["Budget revival", "Out of budget. Not out of context."],
     ["Verifiable work", "“Done” should come with a receipt."],
+    ["Task contract", "Keep the obligations. Check the claims."],
     ["Filesystem memory", "A context window is not a memory."],
   ]) {
     await page.getByRole("tab", { name: tab }).click();

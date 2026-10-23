@@ -37,10 +37,10 @@ RUN npm install -g typescript typescript-language-server
 The sandbox must declare `capabilities.processStream: true` and implement
 `openProcess`. Local, Docker, E2B, and Heyo do.
 
-Heyo runs the language server through its PTY. Its stderr is merged into
-stdout and `endInput()` has Ctrl-D semantics, which is acceptable for the
-read-only LSP requests here; Docker/E2B/Local remain the stricter choice for
-consumers that need separate stderr or true pipe backpressure.
+Heyo provides a PTY, not raw pipes. Its stderr is merged into stdout and
+`endInput()` has Ctrl-D semantics. LSP framing is byte-sensitive regardless of
+whether requests are read-only; operation over Heyo's PTY has not been
+live-verified. Prefer Local/Docker/E2B pipe-backed transports for LSP.
 
 ## Tools
 
@@ -101,7 +101,9 @@ them to LSP's 0-based positions.
 - JSON-RPC framing, `initialize`/`shutdown`, diagnostics notifications,
   definition/reference normalization, and TypeScript language IDs live in
   `src/lsp/`.
-- The LSP tools are read-only and do not modify files or run commands.
+- The LSP tools expose read-only language queries. They launch the configured
+  server and use sandbox commands to probe its availability and read files;
+  they do not offer file edits or arbitrary commands to the model.
 - The client reads the current file through the sandbox before opening it, so
   the server sees the same checkout the agent sees.
 

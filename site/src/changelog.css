@@ -1,0 +1,27 @@
+.changelog-page { max-width: 1050px; padding-top: 76px; padding-bottom: 96px; }
+.changelog-intro { max-width: 700px; }
+.changelog-intro h1 { font-size: clamp(38px, 6vw, 64px); letter-spacing: -2px; line-height: 1.12; margin: 20px 0; }
+.changelog-intro p { font-size: 17px; line-height: 1.8; }
+.changelog-intro .changelog-note { font-size: 14px; margin: 18px 0; }
+.version-index { display: flex; flex-wrap: wrap; gap: 12px 22px; border-block: 1px solid var(--line); padding: 22px 0; margin: 40px 0 48px; font: 13px var(--mono); }
+.version-index a:hover, .release-links a:hover { text-decoration: underline; }
+.release-timeline { list-style: none; padding: 0; margin: 0; }
+.release-entry { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 32px; padding: 0 0 60px; scroll-margin-top: 105px; }
+.release-stamp { display: flex; flex-direction: column; gap: 12px; font: 12px var(--mono); }
+.release-stamp > a { font-size: 21px; font-weight: 600; }
+.release-stamp > span { font-size: 10px; letter-spacing: 1px; }
+.release-body { border-left: 2px solid var(--line); padding-left: 32px; min-width: 0; }
+.release-body h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.3; letter-spacing: -.7px; margin: 0 0 14px; }
+.release-body h3 { font-size: 15px; margin: 25px 0 10px; }
+.release-body p, .release-body li { font-size: 15px; line-height: 1.85; overflow-wrap: anywhere; }
+.release-body ul { padding-left: 20px; }
+.release-body li + li { margin-top: 12px; }
+.release-offers { padding: 1px 20px 16px; border: 1px solid var(--line); margin: 24px 0; }
+.release-body summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 0; }
+.release-links { display: flex; gap: 18px; flex-wrap: wrap; font: 12px var(--mono); margin-top: 24px; }
+@media (max-width: 600px) {
+  .changelog-page { padding-top: 40px; }
+  .release-entry { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .release-stamp { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .release-body { padding-left: 18px; }
+}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { CodeBlock, CopyButton, PageShell, repo } from "./ui.jsx";
 import { CustomAgentExample } from "./agent-example.jsx";
+import { FeatureDocs } from "./feature-docs.jsx";
 import "./styles.css";
 import "./pages.css";
 import "./typography.css";
@@ -43,6 +44,9 @@ const groups = [
       ["memory", "Filesystem memory"],
       ["revival", "Revival & resume"],
       ["evidence", "Evidence"],
+      ["verification", "Ledger & verification"],
+      ["structured-output", "Structured output"],
+      ["operations", "External-effect recovery"],
       ["traces", "Streaming & traces"],
     ],
   ],
@@ -53,6 +57,10 @@ const groups = [
       ["contract", "The contract"],
       ["conformance", "Conformance"],
       ["tools", "Tools & strategies"],
+      ["process-streams", "Persistent processes"],
+      ["image-publishing", "Publish sandbox images"],
+      ["lsp", "Optional TypeScript LSP"],
+      ["philosophy", "Philosophy"],
       ["testing", "Testing"],
       ["status", "Status & versioning"],
     ],
@@ -81,7 +89,8 @@ const { llm, compaction } = await llmFromCatalog({
   model: "z-ai/glm-5.3",
 });
 
-const sandbox = docker().create({
+// Use an image containing bash, git, coreutils, and your repo's toolchain.
+const sandbox = docker({ image: "your-registry/agent-toolchain:v1" }).create({
   repoUrl: "https://github.com/you/your-repo",
   ref: "main",
 });
@@ -251,6 +260,7 @@ function Docs() {
             <div className="doc-meta">
               <span>Node 20+</span>
               <span>ESM</span>
+              <span>SDK v0.1.8</span>
               <span>Provider API key required</span>
             </div>
           </header>
@@ -376,6 +386,9 @@ function Docs() {
               <code>pauseAfterPhase</code> and <code>startPhase</code> for
               controlled pauses and resume.
             </p>
+            <p className="doc-small"><code>reasoningEffort</code> can be set on
+              a run or an agent bundle when the model supports it. It is not
+              automatic per-phase model routing.</p>
           </DocSection>
 
           <DocSection id="correction" number="06" title="Course correction">
@@ -530,12 +543,12 @@ function Docs() {
             <p>
               <code>AgentResult.ok</code> is a runtime outcome, not permission
               to ship. Tool results live on <code>result.evidence</code>;{" "}
-              <code>run_tests</code> adds the tree hash it tested.
+              <code>run_tests</code> records a Git tree hash after the command.
             </p>
             <div className="evidence-receipt">
               <ShieldCheck size={22} />
               <div>
-                <strong>A green test belongs to a specific tree.</strong>
+                <strong>Evidence has a workspace-freshness check.</strong>
                 <span>
                   <code>latestEvidenceForTree</code> → passed / failed /
                   not_verified
@@ -549,6 +562,9 @@ function Docs() {
               <code>inspected: false</code> — never an invented pass. Your app
               owns the release gate.
             </p>
+            <p className="doc-small">A post-command hash is not an immutable
+              tested snapshot and does not prove test coverage. For an opt-in
+              requirement/evidence gate, see <a href="#verification">Ledger &amp; verification</a>.</p>
           </DocSection>
 
           <DocSection id="traces" number="10" title="Streaming & traces">
@@ -604,6 +620,11 @@ function Docs() {
                   "CLI-backed · conformance-tested in CI",
                 ],
                 [
+                  "e2b",
+                  "E2B cloud sandboxes",
+                  "Template-based boot · optional e2b SDK",
+                ],
+                [
                   "local",
                   "Processes on this host",
                   "No isolation · development / CI only",
@@ -620,8 +641,8 @@ function Docs() {
               ))}
             </div>
             <p className="doc-small">
-              E2B and Daytona are planned adapters, not supported backends
-              today.
+              E2B is exported since v0.1.6. Daytona remains a stub, not a
+              supported backend. Boot settings and isolation guarantees differ.
             </p>
           </DocSection>
 
@@ -635,8 +656,9 @@ function Docs() {
             <Callout icon={Workflow}>
               Read-only calls from one turn can run concurrently. Mutations stay
               serial. Background detachment via <code>backgroundAfterSecs</code>{" "}
-              requires <code>pollJob</code> support (currently Heyo); your app
-              delivers completion later. The engine doesn’t poll for you.
+              requires <code>pollJob</code> support (Heyo and Docker). The engine
+              polls at turn boundaries and injects/persists finished results.
+              Your app still owns sandbox retention and cleanup across runs.
             </Callout>
             <p className="doc-small">
               Credentials enter through environment/adapter secret plumbing, not
@@ -651,6 +673,10 @@ function Docs() {
               conformance suite: exec fidelity, deadlines, secrets, checkpoints,
               retain/adopt, and declared optional capabilities.
             </p>
+            <p>When <code>processStream</code> is declared, scenarios check stdin,
+              exit status, kill, deadline, and destroy. Image publishing checks
+              declaration/publisher presence; it does not push to a live registry.
+              Local runs in CI, Docker needs a daemon, and cloud suites need credentials.</p>
             <CodeBlock
               code={`import { runSandboxConformance } from "anchor-ai-sdk/testing";\n\n// In a Vitest test file, with your provider instance:\nrunSandboxConformance(myProvider);`}
               filename="provider.test.ts"
@@ -686,6 +712,30 @@ function Docs() {
               the engine carries the object without interpreting its business
               meaning.
             </p>
+            <h3>A terminal-native bundle</h3>
+            <p><code>terminalAgent</code> uses a terminal-oriented strategy with
+              the familiar shell/file/test tools for tasks in an existing
+              environment. It is separate from the repository-focused coding prompt.</p>
+            <CodeBlock filename="terminal-agent.ts" code={`import { terminalAgent, runAgent } from "anchor-ai-sdk";
+
+// llm is configured and sandbox is already started.
+const result = await runAgent(
+  { task: "Inspect the environment and repair the failing command" },
+  { llm, sandbox, agent: terminalAgent },
+);`} />
+            <h3>Bound consumer tool output</h3>
+            <p>The dispatch boundary caps custom-tool content too. Use
+              <code>boundToolResult</code> in your handler for a recoverable
+              spill path and a readable preview when scratch storage is available.</p>
+            <CodeBlock filename="tool-result.ts" code={`import { boundToolResult } from "anchor-ai-sdk";
+
+// In a custom tool handler:
+return {
+  ok: true,
+  content: await boundToolResult(largeText, {
+    sandbox: ctx.sandbox, label: "repository_report",
+  }),
+};`} />
           </DocSection>
 
           <DocSection id="testing" number="15" title="Testing">
@@ -700,11 +750,15 @@ function Docs() {
             </a>
           </DocSection>
 
-          <DocSection id="status" number="16" title="Status & versioning">
+          <FeatureDocs Section={DocSection} Callout={Callout} />
+
+          <DocSection id="status" number="23" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams,
-              consumer skill bundles, E2B, and Daytona are roadmap work.
+              consumer skill bundles, and Daytona are roadmap work. Check the
+              tagged source and the <a href="/changelog.html">changelog</a>
+              rather than assuming main matches your installed version.
             </p>
             <a
               className="doc-inline-link"

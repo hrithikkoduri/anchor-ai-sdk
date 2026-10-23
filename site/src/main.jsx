@@ -4,7 +4,7 @@ import * as Tabs from "@animate-ui/react/primitives/radix-ui/tabs";
 import * as Accordion from "@animate-ui/react/primitives/radix-ui/accordion";
 import * as Tooltip from "@animate-ui/react/primitives/radix-ui/tooltip";
 import { CopyButton, SiteHeader, SiteFooter } from "./ui.jsx";
-import { motion, MotionConfig } from "motion/react";
+import { MotionConfig } from "motion/react";
 import logo from "../assets/logo.svg";
 import {
   ArrowUpRight,
@@ -83,16 +83,32 @@ const capabilities = [
     label: "Verifiable work",
     icon: ShieldCheck,
     title: "“Done” should come with a receipt.",
-    text: "Test results carry the exact tree hash they ran against. Know whether green still means green after the next edit.",
+    text: "Test commands record outcomes and a post-command tree hash. Check freshness after edits; let your application decide what is enough to ship.",
     tags: ["Structured evidence", "Tree-hash freshness", "Your release policy"],
     file: "runtime / evidence",
     rows: [
       ["run_tests", "✓ 42 passed · 0 failed"],
-      ["tested tree", "a83f2d1 — exact workspace bytes"],
+      ["recorded tree", "a83f2d1 — captured after the command"],
       ["current tree", "a83f2d1 — evidence is fresh"],
     ],
     event: "latestEvidenceForTree → passed",
     metric: "Evidence in the engine. Policy in your app.",
+  },
+  {
+    id: "verification",
+    label: "Task contract",
+    icon: ShieldCheck,
+    title: "Keep the obligations. Check the claims.",
+    text: "Opt into a durable requirement ledger and separate verification calls. Track what remains, link tool evidence, and check coverage before claiming done.",
+    tags: ["Opt-in verifier", "Append-only ledger", "Thread persistence"],
+    file: "runtime / progress ledger",
+    rows: [
+      ["REQUIREMENT", "Retry deadline holds across attempts."],
+      ["EVIDENCE", "Regression command and observed result."],
+      ["FINISH CHECK", "Coverage first. Evidence alignment next."],
+    ],
+    event: "update_ledger → phase / finish verification",
+    metric: "A check on completion, not a correctness certificate.",
   },
 ];
 
@@ -109,8 +125,8 @@ function App() {
         <main id="main">
           <section className="hero container">
             <div className="hero-copy">
-              <a className="release" href={`${repo}/releases`}>
-                <span className="status-dot" /> OPEN SOURCE · EARLY ALPHA{" "}
+              <a className="release" href="/changelog.html#v0.1.8">
+                <span className="status-dot" /> v0.1.8 · EARLY ALPHA{" "}
                 <ArrowUpRight size={12} />
               </a>
               <h1>
@@ -127,7 +143,7 @@ function App() {
               </h1>
               <p>
                 The infrastructure between <span>“do this”</span> and{" "}
-                <span>actually done.</span> Memory, recovery, and sandboxed
+                <span>actually done.</span> Evidence, recovery, and sandboxed
                 tools — in one agent harness SDK.
               </p>
               <div className="hero-actions">
@@ -260,6 +276,7 @@ function App() {
             <div>OpenAI-compatible models</div>
             <span className="compat-plus">+</span>
             <div>Heyo microVMs</div>
+            <div>E2B</div>
             <div>Docker</div>
             <div>Local</div>
             <a href="/docs.html#contract">
@@ -364,7 +381,7 @@ function App() {
                   <Terminal size={17} />
                   <span>
                     Sandbox-first execution
-                    <small>Real machines. Real kill deadlines.</small>
+                    <small>Images, process streams, optional LSP.</small>
                   </span>
                 </div>
                 <div>
@@ -388,71 +405,54 @@ function App() {
           <section className="proof-section container" id="proof">
             <div className="proof-intro">
               <span className="eyebrow">
-                <span className="cross">+</span> 02 / LESS OVERHEAD. SAME WORK.
+                <span className="cross">+</span> 02 / EVIDENCE, NOT A SLOGAN.
               </span>
               <h2>
-                The score is equal.
+                Inspect the run.
                 <br />
-                The bill isn’t.
+                Keep the limits visible.
               </h2>
               <p>
                 Anchor vs. mini-swe-agent.
                 <br />
                 10 SWE-bench Lite tasks. Same model.
                 <br />
-                Official grader. No hand-picked wins.
+                Selected sample. Official grader.
               </p>
               <a className="text-link" href="/benchmarks.html">
-                Inspect the benchmark <ArrowUpRight size={15} />
+                Historical baseline <ArrowUpRight size={15} />
               </a>
+              <p><a className="text-link" href={`${repo}/tree/main/evals/benchmarks/swe-bench/results/glm53-parasail`}>Parasail artifacts <ArrowUpRight size={15} /></a></p>
             </div>
             <div className="proof-numbers">
               <div className="resolution">
                 <span>RESOLVED</span>
                 <strong>
-                  7<span>/10</span>
+                  9<span>/10</span>
                 </strong>
                 <span>both harnesses</span>
               </div>
               <div className="cost-comparison">
                 <div className="cost-label">
-                  <span>TOTAL RUN COST</span>
-                  <span>GLM 5.3 · ROUND 1</span>
+                  <span>REPORTED RUN COST</span>
+                  <span>GLM 5.3 · PARASAIL</span>
                 </div>
                 <div className="cost-row">
                   <span>
                     <img src={logo} alt="" />
                     Anchor
                   </span>
-                  <strong>$0.60</strong>
-                </div>
-                <div className="bar">
-                  <motion.div
-                    className="anchor-bar"
-                    initial={{ opacity: 0.7 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.7 }}
-                  />
+                  <strong>$4.32</strong>
                 </div>
                 <div className="cost-row mini">
                   <span>mini-swe-agent</span>
-                  <strong>≈$1.99</strong>
-                </div>
-                <div className="bar">
-                  <motion.div
-                    className="mini-bar"
-                    initial={{ opacity: 0.7 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                  />
+                  <strong>Not reported</strong>
                 </div>
                 <p className="benchmark-note">
                   Small-sample baseline, not a general performance claim.
                   <br />
-                  Mini’s tokens and cost are estimates; Anchor’s are
-                  provider-reported.
+                  Different budgets and an extraction failure; no cost-ratio
+                  or v0.1.8 improvement claim.
                 </p>
               </div>
             </div>
@@ -548,8 +548,12 @@ function App() {
                   "No. Opt in to budget warnings and handoff requests. Your app uses planRevival and a thread-wide budget to decide whether to fund another run or escalate to a human.",
                 ],
                 [
+                  "What is the design philosophy?",
+                  "Mechanics in the SDK, policy in your app. Keep requirements durable, ground completion in evidence, and never replay an uncertain external write blindly. Verification is optional; capabilities and their limits should be explicit.",
+                ],
+                [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. The API can change before 1.0, so pin an exact version and test your integration. E2B, Daytona, and agent teams are not shipped features.",
+                  "Anchor is early alpha. Pin exact versions and test your integration. E2B is shipped; Daytona, agent teams, and skills are roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.1.8 changelog.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>
