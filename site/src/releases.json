@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.3.0",
+    "date": "2026-10-23",
+    "title": "Peer repositories and progressive skills",
+    "summary": "Anchor can operate one tool call at a time across peer repositories, parallelize mutations by repository, root LSP per repo, and load consumer-owned skills on demand.",
+    "added": [
+      "Peer-repository workspaces: RepoRef, EngineOptions.repos, repo-aware bash and run_tests, repo-attributed edit_file paths, and per-repo LSP roots.",
+      "Resource-keyed mutation dispatch: different repositories may run concurrently; same-repository calls serialize; no-repository and effectful calls stay in the global ordered group.",
+      "run_tests now reports the repository and a tree hash computed in that repository, enabling attributable per-repo evidence.",
+      "Skills: consumer-owned SkillProvider, deterministic renderSkillIndex, and a bounded read-only load_skill tool with resource paths and trace metadata."
+    ],
+    "offers": "Build agents that work across real peer-repo workspaces without collapsing results into one blob, and give them a compact skill index with on-demand bodies.",
+    "limits": [
+      "Checkpoints remain single-root; per-repo snapshots are consumer-owned through EngineOptions.snapshot.",
+      "Skills are instructions only. Storage, discovery, precedence, trust, UI, and sandbox materialization remain consumer-owned.",
+      "No new benchmark result is claimed for v0.3.0.",
+      "Sailor/Sailor-cloud adoption is a separate change."
+    ]
+  },
+  {
     "version": "0.2.0",
     "date": "2026-10-23",
     "title": "Contracts created by the agent",

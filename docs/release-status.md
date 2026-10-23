@@ -1,6 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.2.0 released: npm `0.2.0`, Git tag `v0.2.0`, and GitHub Release are published.
+Status: **2026-10-23**, v0.3.0 released: npm `0.3.0`, Git tag `v0.3.0`, and GitHub Release are published.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -9,8 +9,21 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
-**v0.2.0** is the current npm/tag release. Its release notes are on
+**v0.3.0** is the current npm/tag release. Its release notes are on
 [GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
+
+### v0.3.0 contents
+
+- Peer-repository workspaces: `RepoRef`/`EngineOptions.repos`, one-call-per-repo
+  `bash` and `run_tests`, repo-attributed `edit_file`, resource-keyed mutation
+  dispatch, per-repo LSP roots, and unchanged single-root checkpoints. No-repo
+  behavior is unchanged.
+- Skills as progressive disclosure: consumer-owned `SkillProvider`, deterministic
+  `renderSkillIndex`, and a bounded read-only `load_skill` tool. Bodies are tool
+  results, never system instructions; scripts still use `bash`.
+
+Verification for v0.3.0: `npm run typecheck`, `npm test` (390 passed, 23
+skipped), `npm run build`, dist-export verification, and the site build.
 
 ### v0.2.0 contents
 
@@ -51,19 +64,6 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 - Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
   benchmark record.
 
-## After v0.2.0 — on main, unreleased
-
-- Peer-repository workspaces: `RepoRef`/`EngineOptions.repos`, one-call-per-repo
-  `bash` and `run_tests`, repo-attributed `edit_file`, resource-keyed mutation
-  dispatch, per-repo LSP roots, and unchanged single-root checkpoints. No-repo
-  behavior is unchanged.
-- Skills as progressive disclosure: consumer-owned `SkillProvider`, deterministic
-  `renderSkillIndex`, and a bounded read-only `load_skill` tool. Bodies are
-  tool results, never system instructions; scripts still use `bash`.
-
-Verification for these changes: `npm run typecheck`, `npm test` (390 passed, 23
-skipped), `npm run build`, dist-export verification, and the site build.
-
 ## Earlier post-v0.1.9 work included in v0.2.0
 
 - Generic LSP server definitions: `LspServerConfig` plus `LspServer`, with
@@ -96,14 +96,14 @@ Verification after the LSP, prompt-cache, and composition changes:
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
 
-## v0.2.0 release checklist
+## v0.3.0 release checklist
 
-1. [x] Bump `package.json` to `0.2.0` (package-lock updated).
-2. [x] Add the v0.2.0 entry to `site/src/releases.json`.
-3. [x] Create the GitHub Release at the v0.2.0 tag.
-4. [x] Re-run typecheck, full tests, build, live LSP smoke, and site checks.
-5. [x] Publish npm `0.2.0`.
-6. No v0.2.0 benchmark result is claimed. The only recorded complete benchmark
+1. [x] Bump `package.json` to `0.3.0` (package-lock updated).
+2. [x] Add the v0.3.0 entry to `site/src/releases.json`.
+3. [x] Create the GitHub Release at the v0.3.0 tag.
+4. [x] Re-run typecheck, full tests, build, dist-export verification, and site build.
+5. [x] Publish npm `0.3.0`.
+6. No v0.3.0 benchmark result is claimed. The only recorded complete benchmark
    is `evals/results/v0.1.7-2fbc92b/`.
 
 ## Deferred list

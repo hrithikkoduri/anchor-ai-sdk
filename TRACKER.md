@@ -8,7 +8,7 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
-## After v0.2.0 — on main, unreleased
+## v0.3.0 — released
 
 - [x] Skills as progressive disclosure: consumer-owned `SkillProvider`,
       deterministic `renderSkillIndex`, bounded read-only `load_skill`, and
