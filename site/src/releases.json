@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.1.9",
+    "date": "2026-10-23",
+    "title": "Task state, images, and preview endpoints",
+    "summary": "Turn routing respects an active task contract, task compaction preserves a durable handoff, image references reach vision models, and E2B can expose a guest port.",
+    "added": [
+      "Ledger-aware turn routing: an active required ledger keeps auto follow-ups on the task path; explicit intent still wins; inbox batches re-route per claimed run.",
+      "Structured task compaction: an SDK-owned CompactionHandoff is persisted on the thread and replaces the old summarized span with pinned ledger/task state plus a recent verbatim tail.",
+      "Image context: ImageAttachment references on RunTask, user messages, and inbox messages, with OpenAI-compatible image_url serialization. Consumers own bytes, storage, validation, signed URLs, and retention.",
+      "E2B preview ports: Sandbox.exposePort(port) and an explicit previewPort capability. E2B returns a public HTTPS URL; other providers declare false.",
+      "Consumer implementation docs: Postgres ThreadStore, InboxStore, OperationStore, and SandboxStore examples, plus the compaction handoff.",
+      "Site release timeline, per-tag GitHub release notes, and the complete v0.1.7 benchmark page."
+    ],
+    "offers": "Keep task contracts alive across follow-ups, reset long task context without losing requirements, pass images through one reference contract, and hand a preview URL to the product while keeping preview UI and policy consumer-owned.",
+    "limits": [
+      "Image support currently targets OpenAI-compatible image_url parts. Native Anthropic/Gemini image blocks are still deferred; PDFs, audio, and video are consumer preprocessing concerns.",
+      "E2B preview URLs are public by default. Anchor does not add authentication, health checks, iframes, logs, or idle-stop policy.",
+      "Abortable one-shot exec from PR #9 was not merged; openProcess cancellation exists, but synchronous exec still waits for its deadline.",
+      "No v0.1.9 benchmark result is recorded. The complete benchmark record remains v0.1.7 at 2fbc92b."
+    ]
+  },
+  {
     "version": "0.1.8",
     "date": "2026-10-23",
     "title": "Evidence-backed tasks and extensible machines",
@@ -52,7 +73,9 @@
       "Eval runner imports the current repository build and can pin provider settings; E2B task verification and environment examples were added."
     ],
     "offers": "Choose E2B without replacing the agent loop, and bound an individual runaway generation instead of only the total run.",
-    "limits": ["E2B boots prepared templates, not arbitrary Docker images at sandbox creation. Remote live tests are opt-in."]
+    "limits": [
+      "E2B boots prepared templates, not arbitrary Docker images at sandbox creation. Remote live tests are opt-in."
+    ]
   },
   {
     "version": "0.1.5",
@@ -65,7 +88,9 @@
       "Sandbox image-source and boot-cost guidance, plus eval-baseline cleanup."
     ],
     "offers": "Custom strategies get consistent phase bookkeeping without copying the default coding prompt.",
-    "limits": ["Phases describe the approach; they do not prove that work is correct or authorize publishing."]
+    "limits": [
+      "Phases describe the approach; they do not prove that work is correct or authorize publishing."
+    ]
   },
   {
     "version": "0.1.4",
@@ -77,7 +102,9 @@
       "Decision records describe the read-only tool boundary and deferred agent-team design."
     ],
     "offers": "More predictable, paged observations through the existing small toolbox.",
-    "limits": ["Agent teams are a design note, not a shipped capability in this release."]
+    "limits": [
+      "Agent teams are a design note, not a shipped capability in this release."
+    ]
   },
   {
     "version": "0.1.3",
@@ -90,7 +117,9 @@
       "Trace rendering no longer treats zero reasoning tokens as a reasoning block."
     ],
     "offers": "Hand slow commands back to the host without replaying their launch or losing the guest deadline.",
-    "limits": ["Automatic engine delivery of background results came later, in v0.1.7. This is not an interactive stdin stream."]
+    "limits": [
+      "Automatic engine delivery of background results came later, in v0.1.7. This is not an interactive stdin stream."
+    ]
   },
   {
     "version": "0.1.2",
@@ -103,7 +132,9 @@
       "Eval assets organized into per-benchmark folders."
     ],
     "offers": "Recover from uncertain tool transport and overlap independent reads without parallelizing coupled writes.",
-    "limits": ["Background detachment/polling was added in v0.1.3, after this tag."]
+    "limits": [
+      "Background detachment/polling was added in v0.1.3, after this tag."
+    ]
   },
   {
     "version": "0.1.1",
@@ -115,7 +146,9 @@
       "Runnable quickstart and non-coding examples, README accuracy work, CI fixes, and the first standalone website."
     ],
     "offers": "A clearer approach trail for consumers following a run, with examples for more than coding tasks.",
-    "limits": ["The intrinsic runtime phase block arrived later, in v0.1.5."]
+    "limits": [
+      "The intrinsic runtime phase block arrived later, in v0.1.5."
+    ]
   },
   {
     "version": "0.1.0",
@@ -129,6 +162,8 @@
       "Budget revival planning, structured execution evidence, sequenced/redacted trace sinks, and repository-owned evals."
     ],
     "offers": "Compose an agent around your model and tools while keeping storage, credentials, provider choice, and product policy in the host.",
-    "limits": ["Early alpha: pin exact versions and test integrations. Local executes with host permissions and is not an isolation boundary."]
+    "limits": [
+      "Early alpha: pin exact versions and test integrations. Local executes with host permissions and is not an isolation boundary."
+    ]
   }
 ]

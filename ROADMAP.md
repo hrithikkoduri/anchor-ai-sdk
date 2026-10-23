@@ -3,8 +3,9 @@
 Everything here is a decision already made and work intentionally not built
 yet. Each item names the event that pulls it back ("trigger"), where it lives,
 and its rough size, so anyone can pick one up without reading the whole
-history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.** For the
-current release snapshot, see [`docs/release-status.md`](docs/release-status.md).
+history. **Product-side work lives in the Sailor repo's `ROADMAP.md`.** Completed
+items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
+[`docs/release-status.md`](docs/release-status.md).
 
 **How to pick one up**
 
@@ -170,18 +171,6 @@ current release snapshot, see [`docs/release-status.md`](docs/release-status.md)
   compose them. _Where:_ `src/agents/coding/prompts/` +
   `src/agents/coding/index.ts`. _Trigger:_ the first consumer amending a rule
   (Sailor, now). _Size:_ S.
-
-## Recently shipped (do not re-add as deferred)
-
-- v0.1.6: E2B adapter.
-- v0.1.7: background-result delivery, inbox/run-chain, Docker `egress: "none"`.
-- v0.1.8: verification ledger + gates, structured output, external-effect
-  recovery, terminal agent, bounded tool results, persistent process streams
-  (Local/Docker/E2B/Heyo), common image publishing + `anchor image publish`,
-  and optional TypeScript LSP.
-- v0.1.9 (main, unreleased): ledger-aware turn routing, structured task
-  compaction/handoff, image references on task/inbox/user messages with OpenAI
-  `image_url` serialization, E2B preview ports, and consumer-store docs.
 
 ## In flight / paused
 

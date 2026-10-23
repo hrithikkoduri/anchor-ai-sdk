@@ -537,7 +537,7 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Current tag: v0.1.8.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.1.9; latest published release: v0.1.8.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
 source may be ahead of the installed package. Daytona, agent teams, context
 reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
@@ -550,6 +550,7 @@ conformance coverage and an honest capability declaration.
 
 **[Issues](https://github.com/hrithikkoduri/anchor-ai-sdk/issues)** ·
 **[Release status](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/docs/release-status.md)** ·
+**[Completed tracker](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/TRACKER.md)** ·
 **[Roadmap](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/ROADMAP.md)** ·
 **[Engineering decisions](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/DECISIONS.md)** ·
 **[MIT license](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/LICENSE)**

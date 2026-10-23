@@ -5,7 +5,7 @@ test("timeline renders every tag with benefits, limits, and GitHub links", async
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/changelog.html");
-  await expect(page.locator(".release-entry")).toHaveCount(9);
+  await expect(page.locator(".release-entry")).toHaveCount(releases.length);
   for (const release of releases) {
     const entry = page.locator(`[id="v${release.version}"]`);
     await expect(entry.getByRole("heading", { level: 2 })).toHaveText(release.title);

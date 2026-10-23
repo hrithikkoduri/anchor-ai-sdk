@@ -1,11 +1,11 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, preparing **v0.1.9**.
+Status: **2026-10-23**, v0.1.9 release candidate. Package version is `0.1.9`; the tag and npm publication are the remaining release steps.
 
-This is the short, current view. The canonical deferred-work ledger is
-[`ROADMAP.md`](../ROADMAP.md); architectural decisions are in
-[`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment is in
-[`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
+This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
+the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
+decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
+is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
@@ -34,7 +34,7 @@ Verification at this snapshot: `npm run typecheck`, `npm test` (360 passed,
 
 ## Release checklist
 
-1. Bump `package.json` to `0.1.9`.
+1. [x] Bump `package.json` to `0.1.9` (package-lock updated).
 2. Add the v0.1.9 entry to `site/src/releases.json`.
 3. Create the GitHub Release at the v0.1.9 tag.
 4. Re-run typecheck, full tests, build, and site build.
