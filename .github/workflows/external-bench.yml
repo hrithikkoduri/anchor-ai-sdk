@@ -137,15 +137,20 @@ jobs:
           #   1. the /app fallback emits a literal $(pwd);
           #   2. it starts in the workspace, so Python 3.12 imports the old
           #      vendored requests package from /testbed.
-          # Pin the repo path for /app tasks and start the agent from /.
+          # Pin the correct repo path per bench and start the agent from /.
           "$PY" - <<'PY'
+          import os
           from pathlib import Path
           import harbor
           path = Path(harbor.__file__).parent / "agents/installed/swe_agent.py"
           text = path.read_text()
+          # SWE-bench Lite images use /testbed; SWE-bench Pro uses /app.
+          # Never point the adapter at the wrong checkout: that produces no
+          # agent calls and misleading 0/10 results.
+          repo_path = "/testbed" if os.environ.get("BENCH") == "swe-lite" else "/app"
           text = text.replace(
               "echo '--env.repo.path=$(pwd)'",
-              "echo '--env.repo.type=preexisting --env.repo.repo_name=/app'",
+              f"echo '--env.repo.type=preexisting --env.repo.repo_name={repo_path}'",
           )
           text = text.replace(
               'command = " ".join(cmd_parts)',
@@ -206,10 +211,10 @@ jobs:
             git rm -rf . --quiet || true
           fi
           mkdir -p latest "runs/$GITHUB_RUN_ID"
-          cp .bench-results/summary.json latest/
-          cp .bench-results/summary.md latest/
-          cp .bench-results/summary.json "runs/$GITHUB_RUN_ID/"
-          cp .bench-results/summary.md "runs/$GITHUB_RUN_ID/"
+          cp external-results/summary.json latest/
+          cp external-results/summary.md latest/
+          cp external-results/summary.json "runs/$GITHUB_RUN_ID/"
+          cp external-results/summary.md "runs/$GITHUB_RUN_ID/"
           git add latest runs
           git commit -m "external bench: run $GITHUB_RUN_ID" || true
           git push origin HEAD:external-bench-results
