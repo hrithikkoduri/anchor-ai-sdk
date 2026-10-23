@@ -299,9 +299,8 @@ function Benchmarks() {
         <p>
           Round 01 is the 18 October published baseline: a deterministic
           10-task subset, one per repository — not the full SWE-bench Lite set.
-          Mini’s cost and tokens are estimates. The latest complete harness
-          round is v0.1.7; the v0.1.8 round was interrupted. No v0.1.8 score is
-          claimed here.
+          Mini’s cost and tokens are estimates. The latest recorded harness
+          result is v0.1.7. No v0.1.8 benchmark result has been published.
         </p>
       </div>
 

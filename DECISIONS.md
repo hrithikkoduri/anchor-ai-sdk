@@ -1129,9 +1129,9 @@ A benchmark result is a record of one model, one harness, one task set, one
 budget, and one source commit. It is not a general property of the package, and
 a partial or interrupted run is not a release result. The v0.1.7 combined
 artifact lives at `evals/results/v0.1.7-2fbc92b/` even though the Git tag
-`v0.1.7` points to `08472b1`; the measured source was `2fbc92b`. The v0.1.8
-full round was cancelled, so its partial rows are retained only as operational
-data.
+`v0.1.7` points to `08472b1`; the measured source was `2fbc92b`. v0.1.8 has no
+recorded benchmark result: its full round was cancelled before both arms
+completed, and partial rows are not published as a version record.
 
 The reporting rules are:
 
@@ -1142,8 +1142,8 @@ The reporting rules are:
   finishes, and wall time where available.
 - Keep Anchor and external denominators visible; failed tasks and ungraded
   tasks are not silently removed from the claim.
-- Do not publish a partial or cancelled round as a version result. Rerun it or
-  label it explicitly as incomplete.
+- Do not publish a partial or cancelled round. A version gets a benchmark record
+  only when the full Anchor and external arms complete.
 - Keep raw artifacts out of the main branch and publish summaries separately;
   the current result directories retain the per-task records.
 

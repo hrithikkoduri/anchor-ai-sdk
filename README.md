@@ -504,17 +504,10 @@ measured at `2fbc92b`, while the `v0.1.7` tag points to `08472b1`.
 
 ### v0.1.8
 
-The full v0.1.8 round was interrupted/cancelled. The only published rows are
-partial and are **not a release result**:
-
-| Bench | DeepSeek V4.1 Flash | Qwen3 Coder Next |
-|---|---:|---:|
-| SWE Lite | 5/6 (83.3%) | 2/7 (28.6%) |
-| SWE Pro | 10/10 (100%) | 2/10 (20%) |
-| Terminal | 5/10 (50%) | 6/10 (60%) |
-
-The external arm for v0.1.8 is also incomplete. Do not use these numbers for a
-release comparison; rerun the full round after the benchmark harness is fixed.
+There is **no recorded benchmark result for v0.1.8**. The full round was
+interrupted before the Anchor and external arms completed, so partial rows are
+not published or compared. The next benchmark record will be a complete round,
+labeled with its measured source SHA.
 
 ### Historical selected sample
 
