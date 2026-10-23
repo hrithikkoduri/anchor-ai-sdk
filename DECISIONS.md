@@ -1330,3 +1330,24 @@ single-root: `Sandbox.checkpoint` and `hasChangesFrom` are unchanged, and
 per-repo snapshots belong to the consumer's `EngineOptions.snapshot`.
 
 Regressions: `tests/unit/multi-repo.test.ts`, plus the existing no-repo suite.
+
+## Decision #98: Skills are consumer-owned progressive disclosure
+
+Skills are instruction bundles, not a second tool system. Loading every body
+into the prompt does not scale, so Anchor exposes a provider contract
+(`SkillProvider`/`SkillMeta`/`SkillContent`), a deterministic
+`renderSkillIndex` helper, and a read-only `load_skill` tool. The model sees
+names and one-line descriptions; it loads one body on demand.
+
+The consumer owns filesystem/database/image storage, account/repo/builtin
+precedence, enablement, trust, UI, audit, and built-in content. Anchor does not
+parse YAML, scan directories, fetch URLs, or execute scripts. A loaded body is
+untrusted text returned as a tool result; it cannot become a system message or
+grant capabilities. Scripts use the existing `bash` tool under the normal
+sandbox/secret/contract rules.
+
+`load_skill` is read-only, works without a sandbox, and returns the base path
+and resource names for follow-up reads. There is no `EngineOptions.skills`; the
+consumer composes the prompt and registers the tool.
+
+Regressions: `tests/unit/skills.test.ts`.

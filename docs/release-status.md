@@ -57,9 +57,12 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   `bash` and `run_tests`, repo-attributed `edit_file`, resource-keyed mutation
   dispatch, per-repo LSP roots, and unchanged single-root checkpoints. No-repo
   behavior is unchanged.
+- Skills as progressive disclosure: consumer-owned `SkillProvider`, deterministic
+  `renderSkillIndex`, and a bounded read-only `load_skill` tool. Bodies are
+  tool results, never system instructions; scripts still use `bash`.
 
-Verification for this change: `npm run typecheck`, `npm test` (383 passed, 23
-skipped), `npm run build`, and dist-export verification.
+Verification for these changes: `npm run typecheck`, `npm test` (390 passed, 23
+skipped), `npm run build`, dist-export verification, and the site build.
 
 ## Earlier post-v0.1.9 work included in v0.2.0
 

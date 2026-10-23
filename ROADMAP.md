@@ -113,15 +113,13 @@ tracker for these deferred items.
 
 ## Agent capabilities
 
-- **Skills (load into the sandbox)**: a consumer ships skill bundles (a
-  `SKILL.md` + assets/scripts); the SDK materializes them into a reserved
-  sandbox directory (`.anchor/skills/<name>/`, git-excluded like notes),
-  lists them in the prompt with a read-first contract, and the agent invokes
-  them through its existing tools: mechanics here, content stays
-  consumer-owned. _Where:_ `src/agents/` (prompt section) +
-  `src/sandbox/` (materialization) + the option types in `src/engine/`.
-  _Trigger:_ the first consumer with skills to load (Sailor is the likely
-  first). _Size:_ M.
+- **Skills (sandbox materialization)**: progressive disclosure now exists as
+  the consumer-owned `SkillProvider` + `renderSkillIndex` + `load_skill` tool.
+  Still deferred: materializing bundles into a reserved sandbox directory
+  (`.anchor/skills/<name>/`, git-excluded like notes), with consumer-owned
+  precedence/trust. _Where:_ `src/sandbox/` + consumer prompt integration.
+  _Trigger:_ the first consumer that wants files pre-staged in the sandbox
+  rather than loaded on demand. _Size:_ S–M.
 
 - **MCP with lazy discovery**: `search_tools`, namespaced
   `mcp__server__tool`, `EngineOptions.toolResolver`, and per-server allowlists.

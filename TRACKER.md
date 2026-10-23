@@ -10,6 +10,12 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 
 ## After v0.2.0 — on main, unreleased
 
+- [x] Skills as progressive disclosure: consumer-owned `SkillProvider`,
+      deterministic `renderSkillIndex`, bounded read-only `load_skill`, and
+      no sandbox/network/execution coupling.
+
+
+
 - [x] Peer-repository workspaces: `RepoRef`, `EngineOptions.repos`,
       repo-aware `bash`/`run_tests`, repo-attributed `edit_file` resources,
       resource-keyed mutation dispatch, per-repo LSP roots, and no-repo

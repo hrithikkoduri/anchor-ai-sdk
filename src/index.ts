@@ -10,6 +10,7 @@
  * configuration and orchestration.
  */
 export * from "./repo.js";
+export * from "./skills/index.js";
 export * from "./llm/index.js";
 export * from "./llm/from-catalog.js";
 export * from "./anchor.js";

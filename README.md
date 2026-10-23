@@ -184,6 +184,27 @@ With no `repos`, every tool behaves exactly as before: the workspace root is
 the repo. Checkpoints remain single-root; per-repo snapshots are supplied by the
 consumer through `EngineOptions.snapshot`.
 
+### Optional skills
+
+Skills are consumer-owned instruction bundles. Anchor supplies a compact index
+and an on-demand loader; it does not own storage, trust, or content:
+
+```ts
+import {
+  createSkillTools,
+  renderSkillIndex,
+  type SkillProvider,
+} from "anchor-ai-sdk";
+
+const index = renderSkillIndex(await provider.list());
+const skills = createSkillTools({ provider });
+```
+
+The consumer injects `index` into its prompt and adds `skills` to the agent.
+`load_skill({ name })` returns a bounded body plus resource paths; scripts run
+only through the normal `bash` tool. The body is an untrusted tool result, never
+a system message. See [docs/skills.md](docs/skills.md).
+
 ## One sandbox interface
 
 **Configure the provider once. Keep the agent-facing machine interface the same.**
