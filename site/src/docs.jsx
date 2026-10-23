@@ -633,6 +633,11 @@ function Docs() {
                   "Template-based boot · optional e2b SDK",
                 ],
                 [
+                  "daytona",
+                  "Daytona cloud sandboxes",
+                  "Image or snapshot · no fork, stop-based retain",
+                ],
+                [
                   "local",
                   "Processes on this host",
                   "No isolation · development / CI only",
@@ -649,8 +654,10 @@ function Docs() {
               ))}
             </div>
             <p className="doc-small">
-              E2B is exported since v0.1.6. Daytona remains a stub, not a
-              supported backend. Boot settings and isolation guarantees differ.
+              E2B is exported since v0.1.6. Boot settings and isolation
+              guarantees differ; each adapter declares what it can honor.
+              Daytona has no fork, no post-setup egress cut, and no process
+              streams, and rejects those requests instead of ignoring them.
             </p>
           </DocSection>
 
@@ -764,10 +771,10 @@ return {
           <DocSection id="status" number="30" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
-              treat feature availability as version-specific. Agent teams,
-              consumer skill bundles, and Daytona are roadmap work. Check the
-              tagged source and the <a href="/changelog.html">changelog</a>
-              rather than assuming main matches your installed version.
+              treat feature availability as version-specific. Agent teams and
+              consumer skill bundles are roadmap work. Check the tagged source
+              and the <a href="/changelog.html">changelog</a> rather than
+              assuming main matches your installed version.
             </p>
             <a
               className="doc-inline-link"

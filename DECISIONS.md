@@ -1171,7 +1171,6 @@ state.
 Regressions: `tests/unit/engine-verifier.test.ts` and
 `tests/unit/compaction.test.ts`.
 
-
 ## Decision #93: Image input is the first multimodal contract
 
 The first multimodal input is images, not arbitrary files. The shared contract
@@ -1195,3 +1194,38 @@ consumer tooling; it is not required when the model accepts images directly.
 
 Regressions: none yet; add serialization, persistence, compaction/drop, and
 provider-capability tests with the first implementation.
+
+## Decision #94: Daytona is a provider with four honest "no"s
+
+Daytona ships as `anchor-ai-sdk/sandbox/daytona` (`daytona()`,
+`DaytonaSandbox`) and passes `runSandboxConformance` on a live account. It is
+the first adapter whose gaps are all **API facts**, so each is declared and
+rejected loudly rather than emulated:
+
+- **Exec is a session command.** `process.executeCommand()` returns stderr
+  merged into `result`; `executeSessionCommand()` returns `stdout`, `stderr`,
+  and `exitCode` separately. `exec()` creates and deletes one short-lived
+  session per call, which keeps commands self-contained and lets read-only
+  execs overlap. The timeout rule is unchanged: guest-side `timeout -k` is the
+  kill, the session's own timeout is only a longer transport guard.
+- **`fork: false`.** The API answers 422 "Forking is not supported for this
+  sandbox" for container-class sandboxes. `fork()` throws with that reason;
+  racing on Daytona needs rebuild-from-checkpoint, not a native fork.
+- **`egressControl: false`.** `networkBlockAll` is a create-time parameter and
+  `start()` needs network to clone; post-create `updateNetworkSettings()` is
+  rejected on restricted tiers. `egress: "none"` is rejected instead of
+  running with network.
+- **`processStream: false`.** A session command has no stdin EOF (Ctrl-D
+  arrives as literal data) and the PTY is an interactive shell that echoes
+  input and only exits with the shell. `openProcess()` is omitted rather than
+  faked — the same rule Decision #86 states for backends that cannot support it.
+
+Retention is real: `destroy()` stops a retained sandbox and `adopt()` re-opens
+it by id and starts it again; the filesystem survives. `SandboxSpec.image` is a
+container image (built dynamically at create); a prepared snapshot goes in
+`daytona({ snapshot })`. There is no `imagePublisher`: snapshot creation is a
+separate credentialed service and this account tier denies it.
+
+Regressions: `tests/unit/daytona.test.ts`,
+`tests/unit/daytona-lifecycle.test.ts`, and the opt-in
+`tests/integration/daytona-sandbox.test.ts` (`RUN_LIVE_DAYTONA_TESTS=1`).

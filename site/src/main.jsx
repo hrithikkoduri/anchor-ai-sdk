@@ -553,7 +553,7 @@ function App() {
                 ],
                 [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. Pin exact versions and test your integration. E2B is shipped; Daytona, agent teams, and skills are roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.1.8 changelog.",
+                  "Anchor is early alpha. Pin exact versions and test your integration. E2B and Daytona are shipped; agent teams and skills are roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.1.8 changelog and the sandbox README.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>

@@ -11,7 +11,7 @@
  *   anchor-ai-sdk/sandbox/local   → local(), LocalSandbox (dev/CI — no isolation)
  *   anchor-ai-sdk/sandbox/docker  → docker(), DockerSandbox
  *   anchor-ai-sdk/sandbox/e2b     → e2b(), E2BSandbox
- *   anchor-ai-sdk/sandbox/daytona → daytona() — stub, coming soon
+ *   anchor-ai-sdk/sandbox/daytona → daytona(), DaytonaSandbox
  *
  * Two ways to open one: `openSandbox` for explicit callbacks, and
  * `openSandboxSession` for store-backed continuity. README.md in this

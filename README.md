@@ -37,7 +37,7 @@ release policy.** There is no requirement to turn an agent into a workflow graph
 | Build around | What Anchor supplies |
 | --- | --- |
 | **Your agent** | Chat and coding bundles, or your own strategy and toolset. Phases label the approach; they are not permissions. |
-| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Docker, and local development. |
+| **Your machine** | One `SandboxProvider` / `Sandbox` surface for Heyo Computer, E2B, Daytona, Docker, and local development. |
 | **Longer tasks** | Conversation compaction, thread-store interfaces, working notes, checkpoints, and opt-in revival planning. |
 | **Observable execution** | Streaming events, tool-result metadata, NDJSON/custom trace sinks, and replay helpers. |
 
@@ -123,6 +123,7 @@ stdin/stdout primitive; check `provider.capabilities.processStream` first.
 | --- | --- | --- |
 | **Heyo Computer** | `anchor-ai-sdk/sandbox/heyo` | Image artifact/store on the provider; host-built image kinds are also supported. |
 | **E2B** | `anchor-ai-sdk/sandbox/e2b` | A prepared template name or ID, **not** an arbitrary Docker image at create time. |
+| **Daytona** | `anchor-ai-sdk/sandbox/daytona` | A container image reference (built dynamically) or a prepared snapshot name. |
 | **Docker** | `anchor-ai-sdk/sandbox/docker` | An explicit container image, Docker CLI, and running daemon. |
 | **Local** | `anchor-ai-sdk/sandbox/local` | Host processes and a working directory. **No isolation; trusted dev/CI only.** |
 
@@ -231,10 +232,11 @@ try {
 ```
 
 Provider boot settings and optional capabilities differ. Per-sandbox
-`spec.image` is supported by Docker and E2B (as a template name), and by Heyo
-for artifact refs; Local rejects it. Retention needs a cleanup policy; remote
-machines and model calls can cost money. Private HTTPS repositories can use
-`spec.git.token`, a caller-supplied credential callback.
+`spec.image` is supported by Docker, E2B (as a template name), and Daytona (as a
+container image), and by Heyo for artifact refs; Local rejects it. Retention
+needs a cleanup policy; remote machines and model calls can cost money. Private
+HTTPS repositories can use `spec.git.token`, a caller-supplied credential
+callback.
 
 The Docker adapter also supports `spec.egress: "none"`: it disconnects container
 networks after `start()` setup. Other adapters reject that setting. This is not a
@@ -283,6 +285,9 @@ Use the returned `ref` as `spec.image`, or merge Heyo's provider config. This is
 provider-native publishing, not a shared Anchor registry. Live registry paths
 are credential-gated; see
 [docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
+
+Daytona publishes snapshots through Daytona's own tooling, so it has no
+`imagePublisher`; pass a prepared snapshot name as `daytona({ snapshot })`.
 
 ### Optional TypeScript LSP
 
@@ -480,8 +485,8 @@ public sandbox contract: command results, deadlines, environment handling, Git
 checkpoints, retention/adoption, process streams, and declared optional image
 publishing capability.
 
-The repository configures local and Docker conformance in CI. Heyo and E2B live
-suites are opt-in and credential-gated; having a suite is not certification that
+The repository configures local and Docker conformance in CI. Heyo, E2B, and
+Daytona live suites are opt-in and credential-gated; having a suite is not certification that
 every account, image, or template has passed it. Custom providers can use the
 same contract and tests without rewriting the agent engine.
 
@@ -539,10 +544,9 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 **Early alpha, 0.x. Current tag: v0.1.8.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
-source may be ahead of the installed package. Daytona, agent teams, context
-reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
-source. See the [changelog](https://anchor-sdk.dev/changelog.html) for what
-landed in each tag.
+source may be ahead of the installed package. Agent teams, context reset, MCP,
+and consumer skill bundles remain roadmap work in the reviewed source. See the
+[changelog](https://anchor-sdk.dev/changelog.html) for what landed in each tag.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in
 the SDK and product policy in the consumer; provider changes should include

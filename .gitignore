@@ -13,3 +13,4 @@ traces/
 site/test-results/
 site/playwright-report/
 .vercel/
+.anchor/
