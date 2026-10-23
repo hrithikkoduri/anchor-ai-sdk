@@ -287,9 +287,10 @@ are credential-gated; see
 ### Optional LSP tools
 
 The optional `anchor-ai-sdk/lsp` entry point adds read-only diagnostics,
-definition, references, and document symbols over process streams. The default
-preset is TypeScript/JavaScript; Python ships as a second preset, and any stdio
-language server can be configured:
+definition, references, document symbols, hover, completion, signature help,
+code actions, formatting previews, rename previews, and workspace symbols over
+process streams. The default preset is TypeScript/JavaScript; Python ships as a
+second preset, and any stdio language server can be configured:
 
 ```js
 import { createCodingAgent } from "anchor-ai-sdk";
@@ -302,9 +303,12 @@ const agent = {
 };
 ```
 
-The sandbox image must provide the configured server: `typescript-language-server`
-and `typescript` for the default preset, or `pyright` for Python. Search and file
-reads remain the fallback. See [docs/lsp.md](docs/lsp.md).
+The default `createLspTools()` keeps the four core tools; use
+`createLspTools({ features: "all" })` or `lspAllTools` for the full editor
+surface. The sandbox image must provide the configured server:
+`typescript-language-server` and a compatible `typescript` for the default
+preset, or `pyright` for Python. Search and file reads remain the fallback. See
+[docs/lsp.md](docs/lsp.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
 **[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)** ·

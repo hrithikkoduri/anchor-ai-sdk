@@ -156,9 +156,13 @@ if (published.target === "sandbox-spec") {
     </Section>
 
     <Section id="lsp" number="21" title="Optional LSP tools">
-      <p><code>anchor-ai-sdk/lsp</code> adds four read-only tools:
+      <p><code>anchor-ai-sdk/lsp</code> starts with four read-only tools:
         <code>lsp_diagnostics</code>, <code>lsp_definition</code>,
         <code>lsp_references</code>, and <code>lsp_symbols</code>.
+        Opt into the rest of the common editor surface with
+        <code>features: "all"</code>: hover, completion, signature help,
+        highlights, code actions, workspace symbols, formatting/rename previews,
+        folding ranges, inlay hints, and type/implementation/declaration.
         The optional entry point owns JSON-RPC/LSP; core only knows process streams.
         TypeScript/JavaScript is the default preset, Python ships as a second
         preset, and any stdio server can be configured.</p>
@@ -172,6 +176,7 @@ import {
 const base = createCodingAgent();
 const tools = createLspTools({
   servers: [typescriptLanguageServer(), pythonLanguageServer()],
+  features: ["hover", "completion", "signature_help", "code_actions"],
 });
 const agent = { ...base, tools: [...base.tools, ...tools] };
 // Pass agent to runAgent with your configured model and sandbox.
@@ -179,17 +184,19 @@ const agent = { ...base, tools: [...base.tools, ...tools] };
 // npm install -g typescript typescript-language-server pyright`} />
       <p>Tools accept 1-based lines/columns and select a server by file extension.
         The default is TypeScript/JavaScript; Python uses
-        <code>pyright-langserver --stdio</code>. Configure another command,
-        arguments, initialization options, and extension mapping with
+        <code>pyright-langserver --stdio</code>. Formatting and rename return
+        edits but never write files. Configure another command, arguments,
+        initialization options, and extension mapping with
         <code>LspServerConfig</code>; unsupported extensions fail instead of
         silently switching languages. Servers must already exist in the sandbox;
         nothing is installed automatically. Keep search/read_file as the fallback:
         missing-server errors do not transparently invoke another tool.</p>
-      <Callout>The protocol/client was tested over LocalSandbox with fixture
-        servers, not live TypeScript or Python servers on every cloud provider.
-        Prefer a pipe-backed transport for LSP. Heyo's PTY raw-byte behavior is
-        unverified. Consumers choose each command, when to start it, and its
-        lifecycle; heavier servers also need image memory and startup time.</Callout>
+      <Callout>The client has fixture coverage and live smoke validation against
+        real pyright-langserver and typescript-language-server binaries, but not
+        every server on every provider. Prefer a pipe-backed transport for LSP.
+        Heyo's PTY raw-byte behavior is unverified. Consumers choose each command,
+        when to start it, and its lifecycle; heavier servers also need image memory
+        and startup time.</Callout>
       <a className="doc-inline-link" href={`${repo}/blob/main/docs/lsp.md`}>Direct client, presets, and lifecycle guide ↗</a>
     </Section>
 

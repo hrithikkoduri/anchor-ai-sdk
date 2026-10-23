@@ -11,6 +11,8 @@ export interface TypeScriptLspOptions {
   requestTimeoutMs?: number;
   diagnosticsTimeoutMs?: number;
   initializationOptions?: Record<string, unknown>;
+  configuration?: Record<string, unknown>;
+  formattingOptions?: { tabSize?: number; insertSpaces?: boolean };
 }
 
 export function typescriptLanguageServer(
@@ -39,6 +41,10 @@ export function typescriptLanguageServer(
       : {}),
     ...(opts.initializationOptions
       ? { initializationOptions: opts.initializationOptions }
+      : {}),
+    ...(opts.configuration ? { configuration: opts.configuration } : {}),
+    ...(opts.formattingOptions
+      ? { formattingOptions: opts.formattingOptions }
       : {}),
     installHint:
       "install typescript-language-server and typescript in the sandbox image, or pass command/args",

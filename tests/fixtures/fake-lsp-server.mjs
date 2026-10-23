@@ -82,6 +82,140 @@ process.stdin.on("data", (chunk) => {
             range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
           }],
         });
+      } else if (message.id !== undefined && message.method === "textDocument/hover") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            contents: { kind: "markdown", value: "**fixture hover**" },
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+          },
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/completion") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            isIncomplete: false,
+            items: [{
+              label: "fixtureCompletion",
+              kind: 3,
+              detail: "fixture detail",
+              documentation: { kind: "markdown", value: "fixture docs" },
+            }],
+          },
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/signatureHelp") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            signatures: [{
+              label: "fixture(value: string)",
+              documentation: "fixture signature",
+              parameters: [{ label: "value", documentation: "fixture parameter" }],
+            }],
+            activeSignature: 0,
+            activeParameter: 0,
+          },
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/documentHighlight") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+            kind: 1,
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/codeAction") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            title: "fixture action",
+            kind: "quickfix",
+            isPreferred: true,
+            edit: { changes: {} },
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "workspace/symbol") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            name: "fixtureWorkspaceSymbol",
+            kind: 12,
+            containerName: "fixture",
+            location: {
+              uri: message.params?.query === "missing"
+                ? "file:///fixture.ts"
+                : "file:///fixture.ts",
+              range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+            },
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/formatting") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+            newText: "formatted",
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/rangeFormatting") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+            newText: "range-formatted",
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/rename") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            changes: {
+              [message.params.textDocument.uri]: [{
+                range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+                newText: message.params.newName,
+              }],
+            },
+          },
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/foldingRange") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{ startLine: 0, endLine: 2, kind: "region" }],
+        });
+      } else if (message.id !== undefined && message.method === "textDocument/inlayHint") {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            position: { line: 0, character: 1 },
+            label: [{ value: ": " }, { value: "number" }],
+            kind: 1,
+          }],
+        });
+      } else if (
+        message.id !== undefined &&
+        ["textDocument/typeDefinition", "textDocument/implementation", "textDocument/declaration"].includes(message.method)
+      ) {
+        send({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: [{
+            uri: message.params.textDocument.uri,
+            range: { start: { line: 3, character: 0 }, end: { line: 3, character: 1 } },
+          }],
+        });
+      } else if (message.id !== undefined && message.method === "workspace/executeCommand") {
+        send({ jsonrpc: "2.0", id: message.id, result: { ok: true } });
       } else {
         handle(message);
       }

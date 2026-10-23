@@ -20,6 +20,15 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 - [x] Python LSP preset: `PythonLsp` / `pythonLanguageServer`, using
       `pyright-langserver --stdio` by default with configurable command and
       initialization options.
+- [x] Full common LSP editor surface: hover, completion, signature help,
+      highlights, code actions, workspace symbols, formatting/range formatting,
+      rename previews, folding ranges, inlay hints, type definitions,
+      implementations, and declarations. The default remains the four core tools;
+      `features: "all"` / `lspAllTools` opts into all 17.
+- [x] Generic `LspServer.request()` escape hatch for standard and
+      vendor-specific methods, plus pull-diagnostics support.
+- [x] Live validation against real `pyright-langserver` and
+      `typescript-language-server` binaries.
 - [x] Generic LSP docs, README, and site coverage, including custom stdio
       servers and the image-install boundary.
 

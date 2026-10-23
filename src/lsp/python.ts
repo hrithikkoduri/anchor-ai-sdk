@@ -10,6 +10,8 @@ export interface PythonLspOptions {
   requestTimeoutMs?: number;
   diagnosticsTimeoutMs?: number;
   initializationOptions?: Record<string, unknown>;
+  configuration?: Record<string, unknown>;
+  formattingOptions?: { tabSize?: number; insertSpaces?: boolean };
 }
 
 export function pythonLanguageServer(
@@ -32,6 +34,10 @@ export function pythonLanguageServer(
       : {}),
     ...(opts.initializationOptions
       ? { initializationOptions: opts.initializationOptions }
+      : {}),
+    ...(opts.configuration ? { configuration: opts.configuration } : {}),
+    ...(opts.formattingOptions
+      ? { formattingOptions: opts.formattingOptions }
       : {}),
     installHint:
       "install pyright (npm i -g pyright) or a Python language server in the sandbox image, or pass command/args",

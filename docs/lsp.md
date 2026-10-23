@@ -6,7 +6,8 @@ package owns the protocol, document lifecycle, language-server presets, and
 four read-only tools.
 
 Status: on `main` after v0.1.9. TypeScript/JavaScript is the default preset;
-Python is available as a second preset.
+Python is available as a second preset. The client covers the common editor
+surface and exposes a generic request escape hatch for anything else.
 
 ## What it supports
 
@@ -14,12 +15,37 @@ The client is language-agnostic. A server definition maps file extensions to
 LSP language IDs, so the same tools work with any stdio language server the
 sandbox image provides.
 
+Core tools (always included):
+
 | Tool | Purpose |
 | --- | --- |
 | `lsp_diagnostics` | Errors and warnings for one file |
 | `lsp_definition` | Definition at a 1-based line/column |
 | `lsp_references` | References at a 1-based line/column |
 | `lsp_symbols` | Classes, functions, variables, and other document symbols |
+
+Additional read-only tools (`features: "all"` or an explicit list):
+
+| Tool | Purpose |
+| --- | --- |
+| `lsp_hover` | Type information and documentation |
+| `lsp_completion` | Completion candidates at a position |
+| `lsp_signature_help` | Call signature and active parameter |
+| `lsp_document_highlights` | Occurrences of a symbol in one file |
+| `lsp_code_actions` | Quick fixes and refactors (metadata plus edits) |
+| `lsp_workspace_symbols` | Search symbols across the workspace |
+| `lsp_format` | Formatting edits for a file or range |
+| `lsp_rename` | Workspace edit for a symbol rename |
+| `lsp_folding_ranges` | Foldable ranges |
+| `lsp_inlay_hints` | Inferred types and parameter-name hints |
+| `lsp_type_definition` | Type definition locations |
+| `lsp_implementation` | Implementation locations |
+| `lsp_declaration` | Declaration locations |
+
+`lsp_format` and `lsp_rename` return edits but do not write files. Apply them
+with `edit_file` or the consumer's formatter. The direct client exposes the
+same methods plus `request(method, params)` for standard or vendor-specific LSP
+requests outside this list.
 
 Built-in presets:
 
@@ -81,6 +107,23 @@ Or use the default exported set:
 
 ```ts
 import { lspTools } from "anchor-ai-sdk/lsp";
+```
+
+Include the full common editor surface:
+
+```ts
+import { createLspTools, lspAllTools } from "anchor-ai-sdk/lsp";
+
+const all = createLspTools({ features: "all" });
+const exported = lspAllTools; // same 17 tools
+```
+
+Pick individual extras to control prompt/tool-schema size:
+
+```ts
+const tools = createLspTools({
+  features: ["hover", "completion", "signature_help", "code_actions"],
+});
 ```
 
 Use Python only:
@@ -169,16 +212,28 @@ try {
   const definition = await lsp.definition("src/app.py", 10, 5);
   const references = await lsp.references("src/app.py", 10, 5);
   const symbols = await lsp.symbols("src/app.py");
+  const hover = await lsp.hover("src/app.py", 10, 5);
+  const completions = await lsp.completion("src/app.py", 10, 5);
+  const signature = await lsp.signatureHelp("src/app.py", 10, 5);
+  const actions = await lsp.codeActions("src/app.py", 10, 5, 10, 9);
+  const edits = await lsp.formatting("src/app.py");
+  const rename = await lsp.rename("src/app.py", 10, 5, "new_name");
 } finally {
   await lsp.close();
 }
 
 // Or construct the generic client from any config.
 const generic = new LspServer(sandbox, pythonLanguageServer({ command: "pylsp", args: [] }));
+
+// Escape hatch: any LSP request, including vendor extensions.
+const ranges = await generic.request("textDocument/selectionRange", {
+  textDocument: { uri: "file:///workspace/src/app.py" },
+  positions: [{ line: 9, character: 4 }],
+});
 ```
 
 Positions passed to the public client/tools are 1-based; the client converts
-them to LSP's 0-based positions.
+them to LSP's 0-based positions. `request()` takes raw LSP positions (0-based).
 
 ## Design boundary
 
@@ -190,20 +245,30 @@ them to LSP's 0-based positions.
   arguments, extension-to-language-ID mapping, and install hints.
 - `src/lsp/tools.ts` selects a preset by extension and caches one client per
   sandbox/server.
-- The LSP tools expose read-only language queries. They launch the configured
-  server and use sandbox commands to probe its availability and read files;
-  they do not offer file edits or arbitrary commands to the model.
+- The LSP tools expose read-only language queries. `format` and `rename`
+  return edits but never write files; the agent applies them through the normal
+  edit tool or the consumer applies them in its own formatter.
+- The tools launch the configured server and use sandbox commands to probe its
+  availability and read files; they do not offer arbitrary commands to the
+  model. `LspServer.request()` is a host-side escape hatch, not a model tool.
 - The client reads the current file through the sandbox before opening it, so
   the server sees the same checkout the agent sees.
 
 ## Verification
 
 - `tests/unit/lsp.test.ts` covers split/concatenated Content-Length framing,
-  the real `TypeScriptLsp` client against a stdio fixture server through
-  `LocalSandbox.openProcess`, and the Python preset plus extension-based tool
-  selection.
-- Real TypeScript, Python, and other language servers need sandbox images that
-  install them; that is image configuration, not an Anchor dependency.
-- The fixture test does not prove a live `pyright-langserver` or `pylsp` session
-  on every provider. Validate the chosen server and image before relying on it
-  in production.
+  the real client against a stdio fixture server through
+  `LocalSandbox.openProcess`, Python/TypeScript preset selection, the four core
+  tools, the advanced methods, and the opt-in full tool set.
+- Live smoke validation was run against real `pyright-langserver` and
+  `typescript-language-server` binaries. Both returned diagnostics, symbols,
+  hover, completion, signature help, workspace symbols, rename edits, and
+  supported navigation results. Some methods are server-specific: pyright does
+  not implement formatting/folding/inlay hints, and TypeScript does not
+  implement `textDocument/declaration`; those return an LSP method error.
+- Reproduce it with `npm run build` followed by
+  `PYRIGHT_LANGSERVER=... TYPESCRIPT_LANGUAGE_SERVER=... TSSERVER_PATH=... node scripts/lsp-live-smoke.mjs`.
+- Servers and images remain consumer configuration. Validate the chosen server,
+  workspace root, and language runtime before relying on it in production.
+- Real sessions require an image that installs the server; Anchor does not
+  install server binaries.

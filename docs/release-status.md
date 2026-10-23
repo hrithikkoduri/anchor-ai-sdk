@@ -37,13 +37,18 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 - Python LSP preset: `PythonLsp` / `pythonLanguageServer`, defaulting to
   `pyright-langserver --stdio` and accepting a different command and
   initialization options.
+- Full common LSP editor surface: hover, completion, signature help,
+  highlights, code actions, workspace symbols, formatting/range formatting,
+  rename previews, folding ranges, inlay hints, and type/implementation/
+  declaration navigation. Core remains the default; `features: "all"` enables
+  all 17 tools. `LspServer.request()` covers other methods.
 - SWE Lite external arm: use `/testbed`, run pytest from the `testbed` conda
   environment, enforce FAIL_TO_PASS and PASS_TO_PASS, and aggregate from
   `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
 
-Verification after the LSP change: `npm run typecheck`, `npm test` (361 passed,
-23 skipped), `npm run build`, `site` build, and the site browser suite (42
-passed). No new benchmark result is claimed.
+Verification after the LSP change: `npm run typecheck`, `npm test` (364 passed,
+23 skipped), `npm run build`, live pyright + TypeScript smoke, `site` build,
+and the site browser suite (42 passed). No new benchmark result is claimed.
 
 ## v0.1.9 release checklist
 

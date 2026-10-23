@@ -1208,12 +1208,21 @@ same generic client.
 `createLspTools({ servers })` selects the first config that supports the file
 extension and caches one client per sandbox and server id. Unsupported
 extensions fail with the configured extension list rather than silently
-switching languages. Consumers still own image installation and workspace setup:
-TypeScript/JavaScript needs `typescript-language-server`, Python defaults to
-`pyright-langserver`, and other stdio servers use the same config shape.
+switching languages. The default tool set stays at the four core read-only
+tools; `features: "all"` adds hover, completion, signature help, highlights,
+code actions, workspace symbols, formatting/rename previews, folding ranges,
+inlay hints, and type/implementation/declaration navigation.
 
-The fixture suite covers TypeScript, Python, and extension-based tool selection.
-A live Python server is not verified on every provider, and Heyo's PTY caveat is
-unchanged.
+Formatting and rename return LSP edits but do not write files. Anchor's mutation
+boundary remains the normal edit tool; the LSP layer does not silently apply
+multi-file workspace edits. `LspServer.request()` is the host-side escape hatch
+for methods outside the typed surface.
+
+Consumers still own image installation and workspace setup:
+TypeScript/JavaScript needs `typescript-language-server`, Python defaults to
+`pyright-langserver`, and other stdio servers use the same config shape. Fixture
+tests cover the client and tools; live smoke validation has been run against
+real pyright and TypeScript servers. A live server is not verified on every
+provider, and Heyo's PTY caveat is unchanged.
 
 Regressions: `tests/unit/lsp.test.ts`.

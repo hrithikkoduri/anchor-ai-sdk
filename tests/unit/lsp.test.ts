@@ -5,9 +5,9 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { local } from "../../src/sandbox/local/index.js";
 import { encodeLspMessage, LspFramer } from "../../src/lsp/protocol.js";
-import { TypeScriptLsp } from "../../src/lsp/typescript.js";
+import { TypeScriptLsp, typescriptLanguageServer } from "../../src/lsp/typescript.js";
 import { PythonLsp, pythonLanguageServer } from "../../src/lsp/python.js";
-import { createLspTools } from "../../src/lsp/tools.js";
+import { createLspTools, lspAllTools } from "../../src/lsp/tools.js";
 import type { Sandbox } from "../../src/sandbox/types.js";
 
 const roots: string[] = [];
@@ -117,4 +117,110 @@ describe("TypeScript LSP", () => {
       await box.destroy();
     }
   });
+  it("serves the common advanced editor features", async () => {
+    const box = await sandbox();
+    try {
+      await writeFile(path.join(box.workspace, "index.ts"), "const value = 1;\n");
+      const client = new TypeScriptLsp(box, {
+        command: "node",
+        args: [fixture],
+        diagnosticsTimeoutMs: 2000,
+      });
+      try {
+        expect(await client.hover("index.ts", 1, 7)).toMatchObject({
+          contents: "**fixture hover**",
+        });
+        expect(await client.completion("index.ts", 1, 7)).toMatchObject([
+          { label: "fixtureCompletion", documentation: "fixture docs" },
+        ]);
+        expect(await client.signatureHelp("index.ts", 1, 7)).toMatchObject({
+          signatures: [{ label: "fixture(value: string)" }],
+        });
+        expect(await client.documentHighlights("index.ts", 1, 7)).toHaveLength(1);
+        expect(await client.codeActions("index.ts", 1, 1, 1, 2)).toMatchObject([
+          { title: "fixture action", isPreferred: true },
+        ]);
+        expect(await client.workspaceSymbols("fixture")).toMatchObject([
+          { name: "fixtureWorkspaceSymbol" },
+        ]);
+        expect(await client.formatting("index.ts")).toMatchObject([
+          { newText: "formatted" },
+        ]);
+        expect(await client.rangeFormatting("index.ts", 1, 1, 1, 2)).toMatchObject([
+          { newText: "range-formatted" },
+        ]);
+        expect(await client.rename("index.ts", 1, 7, "renamed")).toMatchObject({
+          changes: { [new URL(`file://${path.join(box.workspace, "index.ts")}`).href]: [{ newText: "renamed" }] },
+        });
+        expect(await client.foldingRanges("index.ts")).toMatchObject([
+          { startLine: 0, endLine: 2 },
+        ]);
+        expect(await client.inlayHints("index.ts")).toMatchObject([
+          { label: ": number" },
+        ]);
+        expect(await client.typeDefinition("index.ts", 1, 7)).toHaveLength(1);
+        expect(await client.implementation("index.ts", 1, 7)).toHaveLength(1);
+        expect(await client.declaration("index.ts", 1, 7)).toHaveLength(1);
+      } finally {
+        await client.close();
+      }
+    } finally {
+      await box.destroy();
+    }
+  });
+
+  it("exposes the full tool set only when requested", () => {
+    expect(createLspTools({ features: ["hover"] }).map((tool) => tool.definition.name)).toContain(
+      "lsp_hover",
+    );
+    expect(lspAllTools.map((tool) => tool.definition.name)).toEqual(
+      expect.arrayContaining([
+        "lsp_hover",
+        "lsp_completion",
+        "lsp_signature_help",
+        "lsp_code_actions",
+        "lsp_format",
+        "lsp_rename",
+      ]),
+    );
+  });
+
+  it("runs advanced tools through the extension-selected client", async () => {
+    const box = await sandbox();
+    try {
+      await writeFile(path.join(box.workspace, "index.ts"), "const value = 1;\n");
+      const tools = createLspTools({
+        servers: [
+          typescriptLanguageServer({
+            command: "node",
+            args: [fixture],
+            diagnosticsTimeoutMs: 2000,
+          }),
+        ],
+        features: ["hover", "format"],
+      });
+      const hover = tools.find(
+        (tool) => tool.definition.name === "lsp_hover",
+      )!;
+      const hoverResult = await hover.run(
+        { path: "index.ts", line: 1, column: 7 },
+        { sandbox: box },
+      );
+      expect(hoverResult.ok).toBe(true);
+      expect(hoverResult.content).toContain("fixture hover");
+
+      const format = tools.find(
+        (tool) => tool.definition.name === "lsp_format",
+      )!;
+      const formatResult = await format.run(
+        { path: "index.ts" },
+        { sandbox: box },
+      );
+      expect(formatResult.ok).toBe(true);
+      expect(formatResult.content).toContain("not applied");
+    } finally {
+      await box.destroy();
+    }
+  });
+
 });
