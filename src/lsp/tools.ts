@@ -1,8 +1,8 @@
 /**
- * The first LSP tools: diagnostics, definition, references, and document
- * symbols for TypeScript/JavaScript. They are optional and read-only; `search`
- * and `read_file` remain the fallback for other languages or when no language
- * server is installed.
+ * Generic LSP tools: diagnostics, definition, references, and document
+ * symbols for whatever server definitions the consumer supplies. They are
+ * optional and read-only; `search` and `read_file` remain the fallback when no
+ * language server is installed.
  */
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -18,30 +18,50 @@ import {
   type ToolContext,
 } from "../tools/types.js";
 import {
-  TypeScriptLsp,
+  LspServer,
   lspUriToPath,
   type LspDiagnostic,
   type LspLocation,
+  type LspServerConfig,
   type LspSymbol,
-  type TypeScriptLspOptions,
-} from "./typescript.js";
+} from "./server.js";
+import { typescriptLanguageServer, type TypeScriptLspOptions } from "./typescript.js";
 
-const sessions = new WeakMap<Sandbox, TypeScriptLsp>();
+export interface LspToolsOptions extends TypeScriptLspOptions {
+  /** One or more language servers; defaults to the TypeScript/JavaScript preset. */
+  servers?: LspServerConfig[];
+}
+
+const sessions = new WeakMap<Sandbox, Map<string, LspServer>>();
 
 async function clientFor(
   ctx: ToolContext,
-  opts: TypeScriptLspOptions,
-): Promise<TypeScriptLsp> {
+  file: string,
+  servers: LspServerConfig[],
+): Promise<LspServer> {
   const sandbox = requireSandbox(ctx);
-  let client = sessions.get(sandbox);
+  const extension = path.extname(file).toLowerCase();
+  const config = servers.find((server) => server.languageIds[extension]);
+  if (!config) {
+    const supported = [...new Set(servers.flatMap((server) => Object.keys(server.languageIds)))];
+    throw new Error(
+      `no language server is configured for ${extension || "this file"}; supported extensions: ${supported.join(", ")}`,
+    );
+  }
+  let byId = sessions.get(sandbox);
+  if (!byId) {
+    byId = new Map();
+    sessions.set(sandbox, byId);
+  }
+  let client = byId.get(config.id);
   if (!client) {
-    client = new TypeScriptLsp(sandbox, opts);
-    sessions.set(sandbox, client);
+    client = new LspServer(sandbox, config);
+    byId.set(config.id, client);
   }
   try {
     await client.start();
   } catch (error) {
-    sessions.delete(sandbox);
+    byId.delete(config.id);
     throw error;
   }
   return client;
@@ -93,16 +113,14 @@ function formatSymbols(symbols: LspSymbol[], depth = 0): string[] {
   ]);
 }
 
-export function createLspTools(
-  opts: TypeScriptLspOptions = {},
-): Tool[] {
+export function createLspTools(opts: LspToolsOptions = {}): Tool[] {
+  const servers = opts.servers ?? [typescriptLanguageServer(opts)];
   const diagnosticsTool = defineTool(
     {
       name: "lsp_diagnostics",
       description:
-        "Get TypeScript/JavaScript errors and warnings for one file from the " +
-        "language server. Use search/read_file for other languages or when no " +
-        "language server is installed.",
+        "Get errors and warnings for one file from the configured language " +
+        "server. Use search/read_file when no server is configured or installed.",
       parameters: {
         type: "object",
         properties: {
@@ -117,7 +135,7 @@ export function createLspTools(
     },
     async (input, ctx) => {
       const file = requireString(input, "path");
-      const client = await clientFor(ctx, opts);
+      const client = await clientFor(ctx, file, servers);
       const diagnostics = await client.diagnostics(file);
       const sandbox = requireSandbox(ctx);
       const uri = pathToFileURL(client.resolvePath(file)).href;
@@ -135,15 +153,15 @@ export function createLspTools(
         meta: { path: file, count: diagnostics.length },
       };
     },
-    { readOnly: true, verb: "Checking TypeScript diagnostics" },
+    { readOnly: true, verb: "Checking diagnostics" },
   );
 
   const definitionTool = defineTool(
     {
       name: "lsp_definition",
       description:
-        "Find the definition of the TypeScript/JavaScript symbol at a 1-based " +
-        "line and column. Falls back to search when no language server is available.",
+        "Find the definition of the symbol at a 1-based line and column. " +
+        "Falls back to search when no language server is available.",
       parameters: {
         type: "object",
         properties: {
@@ -159,7 +177,7 @@ export function createLspTools(
       const file = requireString(input, "path");
       const line = Math.max(1, Math.floor(optionalNumber(input, "line", 1)));
       const column = Math.max(1, Math.floor(optionalNumber(input, "column", 1)));
-      const client = await clientFor(ctx, opts);
+      const client = await clientFor(ctx, file, servers);
       const locations = await client.definition(file, line, column);
       const sandbox = requireSandbox(ctx);
       return {
@@ -180,8 +198,8 @@ export function createLspTools(
     {
       name: "lsp_references",
       description:
-        "Find references to the TypeScript/JavaScript symbol at a 1-based line " +
-        "and column. Falls back to search when no language server is available.",
+        "Find references to the symbol at a 1-based line and column. Falls " +
+        "back to search when no language server is available.",
       parameters: {
         type: "object",
         properties: {
@@ -202,7 +220,7 @@ export function createLspTools(
       const line = Math.max(1, Math.floor(optionalNumber(input, "line", 1)));
       const column = Math.max(1, Math.floor(optionalNumber(input, "column", 1)));
       const includeDeclaration = optionalBoolean(input, "include_declaration") ?? true;
-      const client = await clientFor(ctx, opts);
+      const client = await clientFor(ctx, file, servers);
       const locations = await client.references(
         file,
         line,
@@ -234,9 +252,8 @@ export function createLspTools(
     {
       name: "lsp_symbols",
       description:
-        "List TypeScript/JavaScript document symbols (classes, functions, " +
-        "variables) for one file. Falls back to search when no language server " +
-        "is available.",
+        "List document symbols (classes, functions, variables) for one file. " +
+        "Falls back to search when no language server is available.",
       parameters: {
         type: "object",
         properties: {
@@ -248,7 +265,7 @@ export function createLspTools(
     },
     async (input, ctx) => {
       const file = requireString(input, "path");
-      const client = await clientFor(ctx, opts);
+      const client = await clientFor(ctx, file, servers);
       const symbols = await client.symbols(file);
       const sandbox = requireSandbox(ctx);
       const lines = formatSymbols(symbols);
@@ -269,5 +286,5 @@ export function createLspTools(
   return [diagnosticsTool, definitionTool, referencesTool, symbolsTool];
 }
 
-/** Default LSP tools for a sandbox image containing typescript-language-server. */
+/** Default TypeScript/JavaScript LSP tools. */
 export const lspTools: Tool[] = createLspTools();

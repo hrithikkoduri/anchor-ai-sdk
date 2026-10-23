@@ -9,10 +9,10 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
-**v0.1.8** is the current npm/tag release. Its release notes are on
+**v0.1.9** is the current npm/tag release. Its release notes are on
 [GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
 
-## On main for v0.1.9 — release candidate
+### v0.1.9 contents
 
 - Ledger-aware turn routing: active ledger keeps `auto` follow-ups on the task
   path; explicit intent still wins; inbox batches re-route per run.
@@ -29,13 +29,26 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 - Site: release timeline, per-tag GitHub release notes, and the complete v0.1.7
   benchmark record.
 
-Verification at this snapshot: `npm run typecheck`, `npm test` (360 passed,
-23 skipped), `npm run build`, and the site browser suite (42 passed).
+## After v0.1.9 — on main, unreleased
 
-## Release checklist
+- Generic LSP server definitions: `LspServerConfig` plus `LspServer`, with
+  extension-based selection and per-sandbox/server client caching.
+  `TypeScriptLsp` remains the default compatibility preset.
+- Python LSP preset: `PythonLsp` / `pythonLanguageServer`, defaulting to
+  `pyright-langserver --stdio` and accepting a different command and
+  initialization options.
+- SWE Lite external arm: use `/testbed`, run pytest from the `testbed` conda
+  environment, enforce FAIL_TO_PASS and PASS_TO_PASS, and aggregate from
+  `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
+
+Verification after the LSP change: `npm run typecheck`, `npm test` (361 passed,
+23 skipped), `npm run build`, `site` build, and the site browser suite (42
+passed). No new benchmark result is claimed.
+
+## v0.1.9 release checklist
 
 1. [x] Bump `package.json` to `0.1.9` (package-lock updated).
-2. Add the v0.1.9 entry to `site/src/releases.json`.
+2. [x] Add the v0.1.9 entry to `site/src/releases.json`.
 3. [x] Create the GitHub Release at the v0.1.9 tag.
 4. [x] Re-run typecheck, full tests, build, and site build.
 5. [x] Publish npm `0.1.9`.

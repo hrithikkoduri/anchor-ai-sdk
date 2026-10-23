@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { local } from "../../src/sandbox/local/index.js";
 import { encodeLspMessage, LspFramer } from "../../src/lsp/protocol.js";
 import { TypeScriptLsp } from "../../src/lsp/typescript.js";
+import { PythonLsp, pythonLanguageServer } from "../../src/lsp/python.js";
 import { createLspTools } from "../../src/lsp/tools.js";
 import type { Sandbox } from "../../src/sandbox/types.js";
 
@@ -75,5 +76,45 @@ describe("TypeScript LSP", () => {
       "lsp_references",
       "lsp_symbols",
     ]);
+  });
+  it("runs the Python preset and selects it by extension", async () => {
+    const box = await sandbox();
+    try {
+      await writeFile(path.join(box.workspace, "main.py"), "print('hello')\n");
+      const python = new PythonLsp(box, {
+        command: "node",
+        args: [fixture],
+        diagnosticsTimeoutMs: 2000,
+      });
+      try {
+        expect(await python.diagnostics("main.py")).toMatchObject([
+          { severity: 1, message: "fixture diagnostic" },
+        ]);
+      } finally {
+        await python.close();
+      }
+
+      const tools = createLspTools({
+        servers: [
+          pythonLanguageServer({
+            command: "node",
+            args: [fixture],
+            diagnosticsTimeoutMs: 2000,
+          }),
+        ],
+      });
+      const result = await tools[0]!.run({ path: "main.py" }, { sandbox: box });
+      expect(result.ok).toBe(true);
+      expect(result.content).toContain("fixture diagnostic");
+
+      const unsupported = await tools[0]!.run(
+        { path: "main.rb" },
+        { sandbox: box },
+      );
+      expect(unsupported.ok).toBe(false);
+      expect(unsupported.content).toContain(".py");
+    } finally {
+      await box.destroy();
+    }
   });
 });

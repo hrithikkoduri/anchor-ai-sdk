@@ -1195,3 +1195,25 @@ consumer tooling; it is not required when the model accepts images directly.
 
 Regressions: none yet; add serialization, persistence, compaction/drop, and
 provider-capability tests with the first implementation.
+
+## Decision #94: LSP presets are data, not separate clients
+
+The LSP client is generic: `LspServerConfig` supplies the command, arguments,
+extension-to-language-ID mapping, initialization options, timeouts, and install
+hint. `LspServer` owns one stdio session for that config, while presets such as
+`typescriptLanguageServer()` and `pythonLanguageServer()` only supply the
+language-specific data. `TypeScriptLsp` remains a compatibility wrapper over the
+same generic client.
+
+`createLspTools({ servers })` selects the first config that supports the file
+extension and caches one client per sandbox and server id. Unsupported
+extensions fail with the configured extension list rather than silently
+switching languages. Consumers still own image installation and workspace setup:
+TypeScript/JavaScript needs `typescript-language-server`, Python defaults to
+`pyright-langserver`, and other stdio servers use the same config shape.
+
+The fixture suite covers TypeScript, Python, and extension-based tool selection.
+A live Python server is not verified on every provider, and Heyo's PTY caveat is
+unchanged.
+
+Regressions: `tests/unit/lsp.test.ts`.

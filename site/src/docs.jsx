@@ -67,7 +67,7 @@ const groups = [
       ["images", "Image context"],
       ["preview-ports", "Preview ports"],
       ["image-publishing", "Publish sandbox images"],
-      ["lsp", "Optional TypeScript LSP"],
+      ["lsp", "Optional LSP tools"],
       ["philosophy", "Philosophy"],
       ["testing", "Testing"],
       ["status", "Status & versioning"],

@@ -155,28 +155,42 @@ if (published.target === "sandbox-spec") {
       <a className="doc-inline-link" href={`${repo}/blob/main/docs/sandbox-image-publishing.md`}>Provider instructions &amp; troubleshooting ↗</a>
     </Section>
 
-    <Section id="lsp" number="21" title="Optional TypeScript LSP">
+    <Section id="lsp" number="21" title="Optional LSP tools">
       <p><code>anchor-ai-sdk/lsp</code> adds four read-only tools:
         <code>lsp_diagnostics</code>, <code>lsp_definition</code>,
         <code>lsp_references</code>, and <code>lsp_symbols</code>.
-        The optional entry point owns JSON-RPC/LSP; core only knows process streams.</p>
+        The optional entry point owns JSON-RPC/LSP; core only knows process streams.
+        TypeScript/JavaScript is the default preset, Python ships as a second
+        preset, and any stdio server can be configured.</p>
       <CodeBlock filename="lsp-agent.ts" code={`import { createCodingAgent } from "anchor-ai-sdk";
-import { createLspTools } from "anchor-ai-sdk/lsp";
+import {
+  createLspTools,
+  pythonLanguageServer,
+  typescriptLanguageServer,
+} from "anchor-ai-sdk/lsp";
 
 const base = createCodingAgent();
-const agent = { ...base, tools: [...base.tools, ...createLspTools()] };
+const tools = createLspTools({
+  servers: [typescriptLanguageServer(), pythonLanguageServer()],
+});
+const agent = { ...base, tools: [...base.tools, ...tools] };
 // Pass agent to runAgent with your configured model and sandbox.
-// Bake into the sandbox image:
-// npm install -g typescript typescript-language-server`} />
-      <p>Tools accept 1-based lines/columns and currently support TypeScript
-        and JavaScript only. The server must already exist in the sandbox;
+// Bake the servers into the image:
+// npm install -g typescript typescript-language-server pyright`} />
+      <p>Tools accept 1-based lines/columns and select a server by file extension.
+        The default is TypeScript/JavaScript; Python uses
+        <code>pyright-langserver --stdio</code>. Configure another command,
+        arguments, initialization options, and extension mapping with
+        <code>LspServerConfig</code>; unsupported extensions fail instead of
+        silently switching languages. Servers must already exist in the sandbox;
         nothing is installed automatically. Keep search/read_file as the fallback:
         missing-server errors do not transparently invoke another tool.</p>
-      <Callout>The protocol/client was tested over LocalSandbox with a fixture
-        server, not a live TypeScript server on every cloud provider. Prefer a
-        pipe-backed transport for LSP. Heyo's PTY raw-byte behavior is unverified.
-        Consumers choose the command, when to start it, and its lifecycle.</Callout>
-      <a className="doc-inline-link" href={`${repo}/blob/main/docs/lsp.md`}>Direct client and lifecycle guide ↗</a>
+      <Callout>The protocol/client was tested over LocalSandbox with fixture
+        servers, not live TypeScript or Python servers on every cloud provider.
+        Prefer a pipe-backed transport for LSP. Heyo's PTY raw-byte behavior is
+        unverified. Consumers choose each command, when to start it, and its
+        lifecycle; heavier servers also need image memory and startup time.</Callout>
+      <a className="doc-inline-link" href={`${repo}/blob/main/docs/lsp.md`}>Direct client, presets, and lifecycle guide ↗</a>
     </Section>
 
     <Section id="images" number="22" title="Image context">

@@ -284,21 +284,27 @@ provider-native publishing, not a shared Anchor registry. Live registry paths
 are credential-gated; see
 [docs/sandbox-image-publishing.md](docs/sandbox-image-publishing.md).
 
-### Optional TypeScript LSP
+### Optional LSP tools
 
-The optional `anchor-ai-sdk/lsp` entry point adds read-only TypeScript/JavaScript
-diagnostics, definition, references, and document symbols over process streams:
+The optional `anchor-ai-sdk/lsp` entry point adds read-only diagnostics,
+definition, references, and document symbols over process streams. The default
+preset is TypeScript/JavaScript; Python ships as a second preset, and any stdio
+language server can be configured:
 
 ```js
 import { createCodingAgent } from "anchor-ai-sdk";
-import { createLspTools } from "anchor-ai-sdk/lsp";
+import { createLspTools, pythonLanguageServer } from "anchor-ai-sdk/lsp";
 
 const base = createCodingAgent();
-const agent = { ...base, tools: [...base.tools, ...createLspTools()] };
+const agent = {
+  ...base,
+  tools: [...base.tools, ...createLspTools({ servers: [pythonLanguageServer()] })],
+};
 ```
 
-The sandbox image must provide `typescript-language-server` and `typescript`.
-Search and file reads remain the fallback. See [docs/lsp.md](docs/lsp.md).
+The sandbox image must provide the configured server: `typescript-language-server`
+and `typescript` for the default preset, or `pyright` for Python. Search and file
+reads remain the fallback. See [docs/lsp.md](docs/lsp.md).
 
 **[Configuration examples](https://anchor-sdk.dev/docs.html#machine)** ·
 **[Provider contract and image guide](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/src/sandbox/README.md)** ·

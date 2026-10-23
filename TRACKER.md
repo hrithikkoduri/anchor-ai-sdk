@@ -8,6 +8,21 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## After v0.1.9 — on main, unreleased
+
+- [x] SWE Lite external arm: use `/testbed` for Lite, run pytest from the
+      `testbed` conda environment, enforce FAIL_TO_PASS and PASS_TO_PASS, and
+      aggregate from `external-results`. One-task-per-model smoke verified
+      DeepSeek `1/1` and Qwen `1/1`.
+- [x] Generic LSP server definitions: `LspServerConfig` plus `LspServer`, with
+      extension-based server selection and per-sandbox/server client caching.
+      `TypeScriptLsp` remains the default compatibility preset.
+- [x] Python LSP preset: `PythonLsp` / `pythonLanguageServer`, using
+      `pyright-langserver --stdio` by default with configurable command and
+      initialization options.
+- [x] Generic LSP docs, README, and site coverage, including custom stdio
+      servers and the image-install boundary.
+
 ## v0.1.9 — released
 
 - [x] Ledger-aware turn routing: an active required ledger makes `auto`
