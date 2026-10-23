@@ -71,10 +71,6 @@ items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
 
 ## Run pipeline
 
-- **`createAnchor` facade**: ~20 lines of sugar over the run-pipeline calls
-  (captures llm/provider/stores, returns `{ run, doctor }`). _Trigger:_ a
-  second consumer wants the same wiring bundle (the eval CLI is the likely
-  first). _Size:_ XS once the items above land.
 - **Baseline-relative suite evidence**: FAIL_TO_PASS / PASS_TO_PASS deltas:
   `run_tests` gains `junit_path` → `meta.tests` (JUnit XML parse); success =
   no baseline-passing test regresses. _Where:_ `src/tools/run-tests.ts` plus
@@ -158,28 +154,14 @@ items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
   consumer wanting specialization (a verifier or investigator teammate);
   Sailor's verifier is the likely first. _Size:_ L.
 
-- **Export the prompt components**: `buildCodingPrompt` and
-  `CodingPromptOptions` are public, but the default section strings
-  (`character`, `tone`, `judgment`, `operatingRules`, `verification`) are not,
-  and the `exports` map blocks deep imports. A product that wants to *amend*
-  one rule, rather than replace a whole section, must either copy the text
-  (silent drift) or interpret it from an additional section (what Sailor did
-  for issue-fix scope, its decision #70). Export the components so consumers
-  compose them. _Where:_ `src/agents/coding/prompts/` +
-  `src/agents/coding/index.ts`. _Trigger:_ the first consumer amending a rule
-  (Sailor, now). _Size:_ S.
-
 ## In flight / paused
 
 - **Benchmark reruns**: the complete v0.1.7 combined result is committed at
   `evals/results/v0.1.7-2fbc92b/` (measured at `2fbc92b`, not the `v0.1.7`
   tag `08472b1`). v0.1.8 has no recorded benchmark result; its full round was
   cancelled before both arms completed. Rerun the full Anchor + external matrix
-  after the SWE Lite external issue is fixed.
-- **SWE Lite external diagnosis**: investigate the incomplete/external result
-  path before the next eval round. Known external failures in the completed
-  round were task/agent failures, not a clean harness comparison; see
-  `evals/results/` and the `external-bench-results` branch.
+  against the next release commit. The SWE Lite external arm has been repaired
+  and smoke-tested; the full matrix still needs a clean recorded run.
 
 Benchmark suites live under `evals/benchmarks/swe-bench/` and
 `evals/benchmarks/terminal-bench/`; each round must record model, harness tag,

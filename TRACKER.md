@@ -34,6 +34,11 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 - [x] Opt-in prompt-cache breakpoints: `promptCache` on the LLM client,
       engine-selected stable-prefix breakpoints, Anthropic-style
       `cache_control` markers, and cached-token cost accounting.
+- [x] `createAnchor` composition facade with `run()` and a cheap `doctor()`.
+- [x] Exported coding prompt components plus `codingPromptComponents` for
+      amendment without copying the default prompt.
+- [x] `view_image` tool for text-only agents, with a consumer-supplied vision
+      callback and sandbox-side size/MIME checks.
 
 ## v0.1.9 — released
 

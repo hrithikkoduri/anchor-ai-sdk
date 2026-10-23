@@ -4,6 +4,19 @@ import { character, tone } from "./character.js";
 import { judgment, verification } from "./judgment.js";
 import { operatingRules } from "./operating-rules.js";
 
+export { character, tone } from "./character.js";
+export { judgment, verification } from "./judgment.js";
+export { operatingRules } from "./operating-rules.js";
+
+/** The default replaceable sections, for consumers that amend one rule. */
+export const codingPromptComponents = {
+  character,
+  tone,
+  judgment,
+  operatingRules,
+  verification,
+} as const;
+
 export interface CodingPromptOptions {
   character?: string;
   tone?: string;

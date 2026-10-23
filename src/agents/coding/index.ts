@@ -4,7 +4,15 @@ import { createCodingTools, codingTools } from "./tools.js";
 
 export { codingStrategy } from "./strategy.js";
 export { createCodingTools, codingTools } from "./tools.js";
-export { buildCodingPrompt } from "./prompts/index.js";
+export {
+  buildCodingPrompt,
+  character,
+  codingPromptComponents,
+  judgment,
+  operatingRules,
+  tone,
+  verification,
+} from "./prompts/index.js";
 export type { CodingPromptOptions } from "./prompts/index.js";
 export { codingPhases } from "./phases.js";
 

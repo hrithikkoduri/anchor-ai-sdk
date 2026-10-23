@@ -272,7 +272,34 @@ const llm = createLLMClient({
       <a className="doc-inline-link" href={`${repo}/blob/main/docs/prompt-caching.md`}>Prompt-cache rules and economics ↗</a>
     </Section>
 
-    <Section id="philosophy" number="25" title="Mechanics, not product policy">
+    <Section id="composition" number="25" title="Composition helpers">
+      <p><code>createAnchor</code> captures the model, agent, sandbox, thread,
+        and default options once, then delegates every run to <code>runAgent</code>.
+        <code>doctor()</code> reports configuration and checks a started sandbox
+        without starting or mutating one.</p>
+      <CodeBlock filename="compose.ts" code={`import { codingAgent, createAnchor } from "anchor-ai-sdk";
+
+const anchor = createAnchor({
+  llm,
+  agent: codingAgent,
+  sandbox,
+  thread: { store, id: threadId },
+  defaults: { compaction },
+});
+
+const result = await anchor.run("Fix the failing test");
+const status = await anchor.doctor();`} />
+      <p>Coding prompt sections are exported for amendment, and
+        <code>view_image</code> lets a text-only agent inspect an image through a
+        consumer-supplied vision callback. The SDK reads and validates the image
+        bytes; the consumer owns the vision model, credentials, and output policy.</p>
+      <Callout><code>view_image</code> is an opt-in tool, not part of the default
+        toolbox. Files are capped at 8 MiB by default and never uploaded or
+        persisted by Anchor.</Callout>
+      <a className="doc-inline-link" href={`${repo}/blob/main/docs/composition.md`}>Composition and image-tool guide ↗</a>
+    </Section>
+
+    <Section id="philosophy" number="26" title="Mechanics, not product policy">
       <p>Keep the model loop small and its decisions inspectable. Requirements
         should survive the conversation, evidence should be distinguishable from
         claims, and uncertain external effects should not be replayed as guesses.</p>

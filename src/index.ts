@@ -11,6 +11,7 @@
  */
 export * from "./llm/index.js";
 export * from "./llm/from-catalog.js";
+export * from "./anchor.js";
 export * from "./sandbox/index.js";
 export * from "./tools/index.js";
 export * from "./ledger/index.js";

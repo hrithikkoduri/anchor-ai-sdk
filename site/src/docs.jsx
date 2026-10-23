@@ -42,6 +42,7 @@ const groups = [
     [
       ["engine", "Loop & budgets"],
       ["prompt-caching", "Prompt caching"],
+      ["composition", "Composition helpers"],
       ["correction", "Course correction"],
       ["memory", "Filesystem memory"],
       ["revival", "Revival & resume"],

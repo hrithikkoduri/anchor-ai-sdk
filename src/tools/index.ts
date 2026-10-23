@@ -28,6 +28,8 @@ export { readFileTool } from "./read-file.js";
 export { editFileTool } from "./edit-file.js";
 export { searchTool } from "./search.js";
 export { runTestsTool } from "./run-tests.js";
+export { createViewImageTool } from "./view-image.js";
+export type { ViewImageInput, ViewImageOptions } from "./view-image.js";
 // Engine intrinsics — injected automatically; exported for tests/tooling only.
 export { finishTool } from "./finish.js";
 

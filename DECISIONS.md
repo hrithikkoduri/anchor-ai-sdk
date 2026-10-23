@@ -1248,3 +1248,23 @@ assumed.
 
 Regressions: `tests/unit/llm.test.ts` (wire markers) and
 `tests/unit/engine.test.ts` (engine breakpoint selection).
+
+## Decision #96: Composition helpers stay thin
+
+`createAnchor` is a composition helper, not a second engine. It captures the
+LLM, agent, sandbox, tools, thread, and default runtime options, then delegates
+every run to `runAgent`; per-run overrides still win. `doctor()` is deliberately
+cheap and never starts or mutates a sandbox.
+
+Coding prompt sections are exported as values (`character`, `tone`, `judgment`,
+`operatingRules`, `verification`) plus `codingPromptComponents`, so a consumer
+can amend one rule without copying the whole prompt. `buildCodingPrompt` keeps
+its replacement behavior.
+
+`view_image` owns sandbox-side reading, MIME/size checks, and data-URL
+construction, but not the vision step. The consumer supplies `describe(...)`;
+Anchor never uploads, stores, or selects a vision model. This keeps image
+policy and credentials in the application.
+
+Regressions: `tests/unit/anchor.test.ts`,
+`tests/unit/coding-prompts.test.ts`, and `tests/unit/view-image.test.ts`.

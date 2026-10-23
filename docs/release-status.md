@@ -46,14 +46,20 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   stable-prefix breakpoints, Anthropic-style `cache_control` markers, and
   cached-token cost accounting. The turn-scoped ledger/phase block is never
   marked. See [`docs/prompt-caching.md`](prompt-caching.md).
+- `createAnchor` composition facade: captures the LLM/agent/sandbox/thread and
+  returns `{ run, doctor }`; per-run options still go through `runAgent`.
+- Exported coding prompt components (`character`, `tone`, `judgment`,
+  `operatingRules`, `verification`) plus `codingPromptComponents`.
+- `view_image` tool: reads sandbox image bytes and delegates the vision step to
+  a consumer callback, with MIME/size checks.
 - SWE Lite external arm: use `/testbed`, run pytest from the `testbed` conda
   environment, enforce FAIL_TO_PASS and PASS_TO_PASS, and aggregate from
   `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
 
-Verification after the LSP and prompt-cache changes: `npm run typecheck`,
-`npm test` (367 passed, 23 skipped), `npm run build`, live pyright + TypeScript
-smoke, `site` build, and the site browser suite (42 passed). No new benchmark
-result is claimed.
+Verification after the LSP, prompt-cache, and composition changes:
+`npm run typecheck`, `npm test` (372 passed, 23 skipped), `npm run build`, live
+pyright + TypeScript smoke, `site` build, and the site browser suite (42
+passed). No new benchmark result is claimed.
 
 ## v0.1.9 release checklist
 
@@ -79,10 +85,9 @@ result is claimed.
 
 ### Runtime / reliability
 
-- `createAnchor` facade
 - Baseline-relative suite evidence
 - Abortable one-shot `exec`
-- Fix the SWE Lite external benchmark arm and rerun the full matrix
+- Rerun the full SWE Lite external matrix on the next release commit
 
 ### Models / multimodal
 
@@ -98,7 +103,6 @@ result is claimed.
 - Single evaluator subagent
 - Full parallel tool calls for mutations
 - Agent teams
-- Export prompt components
 
 ### Observability
 
@@ -110,10 +114,7 @@ result is claimed.
 
 These are deliberately post-release to keep the v0.1.9 surface stable:
 
-- `createAnchor` facade (XS)
-- Export prompt components (S)
 - LangSmith and Braintrust adapters (S)
-- `view_image` tool for text-only models (S–M)
 - Native Anthropic/Gemini image blocks (M)
 - Daytona image publisher once the adapter exists (S)
 - Live registry conformance for published images (M)

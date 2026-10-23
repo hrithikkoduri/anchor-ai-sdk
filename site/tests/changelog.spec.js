@@ -48,7 +48,7 @@ test("new feature docs have deep links and honest provider limits", async ({ pag
   for (const id of [
     "verification", "structured-output", "operations",
     "process-streams", "image-publishing", "lsp", "images", "preview-ports",
-    "prompt-caching", "philosophy",
+    "prompt-caching", "composition", "philosophy",
     "thread-store", "inbox-store", "operation-store", "sandbox-store",
     "compaction-contract",
   ]) {
@@ -64,4 +64,5 @@ test("new feature docs have deep links and honest provider limits", async ({ pag
   await expect(page.locator("#images")).toContainText("ImageAttachment");
   await expect(page.locator("#preview-ports")).toContainText("previewPort");
   await expect(page.locator("#prompt-caching")).toContainText("cache_control");
+  await expect(page.locator("#composition")).toContainText("createAnchor");
 });
