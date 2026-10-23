@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T10:28:20.966Z",
+  "generatedAt": "2026-10-23T11:04:29.661Z",
   "runs": [
     {
       "bench": "swe-lite",
@@ -10,29 +10,29 @@
         {
           "taskId": "swe-bench-lite/psf__requests-1963",
           "status": "completed",
-          "reward": 0,
+          "reward": 1,
           "cacheKnown": false,
           "usage": {
-            "promptTokens": 619238,
-            "completionTokens": 431,
-            "totalTokens": 619669
+            "promptTokens": 1256786,
+            "completionTokens": 1832,
+            "totalTokens": 1258618
           },
-          "wallMs": 357519
+          "wallMs": 626867
         }
       ],
       "tasks": 1,
       "scored": 1,
-      "fullCredit": 0,
-      "meanReward": 0,
+      "fullCredit": 1,
+      "meanReward": 1,
       "tokens": {
-        "prompt": 619238,
-        "completion": 431,
+        "prompt": 1256786,
+        "completion": 1832,
         "cached": 0
       },
       "cacheKnown": false,
       "cacheHitRate": 0,
-      "p50WallMs": 357519,
-      "p95WallMs": 357519
+      "p50WallMs": 626867,
+      "p95WallMs": 626867
     },
     {
       "bench": "swe-lite",
@@ -42,30 +42,31 @@
       "results": [
         {
           "taskId": "swe-bench-lite/psf__requests-1963",
-          "status": "completed",
-          "reward": 0,
+          "status": "failed",
+          "reward": 1,
+          "error": "Agent execution timed out after 1800.0 seconds",
           "cacheKnown": false,
           "usage": {
-            "promptTokens": 2087316,
-            "completionTokens": 3259,
-            "totalTokens": 2090575
+            "promptTokens": 27549907,
+            "completionTokens": 8710,
+            "totalTokens": 27558617
           },
-          "wallMs": 442235
+          "wallMs": 1877840
         }
       ],
       "tasks": 1,
       "scored": 1,
-      "fullCredit": 0,
-      "meanReward": 0,
+      "fullCredit": 1,
+      "meanReward": 1,
       "tokens": {
-        "prompt": 2087316,
-        "completion": 3259,
+        "prompt": 27549907,
+        "completion": 8710,
         "cached": 0
       },
       "cacheKnown": false,
       "cacheHitRate": 0,
-      "p50WallMs": 442235,
-      "p95WallMs": 442235
+      "p50WallMs": 1877840,
+      "p95WallMs": 1877840
     }
   ]
 }

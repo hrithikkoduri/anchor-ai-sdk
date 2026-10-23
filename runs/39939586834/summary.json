@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-10-23T11:04:29.661Z",
+  "runs": [
+    {
+      "bench": "swe-lite",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "completed",
+          "reward": 1,
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 1256786,
+            "completionTokens": 1832,
+            "totalTokens": 1258618
+          },
+          "wallMs": 626867
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 1,
+      "meanReward": 1,
+      "tokens": {
+        "prompt": 1256786,
+        "completion": 1832,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 626867,
+      "p95WallMs": 626867
+    },
+    {
+      "bench": "swe-lite",
+      "model": "qwen/qwen3-coder-next",
+      "variant": "external",
+      "agent": "swe-agent",
+      "results": [
+        {
+          "taskId": "swe-bench-lite/psf__requests-1963",
+          "status": "failed",
+          "reward": 1,
+          "error": "Agent execution timed out after 1800.0 seconds",
+          "cacheKnown": false,
+          "usage": {
+            "promptTokens": 27549907,
+            "completionTokens": 8710,
+            "totalTokens": 27558617
+          },
+          "wallMs": 1877840
+        }
+      ],
+      "tasks": 1,
+      "scored": 1,
+      "fullCredit": 1,
+      "meanReward": 1,
+      "tokens": {
+        "prompt": 27549907,
+        "completion": 8710,
+        "cached": 0
+      },
+      "cacheKnown": false,
+      "cacheHitRate": 0,
+      "p50WallMs": 1877840,
+      "p95WallMs": 1877840
+    }
+  ]
+}
