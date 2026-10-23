@@ -104,9 +104,26 @@ export type LLMResponseFormat =
     }
   | { type: "json_object" };
 
+/**
+ * Opt-in provider prompt caching. The adapter emits Anthropic-style
+ * `cache_control: { type: "ephemeral" }` markers; enable it only for a
+ * provider/model that understands them.
+ */
+export interface PromptCacheOptions {
+  /** Cache lifetime when the provider supports an explicit TTL. */
+  ttl?: "5m" | "1h";
+}
+export type PromptCacheSetting = boolean | PromptCacheOptions;
+
 export interface LLMRequest {
   messages: LLMMessage[];
   tools?: LLMToolDef[];
+  /**
+   * Host-computed 0-based message indexes that end a stable prefix. The
+   * engine supplies these; custom clients may ignore them. The adapter emits
+   * markers only when `promptCache` is enabled on the client.
+   */
+  cacheBreakpoints?: number[];
   /** Ask for a structured response instead of free-form text. */
   responseFormat?: LLMResponseFormat;
   temperature?: number;

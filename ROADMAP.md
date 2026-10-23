@@ -107,9 +107,6 @@ items move to [`TRACKER.md`](TRACKER.md); the current release snapshot is in
   sandbox/workspace and are read through tools, not sent as multimedia. Add
   native provider file/audio/video inputs only after a concrete consumer needs
   them; they carry large token/cost and retention risks.
-- **`cache_control` markers**: for providers that require explicit cache
-  breakpoints. _Where:_ `src/llm/`. _Trigger:_ an opt-in-caching provider is
-  used. _Size:_ XS.
 - **Vercel AI-SDK bridge**: an adapter over `LLMClient`. _Trigger:_ a third
   ecosystem asks. _Size:_ M.
 

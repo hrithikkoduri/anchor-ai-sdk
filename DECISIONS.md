@@ -1226,3 +1226,25 @@ real pyright and TypeScript servers. A live server is not verified on every
 provider, and Heyo's PTY caveat is unchanged.
 
 Regressions: `tests/unit/lsp.test.ts`.
+
+## Decision #95: Prompt cache markers are opt-in and prefix-based
+
+Prompt caching is a provider optimization, not a portability guarantee. The
+OpenAI-compatible adapter emits Anthropic-style
+`cache_control: { type: "ephemeral" }` markers only when the consumer enables
+`promptCache`; providers that cache automatically or reject unknown fields are
+not forced into the wire shape.
+
+The engine owns breakpoint selection because it knows which prompt blocks are
+stable. It marks the stable system prefix and the last stable message before the
+turn-scoped ledger/phase/handoff block. It never marks changing turn state. The
+adapter keeps the marker on text content (or the final user content part), and
+tool results stay strings for OpenAI-compatible compatibility.
+
+Cached input is reported through `usage.cachedTokens` and billed at the
+configured/catalog cache-read rate. Cache writes can cost more than misses, so
+this is opt-in and should be validated against provider usage rather than
+assumed.
+
+Regressions: `tests/unit/llm.test.ts` (wire markers) and
+`tests/unit/engine.test.ts` (engine breakpoint selection).

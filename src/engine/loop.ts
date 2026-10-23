@@ -554,6 +554,30 @@ async function runOne(
     }
     return out;
   };
+  /**
+   * Cache the stable prefix, never the turn-scoped block. The adapter only
+   * emits `cache_control` when the consumer enabled `promptCache`.
+   */
+  const cacheBreakpointsFor = (modelMessages: LLMMessage[]): number[] => {
+    const markable = (message: LLMMessage | undefined): boolean =>
+      !!message &&
+      (message.role === "system" ||
+        message.role === "user" ||
+        (message.role === "assistant" && !!message.content));
+    const indexes = new Set<number>();
+    if (markable(modelMessages[0])) indexes.add(0);
+    const turn = turnState();
+    const turnIndex = turn
+      ? modelMessages.findIndex(
+          (message) =>
+            message.role === "user" && message.content === turn,
+        )
+      : -1;
+    let end = turnIndex > 0 ? turnIndex - 1 : modelMessages.length - 1;
+    while (end >= 0 && !markable(modelMessages[end])) end--;
+    if (end >= 0) indexes.add(end);
+    return [...indexes];
+  };
   const evidence: ToolResultRecord[] = [];
   // Commands the provider detached. The engine owns their results: it polls at
   // every turn boundary and, before a normal finish, waits for what is left.
@@ -1318,9 +1342,11 @@ async function runOne(
       await pollJobs();
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
+      const modelMessages = forModel();
       const response = await opts.llm.stream(
         {
-          messages: forModel(),
+          messages: modelMessages,
+          cacheBreakpoints: cacheBreakpointsFor(modelMessages),
           tools: [...available.values()].map((tool) => ({
             type: "function",
             function: tool.definition,

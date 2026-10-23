@@ -27,6 +27,8 @@ export interface LLMOptions {
   priceCacheReadPerMTok?: number;
   /** Ask the provider for a usage block carrying the real cost (OpenRouter). */
   includeUsageCost?: boolean;
+  /** Emit explicit prompt-cache breakpoints for providers that support them. */
+  promptCache?: OpenAICompatibleOptions["promptCache"];
   /** Default reasoning budget; per-request `reasoningEffort` wins. */
   reasoningEffort?: OpenAICompatibleOptions["reasoningEffort"];
   /** Wire shape for reasoning effort; inferred from `baseUrl` when unset. */
@@ -50,6 +52,7 @@ export function createLLMClient(opts: LLMOptions): LLMClient {
     priceOutPerMTok: opts.priceOutPerMTok,
     priceCacheReadPerMTok: opts.priceCacheReadPerMTok,
     includeUsageCost: opts.includeUsageCost,
+    promptCache: opts.promptCache,
     reasoningEffort: opts.reasoningEffort,
     reasoningFormat: opts.reasoningFormat,
   });

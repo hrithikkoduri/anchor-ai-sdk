@@ -246,7 +246,33 @@ console.log(endpoint.url); // https://<guest-host>`} />
         remain consumer work. Do not put product preview configuration in the SDK.</Callout>
     </Section>
 
-    <Section id="philosophy" number="24" title="Mechanics, not product policy">
+    <Section id="prompt-caching" number="24" title="Prompt caching">
+      <p>Prompt caching reuses the provider's computed prefix across calls.
+        A cache breakpoint marks the end of a stable prefix; changing anything
+        before it invalidates the cache. Anchor keeps the system prompt and
+        prompt blocks stable, then puts ledger/phase/current state at the turn
+        tail.</p>
+      <CodeBlock filename="prompt-cache.ts" code={`import { createLLMClient } from "anchor-ai-sdk";
+
+const llm = createLLMClient({
+  baseUrl: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_KEY,
+  model: "anthropic/claude-sonnet-4",
+  promptCache: { ttl: "5m" }, // opt-in; provider must accept cache_control
+});`} />
+      <p>Cached input tokens are usually cheaper and skip repeated prefill, so
+        time-to-first-token drops; generation after the first token is unchanged.
+        The client reports <code>usage.cachedTokens</code> and bills cached
+        reads at the configured/catalog rate. Cache writes can cost more than
+        misses, so use this only with a compatible provider and validate the
+        hit rate.</p>
+      <Callout>OpenAI and some gateways cache automatically and do not need
+        explicit markers. Anchor never enables <code>cache_control</code> by
+        default, and never marks the changing ledger/phase block.</Callout>
+      <a className="doc-inline-link" href={`${repo}/blob/main/docs/prompt-caching.md`}>Prompt-cache rules and economics ↗</a>
+    </Section>
+
+    <Section id="philosophy" number="25" title="Mechanics, not product policy">
       <p>Keep the model loop small and its decisions inspectable. Requirements
         should survive the conversation, evidence should be distinguishable from
         claims, and uncertain external effects should not be replayed as guesses.</p>

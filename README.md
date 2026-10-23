@@ -390,6 +390,7 @@ Validate inputs and enforce permissions in your implementation.
 | --- | --- |
 | **Budgets and correction** | Step/token/known-dollar budgets, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
 | **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
+| **Prompt caching** | Opt-in `promptCache` breakpoints for Anthropic-style providers, with stable-prefix selection and `cachedTokens` accounting. See [docs/prompt-caching.md](docs/prompt-caching.md). |
 | **Context and memory** | Catalog-derived or explicit compaction, supplied thread stores, agent-authored notes, and best-effort output spill. |
 | **Revival and resume** | Opt-in budget warnings, `request_revival`, `planRevival`, and `ThreadBudget`. Your app persists state and decides whether to fund or enqueue another run. |
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |

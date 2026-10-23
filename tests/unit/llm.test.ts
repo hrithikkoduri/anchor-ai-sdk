@@ -301,6 +301,67 @@ describe("OpenAICompatibleClient", () => {
     expect(body.tools as unknown[]).toHaveLength(1);
   });
 
+  it("emits prompt-cache breakpoints only when enabled", async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      body = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl, { promptCache: { ttl: "1h" } }).complete({
+      messages: [
+        { role: "system", content: "stable prefix" },
+        { role: "user", content: "turn scoped" },
+        { role: "user", content: "request" },
+      ],
+      cacheBreakpoints: [0, 2],
+    });
+    const wire = body.messages as Array<Record<string, unknown>>;
+    expect(wire[0]!.content).toEqual([
+      {
+        type: "text",
+        text: "stable prefix",
+        cache_control: { type: "ephemeral", ttl: "1h" },
+      },
+    ]);
+    expect(wire[1]!.content).toBe("turn scoped");
+    expect(wire[2]!.content).toEqual([
+      {
+        type: "text",
+        text: "request",
+        cache_control: { type: "ephemeral", ttl: "1h" },
+      },
+    ]);
+  });
+
+  it("defaults the cache breakpoint to the system message and is off by default", async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      body = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    await make(fetchImpl, { promptCache: true }).complete({
+      messages: [
+        { role: "system", content: "stable prefix" },
+        { role: "user", content: "request" },
+      ],
+    });
+    let wire = body.messages as Array<Record<string, unknown>>;
+    expect(wire[0]!.content).toEqual([
+      { type: "text", text: "stable prefix", cache_control: { type: "ephemeral" } },
+    ]);
+    expect(wire[1]!.content).toBe("request");
+
+    await make(fetchImpl).complete({
+      messages: [
+        { role: "system", content: "stable prefix" },
+        { role: "user", content: "request" },
+      ],
+      cacheBreakpoints: [0],
+    });
+    wire = body.messages as Array<Record<string, unknown>>;
+    expect(wire[0]!.content).toBe("stable prefix");
+  });
+
   it("serializes assistant tool_calls and tool results in wire format", async () => {
     let body: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {

@@ -25,6 +25,7 @@ import type {
   LLMResponse,
   LLMToolCall,
   LLMUsage,
+  PromptCacheSetting,
   ReasoningEffort,
 } from "./types.js";
 
@@ -46,6 +47,12 @@ export interface OpenAICompatibleOptions {
    * the price table whenever it is present.
    */
   includeUsageCost?: boolean;
+  /**
+   * Emit explicit prompt-cache breakpoints. `true` marks the stable system
+   * prefix; the engine supplies additional stable-prefix indexes. Use only
+   * with providers that accept Anthropic-style `cache_control` fields.
+   */
+  promptCache?: PromptCacheSetting;
   /**
    * Default reasoning budget for calls that do not set one per request.
    * Ignored by non-reasoning models.
@@ -145,12 +152,48 @@ function normalizeContent(content: unknown): string {
  * tool results must reference tool_call_id. Convert at the boundary — the
  * rest of the codebase never sees wire shapes.
  */
-function toWireMessages(messages: LLMMessage[]): unknown[] {
-  return messages.map((m) => {
+interface WireCacheControl {
+  type: "ephemeral";
+  ttl?: "5m" | "1h";
+}
+
+function cacheControlFor(
+  setting: PromptCacheSetting | undefined,
+): WireCacheControl | undefined {
+  if (!setting) return undefined;
+  if (setting === true) return { type: "ephemeral" };
+  return {
+    type: "ephemeral",
+    ...(setting.ttl ? { ttl: setting.ttl } : {}),
+  };
+}
+
+function textWithCache(
+  text: string,
+  cache: WireCacheControl | undefined,
+): unknown {
+  return cache
+    ? [{ type: "text", text, cache_control: cache }]
+    : text;
+}
+
+function toWireMessages(
+  messages: LLMMessage[],
+  promptCache?: PromptCacheSetting,
+  breakpoints?: number[],
+): unknown[] {
+  const cache = cacheControlFor(promptCache);
+  const marked = new Set(
+    cache ? (breakpoints?.length ? breakpoints : [0]) : [],
+  );
+  return messages.map((m, index) => {
+    const marker = marked.has(index) ? cache : undefined;
     if (m.role === "assistant") {
       const out: Record<string, unknown> = {
         role: "assistant",
-        content: m.content ?? "",
+        content: m.content
+          ? textWithCache(m.content, marker)
+          : (m.content ?? ""),
       };
       if (m.tool_calls && m.tool_calls.length > 0) {
         out.tool_calls = m.tool_calls.map((tc) => ({
@@ -162,6 +205,9 @@ function toWireMessages(messages: LLMMessage[]): unknown[] {
       return out;
     }
     if (m.role === "tool") {
+      // Tool results stay strings for OpenAI-compatible gateways. A cache
+      // breakpoint on a tool result is not portable, so the engine chooses
+      // the nearest preceding text message instead.
       return {
         role: "tool",
         tool_call_id: m.tool_call_id,
@@ -169,18 +215,25 @@ function toWireMessages(messages: LLMMessage[]): unknown[] {
       };
     }
     if (m.role === "user" && m.images && m.images.length > 0) {
-      return {
-        role: "user",
-        content: [
-          ...(m.content ? [{ type: "text", text: m.content }] : []),
-          ...m.images.map((image) => ({
-            type: "image_url",
-            image_url: { url: image.url },
-          })),
-        ],
-      };
+      const parts: Array<Record<string, unknown>> = [
+        ...(m.content ? [{ type: "text", text: m.content }] : []),
+        ...m.images.map((image) => ({
+          type: "image_url",
+          image_url: { url: image.url },
+        })),
+      ];
+      if (marker && parts.length > 0) {
+        parts[parts.length - 1] = {
+          ...parts[parts.length - 1]!,
+          cache_control: marker,
+        };
+      }
+      return { role: "user", content: parts };
     }
-    return { role: m.role, content: m.content ?? "" };
+    return {
+      role: m.role,
+      content: textWithCache(m.content ?? "", marker),
+    };
   });
 }
 
@@ -214,7 +267,11 @@ export class OpenAICompatibleClient implements LLMClient {
 
     const body: Record<string, unknown> = {
       model: this.opts.model,
-      messages: toWireMessages(req.messages),
+      messages: toWireMessages(
+        req.messages,
+        this.opts.promptCache,
+        req.cacheBreakpoints,
+      ),
       stream: true,
       stream_options: { include_usage: true },
     };

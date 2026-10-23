@@ -41,6 +41,7 @@ const groups = [
     "THE HARNESS",
     [
       ["engine", "Loop & budgets"],
+      ["prompt-caching", "Prompt caching"],
       ["correction", "Course correction"],
       ["memory", "Filesystem memory"],
       ["revival", "Revival & resume"],

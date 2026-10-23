@@ -24,6 +24,8 @@ export interface CatalogLLMOptions {
   priceInPerMTok?: number;
   priceOutPerMTok?: number;
   priceCacheReadPerMTok?: number;
+  /** Opt-in provider prompt caching; see docs/prompt-caching.md. */
+  promptCache?: LLMOptions["promptCache"];
   /** Extra client options passed through (e.g. includeUsageCost, timeouts). */
   extra?: Omit<Partial<LLMOptions>, "baseUrl" | "apiKey" | "model">;
   /** Compaction to use when the catalog has no window (unreachable/exotic). */
@@ -61,6 +63,9 @@ export async function llmFromCatalog(
 
   const llm = createLLMClient({
     ...(args.extra ?? {}),
+    ...(args.promptCache !== undefined
+      ? { promptCache: args.promptCache }
+      : {}),
     baseUrl: args.baseUrl,
     apiKey: args.apiKey,
     model: args.model,

@@ -31,6 +31,9 @@ here. Do not leave the same item in both files. Architectural rationale stays in
       `typescript-language-server` binaries.
 - [x] Generic LSP docs, README, and site coverage, including custom stdio
       servers and the image-install boundary.
+- [x] Opt-in prompt-cache breakpoints: `promptCache` on the LLM client,
+      engine-selected stable-prefix breakpoints, Anthropic-style
+      `cache_control` markers, and cached-token cost accounting.
 
 ## v0.1.9 — released
 

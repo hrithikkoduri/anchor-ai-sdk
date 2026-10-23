@@ -82,6 +82,18 @@ describe("agent runtime", () => {
     expect(result.checkpointRef).toMatch(/^[a-f0-9]{40}$/);
   });
 
+  it("marks the stable prompt prefix with cache breakpoints", async () => {
+    const llm = scripted([{ text: "hello" }]);
+    await runAgent(
+      { task: "hello" },
+      { llm, agent: chatAgent },
+    );
+    const request = llm.seen[0]!;
+    // The turn-scoped phase block is inserted before the final request, so
+    // only the stable system prefix is safe to mark here.
+    expect(request.cacheBreakpoints).toEqual([0]);
+  });
+
   it("can finish from understand without claiming tests passed or entering every phase", async () => {
     const result = await runAgent(
       { task: "Explain the code without editing" },

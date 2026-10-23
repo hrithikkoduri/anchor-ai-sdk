@@ -42,13 +42,18 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
   rename previews, folding ranges, inlay hints, and type/implementation/
   declaration navigation. Core remains the default; `features: "all"` enables
   all 17 tools. `LspServer.request()` covers other methods.
+- Opt-in prompt caching: `promptCache` on the LLM client, engine-selected
+  stable-prefix breakpoints, Anthropic-style `cache_control` markers, and
+  cached-token cost accounting. The turn-scoped ledger/phase block is never
+  marked. See [`docs/prompt-caching.md`](prompt-caching.md).
 - SWE Lite external arm: use `/testbed`, run pytest from the `testbed` conda
   environment, enforce FAIL_TO_PASS and PASS_TO_PASS, and aggregate from
   `external-results`. Smoke: DeepSeek `1/1`, Qwen `1/1` on one task each.
 
-Verification after the LSP change: `npm run typecheck`, `npm test` (364 passed,
-23 skipped), `npm run build`, live pyright + TypeScript smoke, `site` build,
-and the site browser suite (42 passed). No new benchmark result is claimed.
+Verification after the LSP and prompt-cache changes: `npm run typecheck`,
+`npm test` (367 passed, 23 skipped), `npm run build`, live pyright + TypeScript
+smoke, `site` build, and the site browser suite (42 passed). No new benchmark
+result is claimed.
 
 ## v0.1.9 release checklist
 
@@ -84,7 +89,6 @@ and the site browser suite (42 passed). No new benchmark result is claimed.
 - Per-phase model and reasoning routing
 - Native Anthropic / Gemini adapters, including native image blocks
 - PDF/audio/video preprocessing or native file input
-- `cache_control` markers
 - Vercel AI-SDK bridge
 
 ### Agent capabilities
@@ -107,7 +111,6 @@ and the site browser suite (42 passed). No new benchmark result is claimed.
 These are deliberately post-release to keep the v0.1.9 surface stable:
 
 - `createAnchor` facade (XS)
-- `cache_control` markers (XS)
 - Export prompt components (S)
 - LangSmith and Braintrust adapters (S)
 - `view_image` tool for text-only models (S–M)
