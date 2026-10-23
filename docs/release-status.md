@@ -1,6 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.1.9 released. npm package `0.1.9` is published; the Git tag and GitHub release are being finalized.
+Status: **2026-10-23**, v0.1.9 released: npm `0.1.9`, Git tag `v0.1.9`, and GitHub Release are published.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -36,9 +36,9 @@ Verification at this snapshot: `npm run typecheck`, `npm test` (360 passed,
 
 1. [x] Bump `package.json` to `0.1.9` (package-lock updated).
 2. Add the v0.1.9 entry to `site/src/releases.json`.
-3. Create the GitHub Release at the v0.1.9 tag.
-4. Re-run typecheck, full tests, build, and site build.
-5. Publish npm only on explicit authorization.
+3. [x] Create the GitHub Release at the v0.1.9 tag.
+4. [x] Re-run typecheck, full tests, build, and site build.
+5. [x] Publish npm `0.1.9`.
 6. Do not label any v0.1.8/v0.1.9 benchmark as a result. The only recorded
    complete benchmark is `evals/results/v0.1.7-2fbc92b/`.
 
