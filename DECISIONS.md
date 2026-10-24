@@ -1410,6 +1410,11 @@ things, and each is a seam rather than a scheduler.
   writer, or `base` to continue another worker's branch). The engine never
   creates worktrees or picks branches.
 
+A read-only member keeps the strategy it was built with, minus the
+requirements its read-only filter removed: a coding agent (which requires
+`bash` and `edit_file`) is a valid evaluator. A requirement the member never
+had still fails fast.
+
 Tools inside a delegated run receive `ctx.team` (worker, member, role):
 workers of one member share tool instances, so this is how a tool knows whose
 work it is filing.

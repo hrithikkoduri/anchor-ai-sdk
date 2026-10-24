@@ -6,6 +6,7 @@ import { defineTool, type Tool } from "../../src/tools/types.js";
 import { createLiveProjector } from "../../src/trace/live-projector.js";
 import { projectConversation } from "../../src/trace/conversation.js";
 import { scripted } from "../helpers/scripted.js";
+import { createCodingAgent } from "../../src/agents/coding/index.js";
 import type { Agent } from "../../src/agents/types.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { TeamWorkspaceRequest } from "../../src/teams/types.js";
@@ -185,6 +186,40 @@ describe("a crew: worker instances, memory, parallel work, workspaces", () => {
     expect(asked).toEqual([{ worker: "backend-1", member: "backend", role: "worker", readOnly: false, base: "frontend-1", resumed: false }]);
     const told = child.seen[0]!.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
     expect(told).toContain("Where you work:\nBranch crew/backend-1, started from crew/frontend-1.");
+  });
+});
+
+describe("read-only coding members", () => {
+  // The requirement under test is requiredTools; a unit test has no sandbox.
+  const codingAgent = () => {
+    const base = createCodingAgent();
+    return { ...base, strategy: { ...base.strategy, requiresSandbox: false, prepareContext: undefined } };
+  };
+
+  it("a coding agent runs as a read-only member though its strategy requires bash and edit_file", async () => {
+    const coding = codingAgent();
+    const child = scripted([{ text: "reviewed" }]);
+    const result = await runAgent(userTurn("review it"), {
+      llm: scripted([{ tools: [delegate({ agent: "reviewer", task: "review" })] }, { text: "done" }]),
+      agent: agent("captain"),
+      team: { members: { reviewer: { agent: { ...coding, name: "reviewer" }, role: "evaluator", llm: child } } },
+    });
+    expect(result.messages.filter((m) => m.role === "tool").map((m) => m.content)).toEqual(["reviewed"]);
+    const tools = child.seen[0]!.tools?.map((t) => t.function.name) ?? [];
+    expect(tools).toContain("read_file");
+    expect(tools).not.toContain("bash");
+    expect(tools).not.toContain("edit_file");
+  });
+
+  it("a requirement the member never had still fails fast", async () => {
+    const coding = codingAgent();
+    const broken = { ...coding, name: "reviewer", tools: coding.tools.filter((t) => t.definition.name !== "read_file") };
+    const result = await runAgent(userTurn("review it"), {
+      llm: scripted([{ tools: [delegate({ agent: "reviewer", task: "review" })] }, { text: "done" }]),
+      agent: agent("captain"),
+      team: { members: { reviewer: { agent: broken, role: "evaluator", llm: scripted([{ text: "x" }]) } } },
+    });
+    expect(result.messages.filter((m) => m.role === "tool").map((m) => m.content).join("")).toContain("requires tools that were not supplied: read_file");
   });
 });
 

@@ -141,6 +141,18 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
         const tools = readOnly
           ? member.agent.tools.filter((tool) => tool.readOnly === true || tool.definition.name === "run_tests")
           : member.agent.tools;
+        // A read-only member loses its mutating tools on purpose; a strategy
+        // that lists them as required (the coding strategy needs bash and
+        // edit_file) must not refuse to start because of it.
+        const kept = new Set(tools.map((tool) => tool.definition.name));
+        const strategy = readOnly && member.agent.strategy.requiredTools
+          ? {
+              ...member.agent.strategy,
+              requiredTools: member.agent.strategy.requiredTools.filter(
+                (name) => kept.has(name) || !member.agent.tools.some((tool) => tool.definition.name === name),
+              ),
+            }
+          : member.agent.strategy;
         const limits = budget.limits;
         const childBudget = new BudgetTracker({
           maxSteps: member.maxSteps ?? limits.maxSteps,
@@ -167,7 +179,7 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
         const repos = place?.repos ?? parent.repos;
         const childOpts: EngineOptions = {
           llm: member.llm ?? parent.llm,
-          agent: { ...member.agent, tools },
+          agent: { ...member.agent, tools, strategy },
           ...(parent.sandbox ? { sandbox: parent.sandbox } : {}),
           ...(repos ? { repos } : {}),
           ...(parent.backgroundAfterSecs !== undefined ? { backgroundAfterSecs: parent.backgroundAfterSecs } : {}),
