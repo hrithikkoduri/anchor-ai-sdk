@@ -222,6 +222,14 @@ and `delegateCallId`. The live projector keeps a separate text stream per
 delegation and forwards those fields; `projectConversation` nests a worker's
 transcript on the leader's `delegate` part as `delegation`.
 
+## A worker in its own tree
+
+`team.workspace` may return `sandbox` — usually `scopedSandbox(sandbox, dir)`,
+a view rooted at the worker's tree. Commands and file tools then default to that
+directory, so `edit_file("src/a.ts")` lands in the worker's worktree, and the
+returned `repos` are relative to it. A view never starts or destroys the real
+sandbox. Workers never checkpoint: checkpoints are the leader's.
+
 ## Admission
 
 `team.admit` decides whether a delegation may run, before any workspace or

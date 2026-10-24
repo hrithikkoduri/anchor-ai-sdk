@@ -1436,3 +1436,18 @@ not know what a plan, a gate or an approval is; it only asks.
 
 Regressions: `tests/unit/team-crew.test.ts` (admission).
 
+## Decision #103: A worker's tree is a sandbox view, and workers never checkpoint
+
+A worktree that only changed `repos` did not move where file tools write: they
+run commands at the sandbox's workspace root, so a worker's `edit_file`
+landed in the leader's checkout. `team.workspace` may return a `sandbox` — a
+view from `scopedSandbox(sandbox, dir)` whose workspace and default `cwd` are
+the worker's tree — and the child runs on it. The view does not own the real
+sandbox (start/destroy are no-ops).
+
+A delegated run also took a git snapshot at its conclusion, committing the
+leader's checkout on every hand-back. Checkpoints are leader-owned (decision
+#99); child runs now pass `snapshot: false`.
+
+Regressions: `tests/unit/team-crew.test.ts` (a worker in its own tree).
+

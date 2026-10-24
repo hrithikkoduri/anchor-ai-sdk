@@ -196,16 +196,19 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
           ],
         };
         const repos = place?.repos ?? parent.repos;
+        const sandbox = place?.sandbox ?? parent.sandbox;
         const childOpts: EngineOptions = {
           llm: member.llm ?? parent.llm,
           agent: { ...member.agent, tools, strategy },
-          ...(parent.sandbox ? { sandbox: parent.sandbox } : {}),
+          ...(sandbox ? { sandbox } : {}),
           ...(repos ? { repos } : {}),
           ...(parent.backgroundAfterSecs !== undefined ? { backgroundAfterSecs: parent.backgroundAfterSecs } : {}),
           ...(parent.operations ? { operations: parent.operations } : {}),
           ...(team.sessions && sessionId ? { thread: { store: team.sessions.store, id: sessionId } } : {}),
           intrinsics: { finish: false, task: false },
           verifier: false,
+          // Checkpoints are the leader's: a worker's hand-back never commits the tree.
+          snapshot: false,
           signal,
           onEvent: emit,
         };

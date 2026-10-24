@@ -17,6 +17,7 @@ import type { Agent } from "../agents/types.js";
 import type { ThreadStore } from "../engine/thread.js";
 import type { LLMClient } from "../llm/types.js";
 import type { RepoRef } from "../repo.js";
+import type { Sandbox } from "../sandbox/types.js";
 
 export type TeamRole = "worker" | "evaluator";
 
@@ -41,7 +42,13 @@ export interface TeamMemberSpec {
 
 /** Where one delegated run works. Returned by `TeamSpec.workspace`. */
 export interface TeamWorkspace {
-  /** Repositories as this worker sees them (e.g. paths inside its worktree). */
+  /**
+   * The sandbox as this worker sees it, e.g. `scopedSandbox(sandbox, worktree)`:
+   * file tools and commands resolve against its workspace, so a worker's
+   * `edit_file("src/a.ts")` lands in its own tree. `repos` are relative to it.
+   */
+  sandbox?: Sandbox;
+  /** Repositories as this worker sees them (relative to `sandbox`'s workspace when given). */
   repos?: RepoRef[];
   /** Appended to the child's task: its branch, path, what it starts from. */
   context?: string;

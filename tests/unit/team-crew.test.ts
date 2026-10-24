@@ -10,6 +10,8 @@ import { createCodingAgent } from "../../src/agents/coding/index.js";
 import type { Agent } from "../../src/agents/types.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { TeamWorkspaceRequest } from "../../src/teams/types.js";
+import { scopedSandbox } from "../../src/sandbox/scoped.js";
+import type { Sandbox } from "../../src/sandbox/types.js";
 
 function agent(name: string, tools: Tool[] = []): Agent {
   return {
@@ -251,6 +253,75 @@ describe("admission: the consumer decides whether a delegation may run", () => {
     });
     const schema = parent.seen[0]!.tools?.find((t) => t.function.name === "delegate")?.function.parameters as { properties: Record<string, unknown> };
     expect(schema.properties).not.toHaveProperty("item");
+  });
+});
+
+describe("a worker in its own tree", () => {
+  const fakeSandbox = () => {
+    const calls: Array<{ command: string; cwd?: string }> = [];
+    let checkpoints = 0;
+    let destroyed = false;
+    const sandbox: Sandbox = {
+      id: "sb",
+      backend: "fake",
+      workspace: "/work",
+      scratch: "/tmp",
+      start: async () => undefined,
+      exec: async (command, opts = {}) => {
+        calls.push({ command, cwd: opts.cwd });
+        return { exitCode: 0, stdout: opts.cwd ?? "/work", stderr: "", output: opts.cwd ?? "/work", timedOut: false, durationMs: 0 };
+      },
+      checkpoint: async () => {
+        checkpoints += 1;
+        return { ref: "c1" } as never;
+      },
+      hasChangesFrom: async () => true,
+      fork: async () => sandbox,
+      destroy: async () => {
+        destroyed = true;
+      },
+    };
+    return { sandbox, calls, checkpoints: () => checkpoints, destroyed: () => destroyed };
+  };
+  const pwd = defineTool(
+    { name: "pwd", description: "where am I", parameters: { type: "object", properties: {} } },
+    async (_input, ctx) => {
+      const result = await ctx.sandbox!.exec("pwd");
+      return { ok: true, content: `${result.stdout} repos=${JSON.stringify(ctx.repos ?? [])}` };
+    },
+    { readOnly: true },
+  );
+
+  it("its commands and file tools run in the view's tree, against repos relative to it; its hand-back never checkpoints", async () => {
+    const real = fakeSandbox();
+    const events: AgentEvent[] = [];
+    await runAgent(userTurn("go"), {
+      llm: scripted([{ tools: [delegate({ agent: "backend", worker: "backend-1", task: "work" })] }, { text: "done" }]),
+      agent: agent("captain"),
+      sandbox: real.sandbox,
+      repos: [{ name: "app", path: "." }],
+      snapshot: false,
+      team: {
+        members: { backend: { agent: agent("backend", [pwd]), role: "worker", llm: scripted([{ tools: [{ name: "pwd", arguments: "{}" }] }, { text: "worked" }]) } },
+        workspace: async ({ worker }) => ({ sandbox: scopedSandbox(real.sandbox, `.crew/${worker}`), repos: [{ name: "app", path: "." }] }),
+      },
+      onEvent: (event) => events.push(event),
+    });
+    const said = events.find((e) => e.type === "tool_result" && e.name === "pwd") as { content: string } | undefined;
+    expect(said?.content).toBe('/work/.crew/backend-1 repos=[{"name":"app","path":"."}]');
+    expect(real.calls.find((c) => c.command === "pwd")?.cwd).toBe("/work/.crew/backend-1");
+    expect(real.checkpoints()).toBe(0);
+  });
+
+  it("a view never destroys or starts the real sandbox, and an explicit cwd wins", async () => {
+    const real = fakeSandbox();
+    const view = scopedSandbox(real.sandbox, "/work/.crew/x");
+    await view.start();
+    await view.destroy();
+    expect(real.destroyed()).toBe(false);
+    await view.exec("ls", { cwd: "/elsewhere" });
+    expect(real.calls.at(-1)).toEqual({ command: "ls", cwd: "/elsewhere" });
+    expect(view.workspace).toBe("/work/.crew/x");
   });
 });
 
