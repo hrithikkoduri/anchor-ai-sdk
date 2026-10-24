@@ -133,7 +133,7 @@ async function invoke(
     // plain here, once: the model text is a string, meta is a detached JSON
     // copy, so a tool can neither alias engine state nor smuggle a cycle.
     const content = typeof raw.content === "string" ? raw.content : String(raw.content ?? "");
-    const meta = toPlainJsonObject(raw.meta as Record<string, unknown> | undefined);
+    const meta = toPlainJsonObject(raw.meta);
     const result: ToolResult = {
       ...raw,
       ok: raw.ok === true,

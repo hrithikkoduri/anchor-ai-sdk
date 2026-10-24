@@ -102,7 +102,7 @@ export function createFinishTool(opts: FinishOptions = {}) {
           summary,
           success,
           ...(handoffValue !== undefined
-            ? { handoff: toPlainJsonObject(handoffValue as Record<string, unknown>) }
+            ? { handoff: toPlainJsonObject(handoffValue as object) }
             : {}),
         },
       };

@@ -86,9 +86,13 @@ export function toPlainJson(value: unknown, opts: ToPlainJsonOptions = {}): Json
   return walk(value, "", 0);
 }
 
-/** `toPlainJson` for a record, keeping the object type for call sites. */
+/**
+ * `toPlainJson` for an object. Accepts any object (interfaces included, which
+ * TypeScript will not assign to an index signature) and returns a detached
+ * `JsonObject`, so a tool can hand its domain types to `meta` in one call.
+ */
 export function toPlainJsonObject(
-  value: Record<string, unknown> | undefined,
+  value: object | undefined,
   opts: ToPlainJsonOptions = {},
 ): JsonObject | undefined {
   if (value === undefined) return undefined;
