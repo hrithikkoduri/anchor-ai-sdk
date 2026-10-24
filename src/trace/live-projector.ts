@@ -14,26 +14,53 @@
  */
 import type { TraceSink, TracedEvent } from "./sink.js";
 
+/** One model stream's running state: the leader's, or one delegated worker's. */
+interface Stream {
+  step: number;
+  text: string;
+  reasoning: string;
+  lastText: number;
+  lastReasoning: number;
+}
+
+const stream = (): Stream => ({
+  step: 0,
+  text: "",
+  reasoning: "",
+  lastText: Number.NEGATIVE_INFINITY,
+  lastReasoning: Number.NEGATIVE_INFINITY,
+});
+
 export function createLiveProjector(
   send: (payload: Record<string, unknown>) => void,
   now = Date.now,
 ): TraceSink {
-  let step = 0;
-  let text = "";
-  let reasoning = "";
-  let lastText = Number.NEGATIVE_INFINITY;
-  let lastReasoning = Number.NEGATIVE_INFINITY;
+  // Workers delegated in parallel interleave their deltas, so cumulative
+  // text and the step are kept per stream: the leader is "", a worker is its
+  // delegate call. Frames from a worker say so (agent, worker, delegateCallId)
+  // and a consumer renders them inside that delegation, not as the leader.
+  const streams = new Map<string, Stream>();
   return {
     name: "live",
     record(entry: TracedEvent) {
       const event = entry.event;
-      if ("step" in event) step = event.step;
+      const key = event.delegateCallId ?? "";
+      let state = streams.get(key);
+      if (!state) streams.set(key, (state = stream()));
+      if ("step" in event) state.step = event.step;
+      const step = state.step;
+      const attribution = {
+        ...(event.agent && event.delegateCallId ? { agent: event.agent } : {}),
+        ...(event.worker ? { worker: event.worker } : {}),
+        ...(event.role ? { role: event.role } : {}),
+        ...(event.delegateCallId ? { delegateCallId: event.delegateCallId } : {}),
+      };
       const publish = (payload: Record<string, unknown>) =>
         send(
           // The JSON round-trip both normalizes the frame (undefined fields
           // drop) and pins the wire shape the dashboard expects.
           JSON.parse(
-            JSON.stringify({ sequence: entry.seq, step, ...payload }),
+            JSON.stringify({ sequence: entry.seq, step, ...attribution, ...payload }),
           ) as Record<string, unknown>,
         );
       switch (event.type) {
@@ -41,24 +68,24 @@ export function createLiveProjector(
           publish({ kind: "started", phases: event.phases });
           break;
         case "llm_call_started":
-          text = "";
-          reasoning = "";
-          lastText = Number.NEGATIVE_INFINITY;
-          lastReasoning = Number.NEGATIVE_INFINITY;
+          state.text = "";
+          state.reasoning = "";
+          state.lastText = Number.NEGATIVE_INFINITY;
+          state.lastReasoning = Number.NEGATIVE_INFINITY;
           publish({ kind: "llm_started", phase: event.phase });
           break;
         case "llm_text_delta":
-          text += event.text;
-          if (now() - lastText >= 100) {
-            lastText = now();
-            publish({ kind: "delta", text });
+          state.text += event.text;
+          if (now() - state.lastText >= 100) {
+            state.lastText = now();
+            publish({ kind: "delta", text: state.text });
           }
           break;
         case "llm_reasoning_delta":
-          reasoning += event.text;
-          if (now() - lastReasoning >= 100) {
-            lastReasoning = now();
-            publish({ kind: "reasoning", text: reasoning });
+          state.reasoning += event.text;
+          if (now() - state.lastReasoning >= 100) {
+            state.lastReasoning = now();
+            publish({ kind: "reasoning", text: state.reasoning });
           }
           break;
         case "llm_call_finished":
@@ -115,6 +142,7 @@ export function createLiveProjector(
             ok: event.ok,
             reason: event.reason,
           });
+          if (key) streams.delete(key);
           break;
         case "error":
           publish({ kind: "error", message: event.message });

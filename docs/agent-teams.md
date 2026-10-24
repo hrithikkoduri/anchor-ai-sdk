@@ -64,7 +64,7 @@ Rules:
 - Workers cannot `delegate` or `finish` in the child run.
 - Only the leader can finish or publish.
 - Delegation is one level: child runs do not receive the roster.
-- Delegated runs stay serialized; read-only tools still follow normal dispatch.
+- Delegations to different workers run in parallel; the same worker runs in order.
 
 ## Result contract
 
@@ -184,11 +184,45 @@ to pending.
 A mailbox is required for true peer-agent teams. It is not needed for
 leader-mediated subagents, where `delegate` returns synchronously.
 
+## A crew: instances, memory, parallel work, workspaces
+
+```ts
+const team: TeamSpec = {
+  members: {
+    frontend: { agent: frontendAgent, role: "worker", description: "UI, React, design system" },
+    backend: { agent: backendAgent, role: "worker", description: "APIs, data, migrations" },
+    reviewer: { agent: reviewAgent, role: "evaluator", description: "rigorous code review" },
+  },
+  // A worker's conversation persists: follow-ups resume it.
+  sessions: { store: threadStore, id: (worker) => `${threadId}:crew:${worker}` },
+  // Where a worker works: e.g. one git worktree + branch per writer.
+  workspace: async ({ worker, readOnly, base }) =>
+    readOnly ? undefined : await worktreeFor(worker, base),
+  maxParallel: 4,
+};
+```
+
+- **Workers.** `delegate({ agent: "frontend", worker: "frontend-2", task })`.
+  The member is the role; the worker is the instance. Omit `worker` and the
+  roster name is used. A worker name belongs to one member.
+- **Memory.** With `sessions`, delegating to the same worker again resumes its
+  conversation (`meta.resumed: true`). `fresh: true` starts it over.
+- **Parallel.** Delegations to different workers in one leader turn run
+  concurrently (bounded by `maxParallel`); the same worker runs in order.
+- **Workspaces.** `workspace` gets `{ worker, member, role, readOnly, base,
+  resumed }` and returns `{ repos?, context? }`: the repositories as the worker
+  sees them and a sentence appended to its task ("Where you work: …"). `base` is
+  the leader's hint to continue from another branch or worker.
+
+Events from a worker carry `agent` (member), `worker`, `role`, `parentAgent`,
+and `delegateCallId`. The live projector keeps a separate text stream per
+delegation and forwards those fields; `projectConversation` nests a worker's
+transcript on the leader's `delegate` part as `delegation`.
+
 ## Current limits
 
 - Depth is one; no recursive teams.
-- Delegation is serial, not parallel across workers.
 - No automatic review loop; the leader chooses when to delegate.
-- No child thread/sandbox; members share the leader's sandbox.
-- No built-in task board/mailbox/decision queue.
+- Members share one sandbox; separate working trees are the consumer's
+  `workspace` hook.
 - Checkpoints and publication remain leader-owned.

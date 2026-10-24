@@ -46,13 +46,64 @@ export interface ConversationPart {
   summaryChars?: number;
   summary?: string;
   folding?: string;
+  /** A `delegate` tool part: the worker's own transcript, projected separately. */
+  delegation?: Delegation;
 }
 
-/** Reconstruct exactly the same ordered transcript on refresh and reconnect. */
-export function projectConversation(
-  events: Array<{ seq: number; type: string; payload: unknown }>,
-  status: string,
-) {
+/** One delegated run, as seen from the leader's `delegate` call. */
+export interface Delegation {
+  agent?: string;
+  worker?: string;
+  role?: string;
+  parts: ConversationPart[];
+  finished: boolean;
+  phase: string | null;
+}
+
+type JournalEvent = { seq: number; type: string; payload: unknown };
+
+const delegateCallOf = (event: JournalEvent) => {
+  const id = (event.payload as { delegateCallId?: unknown } | null)?.delegateCallId;
+  return typeof id === "string" ? id : undefined;
+};
+
+/**
+ * Reconstruct exactly the same ordered transcript on refresh and reconnect.
+ *
+ * A delegated worker's events share the journal with its leader's. They are
+ * set aside by `delegateCallId`, projected as their own transcript, and hung
+ * on the leader's `delegate` tool part, so a worker's turns never appear as
+ * the leader's and its step numbers never collide with the leader's.
+ */
+export function projectConversation(events: JournalEvent[], status: string) {
+  const own: JournalEvent[] = [];
+  const children = new Map<string, JournalEvent[]>();
+  for (const event of events) {
+    const call = delegateCallOf(event);
+    if (!call) own.push(event);
+    else (children.get(call) ?? children.set(call, []).get(call)!).push(event);
+  }
+  const projected = projectStream(own, status);
+  for (const part of projected.parts) {
+    if (part.kind !== "tool" || part.name !== "delegate" || !part.callId) continue;
+    const stream = children.get(part.callId);
+    const first = (stream?.[0]?.payload ?? {}) as Record<string, unknown>;
+    const child = projectStream(stream ?? [], part.complete ? "finished" : status);
+    part.delegation = {
+      ...(typeof first.agent === "string" ? { agent: first.agent } : {}),
+      ...(typeof first.worker === "string" ? { worker: first.worker } : {}),
+      ...(typeof first.role === "string" ? { role: first.role } : {}),
+      parts: child.parts,
+      finished: part.complete || child.finished,
+      phase: child.phase,
+    };
+  }
+  // The splice point covers every stream: live frames after it are new.
+  const sequence = events.reduce((max, event) => Math.max(max, event.seq), -1);
+  return { ...projected, sequence };
+}
+
+function projectStream(events: JournalEvent[], status: string) {
   const parts: ConversationPart[] = [];
   const phases: string[] = [];
   const visited: string[] = [];

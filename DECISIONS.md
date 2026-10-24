@@ -1387,3 +1387,33 @@ subagent does not need the stores because `delegate` returns synchronously; a
 peer-agent team does.
 
 Regressions: `tests/unit/team-coordination.test.ts`.
+
+## Decision #101: A team is a crew — workers are instances with memory and a place to work
+
+Decision #99's roster made every delegate a stranger: a fresh child, the
+leader's checkout, one at a time. Real team work needs the opposite three
+things, and each is a seam rather than a scheduler.
+
+- **Workers are instances of a member.** `delegate({ agent, worker })`: the
+  member is the role (prompt + tools), the worker ("frontend-2") is who does
+  it. A worker name belongs to one member for the leader's run. Events carry
+  `worker` and `role` next to `agent`.
+- **Memory is a ThreadStore.** With `team.sessions`, a worker's conversation is
+  an ordinary engine thread (load, compaction, save), so fixes go back to the
+  worker that wrote the code. `fresh: true` clears it. No new session format.
+- **Parallelism comes from dispatch.** The delegate tool declares
+  `resource: delegate:<worker>`, so the existing resource-grouped mutation path
+  runs delegations to different workers concurrently and the same worker in
+  order. `team.maxParallel` (default 4) bounds work in flight.
+- **Where a worker works is the consumer's.** `team.workspace` returns the
+  repos a worker sees and a sentence about it (a git worktree and branch per
+  writer, or `base` to continue another worker's branch). The engine never
+  creates worktrees or picks branches.
+
+Both projections are per stream: the live projector keeps cumulative text and
+steps per `delegateCallId` and forwards attribution, and `projectConversation`
+nests a worker's transcript on the leader's `delegate` part, so parallel
+workers never garble each other or appear as the leader.
+
+Regressions: `tests/unit/team-crew.test.ts`.
+

@@ -40,6 +40,8 @@ import {
 } from "./inbox.js";
 import { defineTool, type Tool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
+import { createDelegateTool } from "../teams/delegate.js";
+import type { TeamRole } from "../teams/types.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
   budgetWarning,
@@ -138,6 +140,10 @@ interface ChainRun {
   parentAgent?: string;
   /** Tool-call id of the delegate invocation. */
   delegateCallId?: string;
+  /** Worker instance of a delegated child ("frontend-2"); `agent` is its member. */
+  worker?: string;
+  /** Team role of a delegated child. */
+  role?: TeamRole;
 }
 
 async function runOne(
@@ -180,6 +186,8 @@ async function runOne(
     ...(chain.agent ? { agent: chain.agent } : {}),
     ...(chain.parentAgent ? { parentAgent: chain.parentAgent } : {}),
     ...(chain.delegateCallId ? { delegateCallId: chain.delegateCallId } : {}),
+    ...(chain.worker ? { worker: chain.worker } : {}),
+    ...(chain.role ? { role: chain.role } : {}),
   };
   const emit: EventSink = (event) => {
     const attributed =
@@ -289,129 +297,15 @@ async function runOne(
   if (opts.team && Object.keys(opts.team.members).length > 0) {
     available.set(
       "delegate",
-      defineTool(
-        {
-          name: "delegate",
-          description:
-            "Delegate one bounded task to a named worker or evaluator. The child runs in an isolated context in the same sandbox and returns only its result. Evaluators are read-only. Only the leader may finish or publish.",
-          parameters: {
-            type: "object",
-            properties: {
-              agent: {
-                type: "string",
-                description: "Exact roster name.",
-              },
-              task: {
-                type: "string",
-                description: "One bounded task for the child.",
-              },
-              context: {
-                type: "string",
-                description: "Optional compact context; never the full parent transcript.",
-              },
-              feedback: {
-                type: "string",
-                description:
-                  "Optional evaluator findings or repair notes for a follow-up call.",
-              },
-            },
-            required: ["agent", "task"],
-            additionalProperties: false,
-          },
-        },
-        async (input, ctx) => {
-          const name = String(input.agent ?? "").trim();
-          const member = opts.team!.members[name];
-          if (!member) {
-            return {
-              ok: false,
-              content: `unknown team member "${name}" — available: ${Object.keys(opts.team!.members).join(", ")}`,
-              meta: { agent: name },
-            };
-          }
-          const task = String(input.task ?? "").trim();
-          if (!task) return { ok: false, content: "task is required" };
-          const contextText =
-            typeof input.context === "string" ? input.context.trim() : "";
-          const feedback =
-            typeof input.feedback === "string" ? input.feedback.trim() : "";
-          const readOnly =
-            member.role === "evaluator" || member.readOnly === true;
-          const childTools = readOnly
-            ? member.agent.tools.filter(
-                (tool) =>
-                  tool.readOnly === true ||
-                  tool.definition.name === "run_tests",
-              )
-            : member.agent.tools;
-          const childAgent = { ...member.agent, tools: childTools };
-          const limits = budget.limits;
-          const remainingUsd = Math.max(0, limits.maxUsd - budget.costUsd);
-          const childBudget = new BudgetTracker({
-            maxSteps: member.maxSteps ?? limits.maxSteps,
-            maxTokens: member.maxTokens ?? limits.maxTokens,
-            maxUsd: Math.min(
-              member.maxUsd ?? limits.maxUsd,
-              remainingUsd,
-            ),
-          });
-          const childInput: RunInput = {
-            messages: [
-              {
-                role: "user",
-                content: [
-                  task,
-                  contextText ? `Context:\n${contextText}` : "",
-                  feedback ? `Feedback from prior review:\n${feedback}` : "",
-                ]
-                  .filter(Boolean)
-                  .join("\n\n"),
-              },
-            ],
-          };
-          const childOpts: EngineOptions = {
-            llm: member.llm ?? opts.llm,
-            agent: childAgent,
-            ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
-            ...(opts.repos ? { repos: opts.repos } : {}),
-            ...(opts.backgroundAfterSecs !== undefined
-              ? { backgroundAfterSecs: opts.backgroundAfterSecs }
-              : {}),
-            ...(opts.operations ? { operations: opts.operations } : {}),
-            intrinsics: { finish: false, task: false },
-            verifier: false,
-            signal,
-            onEvent: emit,
-          };
-          const childResult = await runOne(childInput, childOpts, {
-            budget: childBudget,
-            agent: name,
-            parentAgent: strategy.name,
-            ...(ctx.callId ? { delegateCallId: ctx.callId } : {}),
-          });
-          budget.record(childResult.usage);
-          const summary =
-            childResult.summary?.trim() ||
-            childResult.error?.trim() ||
-            `(${childResult.reason})`;
-          return {
-            ok: childResult.ok,
-            content: summary,
-            meta: {
-              agent: name,
-              role: member.role,
-              status: childResult.reason,
-              steps: childResult.steps,
-              usage: { ...childResult.usage },
-              ...(childResult.phase ? { phase: childResult.phase } : {}),
-              ...(childResult.verified !== undefined
-                ? { verified: childResult.verified }
-                : {}),
-            },
-          };
-        },
-        { verb: (input) => `Delegating to ${String(input.agent)}` },
-      ),
+      createDelegateTool({
+        team: opts.team,
+        parent: opts,
+        budget,
+        leaderName: strategy.name,
+        emit,
+        signal,
+        runChild: (input, childOpts, link) => runOne(input, childOpts, link),
+      }),
     );
   }
 

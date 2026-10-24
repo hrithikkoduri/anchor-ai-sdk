@@ -233,6 +233,10 @@ export type AgentEvent = AgentEventBody & {
   parentAgent?: string;
   /** Tool-call id of the delegate invocation that started the child. */
   delegateCallId?: string;
+  /** Worker instance of a delegated child ("frontend-2"); `agent` is its roster member. */
+  worker?: string;
+  /** Team role of a delegated child. */
+  role?: "worker" | "evaluator";
 };
 
 export type EventSink = (event: AgentEvent) => void;
