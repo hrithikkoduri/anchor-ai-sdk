@@ -205,6 +205,32 @@ The consumer injects `index` into its prompt and adds `skills` to the agent.
 only through the normal `bash` tool. The body is an untrusted tool result, never
 a system message. See [docs/skills.md](docs/skills.md).
 
+### Optional agent teams
+
+A leader can delegate to named workers or evaluators:
+
+```ts
+const result = await runAgent(
+  { messages: [{ role: "user", content: "Fix the retry bug" }] },
+  {
+    llm,
+    sandbox,
+    agent: leaderAgent,
+    team: {
+      members: {
+        implementer: { agent: implementerAgent, role: "worker" },
+        reviewer: { agent: reviewerAgent, role: "evaluator" },
+      },
+    },
+  },
+);
+```
+
+Members run in an isolated nested loop in the same sandbox and return only a
+result. Evaluators are read-only; workers cannot finish; only the leader can
+finish or publish. Task boards, agent mailboxes, and human decision queues stay
+consumer-owned. See [docs/agent-teams.md](docs/agent-teams.md).
+
 ## One sandbox interface
 
 **Configure the provider once. Keep the agent-facing machine interface the same.**

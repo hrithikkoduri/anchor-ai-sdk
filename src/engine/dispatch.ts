@@ -284,7 +284,13 @@ export async function dispatchToolCalls(
               ok: false,
               content: invalid,
             };
-          const outcome = await invoke(tool, call.name, input, toolContext, available);
+          const outcome = await invoke(
+            tool,
+            call.name,
+            input,
+            { ...toolContext, callId: call.id },
+            available,
+          );
           return "invalid" in outcome
             ? { ok: false, content: outcome.invalid }
             : outcome.result;
@@ -375,7 +381,7 @@ export async function dispatchToolCalls(
               item.tool,
               item.call.name,
               item.input,
-              toolContext,
+              { ...toolContext, callId: item.call.id },
               available,
             );
             results.set(
@@ -458,15 +464,17 @@ export async function dispatchToolCalls(
     } else if (invalid) {
       result = { ok: false, content: invalid };
     } else {
-      const callContext: ToolContext =
-        operationId && args.operations
+      const callContext: ToolContext = {
+        ...toolContext,
+        callId: call.id,
+        ...(operationId && args.operations
           ? {
-              ...toolContext,
               operationId,
-              acknowledge: (ack) =>
+              acknowledge: (ack: Record<string, unknown>) =>
                 args.operations!.acknowledge(operationId!, ack),
             }
-          : toolContext;
+          : {}),
+      };
       const outcome = await invoke(tool, call.name, input, callContext, available);
       if ("invalid" in outcome) {
         result = { ok: false, content: outcome.invalid };

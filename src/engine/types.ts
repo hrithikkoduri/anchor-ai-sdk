@@ -19,6 +19,7 @@ import type { OperationStore, PendingOperation } from "./operations.js";
 import type { ProgressLedger } from "../ledger/types.js";
 import type { VerifierConfig } from "../ledger/config.js";
 import type { RepoRef } from "../repo.js";
+import type { TeamSpec } from "../teams/types.js";
 
 export interface RunInput {
   /**
@@ -72,6 +73,8 @@ export interface EngineOptions {
   tools?: Tool[];
   /** Peer repositories inside the sandbox workspace. Absent = one root repo. */
   repos?: RepoRef[];
+  /** Named worker/evaluator roster available to the leader's delegate tool. */
+  team?: TeamSpec;
   /**
    * Task-contract mode. `true` enables the create_task intrinsic, ledger,
    * evidence capture, and phase/finish judge gates. A config supplies the

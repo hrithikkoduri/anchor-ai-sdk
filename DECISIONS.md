@@ -1351,3 +1351,23 @@ and resource names for follow-up reads. There is no `EngineOptions.skills`; the
 consumer composes the prompt and registers the tool.
 
 Regressions: `tests/unit/skills.test.ts`.
+
+## Decision #99: Delegation is a one-level, result-only subagent contract
+
+The first multi-agent primitive is a named roster on `EngineOptions.team`.
+`opts.agent` remains the leader; each member has an `agent`, a `role`
+(`worker` or `evaluator`), optional limits, and an optional model. The leader
+gets one `delegate` tool.
+
+A delegated member runs a nested `runOne` in the same sandbox with a fresh
+context and no parent transcript. Only its summary/status/usage returns as a
+tool result; its full events go to the trace with `agent`, `parentAgent`, and
+`delegateCallId`. Evaluators are forced read-only (though `run_tests` remains
+available). Children cannot delegate, finish, or publish; depth is one.
+
+Per-member token/step/USD limits bound the child tracker, and completed usage is
+charged back to the leader's budget. Task boards, agent mailboxes, and decision
+queues remain consumer-owned; Anchor does not add a second scheduler. A single
+shared Markdown board is not a safe concurrent coordination primitive.
+
+Regressions: `tests/unit/teams.test.ts`.

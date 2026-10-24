@@ -130,6 +130,12 @@ interface ChainRun {
   interrupt?: () => Promise<boolean>;
   /** Is any inbox work pending? Lets a finishing run carry its jobs forward. */
   hasPending?: () => Promise<boolean>;
+  /** Agent name for trace attribution. */
+  agent?: string;
+  /** Parent agent when this is a delegated child run. */
+  parentAgent?: string;
+  /** Tool-call id of the delegate invocation. */
+  delegateCallId?: string;
 }
 
 async function runOne(
@@ -168,10 +174,19 @@ async function runOne(
     opts.signal?.removeEventListener("abort", abortFromCaller);
     if (fanout) await fanout.flush();
   };
+  const traceAttribution = {
+    ...(chain.agent ? { agent: chain.agent } : {}),
+    ...(chain.parentAgent ? { parentAgent: chain.parentAgent } : {}),
+    ...(chain.delegateCallId ? { delegateCallId: chain.delegateCallId } : {}),
+  };
   const emit: EventSink = (event) => {
-    fanout?.record(event);
+    const attributed =
+      Object.keys(traceAttribution).length > 0
+        ? { ...event, ...traceAttribution }
+        : event;
+    fanout?.record(attributed);
     try {
-      opts.onEvent?.(event);
+      opts.onEvent?.(attributed);
     } catch {
       // A subscriber must never kill the run — same rule as sinks.
     }
@@ -267,6 +282,136 @@ async function runOne(
   let compaction = prior?.compaction;
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
+
+  // ---- Delegated subagents ------------------------------------------------
+  if (opts.team && Object.keys(opts.team.members).length > 0) {
+    available.set(
+      "delegate",
+      defineTool(
+        {
+          name: "delegate",
+          description:
+            "Delegate one bounded task to a named worker or evaluator. The child runs in an isolated context in the same sandbox and returns only its result. Evaluators are read-only. Only the leader may finish or publish.",
+          parameters: {
+            type: "object",
+            properties: {
+              agent: {
+                type: "string",
+                description: "Exact roster name.",
+              },
+              task: {
+                type: "string",
+                description: "One bounded task for the child.",
+              },
+              context: {
+                type: "string",
+                description: "Optional compact context; never the full parent transcript.",
+              },
+              feedback: {
+                type: "string",
+                description:
+                  "Optional evaluator findings or repair notes for a follow-up call.",
+              },
+            },
+            required: ["agent", "task"],
+            additionalProperties: false,
+          },
+        },
+        async (input, ctx) => {
+          const name = String(input.agent ?? "").trim();
+          const member = opts.team!.members[name];
+          if (!member) {
+            return {
+              ok: false,
+              content: `unknown team member "${name}" — available: ${Object.keys(opts.team!.members).join(", ")}`,
+              meta: { agent: name },
+            };
+          }
+          const task = String(input.task ?? "").trim();
+          if (!task) return { ok: false, content: "task is required" };
+          const contextText =
+            typeof input.context === "string" ? input.context.trim() : "";
+          const feedback =
+            typeof input.feedback === "string" ? input.feedback.trim() : "";
+          const readOnly =
+            member.role === "evaluator" || member.readOnly === true;
+          const childTools = readOnly
+            ? member.agent.tools.filter(
+                (tool) =>
+                  tool.readOnly === true ||
+                  tool.definition.name === "run_tests",
+              )
+            : member.agent.tools;
+          const childAgent = { ...member.agent, tools: childTools };
+          const limits = budget.limits;
+          const remainingUsd = Math.max(0, limits.maxUsd - budget.costUsd);
+          const childBudget = new BudgetTracker({
+            maxSteps: member.maxSteps ?? limits.maxSteps,
+            maxTokens: member.maxTokens ?? limits.maxTokens,
+            maxUsd: Math.min(
+              member.maxUsd ?? limits.maxUsd,
+              remainingUsd,
+            ),
+          });
+          const childInput: RunInput = {
+            messages: [
+              {
+                role: "user",
+                content: [
+                  task,
+                  contextText ? `Context:\n${contextText}` : "",
+                  feedback ? `Feedback from prior review:\n${feedback}` : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n\n"),
+              },
+            ],
+          };
+          const childOpts: EngineOptions = {
+            llm: member.llm ?? opts.llm,
+            agent: childAgent,
+            ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
+            ...(opts.repos ? { repos: opts.repos } : {}),
+            ...(opts.backgroundAfterSecs !== undefined
+              ? { backgroundAfterSecs: opts.backgroundAfterSecs }
+              : {}),
+            ...(opts.operations ? { operations: opts.operations } : {}),
+            intrinsics: { finish: false, task: false },
+            verifier: false,
+            signal,
+            onEvent: emit,
+          };
+          const childResult = await runOne(childInput, childOpts, {
+            budget: childBudget,
+            agent: name,
+            parentAgent: strategy.name,
+            ...(ctx.callId ? { delegateCallId: ctx.callId } : {}),
+          });
+          budget.record(childResult.usage);
+          const summary =
+            childResult.summary?.trim() ||
+            childResult.error?.trim() ||
+            `(${childResult.reason})`;
+          return {
+            ok: childResult.ok,
+            content: summary,
+            meta: {
+              agent: name,
+              role: member.role,
+              status: childResult.reason,
+              steps: childResult.steps,
+              usage: { ...childResult.usage },
+              ...(childResult.phase ? { phase: childResult.phase } : {}),
+              ...(childResult.verified !== undefined
+                ? { verified: childResult.verified }
+                : {}),
+            },
+          };
+        },
+        { verb: (input) => `Delegating to ${String(input.agent)}` },
+      ),
+    );
+  }
 
   // ---- Task contracts and the judge --------------------------------------
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;

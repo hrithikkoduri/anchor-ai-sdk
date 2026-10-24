@@ -19,7 +19,7 @@ export interface RevivalRequest {
   estimatedTokens?: number;
 }
 
-export type AgentEvent =
+type AgentEventBody =
   | {
       type: "run_started";
       /** Human-readable text of this turn's input messages. */
@@ -225,5 +225,14 @@ export type AgentEvent =
       handoff?: Record<string, unknown>;
     }
   | { type: "error"; message: string };
+
+export type AgentEvent = AgentEventBody & {
+  /** Agent bundle that emitted this event. */
+  agent?: string;
+  /** Parent agent when this event belongs to a delegated child. */
+  parentAgent?: string;
+  /** Tool-call id of the delegate invocation that started the child. */
+  delegateCallId?: string;
+};
 
 export type EventSink = (event: AgentEvent) => void;

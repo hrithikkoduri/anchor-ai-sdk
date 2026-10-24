@@ -59,6 +59,8 @@ export interface ToolContext {
   backgroundAllowed?: boolean;
   /** Set by finish(); the loop stops once this fires. */
   onFinish?: (summary: string) => void;
+  /** Engine tool-call id, available to delegates for trace attribution. */
+  callId?: string;
 }
 
 /**

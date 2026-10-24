@@ -12,6 +12,7 @@
 export * from "./json.js";
 export * from "./repo.js";
 export * from "./skills/index.js";
+export * from "./teams/index.js";
 export * from "./llm/index.js";
 export * from "./llm/from-catalog.js";
 export * from "./anchor.js";

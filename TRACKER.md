@@ -8,7 +8,14 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
-## v0.4.0 — released
+## After v0.4.0 — on main, unreleased
+
+- [x] One-level delegated subagents: named `TeamSpec` roster, `delegate` tool,
+      worker/evaluator roles, read-only evaluator enforcement, result-only
+      returns, per-member budget caps, and agent-tagged trace events.
+- [x] Agent-team docs and public contract exports.
+
+
 
 - [x] Plain-JSON tool-result metadata, ledger evidence, and trace payloads.
 - [x] `toPlainJson` / `toPlainJsonObject` boundary normalization.
