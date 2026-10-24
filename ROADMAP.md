@@ -39,8 +39,6 @@ tracker for these deferred items.
 
 ## Sandbox providers
 
-- **Daytona adapter**: same shape as E2B (`src/sandbox/daytona/`). _Trigger:_
-  same. _Size:_ M.
 - **Egress allowlists**: Docker now enforces `egress: "none"` (disconnect
   after setup) and declares the capability; the eval exposes `--egress none`.
   Missing is the middle setting, allow only a package index or a host list,
@@ -66,8 +64,14 @@ tracker for these deferred items.
   port). _Trigger:_ the first non-coding consumer needing HTTP. _Size:_ S–M.
   _Context:_ see [`docs/heyo-provider-notes.md`](docs/heyo-provider-notes.md).
 - **Daytona image publishing**: implement `ImagePublisher` and
-  `capabilities.publishImage` for the adapter once the provider exists.
-  _Where:_ `src/sandbox/daytona/`. _Trigger:_ Daytona support lands. _Size:_ S.
+  `capabilities.publishImage` for the shipped adapter. _Where:_
+  `src/sandbox/daytona/`. _Trigger:_ first consumer that needs to build a
+  Daytona image from this package. _Size:_ S.
+- **Daytona process streams and background jobs**: the toolbox exposes async
+  session commands, so `capabilities.processStream` and
+  `pollJob`/`killJob` are implementable; the adapter currently declares
+  neither. _Where:_ `src/sandbox/daytona/index.ts`. _Trigger:_ a consumer that
+  needs a long-lived dev server or detached jobs on Daytona. _Size:_ M.
 - **Live registry conformance**: opt-in tests that actually push a tiny image
   or template for Docker/E2B and upload a Heyo artifact, then boot it. The
   contract currently uses injected runners because credentials and daemons are

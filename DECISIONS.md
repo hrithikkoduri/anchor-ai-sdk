@@ -1351,3 +1351,40 @@ and resource names for follow-up reads. There is no `EngineOptions.skills`; the
 consumer composes the prompt and registers the tool.
 
 Regressions: `tests/unit/skills.test.ts`.
+
+## Decision #99: Daytona ships as a first-class remote backend
+
+The Daytona stub is gone. `daytona/` is now a real adapter on the same
+contract as `heyo/`, `e2b/`, and `docker/`, exported at
+`anchor-ai-sdk/sandbox/daytona`, with `@daytona/sdk` as an **optional peer**
+(loaded only through that subpath) so the root entry stays SDK-free.
+
+Daytona's primitives map onto the contract closely, but three differences are
+load-bearing and are recorded here because each one changes behavior:
+
+- **Images, not templates.** `SandboxSpec.image` is a Docker image name Daytona
+  boots directly. E2B needs a prebuilt template; this adapter does not, so the
+  two are not interchangeable despite sharing a field.
+- **Exec is session-based.** `executeCommand` returns one merged `result`
+  string, which cannot satisfy `ExecResult.stdout`/`.stderr`. The adapter runs
+  a single long-lived toolbox session instead, and wraps every command once
+  (`daytonaCommand`) because `executeSessionCommand` takes no `cwd`/`env`:
+  `cd … && env K=V … timeout -k 5 N bash -c …`. The per-call API `timeout` is
+  a request deadline, not a guest kill — same rule as every other backend.
+- **Egress is enforceable.** This is the first remote backend to declare
+  `egressControl: true` honestly: setup (clone/install) runs with network, then
+  `updateNetworkSettings({ networkBlockAll: true })` cuts the agent phase off.
+
+Retention is stop-based: `destroy()` under `retain` stops (disk survives),
+`adopt()` wakes a stopped sandbox and proves the workspace is still on disk,
+and `provider.release()` deletes for real.
+
+**Not claimed:** `processStream` and background jobs (`pollJob`/`killJob`).
+The toolbox exposes async session commands, so both are implementable, but
+declaring a capability this adapter does not implement is the exact failure the
+conformance suite exists to catch — they are on ROADMAP with triggers instead.
+
+Regressions: `tests/unit/daytona.test.ts` (23 scenarios through an injected
+client, covering create/adopt/exec/fork/destroy/egress/preview/probe) and the
+opt-in live arm `tests/integration/daytona-sandbox.test.ts`
+(`RUN_LIVE_DAYTONA_TESTS=1`).
