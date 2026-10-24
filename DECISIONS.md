@@ -1371,3 +1371,19 @@ queues remain consumer-owned; Anchor does not add a second scheduler. A single
 shared Markdown board is not a safe concurrent coordination primitive.
 
 Regressions: `tests/unit/teams.test.ts`.
+
+## Decision #100: Team coordination is a pair of consumer-owned stores
+
+Agent teams need durable state and addressed communication, not just a
+`delegate` call. Anchor defines `TeamTaskStore` (leased child tasks) and
+`AgentMailbox` (typed, addressed agent messages), with in-memory adapters for
+tests. The consumer owns the durable Postgres implementation, UI, wakeups, and
+decision queue.
+
+Task claims are atomic. A claim succeeds only for a queued task or one whose
+lease expired; releases are owner-checked. Mailbox delivery is also
+lease-protected so a crashed recipient cannot strand a message. A one-level
+subagent does not need the stores because `delegate` returns synchronously; a
+peer-agent team does.
+
+Regressions: `tests/unit/team-coordination.test.ts`.

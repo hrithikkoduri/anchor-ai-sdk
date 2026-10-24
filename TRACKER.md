@@ -14,6 +14,8 @@ here. Do not leave the same item in both files. Architectural rationale stays in
       worker/evaluator roles, read-only evaluator enforcement, result-only
       returns, per-member budget caps, and agent-tagged trace events.
 - [x] Agent-team docs and public contract exports.
+- [x] Consumer-owned team coordination contracts: leased `TeamTaskStore` and
+      addressed `AgentMailbox`, with in-memory adapters and lease recovery.
 
 
 

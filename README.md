@@ -228,8 +228,9 @@ const result = await runAgent(
 
 Members run in an isolated nested loop in the same sandbox and return only a
 result. Evaluators are read-only; workers cannot finish; only the leader can
-finish or publish. Task boards, agent mailboxes, and human decision queues stay
-consumer-owned. See [docs/agent-teams.md](docs/agent-teams.md).
+finish or publish. Anchor exports `TeamTaskStore` / `AgentMailbox` contracts and
+in-memory adapters; durable task boards and mailboxes stay consumer-owned. See
+[docs/agent-teams.md](docs/agent-teams.md).
 
 ## One sandbox interface
 

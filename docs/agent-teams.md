@@ -132,15 +132,57 @@ Keep review rounds bounded in the leader prompt or consumer policy.
 
 ## Consumer-owned coordination
 
-Anchor deliberately does not add a team task board, agent mailbox, or human
-decision queue. Those are consumer-owned stores/UI:
+Anchor now exports the store contracts and in-memory adapters:
 
-- task board: claimed work, owner, status, repo, lease
-- agent mailbox: addressed requests/results/questions
-- human decision queue: existing `ask_questions` / `question_requests`
+```ts
+import {
+  MemoryAgentMailbox,
+  MemoryTeamTaskStore,
+  type AgentMailbox,
+  type TeamTaskStore,
+} from "anchor-ai-sdk";
+```
 
-Keep a single Markdown task-board file out of concurrent write paths. Use a
-database or per-agent append-only files, then let the leader merge.
+- `TeamTaskStore` — child work items with atomic `claim`, lease expiry,
+  owner, status, repo, result, and evidence.
+- `AgentMailbox` — addressed agent messages with `claim`, `ack`, and `release`.
+- The human decision queue remains the consumer's `ask_questions` mechanism.
+
+Sailor should implement these interfaces in Postgres. A single Markdown
+task-board file is not safe for concurrent writers.
+
+### Task board
+
+```text
+queued -> claimed -> in_progress -> done | failed
+                    ^
+                    +--- lease expires -> reclaimable
+```
+
+`claim()` is atomic and succeeds only for a queued task or a task whose lease
+expired. `release()` returns a task to the queue only for its current owner.
+
+### Mailbox
+
+Messages are addressed, typed, and scoped:
+
+```ts
+await mailbox.send({
+  threadId,
+  teamTaskId: "t1",
+  fromAgent: "reviewer",
+  toAgent: "implementer",
+  kind: "review",
+  body: "The timeout case still fails.",
+});
+```
+
+Recipients claim pending messages; delivered messages are lease-protected and
+reclaimable after expiry. `ack()` marks them answered; `release()` returns them
+to pending.
+
+A mailbox is required for true peer-agent teams. It is not needed for
+leader-mediated subagents, where `delegate` returns synchronously.
 
 ## Current limits
 
