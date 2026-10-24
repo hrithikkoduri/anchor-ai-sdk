@@ -214,6 +214,9 @@ async function runOne(
     ...(opts.backgroundAfterSecs !== undefined
       ? { backgroundAfterSecs: opts.backgroundAfterSecs }
       : {}),
+    ...(chain.worker && chain.agent && chain.role
+      ? { team: { worker: chain.worker, member: chain.agent, role: chain.role } }
+      : {}),
   };
   /** Surface a detached command to the consumer that owns delivery. */
   const emitBackground = (

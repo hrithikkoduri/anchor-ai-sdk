@@ -61,6 +61,12 @@ export interface ToolContext {
   onFinish?: (summary: string) => void;
   /** Engine tool-call id, available to delegates for trace attribution. */
   callId?: string;
+  /**
+   * Who is calling, inside a delegated run: the worker instance and its roster
+   * member. Workers of one member share tool instances, so a tool that files
+   * work under the worker (artifacts, notes) reads it here. Absent for the leader.
+   */
+  team?: { worker: string; member: string; role: "worker" | "evaluator" };
 }
 
 /**

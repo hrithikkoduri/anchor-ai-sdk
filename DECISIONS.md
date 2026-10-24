@@ -1410,6 +1410,10 @@ things, and each is a seam rather than a scheduler.
   writer, or `base` to continue another worker's branch). The engine never
   creates worktrees or picks branches.
 
+Tools inside a delegated run receive `ctx.team` (worker, member, role):
+workers of one member share tool instances, so this is how a tool knows whose
+work it is filing.
+
 Both projections are per stream: the live projector keeps cumulative text and
 steps per `delegateCallId` and forwards attribution, and `projectConversation`
 nests a worker's transcript on the leader's `delegate` part, so parallel

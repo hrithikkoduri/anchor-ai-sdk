@@ -214,6 +214,9 @@ const team: TeamSpec = {
   sees them and a sentence appended to its task ("Where you work: …"). `base` is
   the leader's hint to continue from another branch or worker.
 
+Tools called inside a delegated run get `ctx.team = { worker, member, role }`,
+so a shared tool instance can file work under the worker that called it.
+
 Events from a worker carry `agent` (member), `worker`, `role`, `parentAgent`,
 and `delegateCallId`. The live projector keeps a separate text stream per
 delegation and forwards those fields; `projectConversation` nests a worker's

@@ -188,6 +188,34 @@ describe("a crew: worker instances, memory, parallel work, workspaces", () => {
   });
 });
 
+describe("tools know which worker is calling", () => {
+  it("passes the worker, member and role in the tool context; the leader gets none", async () => {
+    const seen: unknown[] = [];
+    const whoami = defineTool(
+      { name: "whoami", description: "report the caller", parameters: { type: "object", properties: {} } },
+      async (_input, ctx) => {
+        seen.push(ctx.team ?? null);
+        return { ok: true, content: "noted" };
+      },
+      { readOnly: true },
+    );
+    await runAgent(userTurn("go"), {
+      llm: scripted([
+        { tools: [{ name: "whoami", arguments: "{}" }] },
+        { tools: [delegate({ agent: "researcher", worker: "researcher-2", task: "look" })] },
+        { text: "done" },
+      ]),
+      agent: agent("captain", [whoami]),
+      team: {
+        members: {
+          researcher: { agent: agent("researcher", [whoami]), role: "evaluator", llm: scripted([{ tools: [{ name: "whoami", arguments: "{}" }] }, { text: "seen" }]) },
+        },
+      },
+    });
+    expect(seen).toEqual([null, { worker: "researcher-2", member: "researcher", role: "evaluator" }]);
+  });
+});
+
 describe("projections keep a worker's stream apart from its leader's", () => {
   const journal = [
     { seq: 0, type: "run_started", payload: { phases: ["work"] } },
