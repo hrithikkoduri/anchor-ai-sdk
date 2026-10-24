@@ -8,6 +8,12 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.3.1 — released
+
+- [x] Plain-JSON tool-result metadata, ledger evidence, and trace payloads.
+- [x] `toPlainJson` / `toPlainJsonObject` boundary normalization.
+- [x] Ledger/evidence cycle fixed by returning identifiers from `create_task`.
+
 ## v0.3.0 — released
 
 - [x] Skills as progressive disclosure: consumer-owned `SkillProvider`,

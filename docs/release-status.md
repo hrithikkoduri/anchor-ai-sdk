@@ -1,6 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.3.0 released: npm `0.3.0`, Git tag `v0.3.0`, and GitHub Release are published.
+Status: **2026-10-23**, v0.3.1 released: npm `0.3.1`, Git tag `v0.3.1`, and GitHub Release are published.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -9,8 +9,21 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
-**v0.3.0** is the current npm/tag release. Its release notes are on
+**v0.3.1** is the current npm/tag release. Its release notes are on
 [GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
+
+### v0.3.1 contents
+
+- `ToolResult.meta` is plain `JsonObject`; every result is copied to detached
+  JSON before trace/evidence/journal use.
+- `toPlainJson`/`toPlainJsonObject` normalize cycles, BigInts, functions, Dates,
+  Maps, Sets, Errors, and class instances at the boundary.
+- `create_task` no longer returns the live ledger in result meta, fixing the
+  ledger/evidence cycle that broke JSON persistence.
+- Trace redaction now operates on the serializable copy.
+
+Verification for v0.3.1: `npm run typecheck`, `npm test` (396 passed, 23
+skipped), `npm run build`, and dist-export verification.
 
 ### v0.3.0 contents
 
@@ -96,14 +109,14 @@ Verification after the LSP, prompt-cache, and composition changes:
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
 
-## v0.3.0 release checklist
+## v0.3.1 release checklist
 
-1. [x] Bump `package.json` to `0.3.0` (package-lock updated).
-2. [x] Add the v0.3.0 entry to `site/src/releases.json`.
-3. [x] Create the GitHub Release at the v0.3.0 tag.
+1. [x] Bump `package.json` to `0.3.1` (package-lock updated).
+2. [x] Add the v0.3.1 entry to `site/src/releases.json`.
+3. [x] Create the GitHub Release at the v0.3.1 tag.
 4. [x] Re-run typecheck, full tests, build, dist-export verification, and site build.
-5. [x] Publish npm `0.3.0`.
-6. No v0.3.0 benchmark result is claimed. The only recorded complete benchmark
+5. [x] Publish npm `0.3.1`.
+6. No v0.3.1 benchmark result is claimed. The only recorded complete benchmark
    is `evals/results/v0.1.7-2fbc92b/`.
 
 ## Deferred list

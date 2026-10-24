@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.3.1",
+    "date": "2026-10-23",
+    "title": "Serializable tool results and trace payloads",
+    "summary": "Tool-result metadata, ledger evidence, and trace redaction now cross persistence boundaries as detached plain JSON.",
+    "added": [
+      "ToolResult.meta is typed as plain JsonObject; the dispatcher copies every result into a detached JSON value before emitting, evidence capture, or journaling.",
+      "toPlainJson and toPlainJsonObject normalize cycles, BigInts, functions, Dates, Maps, Sets, Errors, and class instances at the boundary.",
+      "The create_task ledger cycle is fixed by returning identifiers instead of the live ledger in tool-result metadata.",
+      "Trace redaction now runs over the same serializable copy, so one bad payload cannot stall a sink."
+    ],
+    "offers": "Tool results, evidence, and trace events are safe to persist in databases and files without hidden aliases or circular structures.",
+    "limits": [
+      "This is a correctness/provenance release, not a new agent capability.",
+      "Tools returning non-JSON values in meta may now fail type-checking; runtime values are normalized rather than preserved as class instances.",
+      "No new benchmark result is claimed for v0.3.1."
+    ]
+  },
+  {
     "version": "0.3.0",
     "date": "2026-10-23",
     "title": "Peer repositories and progressive skills",
