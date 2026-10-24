@@ -14,6 +14,7 @@ import {
   codingAgent,
   runAgent,
   terminalAgent,
+  userTurn,
   MemoryOperationStore,
   MemoryThreadStore,
   type Agent,
@@ -161,7 +162,7 @@ export function anchorArm(options: AnchorArmOptions = {}): EvalArm {
           }
         : {};
       const outcome = await runAgent(
-        { task: task.problem },
+        userTurn(task.problem),
         {
           llm: ctx.llm,
           sandbox: ctx.sandbox,
