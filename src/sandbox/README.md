@@ -12,12 +12,9 @@ sandbox/heyo              heyo/ (index, exec,        Heyo Cloud microVMs (remote
                           secret)
 sandbox/docker            docker/index.ts             containers on the local daemon
 sandbox/e2b               e2b/ (index, exec)          E2B cloud sandboxes (remote)
+sandbox/daytona           daytona/ (index, exec)      Daytona cloud sandboxes (remote)
 sandbox/local             local/index.ts              the host, NO isolation: dev/CI
 ```
-
-Daytona is **planned**: its stub module exists in-repo (`daytona/`) so the
-shape is visible, but it is not an exported subpath and its factory throws
-until it passes the conformance suite.
 
 E2B boots a **template**, not an arbitrary Docker image at create time. Pass
 `template` to `e2b()` (or let `SandboxSpec.image` name one) and build it with
@@ -314,9 +311,10 @@ are credential- and network-gated and are not part of CI.
    must stay SDK-free, and `tests/unit/genericity.test.ts` enforces it
    (including "no product nouns" in package source).
 
-Daytona is planned: its stub module stays in-repo as a signpost but is not
-exported; its factory throws with a pointer here until it passes the
-conformance suite.
+Every exported backend above followed that list; `local` and `docker` are also
+covered by the conformance suite in CI, while the remote backends keep a live,
+opt-in arm (`RUN_LIVE_<PROVIDER>_TESTS=1`) so a provider outage never reads as
+a red build.
 
 ### E2B notes
 
@@ -338,6 +336,28 @@ conformance suite.
   for five minutes, so a callback that hits GitHub does not run on every
   command.
 
+### Daytona notes
+
+- **Images, not templates.** `SandboxSpec.image` is a Docker image name and
+  Daytona boots it directly; `snapshot` (an adapter option) pins a named
+  snapshot instead and wins over the image. The image needs `bash`, `git`, and
+  coreutils including `timeout`.
+- **Exec runs in one toolbox session.** `executeSessionCommand` is the only
+  entry point that returns stdout and stderr separately, and it takes no
+  `cwd`/`env`, so each command is wrapped once (`daytonaCommand`): `cd …`,
+  then `env K=V …`, then guest-side `timeout -k … bash -c …`. The per-call API
+  `timeout` is a request deadline only — it is not proof the guest died.
+- **Retain = stop.** `destroy()` stops a retained sandbox (disk survives) and
+  `destroy()` deletes otherwise; `adopt()` wakes a stopped sandbox and proves
+  the workspace is still there. `provider.release(handle)` is the FINAL
+  teardown — it deletes, and does not know the run's `retain` flag.
+- **Egress is real.** `capabilities.egressControl` is true:
+  `updateNetworkSettings({ networkBlockAll: true })` runs after `start()`'s
+  setup, so clone/install have network and the agent phase does not.
+- **Not claimed yet:** `processStream` (the toolbox has async session commands,
+  the adapter does not stream them) and background jobs
+  (`pollJob`/`killJob`). `capabilities` says so instead of implying them.
+
 ## Layout
 
 ```
@@ -352,5 +372,5 @@ heyo/        Heyo Cloud: index (provider), exec (job transport), secret (admin)
 docker/      Docker daemon containers
 e2b/         E2B cloud sandboxes: index (provider), exec (command/result)
 local/       the host itself: dev/CI only, no isolation
-daytona/     stub: planned, not exported
+daytona/     Daytona cloud sandboxes: index (provider), exec (command/result)
 ```

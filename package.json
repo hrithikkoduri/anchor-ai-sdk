@@ -1,6 +1,6 @@
 {
   "name": "anchor-ai-sdk",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Loop-first, sandbox-first agent harness SDK: engine, tools, LLM client, sandbox adapters.",
   "type": "module",
   "license": "MIT",
@@ -46,6 +46,10 @@
       "types": "./dist/sandbox/e2b/index.d.ts",
       "default": "./dist/sandbox/e2b/index.js"
     },
+    "./sandbox/daytona": {
+      "types": "./dist/sandbox/daytona/index.d.ts",
+      "default": "./dist/sandbox/daytona/index.js"
+    },
     "./lsp": {
       "types": "./dist/lsp/index.d.ts",
       "default": "./dist/lsp/index.js"
@@ -68,11 +72,15 @@
     "prepare": "npm run build"
   },
   "peerDependencies": {
+    "@daytona/sdk": "^0.226.1",
     "@heyocomputer/hws": ">=0.4",
     "e2b": "^2.56",
     "vitest": ">=3"
   },
   "peerDependenciesMeta": {
+    "@daytona/sdk": {
+      "optional": true
+    },
     "@heyocomputer/hws": {
       "optional": true
     },
@@ -84,6 +92,7 @@
     }
   },
   "devDependencies": {
+    "@daytona/sdk": "^0.226.1",
     "@heyocomputer/hws": "^0.4.0",
     "@types/node": "^26.6.5",
     "e2b": "^2.56.0",
