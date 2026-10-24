@@ -112,7 +112,7 @@ await Promise.all([output, proc.wait()]);`} />
         <code>ImagePublisher</code> is a common interface over provider-native
         stores, not an Anchor registry. Check <code>capabilities.publishImage</code>
         and <code>provider.imagePublisher.sources</code> before building.</p>
-      <CodeBlock filename="publish.sh" language="SHELL" code={`# Use an installed anchor binary, or: npx --package=anchor-ai-sdk@0.1.8 anchor ...
+      <CodeBlock filename="publish.sh" language="SHELL" code={`# Use an installed anchor binary, or: npx --package=anchor-ai-sdk@0.5.0 anchor ...
 anchor image publish --provider docker --name ghcr.io/acme/agent:v1 \\
   --dockerfile Dockerfile --context .
 

@@ -8,7 +8,7 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
-## After v0.4.0 — on main, unreleased
+## v0.5.0 — released
 
 - [x] One-level delegated subagents: named `TeamSpec` roster, `delegate` tool,
       worker/evaluator roles, read-only evaluator enforcement, result-only
@@ -16,8 +16,14 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 - [x] Agent-team docs and public contract exports.
 - [x] Consumer-owned team coordination contracts: leased `TeamTaskStore` and
       addressed `AgentMailbox`, with in-memory adapters and lease recovery.
+- [x] Contract requirement dependency graph: optional `dependsOn`, custom ids,
+      forward references, graph validation, readiness, topological rendering,
+      and finish-gate enforcement.
+- [x] `CodingPromptOptions.phasesIntro`, and `create_task` raised to 30 atomic
+      requirement items.
+- [x] Eval harness migrated to the `RunInput` message shape.
 
-
+## v0.4.0 — released
 
 - [x] Plain-JSON tool-result metadata, ledger evidence, and trace payloads.
 - [x] `toPlainJson` / `toPlainJsonObject` boundary normalization.

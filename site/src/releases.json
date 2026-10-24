@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.5.0",
+    "date": "2026-10-24",
+    "title": "Delegated teams and dependency-aware contracts",
+    "summary": "Anchor can delegate one level to named workers and evaluators, coordinate through leased task and mailbox contracts, and order contract requirements as a real dependency graph.",
+    "added": [
+      "One-level delegated subagents: EngineOptions.team, the delegate tool, leader/worker/evaluator roles, result-only returns, per-member budgets, and agent-tagged trace events.",
+      "Consumer-owned team coordination contracts: TeamTaskStore with lease-based claim/release and AgentMailbox with addressed claim/ack/release, plus in-memory adapters.",
+      "Contract requirement dependency graph: custom ids, dependsOn edges, forward references, cycle/unknown/self/duplicate/superseded-edge validation, derived readiness, topological rendering, and finish-gate enforcement.",
+      "CodingPromptOptions.phasesIntro lets consumers replace the phase-list intro without forking the coding prompt.",
+      "create_task accepts up to 30 atomic requirement items instead of 12, and the eval harness now uses the RunInput message shape."
+    ],
+    "offers": "Compose a leader with named helpers, give each a bounded role and budget, and make multi-step contracts explicit without turning phases into a dependency chain.",
+    "limits": [
+      "Teams are one level, serial, same-sandbox, and result-only. There is no parallel worker execution, workspace isolation/merge, scheduler, or team UI.",
+      "TeamTaskStore and AgentMailbox are contracts with in-memory adapters only; durable Postgres and product UI remain consumer-owned.",
+      "Requirement dependencies are orthogonal to phases and remain optional. There is no migration, no automatic edge creation, and no team/task-board DAG.",
+      "Delegated child-session continuation and automatic worker-to-evaluator feedback loops are not implemented.",
+      "No new benchmark result is claimed for v0.5.0. Sailor/Sailor-cloud adoption is a separate change."
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "2026-10-23",
     "title": "Serializable tool results and trace payloads",

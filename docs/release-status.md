@@ -1,6 +1,6 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-23**, v0.4.0 released: npm `0.4.0`, Git tag `v0.4.0`, and GitHub Release are published. v0.3.1 was an under-versioned publication of the same breaking change and is superseded.
+Status: **2026-10-24**, v0.5.0 released: npm `0.5.0`, Git tag `v0.5.0`, and GitHub Release are published. v0.4.0 remains the prior breaking release; its npm publication predates the repaired `v0.4.0` git tag and GitHub Release.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
@@ -9,8 +9,32 @@ is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
 ## Released
 
-**v0.4.0** is the current npm/tag release. Its release notes are on
+**v0.5.0** is the current npm/tag release. Its release notes are on
 [GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
+
+### v0.5.0 contents
+
+- One-level delegated subagents through `EngineOptions.team` and the `delegate`
+  tool: named workers/evaluators, result-only returns, per-member budgets,
+  read-only evaluator enforcement, and agent-tagged trace events.
+- Consumer-owned team coordination contracts: leased `TeamTaskStore` and
+  addressed `AgentMailbox`, with in-memory adapters and lease recovery.
+- Contract requirement dependency graph: optional `dependsOn` and custom ids,
+  forward references, cycle/unknown/self/duplicate/superseded-edge validation,
+  derived readiness, topological rendering, and finish-gate enforcement.
+- `CodingPromptOptions.phasesIntro` for consumers that amend the coding prompt
+  without forking it.
+- `create_task` accepts 1–30 atomic requirement items, and the eval harness now
+  uses the `RunInput` message shape.
+
+Limits: teams are one level, serial, same-sandbox, and result-only. There is no
+parallel worker execution, workspace isolation/merge, scheduler, durable team
+store, or team UI. Requirement dependencies are optional and orthogonal to
+phases; there is no migration or automatic edge creation. No new benchmark
+result is claimed. Sailor/Sailor-cloud adoption is a separate change.
+
+Verification for v0.5.0: `npm run typecheck`, `npm test` (428 passed, 23
+skipped), `npm run build`, dist-export verification, and the site build.
 
 ### v0.4.0 contents
 
@@ -112,6 +136,17 @@ Verification after the LSP, prompt-cache, and composition changes:
 `npm run typecheck`, `npm test` (373 passed, 23 skipped), `npm run build`, live
 pyright + TypeScript smoke, `site` build, and the site browser suite (42
 passed). No new benchmark result is claimed.
+
+## v0.5.0 release checklist
+
+1. [x] Bump `package.json` and `package-lock.json` to `0.5.0`.
+2. [x] Add the v0.5.0 entry to `site/src/releases.json`.
+3. [x] Re-run typecheck, full tests, build, dist-export verification, and site build.
+4. [x] Publish npm `0.5.0`.
+5. [x] Create and push the `v0.5.0` tag and GitHub Release.
+6. [x] Repair the missing `v0.4.0` tag and GitHub Release for its already-published npm package.
+7. No v0.5.0 benchmark result is claimed. The only recorded complete benchmark
+   is `evals/results/v0.1.7-2fbc92b/`.
 
 ## v0.4.0 release checklist
 
