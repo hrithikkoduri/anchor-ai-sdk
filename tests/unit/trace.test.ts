@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { JsonlTrace } from "../../src/trace/jsonl.js";
 import { redact } from "../../src/trace/redact.js";
-import { TraceFanout, type TracedEvent } from "../../src/trace/sink.js";
+import { TraceFanout, redactEvent, type TracedEvent } from "../../src/trace/sink.js";
 
 describe("redact", () => {
   it("masks token-shaped strings", () => {
@@ -27,6 +27,23 @@ describe("redact", () => {
     expect(redact("npm test exited 1 after 3.2s")).toBe(
       "npm test exited 1 after 3.2s",
     );
+  });
+});
+
+describe("redactEvent", () => {
+  it("produces a serializable copy even when the payload has a cycle", () => {
+    const meta: Record<string, unknown> = { a: 1 };
+    meta.self = meta;
+    const event = {
+      type: "tool_result",
+      name: "x",
+      ok: true,
+      content: "ok",
+      meta,
+    } as unknown as Parameters<typeof redactEvent>[0];
+    const safe = redactEvent(event) as unknown as { meta: { self: unknown } };
+    expect(safe.meta.self).toBe("[circular]");
+    expect(() => JSON.stringify(safe)).not.toThrow();
   });
 });
 

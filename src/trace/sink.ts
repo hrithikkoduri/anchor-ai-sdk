@@ -79,19 +79,39 @@ export class TraceFanout {
   }
 }
 
-/** Deep redaction: every string in the JSON-shaped event gets the rules. */
+/**
+ * Deep redaction: every string in the JSON-shaped event gets the rules. The
+ * copy is also made safe to serialize — a cycle becomes "[circular]" and a
+ * BigInt a string — so one bad payload cannot take the whole trace down.
+ */
 export function redactEvent(event: AgentEvent): AgentEvent {
-  return redactDeep(event) as AgentEvent;
+  return redactDeep(event, new WeakSet()) as AgentEvent;
 }
 
-function redactDeep(value: unknown): unknown {
+function redactDeep(value: unknown, seen: WeakSet<object>): unknown {
   if (typeof value === "string") return redact(value);
-  if (Array.isArray(value)) return value.map(redactDeep);
+  if (typeof value === "bigint") return String(value);
+  if (value instanceof Date) return value;
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return "[circular]";
+    seen.add(value);
+    try {
+      return value.map((item) => redactDeep(item, seen));
+    } finally {
+      seen.delete(value);
+    }
+  }
   if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value))
-      out[key] = redactDeep(item);
-    return out;
+    if (seen.has(value)) return "[circular]";
+    seen.add(value);
+    try {
+      const out: Record<string, unknown> = {};
+      for (const [key, item] of Object.entries(value))
+        out[key] = redactDeep(item, seen);
+      return out;
+    } finally {
+      seen.delete(value);
+    }
   }
   return value;
 }
