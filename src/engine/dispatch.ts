@@ -7,6 +7,7 @@
  * same repetition tracker and emit the same events, which is why they live
  * together: splitting them is how they drift.
  */
+import { toPlainJsonObject } from "../json.js";
 import type { LLMMessage, LLMToolCall } from "../llm/types.js";
 import type { Tool } from "../tools/types.js";
 import type { ToolContext } from "../tools/types.js";
@@ -127,7 +128,19 @@ async function invoke(
     };
   }
   try {
-    const result = await tool.run(input, ctx);
+    const raw = await tool.run(input, ctx);
+    // The result is captured as evidence and persisted by consumers. Make it
+    // plain here, once: the model text is a string, meta is a detached JSON
+    // copy, so a tool can neither alias engine state nor smuggle a cycle.
+    const content = typeof raw.content === "string" ? raw.content : String(raw.content ?? "");
+    const meta = toPlainJsonObject(raw.meta as Record<string, unknown> | undefined);
+    const result: ToolResult = {
+      ...raw,
+      ok: raw.ok === true,
+      content,
+      ...(meta ? { meta } : {}),
+    };
+    if (!meta) delete result.meta;
     // Consumer tools are not required to know the truncation policy. Enforce
     // one ceiling here so a badly behaved tool cannot flood context.
     if (result.content.length > TOOL_RESULT_MAX_CHARS) {

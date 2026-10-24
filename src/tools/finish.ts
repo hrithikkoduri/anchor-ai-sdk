@@ -14,6 +14,7 @@
  * schema there is no handoff parameter, and passing one is a tool error.
  */
 import { defineTool, optionalBoolean, requireString } from "./types.js";
+import { toPlainJsonObject } from "../json.js";
 
 export interface FinishOptions {
   /** Consumer-supplied JSON schema for the optional `handoff` parameter. */
@@ -100,7 +101,9 @@ export function createFinishTool(opts: FinishOptions = {}) {
         meta: {
           summary,
           success,
-          ...(handoffValue !== undefined ? { handoff: handoffValue } : {}),
+          ...(handoffValue !== undefined
+            ? { handoff: toPlainJsonObject(handoffValue as Record<string, unknown>) }
+            : {}),
         },
       };
     },

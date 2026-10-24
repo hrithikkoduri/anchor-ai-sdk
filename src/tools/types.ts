@@ -13,6 +13,7 @@
 import type { Sandbox } from "../sandbox/types.js";
 import type { ExecResult } from "../sandbox/types.js";
 import type { RepoRef } from "../repo.js";
+import type { JsonObject } from "../json.js";
 
 export interface ToolDefinition {
   name: string;
@@ -114,8 +115,12 @@ export interface ToolResult {
    * retried automatically. Default: `"observed"`.
    */
   completion?: "observed" | "unknown";
-  /** Structured data for the trace; never sent to the model. */
-  meta?: Record<string, unknown>;
+  /**
+   * Structured data for the trace and evidence; never sent to the model.
+   * Plain JSON only: it is persisted by consumers and captured into the task
+   * ledger, so it must not alias engine state or carry non-serializable values.
+   */
+  meta?: JsonObject;
   /** Human-readable activity label for traces and chat, e.g. "Reading README.md". */
   verb?: string;
 }

@@ -1008,7 +1008,11 @@ async function runOne(
           return {
             ok: true,
             content: `Current approach: ${target.id} — ${target.goal}`,
-            meta: { phase, previous, reason: input.reason },
+            meta: {
+              phase,
+              previous,
+              ...(typeof input.reason === "string" ? { reason: input.reason } : {}),
+            },
           };
         },
         { verb: (input) => `Moving into the ${String(input.phase)} phase` },

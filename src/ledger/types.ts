@@ -8,6 +8,7 @@
  * rendered into the prompt as a compact view; the full object feeds the gate
  * and the verifier.
  */
+import type { JsonObject } from "../json.js";
 
 export type RequirementStatus =
   | "open"
@@ -57,7 +58,7 @@ export interface LedgerEvidenceRef {
   summary?: string;
   /** Why this evidence establishes the linked requirement (agent-authored). */
   claim?: string;
-  meta?: Record<string, unknown>;
+  meta?: JsonObject;
 }
 
 export interface ProgressLedger {

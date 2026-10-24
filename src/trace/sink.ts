@@ -12,6 +12,7 @@
  *     and a broken sink never kills the run (errors go to `onError` and the
  *     chain moves on; a trace is never more important than the work).
  */
+import { toPlainJson, type JsonObject, type JsonValue } from "../json.js";
 import type { AgentEvent } from "../engine/events.js";
 import { redact } from "./redact.js";
 
@@ -80,38 +81,21 @@ export class TraceFanout {
 }
 
 /**
- * Deep redaction: every string in the JSON-shaped event gets the rules. The
- * copy is also made safe to serialize — a cycle becomes "[circular]" and a
- * BigInt a string — so one bad payload cannot take the whole trace down.
+ * Deep redaction over a plain copy: every string in the event gets the rules,
+ * and the copy itself is guaranteed serializable (cycles, BigInt, and class
+ * instances are normalized first) so one bad payload cannot stall a sink.
  */
 export function redactEvent(event: AgentEvent): AgentEvent {
-  return redactDeep(event, new WeakSet()) as AgentEvent;
+  return redactDeep(toPlainJson(event)) as AgentEvent;
 }
 
-function redactDeep(value: unknown, seen: WeakSet<object>): unknown {
+function redactDeep(value: JsonValue | undefined): JsonValue | undefined {
   if (typeof value === "string") return redact(value);
-  if (typeof value === "bigint") return String(value);
-  if (value instanceof Date) return value;
-  if (Array.isArray(value)) {
-    if (seen.has(value)) return "[circular]";
-    seen.add(value);
-    try {
-      return value.map((item) => redactDeep(item, seen));
-    } finally {
-      seen.delete(value);
-    }
-  }
+  if (Array.isArray(value)) return value.map((item) => redactDeep(item) ?? null);
   if (value && typeof value === "object") {
-    if (seen.has(value)) return "[circular]";
-    seen.add(value);
-    try {
-      const out: Record<string, unknown> = {};
-      for (const [key, item] of Object.entries(value))
-        out[key] = redactDeep(item, seen);
-      return out;
-    } finally {
-      seen.delete(value);
-    }
+    const out: JsonObject = {};
+    for (const [key, item] of Object.entries(value)) out[key] = redactDeep(item);
+    return out;
   }
   return value;
 }

@@ -9,6 +9,7 @@
  * variables or imports product infrastructure — consumer applications own
  * configuration and orchestration.
  */
+export * from "./json.js";
 export * from "./repo.js";
 export * from "./skills/index.js";
 export * from "./llm/index.js";
