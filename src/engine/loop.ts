@@ -1288,7 +1288,7 @@ async function runOne(
           name: "create_task",
           description:
             "Create the task contract for this turn when the user asked for real work. " +
-            "State a measurable goal and 1-12 independently checkable requirements, each assigned " +
+            "State a measurable goal and 1-30 independently checkable requirements, each assigned " +
             "to one of the strategy's phases. Do not include a source field; the engine derives " +
             "the authoritative request from the user's messages.",
           parameters: {
@@ -1298,7 +1298,7 @@ async function runOne(
               requirements: {
                 type: "array",
                 minItems: 1,
-                maxItems: 12,
+                maxItems: 30,
                 items: {
                   type: "object",
                   properties: {
@@ -1335,10 +1335,10 @@ async function runOne(
           const rows = Array.isArray(input.requirements)
             ? input.requirements
             : [];
-          if (rows.length < 1 || rows.length > 12) {
+          if (rows.length < 1 || rows.length > 30) {
             return {
               ok: false,
-              content: "requirements must contain 1-12 items",
+              content: "requirements must contain 1-30 items",
             };
           }
           const phaseIds = new Set(strategy.phases.map((item) => item.id));

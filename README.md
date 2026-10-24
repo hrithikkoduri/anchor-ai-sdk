@@ -96,7 +96,7 @@ const result = await runAgent(
 ```
 
 The `create_task` intrinsic is available when `verifier` is enabled and no
-contract is active. The agent supplies a goal and 1–12 requirements, each owned
+contract is active. The agent supplies a goal and 1–30 requirements, each owned
 by one of the strategy's phases. The engine derives the authoritative request
 text from the user messages; the agent cannot supply or rewrite the standard it
 is judged against. A turn without `create_task` is an ordinary conversation with

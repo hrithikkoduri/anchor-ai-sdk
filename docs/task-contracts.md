@@ -158,7 +158,7 @@ Registered when `verifier` is enabled and no active contract exists, unless
 
 On call:
 
-1. Validate: non-empty goal, 1–12 requirements, `phase` is one of
+1. Validate: non-empty goal, 1–30 requirements, `phase` is one of
    `strategy.phases` ids, `sourceQuote` present in the derived request text.
 2. Build the ledger (`createLedger`, origin `"agent"`); `source.text` is the
    derived request text, `source.kind` is `"user"`.
