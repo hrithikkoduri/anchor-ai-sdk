@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.3.1",
+    "version": "0.4.0",
     "date": "2026-10-23",
     "title": "Serializable tool results and trace payloads",
     "summary": "Tool-result metadata, ledger evidence, and trace redaction now cross persistence boundaries as detached plain JSON.",
@@ -12,9 +12,9 @@
     ],
     "offers": "Tool results, evidence, and trace events are safe to persist in databases and files without hidden aliases or circular structures.",
     "limits": [
-      "This is a correctness/provenance release, not a new agent capability.",
-      "Tools returning non-JSON values in meta may now fail type-checking; runtime values are normalized rather than preserved as class instances.",
-      "No new benchmark result is claimed for v0.3.1."
+      "Breaking: ToolResult.meta is now JsonObject. Consumer tools returning interface-typed or non-JSON meta fail to compile; use toPlainJsonObject at the boundary.",
+      "0.3.1 was an under-versioned publication of this breaking change; use 0.4.0.",
+      "No new benchmark result is claimed for v0.4.0."
     ]
   },
   {
