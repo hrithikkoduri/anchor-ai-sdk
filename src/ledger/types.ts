@@ -33,6 +33,8 @@ export interface LedgerRequirement {
   required: boolean;
   /** Phase that owns this requirement. */
   phase?: string;
+  /** Requirement ids that must be settled before this one can be. */
+  dependsOn?: string[];
   status: RequirementStatus;
   evidenceIds: string[];
   /** User/source requirements are locked; agents may add, never delete. */
@@ -80,11 +82,13 @@ export interface CreateLedgerInput {
   source: string | LedgerSource;
   goal?: string;
   requirements?: Array<{
+    id?: string;
     text: string;
     required?: boolean;
     origin?: LedgerRequirement["origin"];
     sourceQuote?: string;
     phase?: string;
+    dependsOn?: string[];
   }>;
   now?: string;
 }
@@ -94,9 +98,12 @@ export interface LedgerRevisionInput {
   nextStep?: string;
   supersede?: string[];
   add?: Array<{
+    id?: string;
     text: string;
     required?: boolean;
     sourceQuote?: string;
+    phase?: string;
+    dependsOn?: string[];
   }>;
   now?: string;
 }
@@ -114,4 +121,6 @@ export interface LedgerGateResult {
   missingEvidence: string[];
   failures: string[];
   superseded: string[];
+  /** Human-readable edges whose dependency is not settled. */
+  unsatisfiedDependencies: string[];
 }

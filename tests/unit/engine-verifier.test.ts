@@ -134,6 +134,105 @@ describe("engine task contracts", () => {
     expect(tools).not.toContain("create_task");
   });
 
+  it("rejects an invalid dependency graph from create_task", async () => {
+    const llm = agentLlm([
+      response("", [
+        {
+          id: "create-cycle",
+          name: "create_task",
+          arguments: JSON.stringify({
+            goal: "Create a bad graph",
+            requirements: [
+              {
+                id: "a",
+                text: "A",
+                phase: "understand",
+                dependsOn: ["b"],
+              },
+              {
+                id: "b",
+                text: "B",
+                phase: "act",
+                dependsOn: ["a"],
+              },
+            ],
+          }),
+        },
+      ]),
+      response("I could not create that contract."),
+    ]);
+    const result = await runAgent(
+      userTurn("Create a bad graph"),
+      { llm, verifier: true, agent: testAgent },
+    );
+    expect(result.ledger).toBeUndefined();
+    expect(
+      result.messages.some(
+        (message) =>
+          message.role === "tool" &&
+          message.content?.includes("requirement dependency cycle"),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects verify when a dependency is still open", async () => {
+    const llm = agentLlm([
+      response("", [
+        {
+          id: "create-graph",
+          name: "create_task",
+          arguments: JSON.stringify({
+            goal: "Do ordered work",
+            requirements: [
+              {
+                id: "base",
+                text: "Base work",
+                phase: "understand",
+                required: false,
+              },
+              {
+                id: "top",
+                text: "Dependent work",
+                phase: "act",
+                required: false,
+                dependsOn: ["base"],
+              },
+            ],
+          }),
+        },
+      ]),
+      response("", [{ id: "p1", name: "probe", arguments: "{}" }]),
+      response("", [
+        {
+          id: "v1",
+          name: "update_ledger",
+          arguments: JSON.stringify({
+            op: "verify",
+            requirementId: "top",
+            evidenceId: "e1",
+            claim: "The probe proves the dependent work.",
+          }),
+        },
+      ]),
+      response("Done."),
+    ]);
+    const result = await runAgent(
+      userTurn("Do ordered work"),
+      { llm, verifier: true, agent: testAgent },
+    );
+
+    expect(
+      result.messages.some(
+        (message) =>
+          message.role === "tool" &&
+          message.content?.includes("top requires base"),
+      ),
+    ).toBe(true);
+    expect(
+      result.ledger?.requirements.find((item) => item.id === "top"),
+    ).toMatchObject({ status: "open", evidenceIds: [] });
+  });
+
   it("creates no ledger or gate when the agent does not call create_task", async () => {
     const result = await runAgent(
       userTurn("Hello"),

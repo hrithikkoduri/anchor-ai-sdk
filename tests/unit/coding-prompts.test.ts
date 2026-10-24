@@ -16,4 +16,20 @@ describe("coding prompt components", () => {
       "# Character\ncustom character",
     );
   });
+
+  it("keeps the default phases intro and allows an override", () => {
+    expect(buildCodingPrompt()).toContain(
+      "These describe your approach, not prerequisites.",
+    );
+    const prompt = buildCodingPrompt({
+      phasesIntro:
+        "For contracted work, follow the declared requirement graph and do not skip prerequisites.",
+    });
+    expect(prompt).toContain(
+      "For contracted work, follow the declared requirement graph and do not skip prerequisites.",
+    );
+    expect(prompt).not.toContain(
+      "These describe your approach, not prerequisites.",
+    );
+  });
 });

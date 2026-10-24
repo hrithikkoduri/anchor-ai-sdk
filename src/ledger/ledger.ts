@@ -32,6 +32,151 @@ function sourceOf(input: string | LedgerSource): LedgerSource {
   return typeof input === "string" ? { kind: "user", text: input } : input;
 }
 
+type RequirementDraft = {
+  id?: string;
+  text: string;
+  required?: boolean;
+  origin?: LedgerRequirement["origin"];
+  sourceQuote?: string;
+  phase?: string;
+  dependsOn?: string[];
+};
+
+const REQUIREMENT_ID = /^[a-z][a-z0-9_-]{0,31}$/;
+
+function generatedRequirementId(used: ReadonlySet<string>): string {
+  let max = 0;
+  for (const id of used) {
+    const match = /^r(\d+)$/.exec(id);
+    if (!match) continue;
+    const value = Number(match[1]);
+    if (Number.isSafeInteger(value)) max = Math.max(max, value);
+  }
+  let n = max + 1;
+  while (used.has(`r${n}`)) n += 1;
+  return `r${n}`;
+}
+
+function dependencyIds(value: string[] | undefined): string[] {
+  if (!value) return [];
+  const out: string[] = [];
+  for (const raw of value) {
+    const id = raw.trim();
+    if (!id) throw new Error("requirement dependency id must not be empty");
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
+/** Validate ids, references, superseded edges, and cycles. Exported for tests. */
+export function validateRequirementGraph(
+  requirements: readonly LedgerRequirement[],
+): void {
+  const byId = new Map<string, LedgerRequirement>();
+  for (const requirement of requirements) {
+    if (!REQUIREMENT_ID.test(requirement.id)) {
+      throw new Error(
+        `invalid requirement id "${requirement.id}"; expected ^[a-z][a-z0-9_-]{0,31}$`,
+      );
+    }
+    if (byId.has(requirement.id)) {
+      throw new Error(`duplicate requirement id "${requirement.id}"`);
+    }
+    byId.set(requirement.id, requirement);
+  }
+  for (const requirement of requirements) {
+    // Superseded nodes are historical. Their edges no longer constrain the
+    // active contract, so do not reject a revision that supersedes both ends.
+    if (requirement.status === "superseded") continue;
+    for (const dependency of requirement.dependsOn ?? []) {
+      if (dependency === requirement.id) {
+        throw new Error(`requirement ${requirement.id} cannot depend on itself`);
+      }
+      const target = byId.get(dependency);
+      if (!target) {
+        throw new Error(
+          `requirement ${requirement.id} depends on unknown requirement "${dependency}"`,
+        );
+      }
+      if (target.status === "superseded") {
+        throw new Error(
+          `requirement ${requirement.id} depends on superseded requirement "${dependency}"; depend on its replacement instead`,
+        );
+      }
+    }
+  }
+  const active = requirements.filter((item) => item.status !== "superseded");
+  const activeById = new Map(active.map((item) => [item.id, item]));
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const path: string[] = [];
+  const visit = (id: string): void => {
+    if (visited.has(id)) return;
+    const cycleAt = path.indexOf(id);
+    if (visiting.has(id) || cycleAt !== -1) {
+      const cycle = [...path.slice(cycleAt === -1 ? 0 : cycleAt), id];
+      throw new Error(`requirement dependency cycle: ${cycle.join(" → ")}`);
+    }
+    visiting.add(id);
+    path.push(id);
+    const requirement = activeById.get(id);
+    for (const dependency of requirement?.dependsOn ?? []) {
+      visit(dependency);
+    }
+    path.pop();
+    visiting.delete(id);
+    visited.add(id);
+  };
+  for (const requirement of active) visit(requirement.id);
+}
+
+function buildRequirements(
+  existing: readonly LedgerRequirement[],
+  drafts: readonly RequirementDraft[],
+  defaultOrigin: LedgerRequirement["origin"],
+  revision: number,
+): LedgerRequirement[] {
+  const used = new Set(existing.map((item) => item.id));
+  // Reserve explicit ids first so generated ids cannot collide with a later id.
+  const explicit = new Set<string>();
+  for (const draft of drafts) {
+    if (draft.id === undefined) continue;
+    const id = draft.id.trim();
+    if (!REQUIREMENT_ID.test(id)) {
+      throw new Error(
+        `invalid requirement id "${draft.id}"; expected ^[a-z][a-z0-9_-]{0,31}$`,
+      );
+    }
+    if (explicit.has(id) || used.has(id)) {
+      throw new Error(`duplicate requirement id "${id}"`);
+    }
+    explicit.add(id);
+    used.add(id);
+  }
+  const created = drafts.map((draft): LedgerRequirement => {
+    const text = draft.text.trim();
+    if (!text) throw new Error("ledger requirement text must not be empty");
+    const id = draft.id?.trim() || generatedRequirementId(used);
+    used.add(id);
+    const dependsOn = dependencyIds(draft.dependsOn);
+    return {
+      id,
+      text,
+      required: draft.required ?? true,
+      ...(draft.phase ? { phase: draft.phase } : {}),
+      ...(dependsOn.length ? { dependsOn } : {}),
+      status: "open",
+      evidenceIds: [],
+      locked: (draft.origin ?? defaultOrigin) !== "agent",
+      origin: draft.origin ?? defaultOrigin,
+      ...(draft.sourceQuote ? { sourceQuote: draft.sourceQuote } : {}),
+      revision,
+    };
+  });
+  validateRequirementGraph([...existing, ...created]);
+  return created;
+}
+
 export function createLedger(input: CreateLedgerInput): ProgressLedger {
   const at = nowIso(input.now);
   const source = sourceOf(input.source);
@@ -47,39 +192,29 @@ export function createLedger(input: CreateLedgerInput): ProgressLedger {
     createdAt: at,
     updatedAt: at,
   };
-  for (const requirement of input.requirements ?? []) {
-    addRequirement(ledger, requirement, requirement.origin ?? "user");
-  }
+  ledger.requirements = buildRequirements(
+    [],
+    input.requirements ?? [],
+    "user",
+    1,
+  );
   return ledger;
 }
 
 export function addRequirement(
   ledger: ProgressLedger,
-  input: {
-    text: string;
-    required?: boolean;
-    sourceQuote?: string;
-    phase?: string;
-  },
+  input: RequirementDraft,
   origin: LedgerRequirement["origin"] = "agent",
 ): LedgerRequirement {
-  const text = input.text.trim();
-  if (!text) throw new Error("ledger requirement text must not be empty");
-  const requirement: LedgerRequirement = {
-    id: nextId("r", ledger.requirements.map((item) => item.id)),
-    text,
-    required: input.required ?? true,
-    ...(input.phase ? { phase: input.phase } : {}),
-    status: "open",
-    evidenceIds: [],
-    locked: origin !== "agent",
+  const [requirement] = buildRequirements(
+    ledger.requirements,
+    [{ ...input, origin }],
     origin,
-    ...(input.sourceQuote ? { sourceQuote: input.sourceQuote } : {}),
-    revision: ledger.revision,
-  };
-  ledger.requirements.push(requirement);
+    ledger.revision,
+  );
+  ledger.requirements.push(requirement!);
   ledger.updatedAt = nowIso();
-  return requirement;
+  return requirement!;
 }
 
 export function recordEvidence(
@@ -162,28 +297,73 @@ export function reviseLedger(
   ledger: ProgressLedger,
   change: LedgerRevisionInput,
 ): ProgressLedger {
-  ledger.revision += 1;
+  const next: ProgressLedger = {
+    ...ledger,
+    revision: ledger.revision + 1,
+    requirements: ledger.requirements.map((requirement) => ({
+      ...requirement,
+      evidenceIds: [...requirement.evidenceIds],
+      ...(requirement.dependsOn
+        ? { dependsOn: [...requirement.dependsOn] }
+        : {}),
+    })),
+    openFailures: [...ledger.openFailures],
+    evidence: { ...ledger.evidence },
+  };
   for (const id of change.supersede ?? []) {
-    const requirement = findRequirement(ledger, id);
+    const requirement = findRequirement(next, id);
     requirement.status = "superseded";
-    requirement.supersededBy = `revision ${ledger.revision}`;
+    requirement.supersededBy = `revision ${next.revision}`;
   }
-  for (const item of change.add ?? []) {
-    addRequirement(
-      ledger,
-      { ...item, required: item.required ?? true },
-      "user",
-    );
-  }
-  if (change.nextStep !== undefined) ledger.nextStep = change.nextStep;
-  ledger.updatedAt = nowIso(change.now);
+  const created = buildRequirements(
+    next.requirements,
+    change.add ?? [],
+    "user",
+    next.revision,
+  );
+  next.requirements.push(...created);
+  validateRequirementGraph(next.requirements);
+  if (change.nextStep !== undefined) next.nextStep = change.nextStep;
+  next.updatedAt = nowIso(change.now);
+  Object.assign(ledger, next);
   return ledger;
 }
 
 /**
- * Deterministic coverage gate. This is not a quality judgment; the verifier
- * adds the semantic check on top.
+ * Dependencies that are not settled for a requirement. `allowWaived` controls
+ * whether a waived dependency satisfies its dependents.
  */
+export function unmetDependencies(
+  ledger: ProgressLedger,
+  requirement: LedgerRequirement,
+  policy: LedgerGatePolicy = {},
+): string[] {
+  const byId = new Map(ledger.requirements.map((item) => [item.id, item]));
+  return (requirement.dependsOn ?? []).filter((id) => {
+    const dependency = byId.get(id);
+    if (!dependency) return true;
+    if (dependency.status === "verified") return false;
+    if (policy.allowWaived && dependency.status === "waived") return false;
+    return true;
+  });
+}
+
+/** Requirements whose required dependencies are already settled. */
+export function readyRequirements(
+  ledger: ProgressLedger,
+  policy: LedgerGatePolicy = {},
+): string[] {
+  return ledger.requirements
+    .filter(
+      (requirement) =>
+        (requirement.status === "open" ||
+          requirement.status === "in_progress") &&
+        unmetDependencies(ledger, requirement, policy).length === 0,
+    )
+    .map((requirement) => requirement.id);
+}
+
+/** Deterministic coverage gate. This is not a quality judgment. */
 export function ledgerGate(
   ledger: ProgressLedger,
   policy: LedgerGatePolicy = {},
@@ -207,11 +387,18 @@ export function ledgerGate(
         item.evidenceIds.length === 0,
     )
     .map((item) => item.id);
+  const unsatisfiedDependencies = active.flatMap((requirement) => {
+    if (!requirement.required) return [];
+    return unmetDependencies(ledger, requirement, policy).map(
+      (dependency) => `${requirement.id} requires ${dependency}`,
+    );
+  });
   const failures = policy.ignoreOpenFailures ? [] : [...ledger.openFailures];
   return {
     allow:
       blocking.length === 0 &&
       missingEvidence.length === 0 &&
+      unsatisfiedDependencies.length === 0 &&
       failures.length === 0,
     open: blocking.map((item) => item.id),
     missingEvidence,
@@ -219,7 +406,47 @@ export function ledgerGate(
     superseded: ledger.requirements
       .filter((item) => item.status === "superseded")
       .map((item) => item.id),
+    unsatisfiedDependencies,
   };
+}
+
+/** Stable topological order for the active requirement graph. */
+export function topologicalRequirements(
+  requirements: readonly LedgerRequirement[],
+): LedgerRequirement[] {
+  const active = requirements.filter((item) => item.status !== "superseded");
+  const byId = new Map(active.map((item) => [item.id, item]));
+  const index = new Map(active.map((item, i) => [item.id, i]));
+  const indegree = new Map(
+    active.map((item) => [
+      item.id,
+      (item.dependsOn ?? []).filter((id) => byId.has(id)).length,
+    ]),
+  );
+  const dependents = new Map<string, string[]>();
+  for (const item of active) {
+    for (const dependency of item.dependsOn ?? []) {
+      if (!byId.has(dependency)) continue;
+      const list = dependents.get(dependency) ?? [];
+      list.push(item.id);
+      dependents.set(dependency, list);
+    }
+  }
+  const ready = active
+    .filter((item) => (indegree.get(item.id) ?? 0) === 0)
+    .map((item) => item.id);
+  const out: LedgerRequirement[] = [];
+  while (ready.length > 0) {
+    ready.sort((a, b) => (index.get(a) ?? 0) - (index.get(b) ?? 0));
+    const id = ready.shift()!;
+    out.push(byId.get(id)!);
+    for (const dependent of dependents.get(id) ?? []) {
+      const next = (indegree.get(dependent) ?? 0) - 1;
+      indegree.set(dependent, next);
+      if (next === 0) ready.push(dependent);
+    }
+  }
+  return out.length === active.length ? out : active;
 }
 
 export interface RenderLedgerOptions {
@@ -227,6 +454,8 @@ export interface RenderLedgerOptions {
   includeSource?: boolean;
   /** Include evidence lines. Default true. */
   includeEvidence?: boolean;
+  /** Whether waived dependencies satisfy dependents in the READY set. */
+  allowWaived?: boolean;
 }
 
 /**
@@ -239,9 +468,8 @@ export function renderLedger(
 ): string {
   const includeSource = opts.includeSource ?? true;
   const includeEvidence = opts.includeEvidence ?? true;
-  const active = ledger.requirements.filter(
-    (item) => item.status !== "superseded",
-  );
+  const active = topologicalRequirements(ledger.requirements);
+  const ready = readyRequirements(ledger, { allowWaived: opts.allowWaived });
   const lines: string[] = [];
   if (includeSource) {
     lines.push("AUTHORITATIVE TASK:", ledger.source.text, "");
@@ -254,10 +482,14 @@ export function renderLedger(
   );
   if (active.length === 0) lines.push("- (none yet)");
   for (const item of active) {
+    const after = item.dependsOn?.length
+      ? ` after ${item.dependsOn.join(", ")}`
+      : "";
     lines.push(
-      `- ${item.id} [${item.status}]${item.phase ? ` phase=${item.phase}` : ""}${item.required ? "" : " optional"} ${item.text}`,
+      `- ${item.id} [${item.status}]${item.phase ? ` phase=${item.phase}` : ""}${item.required ? "" : " optional"} ${item.text}${after}`,
     );
   }
+  lines.push("", `READY: ${ready.length ? ready.join(", ") : "(none)"}`);
   if (includeEvidence) {
     lines.push("", "EVIDENCE:");
     const refs = Object.values(ledger.evidence);

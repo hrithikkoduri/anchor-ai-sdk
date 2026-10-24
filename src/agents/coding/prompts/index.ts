@@ -24,6 +24,8 @@ export interface CodingPromptOptions {
   operatingRules?: string;
   verification?: string;
   phases?: StrategyPhase[];
+  /** Intro before the phase list. Defaults to the generic advice. */
+  phasesIntro?: string;
   context?: string;
   summary?: string;
   additionalSections?: Array<{ title: string; body: string }>;
@@ -56,7 +58,8 @@ export function buildCodingPrompt(options: CodingPromptOptions = {}): string {
     {
       title: "Approach phases",
       body: [
-        "These describe your approach, not prerequisites. Choose the phases that fit, skip or revisit them when appropriate, and conclude from any phase. When your work shifts between kinds of activity — investigating, changing code, verifying, answering — call set_phase to record the new phase and keep the thread's timeline honest.",
+        options.phasesIntro ??
+          "These describe your approach, not prerequisites. Choose the phases that fit, skip or revisit them when appropriate, and conclude from any phase. When your work shifts between kinds of activity — investigating, changing code, verifying, answering — call set_phase to record the new phase and keep the thread's timeline honest.",
         ...phases.map(
           (phase) =>
             `- ${phase.id}: ${phase.goal}${phase.guidance ? ` ${phase.guidance}` : ""}`,

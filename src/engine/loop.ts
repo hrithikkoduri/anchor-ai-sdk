@@ -54,9 +54,11 @@ import {
   createLedger,
   ledgerGate,
   linkEvidence,
+  readyRequirements,
   recordEvidence,
   renderLedger,
   setRequirementStatus,
+  unmetDependencies,
   type VerifierConfig,
 } from "../ledger/index.js";
 import { llmJudge, type Judge, type JudgeVerdict } from "../verify/index.js";
@@ -515,7 +517,9 @@ async function runOne(
             },
             text: { type: "string" },
             required: { type: "boolean" },
+            id: { type: "string" },
             phase: { type: "string" },
+            dependsOn: { type: "array", items: { type: "string" } },
             requirementId: { type: "string" },
             evidenceId: { type: "string" },
             claim: { type: "string" },
@@ -531,24 +535,67 @@ async function runOne(
       },
       async (input) => {
         const op = String(input.op ?? "");
+        const dependencyError = (requirementId: string): string | undefined => {
+          const requirement = ledger!.requirements.find(
+            (item) => item.id === requirementId,
+          );
+          if (!requirement) return `unknown requirement "${requirementId}"`;
+          const unmet = unmetDependencies(ledger!, requirement, {
+            allowWaived: verifierConfig.allowWaived,
+          });
+          return unmet.length
+            ? `${requirement.id} requires ${unmet.join(", ")}`
+            : undefined;
+        };
         if (op === "add_requirement") {
           const text = String(input.text ?? "").trim();
           if (!text) return { ok: false, content: "text is required" };
-          const requirement = addRequirement(
-            ledger!,
-            {
-              text,
-              required: input.required !== false,
-              ...(typeof input.phase === "string" && input.phase
-                ? { phase: input.phase }
-                : {}),
-            },
-            "agent",
-          );
-          return {
-            ok: true,
-            content: `added ${requirement.id}: ${requirement.text}`,
-          };
+          if (input.id !== undefined && typeof input.id !== "string") {
+            return { ok: false, content: "id must be a string" };
+          }
+          if (input.dependsOn !== undefined && !Array.isArray(input.dependsOn)) {
+            return {
+              ok: false,
+              content: "dependsOn must be an array of requirement ids",
+            };
+          }
+          if (
+            Array.isArray(input.dependsOn) &&
+            input.dependsOn.some((item) => typeof item !== "string")
+          ) {
+            return {
+              ok: false,
+              content: "dependsOn must be an array of requirement ids",
+            };
+          }
+          try {
+            const requirement = addRequirement(
+              ledger!,
+              {
+                text,
+                required: input.required !== false,
+                ...(typeof input.id === "string" && input.id
+                  ? { id: input.id }
+                  : {}),
+                ...(typeof input.phase === "string" && input.phase
+                  ? { phase: input.phase }
+                  : {}),
+                ...(Array.isArray(input.dependsOn) && input.dependsOn.length
+                  ? { dependsOn: input.dependsOn as string[] }
+                  : {}),
+              },
+              "agent",
+            );
+            return {
+              ok: true,
+              content: `added ${requirement.id}: ${requirement.text}`,
+            };
+          } catch (error) {
+            return {
+              ok: false,
+              content: error instanceof Error ? error.message : String(error),
+            };
+          }
         }
         if (op === "link_evidence") {
           const claim = String(input.claim ?? "").trim();
@@ -575,6 +622,8 @@ async function runOne(
             };
           }
           const requirementId = String(input.requirementId ?? "");
+          const unmet = dependencyError(requirementId);
+          if (unmet) return { ok: false, content: unmet };
           linkEvidence(
             ledger!,
             requirementId,
@@ -590,6 +639,10 @@ async function runOne(
             return { ok: false, content: "use a user revision to supersede" };
           }
           const requirementId = String(input.requirementId ?? "");
+          if (status === "verified" || status === "waived") {
+            const unmet = dependencyError(requirementId);
+            if (unmet) return { ok: false, content: unmet };
+          }
           if (status === "verified") {
             const requirement = ledger!.requirements.find(
               (item) => item.id === requirementId,
@@ -664,6 +717,7 @@ async function runOne(
             "Verification gate: required work is not complete.",
             `open: ${structural.open.join(", ") || "none"}`,
             `missingEvidence: ${structural.missingEvidence.join(", ") || "none"}`,
+            `unsatisfiedDependencies: ${structural.unsatisfiedDependencies.join(" | ") || "none"}`,
             `failures: ${structural.failures.join(" | ") || "none"}`,
             "Attach evidence to each requirement with update_ledger, resolve failures, and try again.",
           ].join("\n"),
@@ -778,7 +832,9 @@ async function runOne(
         ? [
             "## Runtime task state",
             "This is authoritative state, not a new user request.",
-            renderLedger(ledger),
+            renderLedger(ledger, {
+              allowWaived: verifierConfig.allowWaived,
+            }),
             "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
           ].join("\n\n")
         : undefined,
@@ -1246,6 +1302,7 @@ async function runOne(
                 items: {
                   type: "object",
                   properties: {
+                    id: { type: "string" },
                     text: { type: "string" },
                     required: { type: "boolean" },
                     phase: {
@@ -1253,6 +1310,7 @@ async function runOne(
                       enum: strategy.phases.map((item) => item.id),
                     },
                     sourceQuote: { type: "string" },
+                    dependsOn: { type: "array", items: { type: "string" } },
                   },
                   required: ["text", "phase"],
                   additionalProperties: false,
@@ -1285,10 +1343,12 @@ async function runOne(
           }
           const phaseIds = new Set(strategy.phases.map((item) => item.id));
           const requirements: Array<{
+            id?: string;
             text: string;
             required: boolean;
             phase: string;
             sourceQuote?: string;
+            dependsOn?: string[];
           }> = [];
           for (const [index, row] of rows.entries()) {
             if (!row || typeof row !== "object" || Array.isArray(row)) {
@@ -1319,22 +1379,54 @@ async function runOne(
                 content: `requirement ${index} sourceQuote is not in the user's request`,
               };
             }
+            if (entry.id !== undefined && typeof entry.id !== "string") {
+              return {
+                ok: false,
+                content: `requirement ${index} id must be a string`,
+              };
+            }
+            if (
+              entry.dependsOn !== undefined &&
+              (!Array.isArray(entry.dependsOn) ||
+                entry.dependsOn.some((item) => typeof item !== "string"))
+            ) {
+              return {
+                ok: false,
+                content: `requirement ${index} dependsOn must be an array of requirement ids`,
+              };
+            }
+            const id =
+              typeof entry.id === "string" && entry.id.trim()
+                ? entry.id.trim()
+                : undefined;
             requirements.push({
+              ...(id ? { id } : {}),
               text,
               required: entry.required !== false,
               phase,
               ...(sourceQuote ? { sourceQuote } : {}),
+              ...(Array.isArray(entry.dependsOn) && entry.dependsOn.length
+                ? { dependsOn: entry.dependsOn as string[] }
+                : {}),
             });
           }
-          const next = createLedger({
-            taskId: contractTaskId,
-            source: { kind: "user", text: requestText },
-            goal,
-            requirements: requirements.map((item) => ({
-              ...item,
-              origin: "agent" as const,
-            })),
-          });
+          let next: ProgressLedger;
+          try {
+            next = createLedger({
+              taskId: contractTaskId,
+              source: { kind: "user", text: requestText },
+              goal,
+              requirements: requirements.map((item) => ({
+                ...item,
+                origin: "agent" as const,
+              })),
+            });
+          } catch (error) {
+            return {
+              ok: false,
+              content: error instanceof Error ? error.message : String(error),
+            };
+          }
           if (typeof input.nextStep === "string" && input.nextStep.trim()) {
             next.nextStep = input.nextStep.trim();
           }
@@ -1355,6 +1447,9 @@ async function runOne(
             meta: {
               taskId: next.taskId,
               requirements: next.requirements.map((item) => item.id),
+              ready: readyRequirements(next, {
+                allowWaived: verifierConfig.allowWaived,
+              }),
             },
           };
         },
