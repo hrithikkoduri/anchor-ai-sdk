@@ -1200,7 +1200,13 @@ async function runOne(
               ),
               "Use update_ledger to link evidence with a claim and verify each requirement.",
             ].join("\n"),
-            meta: { ledger: next },
+            // Identifiers only: the ledger itself is emitted on task_created
+            // and must never ride a tool result, which is captured as evidence
+            // inside that same ledger.
+            meta: {
+              taskId: next.taskId,
+              requirements: next.requirements.map((item) => item.id),
+            },
           };
         },
         { verb: "Creating the task contract" },
@@ -1869,10 +1875,13 @@ async function runOne(
         signal,
         pauseRequested: () => pauseRequested,
         onToolResult: (call, result) => {
+          // Contract tools describe the ledger; they are not evidence about
+          // the work and must not be recorded into the ledger they manage.
           if (
             !ledger ||
             call.name === "finish" ||
-            call.name === "update_ledger"
+            call.name === "update_ledger" ||
+            call.name === "create_task"
           ) {
             return;
           }

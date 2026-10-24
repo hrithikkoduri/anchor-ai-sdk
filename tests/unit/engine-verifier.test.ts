@@ -117,6 +117,23 @@ function judge(
 }
 
 describe("engine task contracts", () => {
+  it("keeps the ledger serializable: create_task is not captured as evidence", async () => {
+    const llm = agentLlm([
+      response("", [createTask()]),
+      response("", [{ id: "p1", name: "probe", arguments: "{}" }]),
+      response("Refresh happens in session.ts."),
+    ]);
+    const result = await runAgent(
+      userTurn("Investigate where auth is refreshed"),
+      { llm, verifier: { allowWaived: true }, agent: testAgent },
+    );
+    expect(result.ledger).toBeDefined();
+    expect(() => JSON.stringify(result.ledger)).not.toThrow();
+    const tools = Object.values(result.ledger!.evidence).map((item) => item.tool);
+    expect(tools).toContain("probe");
+    expect(tools).not.toContain("create_task");
+  });
+
   it("creates no ledger or gate when the agent does not call create_task", async () => {
     const result = await runAgent(
       userTurn("Hello"),
