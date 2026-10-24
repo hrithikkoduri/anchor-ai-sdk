@@ -8,6 +8,16 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.6.0 — released
+
+- [x] Crews: `delegate` worker instances (`worker`, `fresh`, `base`), resumable
+      worker memory through `team.sessions` (a ThreadStore), parallel delegation
+      to different workers bounded by `team.maxParallel`, and the
+      `team.workspace` hook for per-worker working trees.
+- [x] Per-delegation live projection with `agent`/`worker`/`role`/`delegateCallId`
+      on frames, and `projectConversation` nesting a worker's transcript on the
+      leader's `delegate` part.
+
 ## v0.5.0 — released
 
 - [x] One-level delegated subagents: named `TeamSpec` roster, `delegate` tool,

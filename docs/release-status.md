@@ -1,11 +1,19 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-24**, v0.5.0 released: npm `0.5.0`, Git tag `v0.5.0`, and GitHub Release are published. v0.4.0 remains the prior breaking release; its npm publication predates the repaired `v0.4.0` git tag and GitHub Release.
+Status: **2026-10-24**, v0.6.0 prepared on main (npm publish, tag and GitHub Release pending). v0.5.0 is the latest published release.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
+
+## Prepared: v0.6.0
+
+- Crews: worker instances on `delegate`, resumable worker memory via
+  `team.sessions`, parallel delegation to different workers bounded by
+  `team.maxParallel`, and the `team.workspace` hook for per-worker trees.
+- Per-delegation live projection with attribution, and nested worker
+  transcripts in `projectConversation`. Decision #101.
 
 ## Released
 
