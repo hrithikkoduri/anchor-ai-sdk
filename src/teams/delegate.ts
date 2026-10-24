@@ -96,6 +96,9 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
           context: { type: "string", description: "Optional compact context; never the full parent transcript." },
           feedback: { type: "string", description: "Optional review findings or repair notes for a follow-up." },
           base: { type: "string", description: "Optional branch or worker to start this worker's workspace from, so it continues that work." },
+          ...(team.admit
+            ? { item: { type: "string", description: "The work item this delegation serves (its id in the task plan)." } }
+            : {}),
           fresh: { type: "boolean", description: "Forget this worker's earlier tasks and start over." },
         },
         required: ["agent", "task"],
@@ -120,14 +123,29 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
       const task = text(input.task);
       if (!task) return { ok: false, content: "task is required" };
 
+      const readOnly = member.role === "evaluator" || member.readOnly === true;
+      const item = text(input.item);
+      const base = text(input.base);
+      if (team.admit) {
+        const admitted = await team.admit({
+          worker,
+          member: name,
+          role: member.role,
+          readOnly,
+          task,
+          ...(item ? { item } : {}),
+          ...(base ? { base } : {}),
+        });
+        if (!admitted.ok)
+          return { ok: false, content: admitted.reason, meta: { agent: name, worker, role: member.role, refused: true, ...(item ? { item } : {}) } };
+      }
+
       return limit(async () => {
-        const readOnly = member.role === "evaluator" || member.readOnly === true;
         const fresh = input.fresh === true;
         const sessionId = team.sessions?.id(worker);
         if (team.sessions && sessionId && fresh) await team.sessions.store.save(sessionId, { messages: [] });
         const prior = team.sessions && sessionId && !fresh ? await team.sessions.store.load(sessionId) : undefined;
         const resumed = !!prior && prior.messages.length > 0;
-        const base = text(input.base);
         const place = await team.workspace?.({
           worker,
           member: name,
@@ -135,6 +153,7 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
           readOnly,
           resumed,
           ...(base ? { base } : {}),
+          ...(item ? { item } : {}),
         });
         known.set(worker, name);
 
@@ -207,6 +226,7 @@ export function createDelegateTool(options: DelegateToolOptions): Tool {
             worker,
             role: member.role,
             resumed,
+            ...(item ? { item } : {}),
             status: result.reason,
             steps: result.steps,
             usage: { ...result.usage },

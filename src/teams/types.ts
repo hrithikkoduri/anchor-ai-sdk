@@ -58,7 +58,23 @@ export interface TeamWorkspaceRequest {
   base?: string;
   /** True when this worker has delegated before (its workspace may exist). */
   resumed: boolean;
+  /** The leader's `item`: the consumer's work item this delegation serves. */
+  item?: string;
 }
+
+/** One delegation, as the consumer's admission check sees it before it runs. */
+export interface TeamAdmissionRequest {
+  worker: string;
+  member: string;
+  role: TeamRole;
+  readOnly: boolean;
+  task: string;
+  /** The consumer's work item this delegation serves, if the leader named one. */
+  item?: string;
+  base?: string;
+}
+
+export type TeamAdmission = { ok: true } | { ok: false; reason: string };
 
 export interface TeamSpec {
   /** The leader is opts.agent; these are the delegates it may call. */
@@ -70,6 +86,13 @@ export interface TeamSpec {
   sessions?: { store: ThreadStore; id: (worker: string) => string };
   /** Prepare where a worker works, before each delegated run. */
   workspace?: (request: TeamWorkspaceRequest) => Promise<TeamWorkspace | undefined>;
+  /**
+   * Decide whether a delegation may run at all, before any workspace or child
+   * run exists. A refusal is the leader's tool result (its reason verbatim):
+   * the consumer's plan, approvals and gates are enforced here, not trusted
+   * to the leader's prompt.
+   */
+  admit?: (request: TeamAdmissionRequest) => Promise<TeamAdmission>;
   /** Most delegated runs in flight at once. Default 4. */
   maxParallel?: number;
 }
@@ -87,6 +110,8 @@ export interface DelegateInput {
   feedback?: string;
   /** A branch or another worker to start this worker's workspace from. */
   base?: string;
+  /** The consumer's work item this delegation serves (a plan item id). */
+  item?: string;
   /** Forget this worker's previous conversation and start over. */
   fresh?: boolean;
 }

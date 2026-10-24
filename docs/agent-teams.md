@@ -222,6 +222,18 @@ and `delegateCallId`. The live projector keeps a separate text stream per
 delegation and forwards those fields; `projectConversation` nests a worker's
 transcript on the leader's `delegate` part as `delegation`.
 
+## Admission
+
+`team.admit` decides whether a delegation may run, before any workspace or
+child run exists. It receives `{ worker, member, role, readOnly, task, item?,
+base? }` and returns `{ ok: true }` or `{ ok: false, reason }`; a refusal is the
+leader's tool result, its reason verbatim. With `admit` installed the
+`delegate` tool also takes `item` — the consumer's work item (a plan item id) —
+which is passed to `workspace` and recorded in the result's `meta.item`.
+
+This is where a consumer enforces its plan, approvals and gates, instead of
+trusting the leader's prompt to respect them.
+
 ## Current limits
 
 - Depth is one; no recursive teams.

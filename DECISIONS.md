@@ -1426,3 +1426,13 @@ workers never garble each other or appear as the leader.
 
 Regressions: `tests/unit/team-crew.test.ts`.
 
+## Decision #102: Admission is the consumer's, checked before a delegation runs
+
+A leader that is told "wait for approval" in its prompt can still delegate.
+`team.admit` makes the consumer's plan enforceable: it sees every delegation
+(worker, member, role, task, and the consumer's `item`) before a workspace or a
+child run exists, and a refusal becomes the leader's tool result. Anchor does
+not know what a plan, a gate or an approval is; it only asks.
+
+Regressions: `tests/unit/team-crew.test.ts` (admission).
+

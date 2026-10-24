@@ -189,6 +189,71 @@ describe("a crew: worker instances, memory, parallel work, workspaces", () => {
   });
 });
 
+describe("admission: the consumer decides whether a delegation may run", () => {
+  it("a refused delegation returns the reason; no workspace, no child run", async () => {
+    const child = scripted([{ text: "should not run" }]);
+    const workspaces: TeamWorkspaceRequest[] = [];
+    const seen: unknown[] = [];
+    const events: AgentEvent[] = [];
+    await runAgent(userTurn("go"), {
+      llm: scripted([{ tools: [delegate({ agent: "backend", worker: "backend-1", task: "write the endpoint", item: "r3" })] }, { text: "done" }]),
+      agent: agent("captain"),
+      team: {
+        members: { backend: { agent: agent("backend"), role: "worker", llm: child } },
+        admit: async (request) => {
+          seen.push(request);
+          return { ok: false, reason: "r3 is waiting for the user to approve r2 (approach)." };
+        },
+        workspace: async (request) => {
+          workspaces.push(request);
+          return undefined;
+        },
+      },
+      onEvent: (event) => events.push(event),
+    });
+    expect(seen).toEqual([{ worker: "backend-1", member: "backend", role: "worker", readOnly: false, task: "write the endpoint", item: "r3" }]);
+    expect(workspaces).toEqual([]);
+    expect(child.seen).toHaveLength(0);
+    const result = events.find((e) => e.type === "tool_result" && e.name === "delegate");
+    expect(result).toMatchObject({ ok: false, content: "r3 is waiting for the user to approve r2 (approach).", meta: { refused: true, item: "r3", worker: "backend-1" } });
+  });
+
+  it("an admitted delegation carries its item to the workspace and the result", async () => {
+    const workspaces: TeamWorkspaceRequest[] = [];
+    const events: AgentEvent[] = [];
+    const parent = scripted([{ tools: [delegate({ agent: "researcher", task: "map it", item: "r1" })] }, { text: "done" }]);
+    await runAgent(userTurn("go"), {
+      llm: parent,
+      agent: agent("captain"),
+      team: {
+        members: { researcher: { agent: agent("researcher"), role: "worker", readOnly: true, llm: scripted([{ text: "mapped" }]) } },
+        admit: async () => ({ ok: true }),
+        workspace: async (request) => {
+          workspaces.push(request);
+          return undefined;
+        },
+      },
+      onEvent: (event) => events.push(event),
+    });
+    expect(workspaces[0]).toMatchObject({ item: "r1", worker: "researcher" });
+    expect(events.find((e) => e.type === "tool_result" && e.name === "delegate")).toMatchObject({ ok: true, meta: { item: "r1" } });
+    // The item parameter is offered only when the consumer checks admission.
+    const schema = parent.seen[0]!.tools?.find((t) => t.function.name === "delegate")?.function.parameters as { properties: Record<string, unknown> };
+    expect(schema.properties).toHaveProperty("item");
+  });
+
+  it("without an admission check the item parameter is not offered", async () => {
+    const parent = scripted([{ text: "done" }]);
+    await runAgent(userTurn("go"), {
+      llm: parent,
+      agent: agent("captain"),
+      team: { members: { researcher: { agent: agent("researcher"), role: "worker", llm: scripted([]) } } },
+    });
+    const schema = parent.seen[0]!.tools?.find((t) => t.function.name === "delegate")?.function.parameters as { properties: Record<string, unknown> };
+    expect(schema.properties).not.toHaveProperty("item");
+  });
+});
+
 describe("read-only coding members", () => {
   // The requirement under test is requiredTools; a unit test has no sandbox.
   const codingAgent = () => {
