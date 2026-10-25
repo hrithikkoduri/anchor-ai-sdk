@@ -7,7 +7,9 @@ import { local } from "../../src/sandbox/local/index.js";
 import { encodeLspMessage, LspFramer } from "../../src/lsp/protocol.js";
 import { TypeScriptLsp, typescriptLanguageServer } from "../../src/lsp/typescript.js";
 import { PythonLsp, pythonLanguageServer } from "../../src/lsp/python.js";
-import { createLspTools, lspAllTools } from "../../src/lsp/tools.js";
+import { closeLspSessions, createLspTools, lspAllTools } from "../../src/lsp/tools.js";
+import { scopedSandbox } from "../../src/sandbox/scoped.js";
+import { execSync } from "node:child_process";
 import type { Sandbox } from "../../src/sandbox/types.js";
 
 const roots: string[] = [];
@@ -223,4 +225,41 @@ describe("TypeScript LSP", () => {
     }
   });
 
+
+  it("one server per sandbox object; closeLspSessions stops it, and a view's servers are its own", async () => {
+    const box = await sandbox();
+    // Count only this test's servers: the fixture runs with the sandbox's path in its cwd-free args, so match on a marker.
+    const marker = `lsp-close-${Date.now()}`;
+    const running = () =>
+      Number(execSync(`ps -eo args | grep -F -- ${JSON.stringify(marker)} | grep -v grep | wc -l`).toString().trim());
+    try {
+      await writeFile(path.join(box.workspace, "index.ts"), "const value = 1;\n");
+      await import("node:fs/promises").then((fs) => fs.mkdir(path.join(box.workspace, "tree"), { recursive: true }));
+      await writeFile(path.join(box.workspace, "tree", "index.ts"), "const value = 1;\n");
+      const [diagnostics] = createLspTools({
+        servers: [typescriptLanguageServer({ command: "node", args: [fixture, marker], diagnosticsTimeoutMs: 2000 })],
+      }).filter((tool) => tool.definition.name === "lsp_diagnostics");
+      const ask = (where: Sandbox) => diagnostics!.run({ path: "index.ts" }, { sandbox: where });
+
+      expect((await ask(box)).ok).toBe(true);
+      expect((await ask(box)).ok).toBe(true);
+      expect(running()).toBe(1); // reused, not restarted
+
+      const view = scopedSandbox(box, "tree");
+      expect((await ask(view)).ok).toBe(true);
+      expect(running()).toBe(2); // a different tree, a different server
+
+      expect(await closeLspSessions(view)).toBe(1);
+      await expect.poll(running).toBe(1); // only the view's server stopped
+      expect(await closeLspSessions(box)).toBe(1);
+      await expect.poll(running).toBe(0);
+      expect(await closeLspSessions(box)).toBe(0);
+
+      expect((await ask(box)).ok).toBe(true); // starts fresh after a close
+      expect(running()).toBe(1);
+      await closeLspSessions(box);
+    } finally {
+      await box.destroy();
+    }
+  });
 });

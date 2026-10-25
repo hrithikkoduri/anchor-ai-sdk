@@ -230,6 +230,10 @@ directory, so `edit_file("src/a.ts")` lands in the worker's worktree, and the
 returned `repos` are relative to it. A view never starts or destroys the real
 sandbox. Workers never checkpoint: checkpoints are the leader's.
 
+Language servers are per sandbox object: reuse one view per worker tree so a
+worker keeps its warm server across delegations, and call
+`closeLspSessions(view)` (from `anchor-ai-sdk/lsp`) when you are done with it.
+
 ## Admission
 
 `team.admit` decides whether a delegation may run, before any workspace or

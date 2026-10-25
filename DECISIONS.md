@@ -1451,3 +1451,15 @@ leader's checkout on every hand-back. Checkpoints are leader-owned (decision
 
 Regressions: `tests/unit/team-crew.test.ts` (a worker in its own tree).
 
+## Decision #104: A consumer stops the language servers it no longer needs
+
+Language servers are cached per sandbox object and nothing stopped them, so a
+consumer that creates sandbox views (a worker's tree per delegation) or ends a
+run left `tsserver`/`pyright` processes running in the sandbox. Anchor cannot
+know when a sandbox object is done with — a retained sandbox outlives a run —
+so the consumer says so: `closeLspSessions(sandbox)` shuts down (shutdown,
+exit, then SIGTERM) every server started for that object and returns how many.
+The next LSP call starts fresh.
+
+Regressions: `tests/unit/lsp.test.ts` (one server per sandbox object).
+

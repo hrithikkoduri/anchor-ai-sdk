@@ -94,6 +94,23 @@ async function clientForConfig(
   return client;
 }
 
+/**
+ * Stop every language server started for this sandbox (or sandbox view) and
+ * forget them; the next LSP call starts fresh. Servers live as long as the
+ * sandbox object they were started for, so a consumer that is done with a
+ * sandbox — a run that ended, a worker's tree it will not use again — calls
+ * this, or the processes keep running inside the sandbox. Returns how many
+ * servers were stopped.
+ */
+export async function closeLspSessions(sandbox: Sandbox): Promise<number> {
+  const byId = sessions.get(sandbox);
+  if (!byId) return 0;
+  sessions.delete(sandbox);
+  const servers = [...byId.values()];
+  await Promise.all(servers.map((server) => server.close().catch(() => undefined)));
+  return servers.length;
+}
+
 function configsForRepo(
   servers: LspServerConfig[],
   repo: RepoRef | undefined,
