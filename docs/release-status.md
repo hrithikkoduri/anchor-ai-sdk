@@ -1,13 +1,19 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-24**, v0.6.0 prepared on main (npm publish, tag and GitHub Release pending). v0.5.0 is the latest published release.
+Status: **2026-10-24**, v0.7.0 prepared on main (npm publish, tag and GitHub Release pending). v0.6.0 is the latest published release.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
-## Prepared: v0.6.0
+## Prepared: v0.7.0
+
+- Team admission (`team.admit`) and the `item` reference on `delegate`. Decision #102.
+- `scopedSandbox` / `TeamWorkspace.sandbox` (a worker in its own tree); child runs never checkpoint. Decision #103.
+- `closeLspSessions(sandbox)`: language servers stop when the consumer is done with a sandbox or view; `warmLspSessions` loads them ahead of the first call. Decision #104.
+
+## Released: v0.6.0
 
 - Crews: worker instances on `delegate`, resumable worker memory via
   `team.sessions`, parallel delegation to different workers bounded by

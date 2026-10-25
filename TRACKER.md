@@ -8,6 +8,17 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.7.0 — released
+
+- [x] Team admission: `team.admit` checks every delegation before it runs (a
+      refusal is the leader's tool result); `delegate` takes the consumer's
+      `item` when admission is installed, passed to `workspace` and `meta.item`.
+- [x] `scopedSandbox` and `TeamWorkspace.sandbox`: a worker runs in its own tree;
+      delegated runs never checkpoint.
+- [x] `closeLspSessions(sandbox)`: stop the language servers started for a
+      sandbox or view; `warmLspSessions` starts them and loads projects ahead
+      of the first call.
+
 ## v0.6.0 — released
 
 - [x] Crews: `delegate` worker instances (`worker`, `fresh`, `base`), resumable

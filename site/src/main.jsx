@@ -125,8 +125,8 @@ function App() {
         <main id="main">
           <section className="hero container">
             <div className="hero-copy">
-              <a className="release" href="/changelog.html#v0.6.0">
-                <span className="status-dot" /> v0.6.0 · EARLY ALPHA{" "}
+              <a className="release" href="/changelog.html#v0.7.0">
+                <span className="status-dot" /> v0.7.0 · EARLY ALPHA{" "}
                 <ArrowUpRight size={12} />
               </a>
               <h1>
@@ -553,7 +553,7 @@ function App() {
                 ],
                 [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. Pin exact versions and test your integration. E2B and progressive skills are shipped, and agent teams are available as one-level crews with worker memory and parallel delegation. Daytona, MCP, and recursive teams remain roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.6.0 changelog.",
+                  "Anchor is early alpha. Pin exact versions and test your integration. E2B and progressive skills are shipped, and agent teams are available as one-level crews with worker memory and parallel delegation. Daytona, MCP, and recursive teams remain roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.7.0 changelog.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>

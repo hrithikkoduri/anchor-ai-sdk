@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.7.0",
+    "date": "2026-10-24",
+    "title": "Admission and worker trees: the consumer decides what runs, and where",
+    "summary": "A consumer can check every delegation before it runs and refuse it with a reason, so plans, approvals and gates are enforced in code rather than trusted to the leader's prompt.",
+    "added": [
+      "team.admit({ worker, member, role, readOnly, task, item, base }) runs before any workspace or child run; { ok: false, reason } is returned to the leader verbatim.",
+      "delegate accepts item — the consumer's work-item id — when admission is installed; it reaches the workspace hook and the result's meta.item.",
+      "team.workspace may return a sandbox: scopedSandbox(sandbox, dir) is a view whose commands and file tools default to the worker's tree, so a worker's edits land in its own worktree.",
+      "Fix: delegated runs no longer take a git snapshot at their conclusion; checkpoints are the leader's.",
+      "closeLspSessions(sandbox) (anchor-ai-sdk/lsp) stops every language server started for a sandbox or view; servers otherwise keep running for the life of the sandbox.",
+      "warmLspSessions(sandbox, { servers, repos, files }) starts the language servers an agent will use and loads their projects ahead of its first call, sharing the tools' sessions."
+    ],
+    "offers": "Put a human-approval gate or a dependency check in front of a crew, with the engine guaranteeing no worker starts until it passes.",
+    "limits": [
+      "Anchor knows nothing about plans or approvals; the consumer stores and decides them.",
+      "item is free text; the consumer validates it."
+    ]
+  },
+  {
     "version": "0.6.0",
     "date": "2026-10-24",
     "title": "Crews: workers with memory, working in parallel",
