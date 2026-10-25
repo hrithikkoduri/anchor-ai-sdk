@@ -48,7 +48,7 @@ export function repoByName(
 ): RepoRef | undefined {
   const exact = repos?.find((repo) => repo.name === name);
   if (exact) return exact;
-  // "sailor-cloud" for "acme/sailor-cloud": the short name, when only one
+  // "web" for "acme/web": the short name, when only one
   // attached repository has it. Two repositories sharing it stay ambiguous.
   const wanted = name.trim().toLowerCase();
   const short = repos?.filter((repo) => repo.name.split("/").pop()?.toLowerCase() === wanted) ?? [];
