@@ -58,6 +58,12 @@ const DEFAULT_SCRATCH = "/tmp/anchor";
  * Hobby caps at 1 hour, Pro at 24 hours — raise this with `timeoutMs`.
  */
 const DEFAULT_LIFETIME_MS = 60 * 60_000;
+/**
+ * While a sandbox is in use, its lifetime is renewed this often (at most):
+ * E2B counts the timeout from the last create/connect/setTimeout, so a run
+ * longer than the lifetime would otherwise be killed under it.
+ */
+const KEEPALIVE_MAX_MS = 10 * 60_000;
 /** Reuse a minted git token for this long (installation tokens live for hours). */
 const GIT_TOKEN_TTL_MS = 5 * 60_000;
 
@@ -119,6 +125,7 @@ export class E2BSandbox implements Sandbox {
   private client?: E2BClient;
   private started = false;
   private destroyed = false;
+  private keepalive?: ReturnType<typeof setInterval>;
   private readonly factory: E2BClientFactory;
   private readonly processes = new Set<CommandHandle>();
   /** Git tokens are installation tokens (hours); cache one briefly. */
@@ -188,6 +195,10 @@ export class E2BSandbox implements Sandbox {
           this.client = await this.factory.create(template, {
             ...connectionOpts(this.opts),
             timeoutMs: this.lifetimeMs(),
+            // A retained sandbox is a thread's workspace: when its time runs
+            // out it pauses (disk and memory kept, resumable), never dies with
+            // the work in it. A throwaway one keeps E2B's kill, so none leak.
+            ...(this.spec.retain ? { lifecycle: { onTimeout: "pause" as const } } : {}),
             ...(this.spec.env ? { envs: this.spec.env } : {}),
             // Store the coordinates on the sandbox so an `openSandboxSession`
             // adoption does not have to guess them from the caller's sources.
@@ -216,6 +227,7 @@ export class E2BSandbox implements Sandbox {
       await this.execRaw(reservedScratchPrepCommand(), { timeoutSecs: 60 });
 
       this.started = true;
+      this.keepAlive();
     } catch (error) {
       // A failed start must not leak the sandbox it just created. An adopted
       // sandbox is not ours to kill — it belongs to its owner.
@@ -385,9 +397,31 @@ export class E2BSandbox implements Sandbox {
     return child;
   }
 
+  /**
+   * Renew the lifetime while the sandbox is in use: every third of it, at
+   * most every ten minutes. Best-effort — a failed renewal is retried on the
+   * next tick, and the timer never keeps the process alive.
+   */
+  private keepAlive(): void {
+    const lifetime = this.lifetimeMs();
+    const every = Math.max(30_000, Math.min(KEEPALIVE_MAX_MS, Math.floor(lifetime / 3)));
+    this.keepalive = setInterval(() => {
+      if (this.destroyed || !this.client) return;
+      void this.client.setTimeout(lifetime).catch((error) => {
+        if (!this.opts.quiet && !(error instanceof SandboxNotFoundError)) {
+          process.stderr.write(
+            `could not renew E2B sandbox ${this._id}: ${error instanceof Error ? error.message : String(error)}\n`,
+          );
+        }
+      });
+    }, every);
+    this.keepalive.unref?.();
+  }
+
   async destroy(): Promise<void> {
     if (this.destroyed) return;
     this.destroyed = true;
+    if (this.keepalive) clearInterval(this.keepalive);
     for (const handle of [...this.processes]) {
       await handle.kill().catch(() => false);
     }

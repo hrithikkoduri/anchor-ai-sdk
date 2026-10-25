@@ -3,7 +3,7 @@
  * injectable (`clientFactory`), so start/adopt/destroy/fork can be asserted
  * offline; the live conformance suite covers the same paths for real.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Sandbox as E2BClient } from "e2b";
 import {
   E2BSandbox,
@@ -219,5 +219,61 @@ describe("e2b lifecycle (fake client)", () => {
     );
     expect(reset).toBeDefined();
     expect(reset).toContain("abc123");
+  });
+});
+
+describe("e2b lifetime (fake client)", () => {
+  function recording() {
+    const fake = fakeClient();
+    const renewals: number[] = [];
+    (fake.client as unknown as { setTimeout: (ms: number) => Promise<void> }).setTimeout = async (ms: number) => {
+      renewals.push(ms);
+    };
+    const created: Array<Record<string, unknown>> = [];
+    const factory: E2BClientFactory = {
+      create: async (_template, opts) => {
+        created.push(opts as Record<string, unknown>);
+        return fake.client;
+      },
+      connect: async () => fake.client,
+    };
+    return { fake, renewals, created, factory };
+  }
+
+  it("a retained sandbox pauses when its time runs out; a throwaway one does not ask to", async () => {
+    const kept = recording();
+    const retained = new E2BSandbox({ workspacePath: "/testbed", retain: true }, { quiet: true, clientFactory: kept.factory });
+    await retained.start();
+    expect(kept.created[0]?.lifecycle).toEqual({ onTimeout: "pause" });
+    await retained.destroy();
+
+    const once = recording();
+    const throwaway = new E2BSandbox({ workspacePath: "/testbed" }, { quiet: true, clientFactory: once.factory });
+    await throwaway.start();
+    expect(once.created[0]?.lifecycle).toBeUndefined();
+    await throwaway.destroy();
+  });
+
+  it("renews its lifetime while in use, and stops once destroyed", async () => {
+    vi.useFakeTimers();
+    try {
+      const run = recording();
+      const sandbox = new E2BSandbox(
+        { workspacePath: "/testbed", retain: true },
+        { quiet: true, clientFactory: run.factory, timeoutMs: 60 * 60_000 },
+      );
+      await sandbox.start();
+      expect(run.renewals).toHaveLength(0);
+      // Every ten minutes (a third of an hour, capped at ten), for the whole lifetime again.
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect(run.renewals).toEqual([60 * 60_000]);
+      await vi.advanceTimersByTimeAsync(20 * 60_000);
+      expect(run.renewals).toHaveLength(3);
+      await sandbox.destroy();
+      await vi.advanceTimersByTimeAsync(60 * 60_000);
+      expect(run.renewals).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
