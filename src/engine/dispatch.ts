@@ -165,6 +165,37 @@ async function invoke(
   }
 }
 
+/** A call's resource key, when it may run beside calls on other resources. */
+function resourceKey(call: LLMToolCall, available: Map<string, Tool>, ctx: ToolContext): string | undefined {
+  const tool = available.get(call.name);
+  if (!tool || tool.readOnly === true || tool.effect !== undefined || !tool.resource) return undefined;
+  const { input, invalid } = parseInput(call);
+  if (invalid !== undefined) return undefined;
+  try {
+    return tool.resource(input, ctx);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Where a turn's grouped tail begins: a turn that opens with ordinary calls
+ * (`set_phase`, a note) and ends in calls on distinct resources (delegations
+ * to different workers) runs its opening in order, then its tail grouped —
+ * one ordinary call must not serialize a fan-out. The opening may not
+ * conclude the turn or carry an effect. 0 when the turn has no such tail.
+ */
+function groupedTailStart(calls: LLMToolCall[], available: Map<string, Tool>, ctx: ToolContext, finish: Tool): number {
+  const keys = calls.map((call) => resourceKey(call, available, ctx));
+  const start = keys.findIndex((key) => key !== undefined);
+  if (start <= 0) return 0;
+  const tail = keys.slice(start);
+  if (!tail.every((key): key is string => typeof key === "string") || new Set(tail).size < 2) return 0;
+  const opening = calls.slice(0, start).map((call) => available.get(call.name));
+  if (opening.some((tool) => !tool || tool === finish || tool.effect !== undefined)) return 0;
+  return start;
+}
+
 /**
  * Execute a turn's tool calls and emit their results.
  *
@@ -173,6 +204,19 @@ async function invoke(
 export async function dispatchToolCalls(
   args: ToolDispatchArgs,
 ): Promise<ToolDispatchOutcome> {
+  const tailStart = groupedTailStart(args.calls, args.available, args.toolContext, args.finish);
+  if (tailStart > 0) {
+    // In order, the opening; then the tail, which groups (or, if the opening
+    // paused or was cancelled, is skipped by the same rules as any call).
+    const head = await dispatchToolCalls({ ...args, calls: args.calls.slice(0, tailStart) });
+    const tail = await dispatchToolCalls({ ...args, calls: args.calls.slice(tailStart) });
+    return {
+      runaway: head.runaway || tail.runaway,
+      jobs: [...head.jobs, ...tail.jobs],
+      settlements: [...head.settlements, ...tail.settlements],
+      ...(head.declared ?? tail.declared ? { declared: head.declared ?? tail.declared } : {}),
+    };
+  }
   const {
     calls,
     available,

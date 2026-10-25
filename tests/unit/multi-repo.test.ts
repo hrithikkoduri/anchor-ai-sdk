@@ -197,6 +197,50 @@ describe("resource dispatch", () => {
     expect(contents).toEqual(["write_api result", "write_web result"]);
   });
 
+  it("an ordinary call first does not serialize the fan-out after it; results keep call order", async () => {
+    const counter = { current: 0, max: 0 };
+    const order: string[] = [];
+    const api = resourceWrite("write_api", counter);
+    const web = resourceWrite("write_web", counter);
+    const note = defineTool(
+      { name: "note", description: "an ordinary call", parameters: { type: "object", properties: {} } },
+      async () => {
+        order.push("note");
+        // The tail has not started while the opening runs.
+        expect(counter.current).toBe(0);
+        return { ok: true, content: "note result" };
+      },
+    );
+    const result = await runCalls(
+      [note, api, web],
+      [
+        { name: "note", args: {} },
+        { name: "write_api", args: { repo: "api" } },
+        { name: "write_web", args: { repo: "web" } },
+      ],
+    );
+    expect(order).toEqual(["note"]);
+    expect(counter.max).toBe(2);
+    const contents = result.messages.filter((message) => message.role === "tool").map((message) => message.content);
+    expect(contents).toEqual(["note result", "write_api result", "write_web result"]);
+  });
+
+  it("an opening that concludes the turn, or an ordinary call after the fan-out, keeps the turn serial", async () => {
+    const counter = { current: 0, max: 0 };
+    const api = resourceWrite("write_api", counter);
+    const web = resourceWrite("write_web", counter);
+    const note = defineTool({ name: "note", description: "an ordinary call", parameters: { type: "object", properties: {} } }, async () => ({ ok: true, content: "note result" }));
+    await runCalls(
+      [note, api, web],
+      [
+        { name: "write_api", args: { repo: "api" } },
+        { name: "note", args: {} },
+        { name: "write_web", args: { repo: "web" } },
+      ],
+    );
+    expect(counter.max).toBe(1);
+  });
+
   it("serializes calls for the same repository", async () => {
     const counter = { current: 0, max: 0 };
     const tool = resourceWrite("write_api", counter);
