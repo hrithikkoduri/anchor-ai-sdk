@@ -130,7 +130,7 @@ describe("TypeScript LSP", () => {
       });
       try {
         expect(await client.hover("index.ts", 1, 7)).toMatchObject({
-          contents: "**fixture hover**",
+          contents: expect.stringContaining("**fixture hover**"),
         });
         expect(await client.completion("index.ts", 1, 7)).toMatchObject([
           { label: "fixtureCompletion", documentation: "fixture docs" },

@@ -1,5 +1,7 @@
 /* Minimal stdio LSP fixture for the lsp client test. */
 let buffer = Buffer.alloc(0);
+/** The root the client initialized this server with; hover reports it. */
+let rootUri = null;
 
 function send(message) {
   const body = Buffer.from(JSON.stringify(message), "utf8");
@@ -10,6 +12,7 @@ function send(message) {
 function handle(message) {
   if (message.id !== undefined && message.method) {
     if (message.method === "initialize") {
+      rootUri = message.params?.rootUri ?? null;
       send({ jsonrpc: "2.0", id: message.id, result: { capabilities: {} } });
       return;
     }
@@ -87,7 +90,7 @@ process.stdin.on("data", (chunk) => {
           jsonrpc: "2.0",
           id: message.id,
           result: {
-            contents: { kind: "markdown", value: "**fixture hover**" },
+            contents: { kind: "markdown", value: `**fixture hover** root=${rootUri}` },
             range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
           },
         });

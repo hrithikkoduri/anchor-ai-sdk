@@ -11,6 +11,14 @@ import type { Agent } from "../../src/agents/types.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { TeamWorkspaceRequest } from "../../src/teams/types.js";
 import { scopedSandbox } from "../../src/sandbox/scoped.js";
+import { local } from "../../src/sandbox/local/index.js";
+import { closeLspSessions, createLspTools } from "../../src/lsp/tools.js";
+import { typescriptLanguageServer } from "../../src/lsp/typescript.js";
+import { execSync } from "node:child_process";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Sandbox } from "../../src/sandbox/types.js";
 
 function agent(name: string, tools: Tool[] = []): Agent {
@@ -324,6 +332,64 @@ describe("a worker in its own tree", () => {
     expect(view.workspace).toBe("/work/.crew/x");
   });
 });
+
+describe("a worker's language server", () => {
+  it("is rooted in the worker's own tree and stays warm across its delegations in a run", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "anchor-crew-lsp-"));
+    const box = local({ rootDir: root, quiet: true }).create({});
+    await box.start();
+    const marker = `crew-lsp-${Date.now()}`;
+    // The consumer keeps one view per worker for the run.
+    const views = new Map<string, Sandbox>();
+    const viewOf = (worker: string) => views.get(worker) ?? views.set(worker, scopedSandbox(box, `.crew/${worker}`)).get(worker)!;
+    const servers = () => Number(execSync(`ps -eo args | grep -F -- ${JSON.stringify(marker)} | grep -v grep | wc -l`).toString().trim());
+    try {
+      await mkdir(path.join(box.workspace, ".crew/backend-1"), { recursive: true });
+      await writeFile(path.join(box.workspace, ".crew/backend-1/index.ts"), "const value = 1;\n");
+      const fixture = fileURLToPath(new URL("../fixtures/fake-lsp-server.mjs", import.meta.url));
+      const lsp = createLspTools({
+        servers: [typescriptLanguageServer({ command: "node", args: [fixture, marker], diagnosticsTimeoutMs: 2000 })],
+        repos: [{ name: "app", path: "." }],
+        features: ["hover"],
+      });
+      const hover = { name: "lsp_hover", arguments: JSON.stringify({ path: "index.ts", line: 1, column: 7 }) };
+      const events: AgentEvent[] = [];
+      await runAgent(userTurn("two tasks for the same worker"), {
+        llm: scripted([
+          { tools: [delegate({ agent: "backend", worker: "backend-1", task: "first" })] },
+          { tools: [delegate({ agent: "backend", worker: "backend-1", task: "second" })] },
+          { text: "done" },
+        ]),
+        agent: agent("captain"),
+        sandbox: box,
+        repos: [{ name: "app", path: "." }],
+        snapshot: false,
+        team: {
+          members: {
+            backend: { agent: agent("backend", lsp), role: "worker", llm: scripted([{ tools: [hover] }, { text: "one" }, { tools: [hover] }, { text: "two" }]) },
+          },
+          workspace: async ({ worker }) => ({ sandbox: viewOf(worker), repos: [{ name: "app", path: "." }] }),
+        },
+        onEvent: (event) => events.push(event),
+      });
+      const hovers = events.filter((e) => e.type === "tool_result" && e.name === "lsp_hover") as Array<{ ok: boolean; content: string }>;
+      expect(hovers.map((h) => h.ok)).toEqual([true, true]);
+      // Rooted in the worker's tree, not the workspace.
+      const tree = pathToUri(path.join(box.workspace, ".crew/backend-1"));
+      for (const h of hovers) expect(h.content).toContain(`root=${tree}`);
+      // One server for both delegations: warm, not restarted.
+      expect(servers()).toBe(1);
+      expect(await closeLspSessions(viewOf("backend-1"))).toBe(1);
+      await expect.poll(servers).toBe(0);
+    } finally {
+      for (const view of [box, ...views.values()]) await closeLspSessions(view);
+      await box.destroy();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+const pathToUri = (file: string) => new URL(`file://${file}`).href;
 
 describe("read-only coding members", () => {
   // The requirement under test is requiredTools; a unit test has no sandbox.
