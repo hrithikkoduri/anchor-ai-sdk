@@ -275,6 +275,41 @@ describe("engine task contracts", () => {
     expect(JSON.stringify(second.messages)).toContain("Find the refresh path");
   });
 
+  it("tells the model what add_requirement needs, so a missing text is fixed rather than retried", async () => {
+    const llm = agentLlm([
+      response("", [createTask({ required: false })]),
+      response("", [
+        {
+          id: "a1",
+          name: "update_ledger",
+          arguments: JSON.stringify({ op: "add_requirement", dependsOn: ["r1"] }),
+        },
+      ]),
+      response("", [
+        {
+          id: "a2",
+          name: "update_ledger",
+          arguments: JSON.stringify({ op: "add_requirement", text: "Threads can be filtered by label", dependsOn: ["r1"] }),
+        },
+      ]),
+      response("Done."),
+    ]);
+    const result = await runAgent(
+      userTurn("Investigate where auth is refreshed"),
+      { llm, verifier: true, agent: testAgent },
+    );
+
+    // The schema says which op each field belongs to…
+    const tool = llm.seen[1]!.tools!.find((t) => t.function.name === "update_ledger")!;
+    const params = tool.function.parameters as { properties: Record<string, { description?: string }> };
+    expect(params.properties.text!.description).toContain("add_requirement");
+    expect(tool.function.description).toContain("add_requirement — text");
+    // …and the error shows the shape to send.
+    const failed = result.messages.find((m) => m.role === "tool" && m.content?.includes("add_requirement needs text"));
+    expect(failed?.content).toContain('"text":');
+    expect(result.ledger?.requirements.map((r) => r.text)).toContain("Threads can be filtered by label");
+  });
+
   it("requires a claim to link evidence and supports verify in one call", async () => {
     const llm = agentLlm([
       response("", [createTask()]),

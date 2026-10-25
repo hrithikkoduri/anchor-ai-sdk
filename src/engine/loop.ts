@@ -396,7 +396,13 @@ async function runOne(
       {
         name: "update_ledger",
         description:
-          "Update the task contract. Link a tool result to a requirement with a claim, verify it, record an open failure, or set the next step. Never invent evidence ids.",
+          "Update the task contract, one op per call. What each op needs: " +
+          "add_requirement — text (the requirement, one sentence), optionally id, phase, dependsOn, required; " +
+          "link_evidence / verify — requirementId, evidenceId, claim; " +
+          "set_status — requirementId, status; " +
+          "set_next_step — text; " +
+          "add_failure / clear_failure — failure. " +
+          "Never invent evidence ids.",
         parameters: {
           type: "object",
           properties: {
@@ -412,19 +418,49 @@ async function runOne(
                 "clear_failure",
               ],
             },
-            text: { type: "string" },
-            required: { type: "boolean" },
-            id: { type: "string" },
-            phase: { type: "string" },
-            dependsOn: { type: "array", items: { type: "string" } },
-            requirementId: { type: "string" },
-            evidenceId: { type: "string" },
-            claim: { type: "string" },
+            text: {
+              type: "string",
+              description:
+                "add_requirement: what must be true, in one sentence (required). set_next_step: the next step.",
+            },
+            required: {
+              type: "boolean",
+              description: "add_requirement: false for a nice-to-have. Default true.",
+            },
+            id: {
+              type: "string",
+              description: "add_requirement: the new requirement's id (e.g. r3). Omit to get the next one.",
+            },
+            phase: {
+              type: "string",
+              description: "add_requirement: the phase that satisfies it.",
+            },
+            dependsOn: {
+              type: "array",
+              items: { type: "string" },
+              description: "add_requirement: ids of requirements that must be met first.",
+            },
+            requirementId: {
+              type: "string",
+              description: "link_evidence, verify, set_status: the existing requirement.",
+            },
+            evidenceId: {
+              type: "string",
+              description: "link_evidence, verify: an evidence id from a tool result. Never invented.",
+            },
+            claim: {
+              type: "string",
+              description: "link_evidence, verify: why this evidence establishes the requirement.",
+            },
             status: {
               type: "string",
               enum: ["open", "in_progress", "verified", "blocked", "waived"],
+              description: "set_status: the requirement's new status.",
             },
-            failure: { type: "string" },
+            failure: {
+              type: "string",
+              description: "add_failure, clear_failure: the failure, in words. Only for those ops.",
+            },
           },
           required: ["op"],
           additionalProperties: false,
@@ -446,7 +482,12 @@ async function runOne(
         };
         if (op === "add_requirement") {
           const text = String(input.text ?? "").trim();
-          if (!text) return { ok: false, content: "text is required" };
+          if (!text)
+            return {
+              ok: false,
+              content:
+                'add_requirement needs text: the requirement in one sentence, e.g. {"op":"add_requirement","text":"Threads can be filtered by label","dependsOn":["r2"]}',
+            };
           if (input.id !== undefined && typeof input.id !== "string") {
             return { ok: false, content: "id must be a string" };
           }
@@ -565,7 +606,11 @@ async function runOne(
         }
         if (op === "add_failure") {
           const failure = String(input.failure ?? "").trim();
-          if (!failure) return { ok: false, content: "failure is required" };
+          if (!failure)
+            return {
+              ok: false,
+              content: 'add_failure needs failure: what failed, in words, e.g. {"op":"add_failure","failure":"Migration fails on an empty table"}',
+            };
           ledger!.openFailures.push(failure);
           return { ok: true, content: "failure recorded" };
         }
