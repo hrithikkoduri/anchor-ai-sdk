@@ -95,6 +95,33 @@ async function clientForConfig(
 }
 
 /**
+ * Start the language servers an agent is about to use and have each load its
+ * project, before its first call — so the load overlaps whatever it does
+ * first. A server loads a project when a file in it is opened, so warming opens
+ * one file per project. It shares the tools' sessions (same sandbox object,
+ * same server ids): the agent's first call finds the server warm. Best-effort:
+ * a file that cannot be opened is skipped. Returns how many files were opened.
+ */
+export async function warmLspSessions(
+  sandbox: Sandbox,
+  options: { servers: LspServerConfig[]; repos?: RepoRef[]; files: readonly string[] },
+): Promise<number> {
+  const ctx = { sandbox, ...(options.repos ? { repos: options.repos } : {}) } as ToolContext;
+  const opened = await Promise.all(
+    options.files.map(async (file) => {
+      try {
+        const client = await clientFor(ctx, file, options.servers, options.repos);
+        await client.openDocument(file);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+  );
+  return opened.filter(Boolean).length;
+}
+
+/**
  * Stop every language server started for this sandbox (or sandbox view) and
  * forget them; the next LSP call starts fresh. Servers live as long as the
  * sandbox object they were started for, so a consumer that is done with a

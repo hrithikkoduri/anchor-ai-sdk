@@ -7,7 +7,7 @@ import { local } from "../../src/sandbox/local/index.js";
 import { encodeLspMessage, LspFramer } from "../../src/lsp/protocol.js";
 import { TypeScriptLsp, typescriptLanguageServer } from "../../src/lsp/typescript.js";
 import { PythonLsp, pythonLanguageServer } from "../../src/lsp/python.js";
-import { closeLspSessions, createLspTools, lspAllTools } from "../../src/lsp/tools.js";
+import { closeLspSessions, createLspTools, lspAllTools, warmLspSessions } from "../../src/lsp/tools.js";
 import { scopedSandbox } from "../../src/sandbox/scoped.js";
 import { execSync } from "node:child_process";
 import type { Sandbox } from "../../src/sandbox/types.js";
@@ -259,6 +259,31 @@ describe("TypeScript LSP", () => {
       expect(running()).toBe(1);
       await closeLspSessions(box);
     } finally {
+      await box.destroy();
+    }
+  });
+
+  it("warming starts the server and loads the project before the first call, which then reuses it", async () => {
+    const box = await sandbox();
+    const marker = `lsp-warm-${Date.now()}`;
+    const running = () =>
+      Number(execSync(`ps -eo args | grep -F -- ${JSON.stringify(marker)} | grep -v grep | wc -l`).toString().trim());
+    try {
+      await writeFile(path.join(box.workspace, "index.ts"), "const value = 1;\n");
+      const servers = [typescriptLanguageServer({ command: "node", args: [fixture, marker], diagnosticsTimeoutMs: 2000 })];
+      const [diagnostics] = createLspTools({ servers }).filter((tool) => tool.definition.name === "lsp_diagnostics");
+
+      // Missing files are skipped, never thrown.
+      expect(await warmLspSessions(box, { servers, files: ["index.ts", "missing.ts"] })).toBe(1);
+      expect(running()).toBe(1); // started before any tool call
+
+      const result = await diagnostics!.run({ path: "index.ts" }, { sandbox: box });
+      expect(result.ok).toBe(true);
+      expect(running()).toBe(1); // the tool found the warm server
+      expect(await closeLspSessions(box)).toBe(1);
+      await expect.poll(running).toBe(0);
+    } finally {
+      await closeLspSessions(box);
       await box.destroy();
     }
   });

@@ -233,6 +233,8 @@ sandbox. Workers never checkpoint: checkpoints are the leader's.
 Language servers are per sandbox object: reuse one view per worker tree so a
 worker keeps its warm server across delegations, and call
 `closeLspSessions(view)` (from `anchor-ai-sdk/lsp`) when you are done with it.
+`warmLspSessions(view, { servers, repos, files })` starts a worker's servers and
+loads its projects in the background as soon as it is given a task.
 
 ## Admission
 

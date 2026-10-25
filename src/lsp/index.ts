@@ -34,7 +34,7 @@ export {
 export type { TypeScriptLspOptions } from "./typescript.js";
 export { PythonLsp, pythonLanguageServer } from "./python.js";
 export type { PythonLspOptions } from "./python.js";
-export { closeLspSessions, createLspTools, lspAllTools, lspTools } from "./tools.js";
+export { closeLspSessions, createLspTools, lspAllTools, lspTools, warmLspSessions } from "./tools.js";
 export type { LspToolFeature, LspToolsOptions } from "./tools.js";
 export { LspPeer } from "./client.js";
 export { encodeLspMessage, LspFramer } from "./protocol.js";

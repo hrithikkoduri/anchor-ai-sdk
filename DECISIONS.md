@@ -1461,5 +1461,11 @@ so the consumer says so: `closeLspSessions(sandbox)` shuts down (shutdown,
 exit, then SIGTERM) every server started for that object and returns how many.
 The next LSP call starts fresh.
 
-Regressions: `tests/unit/lsp.test.ts` (one server per sandbox object).
+`warmLspSessions(sandbox, { servers, repos, files })` is the other half: it
+starts the servers an agent is about to use and opens one file per project, so
+the project load overlaps the agent's first steps instead of its first LSP
+call. It shares the tools' sessions, so the first call finds the server warm;
+it is best-effort and never throws.
+
+Regressions: `tests/unit/lsp.test.ts` (one server per sandbox object; warming).
 
