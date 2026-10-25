@@ -330,8 +330,9 @@ async function runOne(
   const contractTaskId =
     opts.taskId ?? opts.thread?.id ?? `task-${Date.now()}`;
   let ledger = opts.ledger ?? (verifierOn ? prior?.ledger : undefined);
-  // A settled ledger is history, not an active contract.
-  if (ledger && !hasActiveLedger(ledger)) ledger = undefined;
+  // A settled ledger is history, not an active contract — unless the caller
+  // offers it for extension (follow-up work on a task that just finished).
+  if (ledger && !hasActiveLedger(ledger) && !opts.extendLedger) ledger = undefined;
 
   const callJudge = async (
     phaseGoal: { id: string; goal: string; guidance?: string },
@@ -467,7 +468,13 @@ async function runOne(
         },
       },
       async (input) => {
-        const op = String(input.op ?? "");
+        const op = String(input.op ?? "") || inferLedgerOp(input);
+        if (!op)
+          return {
+            ok: false,
+            content:
+              'Say which op: e.g. {"op":"set_status","requirementId":"r2","status":"blocked"}, {"op":"add_requirement","text":"…"}, {"op":"add_failure","failure":"…"}, {"op":"set_next_step","text":"…"}.',
+          };
         const dependencyError = (requirementId: string): string | undefined => {
           const requirement = ledger!.requirements.find(
             (item) => item.id === requirementId,
@@ -2233,6 +2240,23 @@ function usageDelta(
 }
 
 /** A required obligation still needs work, or an open failure blocks finish. */
+/**
+ * The op an `update_ledger` call means when it names none, from the fields it
+ * carries — only where they point to exactly one op. A model that sends
+ * `{requirementId, status}` meant set_status; refusing it costs a turn and
+ * invites the same call again.
+ */
+export function inferLedgerOp(input: Record<string, unknown>): string {
+  const has = (key: string) => input[key] !== undefined && input[key] !== null && input[key] !== "";
+  const candidates = [
+    has("status") && has("requirementId") ? "set_status" : "",
+    has("evidenceId") && has("requirementId") ? "link_evidence" : "",
+    has("failure") ? "add_failure" : "",
+    has("text") && !has("requirementId") && (has("id") || has("phase") || has("dependsOn") || has("required")) ? "add_requirement" : "",
+  ].filter(Boolean);
+  return candidates.length === 1 ? candidates[0]! : "";
+}
+
 function hasActiveLedger(ledger: ProgressLedger | undefined): boolean {
   if (!ledger) return false;
   return !ledgerGate(ledger).allow;

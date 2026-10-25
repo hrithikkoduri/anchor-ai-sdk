@@ -85,6 +85,13 @@ export interface EngineOptions {
   taskId?: string;
   /** Resume/inject an existing ledger (normally loaded from the thread). */
   ledger?: ProgressLedger;
+  /**
+   * Keep an injected ledger attached even when it is settled (every required
+   * requirement verified, nothing failing), so this run can extend it: add a
+   * requirement for follow-up work and carry on under the same contract.
+   * Without it a settled ledger is history and the run starts with none.
+   */
+  extendLedger?: boolean;
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean; task?: boolean };
   budgets?: Partial<BudgetLimits>;

@@ -542,6 +542,36 @@ describe("engine task contracts", () => {
     expect(result.reason).toBe("finished");
   });
 
+  it("keeps a settled ledger when offered for extension, and grows it with follow-up work", async () => {
+    const prior = createLedger({ taskId: "old", source: "old request" });
+    prior.requirements.push({
+      id: "r1", text: "old requirement", required: true, status: "verified", evidenceIds: ["e1"], locked: true, origin: "user", revision: 1,
+    });
+    prior.evidence.e1 = { id: "e1", tool: "probe", ref: "call:old", ok: true, capturedAt: new Date().toISOString() };
+    const llm = agentLlm([
+      response("", [{ id: "a1", name: "update_ledger", arguments: JSON.stringify({ op: "add_requirement", text: "Verify it against the live stack" }) }]),
+      response("Added."),
+    ]);
+    const result = await runAgent(userTurn("check it works live"), { llm, verifier: true, agent: testAgent, ledger: prior, extendLedger: true });
+    expect(llm.seen[0]!.tools!.some((t) => t.function.name === "update_ledger")).toBe(true);
+    expect(result.ledger?.requirements.map((r) => r.id)).toEqual(["r1", "r2"]);
+    expect(result.ledger?.requirements[0]!.status).toBe("verified");
+  });
+
+  it("infers update_ledger's op from its fields, when they name exactly one", async () => {
+    const llm = agentLlm([
+      response("", [createTask()]),
+      response("", [{ id: "s1", name: "update_ledger", arguments: JSON.stringify({ requirementId: "r1", status: "blocked" }) }]),
+      response("", [{ id: "s2", name: "update_ledger", arguments: JSON.stringify({ text: "hmm" }) }]),
+      response("Done."),
+    ]);
+    const result = await runAgent(userTurn("Investigate where auth is refreshed"), { llm, verifier: true, agent: testAgent });
+    expect(result.ledger?.requirements[0]!.status).toBe("blocked");
+    // Ambiguous (a next step, or a requirement?): asked, with examples to copy.
+    const asked = result.messages.find((m) => m.role === "tool" && m.content?.includes("Say which op"));
+    expect(asked?.content).toContain('"op":"set_status"');
+  });
+
   it("appends RunInput.messages to stored history without duplication", async () => {
     const store = new MemoryThreadStore();
     await store.save("thread", {
