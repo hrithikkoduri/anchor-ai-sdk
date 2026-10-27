@@ -139,6 +139,7 @@ export async function verifyAlignment(
           "Do not require literal string matches. A broad ledger goal can serve an early phase; a late phase needs evidence or a concrete goal for that phase.",
           "If the work does not align, allow only when the divergence is justified by the task or by a user direction change.",
           "If evidence is absent for the phase's required work, set allow=false and requiredAction=gather_evidence.",
+          "If the ledger is stale — a commitment is missing or mis-stated, a status is wrong, or evidence is unlinked — set requiredAction=update_ledger; the agent then uses add_requirement / set_requirement_status / link_evidence (or verify_requirement), one operation per call.",
           "Return only the structured verdict.",
         ].join("\n"),
       },

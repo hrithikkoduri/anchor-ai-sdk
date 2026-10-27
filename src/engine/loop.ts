@@ -117,6 +117,25 @@ export type {
 export { userTurn } from "./types.js";
 
 /**
+ * Ledger tools answer "what is the task", not "what did the work". Calling one
+ * must never be captured as evidence about the work inside the ledger it
+ * manages. `update_ledger` is the deprecated shim; the rest are its split
+ * successors.
+ */
+const LEDGER_TOOL_NAMES = new Set([
+  "create_task",
+  "finish",
+  "update_ledger",
+  "add_requirement",
+  "set_requirement_status",
+  "link_evidence",
+  "verify_requirement",
+  "set_next_step",
+  "add_failure",
+  "clear_failure",
+]);
+
+/**
  * What a chained call carries from one run into the next. Absent for a
  * standalone run, which is why every field is optional and every default
  * reproduces today's behavior exactly.
@@ -392,89 +411,16 @@ async function runOne(
     }
   };
 
-  const updateLedger = () => {
-    const tool = defineTool(
-      {
-        name: "update_ledger",
-        description:
-          "Update the task contract, one op per call. What each op needs: " +
-          "add_requirement — text (the requirement, one sentence), optionally id, phase, dependsOn, required; " +
-          "link_evidence / verify — requirementId, evidenceId, claim; " +
-          "set_status — requirementId, status; " +
-          "set_next_step — text; " +
-          "add_failure / clear_failure — failure. " +
-          "Never invent evidence ids.",
-        parameters: {
-          type: "object",
-          properties: {
-            op: {
-              type: "string",
-              enum: [
-                "add_requirement",
-                "link_evidence",
-                "verify",
-                "set_status",
-                "set_next_step",
-                "add_failure",
-                "clear_failure",
-              ],
-            },
-            text: {
-              type: "string",
-              description:
-                "add_requirement: what must be true, in one sentence (required). set_next_step: the next step.",
-            },
-            required: {
-              type: "boolean",
-              description: "add_requirement: false for a nice-to-have. Default true.",
-            },
-            id: {
-              type: "string",
-              description: "add_requirement: the new requirement's id (e.g. r3). Omit to get the next one.",
-            },
-            phase: {
-              type: "string",
-              description: "add_requirement: the phase that satisfies it.",
-            },
-            dependsOn: {
-              type: "array",
-              items: { type: "string" },
-              description: "add_requirement: ids of requirements that must be met first.",
-            },
-            requirementId: {
-              type: "string",
-              description: "link_evidence, verify, set_status: the existing requirement.",
-            },
-            evidenceId: {
-              type: "string",
-              description: "link_evidence, verify: an evidence id from a tool result. Never invented.",
-            },
-            claim: {
-              type: "string",
-              description: "link_evidence, verify: why this evidence establishes the requirement.",
-            },
-            status: {
-              type: "string",
-              enum: ["open", "in_progress", "verified", "blocked", "waived"],
-              description: "set_status: the requirement's new status.",
-            },
-            failure: {
-              type: "string",
-              description: "add_failure, clear_failure: the failure, in words. Only for those ops.",
-            },
-          },
-          required: ["op"],
-          additionalProperties: false,
-        },
-      },
-      async (input) => {
-        const op = String(input.op ?? "") || inferLedgerOp(input);
-        if (!op)
-          return {
-            ok: false,
-            content:
-              'Say which op: e.g. {"op":"set_status","requirementId":"r2","status":"blocked"}, {"op":"add_requirement","text":"…"}, {"op":"add_failure","failure":"…"}, {"op":"set_next_step","text":"…"}.',
-          };
+  // The task contract, one tool per operation. A single `update_ledger` with an
+  // `op` and every field anyone might need let models mix operations up: an
+  // "add" carrying `status`, `failure` and an existing id, repeated verbatim
+  // until the engine stalled the turn. Each tool below does one job and asks
+  // for only the fields that job needs. `update_ledger` stays as a deprecated
+  // shim for callers that still name it.
+  const runLedgerOp = async (
+    op: string,
+    input: Record<string, unknown>,
+  ): Promise<{ ok: boolean; content: string }> => {
         const dependencyError = (requirementId: string): string | undefined => {
           const requirement = ledger!.requirements.find(
             (item) => item.id === requirementId,
@@ -629,11 +575,244 @@ async function runOne(
           return { ok: true, content: "failure cleared" };
         }
         return { ok: false, content: `unknown ledger op "${op}"` };
+  };
+
+  const requirementProps = {
+    requirementId: {
+      type: "string",
+      description: "The existing requirement, e.g. r2.",
+    },
+    evidenceId: {
+      type: "string",
+      description: "An evidence id from a tool result. Never invented.",
+    },
+    claim: {
+      type: "string",
+      description:
+        "Why this evidence establishes the requirement, in one sentence.",
+    },
+  } as const;
+
+  const ledgerTools = () => {
+    const install = (tool: Tool, name: string) => {
+      available.set(name, tool);
+      return tool;
+    };
+    install(
+      defineTool(
+        {
+          name: "add_requirement",
+          description:
+            "Add one requirement to the task contract. Use this only to add; to change an existing one use set_requirement_status, link_evidence, verify_requirement or add_failure.",
+          parameters: {
+            type: "object",
+            properties: {
+              text: {
+                type: "string",
+                description: "What must be true, in one sentence.",
+              },
+              id: {
+                type: "string",
+                description: "The new requirement's id (e.g. r3). Omit for the next one.",
+              },
+              phase: {
+                type: "string",
+                description: "The phase that satisfies it.",
+              },
+              dependsOn: {
+                type: "array",
+                items: { type: "string" },
+                description: "Ids of requirements that must be met first.",
+              },
+              required: {
+                type: "boolean",
+                description: "false for a nice-to-have. Default true.",
+              },
+            },
+            required: ["text"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("add_requirement", input as Record<string, unknown>),
+        { verb: "Adding a requirement" },
+      ),
+      "add_requirement",
+    );
+    install(
+      defineTool(
+        {
+          name: "set_requirement_status",
+          description:
+            "Change an existing requirement's status. Marking one verified needs evidence linked first.",
+          parameters: {
+            type: "object",
+            properties: {
+              requirementId: requirementProps.requirementId,
+              status: {
+                type: "string",
+                enum: ["open", "in_progress", "verified", "blocked", "waived"],
+                description: "The requirement's new status.",
+              },
+            },
+            required: ["requirementId", "status"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("set_status", input as Record<string, unknown>),
+        { verb: "Setting a requirement's status" },
+      ),
+      "set_requirement_status",
+    );
+    install(
+      defineTool(
+        {
+          name: "link_evidence",
+          description:
+            "Attach a tool result to a requirement, with a sentence saying why it shows it.",
+          parameters: {
+            type: "object",
+            properties: requirementProps,
+            required: ["requirementId", "evidenceId", "claim"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("link_evidence", input as Record<string, unknown>),
+        { verb: "Linking evidence" },
+      ),
+      "link_evidence",
+    );
+    install(
+      defineTool(
+        {
+          name: "verify_requirement",
+          description:
+            "Link a tool result to a requirement and mark it verified, in one step.",
+          parameters: {
+            type: "object",
+            properties: requirementProps,
+            required: ["requirementId", "evidenceId", "claim"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("verify", input as Record<string, unknown>),
+        { verb: "Verifying a requirement" },
+      ),
+      "verify_requirement",
+    );
+    install(
+      defineTool(
+        {
+          name: "set_next_step",
+          description: "Record the next step you are about to take.",
+          parameters: {
+            type: "object",
+            properties: {
+              text: { type: "string", description: "The next step." },
+            },
+            required: ["text"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("set_next_step", input as Record<string, unknown>),
+        { verb: "Recording the next step" },
+      ),
+      "set_next_step",
+    );
+    install(
+      defineTool(
+        {
+          name: "add_failure",
+          description: "Record something that failed and still needs fixing.",
+          parameters: {
+            type: "object",
+            properties: {
+              failure: { type: "string", description: "What failed, in words." },
+            },
+            required: ["failure"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("add_failure", input as Record<string, unknown>),
+        { verb: "Recording a failure" },
+      ),
+      "add_failure",
+    );
+    install(
+      defineTool(
+        {
+          name: "clear_failure",
+          description: "Clear a failure once it is fixed.",
+          parameters: {
+            type: "object",
+            properties: {
+              failure: {
+                type: "string",
+                description: "The recorded failure, word for word.",
+              },
+            },
+            required: ["failure"],
+            additionalProperties: false,
+          },
+        },
+        (input) => runLedgerOp("clear_failure", input as Record<string, unknown>),
+        { verb: "Clearing a failure" },
+      ),
+      "clear_failure",
+    );
+    // Deprecated: the same operations, by name, with one open field list.
+    const shim = defineTool(
+      {
+        name: "update_ledger",
+        description:
+          "Deprecated — prefer add_requirement, set_requirement_status, link_evidence, verify_requirement, set_next_step, add_failure and clear_failure; each does one job with only the fields it needs. Kept for callers that still name it: add_requirement — text; link_evidence / verify — requirementId, evidenceId, claim; set_status — requirementId, status; set_next_step — text; add_failure / clear_failure — failure.",
+        parameters: {
+          type: "object",
+          properties: {
+            op: {
+              type: "string",
+              enum: [
+                "add_requirement",
+                "link_evidence",
+                "verify",
+                "set_status",
+                "set_next_step",
+                "add_failure",
+                "clear_failure",
+              ],
+            },
+            text: { type: "string" },
+            required: { type: "boolean" },
+            id: { type: "string" },
+            phase: { type: "string" },
+            dependsOn: { type: "array", items: { type: "string" } },
+            requirementId: { type: "string" },
+            evidenceId: { type: "string" },
+            claim: { type: "string" },
+            status: {
+              type: "string",
+              enum: ["open", "in_progress", "verified", "blocked", "waived"],
+            },
+            failure: { type: "string" },
+          },
+          required: ["op"],
+          additionalProperties: false,
+        },
+      },
+      async (input) => {
+        const raw = input as Record<string, unknown>;
+        const op = String(raw.op ?? "") || inferLedgerOp(raw);
+        if (!op)
+          return {
+            ok: false,
+            content:
+              'Say which op, or call the focused tool: add_requirement {"text":"…"}, set_requirement_status {"requirementId":"r2","status":"blocked"}, add_failure {"failure":"…"}, set_next_step {"text":"…"}.',
+          };
+        return runLedgerOp(op, raw);
       },
       { verb: "Updating the progress ledger" },
     );
-    available.set("update_ledger", tool);
-    return tool;
+    install(shim, "update_ledger");
+    return shim;
   };
 
   const installCompletionGate = () => {
@@ -668,7 +847,7 @@ async function runOne(
             `missingEvidence: ${structural.missingEvidence.join(", ") || "none"}`,
             `unsatisfiedDependencies: ${structural.unsatisfiedDependencies.join(" | ") || "none"}`,
             `failures: ${structural.failures.join(" | ") || "none"}`,
-            "Attach evidence to each requirement with update_ledger, resolve failures, and try again.",
+            "Attach evidence to each requirement with link_evidence or verify_requirement, resolve failures, and try again.",
           ].join("\n"),
         };
       }
@@ -729,7 +908,7 @@ async function runOne(
     ledger = next;
     phaseRejections = 0;
     phaseEvidence = [];
-    updateLedger();
+    ledgerTools();
     installCompletionGate();
   };
   if (verifierOn && ledger) attachLedger(ledger);
@@ -784,7 +963,7 @@ async function runOne(
             renderLedger(ledger, {
               allowWaived: verifierConfig.allowWaived,
             }),
-            "Use update_ledger to link evidence to each requirement and mark it verified. Do not claim completion while a required item is open or lacks evidence.",
+            "Use link_evidence and verify_requirement for each requirement. Do not claim completion while a required item is open or lacks evidence.",
           ].join("\n\n")
         : undefined,
       stability: "turn",
@@ -1276,7 +1455,7 @@ async function runOne(
             return {
               ok: false,
               content:
-                "the contract is already active; use update_ledger to change its state",
+                "the contract is already active; use set_requirement_status or add_requirement to change it",
             };
           }
           const goal = String(input.goal ?? "").trim();
@@ -1388,7 +1567,7 @@ async function runOne(
               ...next.requirements.map(
                 (item) => `${item.id}: ${item.text} (phase ${item.phase ?? "any"})`,
               ),
-              "Use update_ledger to link evidence with a claim and verify each requirement.",
+              "Use link_evidence or verify_requirement to attach evidence with a claim and verify each requirement.",
             ].join("\n"),
             // Identifiers only: the ledger itself is emitted on task_created
             // and must never ride a tool result, which is captured as evidence
@@ -2070,12 +2249,7 @@ async function runOne(
         onToolResult: (call, result) => {
           // Contract tools describe the ledger; they are not evidence about
           // the work and must not be recorded into the ledger they manage.
-          if (
-            !ledger ||
-            call.name === "finish" ||
-            call.name === "update_ledger" ||
-            call.name === "create_task"
-          ) {
+          if (!ledger || LEDGER_TOOL_NAMES.has(call.name)) {
             return;
           }
           const evidenceRef = recordEvidence(ledger, {

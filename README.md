@@ -102,8 +102,11 @@ text from the user messages; the agent cannot supply or rewrite the standard it
 is judged against. A turn without `create_task` is an ordinary conversation with
 the same tools and no ledger or completion gate.
 
-`update_ledger` links evidence with a required claim. `op: "verify"` links and
-marks a requirement verified in one call. Phase transitions verify the outgoing
+Ledger operations are one tool each: `add_requirement` adds a commitment,
+`set_requirement_status` changes its status, `link_evidence` attaches a tool
+result with a required claim, and `verify_requirement` links and marks it
+verified in one call. The single `update_ledger` tool remains as a deprecated
+shim. Phase transitions verify the outgoing
 phase; a rejection names each unmet requirement and its probability. After the
 configured rejection limit the transition is forced, but the requirement stays
 open and still blocks `finish`.
