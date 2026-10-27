@@ -237,8 +237,16 @@ Each child has **its own budget** (`{ steps, wallClockMs, usd }` per
 delegation, or a member limit) instead of spending the leader's: by default no
 more than half of what the leader has left, capped. At 80% of its budget the
 child is told to wrap up; at 100% it hands back a partial result and the
-leader's run continues. A leader — or a host watching `onProgress` — can
-redirect a running worker with `steer_worker` / the progress handle.
+leader's run continues. A child's wall-clock budget is enforced at **every tool
+boundary**, not only at turn boundaries: a call already in flight is aborted at
+the deadline, so one stuck tool cannot outlive the budget.
+
+A leader — or a host watching `onProgress` — can redirect a running worker with
+`steer_worker`, the progress `steer(text)` handle, or `nudge(text)` (same
+bounded channel, for a supervisor that wants to say "wrap up"). A child that
+produces no event for `stallAfterMs` (default 10 minutes) emits one
+`progress` event with `stalled: true` and `stalledForMs` — a signal for the
+supervisor, never an automatic cancel.
 
 Anchor exports `TeamTaskStore` / `AgentMailbox` contracts and in-memory
 adapters; durable task boards and mailboxes stay consumer-owned. See
@@ -571,6 +579,11 @@ requested from the provider. Compaction is lossy summarization using estimated
 token sizes; persistence and spill require working storage. Trace redaction is
 pattern-based, not a guarantee that all secrets are removed; raw `onEvent` events
 are not redacted. Use distinct trace files/IDs per run in your application.
+
+**Cancel grace (behaviour change):** a cancelled run now waits at most
+`cancelGraceMs` for the call already in flight — default **5 000 ms** — before
+it concludes `cancelled`, instead of waiting on the transport indefinitely.
+Pass a larger value when a slow transport needs a longer drain.
 
 </details>
 

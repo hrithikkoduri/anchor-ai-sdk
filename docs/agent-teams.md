@@ -152,6 +152,13 @@ At **100%** the child's loop ends and it hands back what it has. The result is
 child's last visible answer. **A worker running out never fails the leader's
 run.**
 
+A child's **wall-clock** budget is also enforced at every tool boundary, not
+only at turn boundaries. The engine hands the child's tools an `AbortSignal`
+that fires at the deadline (the same signal a cancel uses), so a call already
+in flight is cut and no new call starts past the deadline — one stuck tool can
+no longer outlive the budget. A tool that ignores the signal still runs to its
+own end; the deadline is then checked before the next call.
+
 ### Steering a running worker
 
 A `delegate` call blocks the leader's model turn, so the leader cannot
@@ -182,22 +189,38 @@ and calls `onProgress`:
   steps: 12,
   budgetUsed: 0.48,        // the tightest dimension, 0..1
   lastTool: "read_file",
+  lastVerb: "Reading repository file src/auth.ts",  // what it is DOING
+  lastText: "Auth token refresh looks wrong.",      // its last visible line
   filesTouched: ["src/auth.ts"],
 }
 ```
 
-The callback gets the same record plus a `steer(text)` handle, so a supervisor
-can watch a delegation and redirect it without waiting for it to end:
+The callback gets the same record plus `steer(text)` and `nudge(text)` handles,
+so a supervisor can watch a delegation and redirect it without waiting for it
+to end:
 
 ```ts
 onProgress: (p) => {
   if (p.worker === "researcher-2" && p.budgetUsed > 0.6 && p.lastTool === "read_file") {
     p.steer("You have enough. Write the summary now.");
   }
+  if (p.stalled) {
+    // It has produced nothing for 10 minutes — decide, don't wait forever.
+    p.nudge("Wrap up: hand back what you have.");
+  }
 },
 ```
 
-Never the child's transcript — one compact record per turn.
+`nudge` is the same bounded channel and the same limits as `steer`
+(`STEER_MAX_PER_CHILD = 5`, `STEER_MAX_CHARS = 500`); it exists so a supervisor
+reacting to a stall does not have to invent a second API.
+
+Never the child's transcript — one compact record per turn. When a child
+produces **no event** for `stallAfterMs` (default `DEFAULT_STALL_AFTER_MS`,
+10 minutes; `false` disables), the engine emits one additional `progress` record
+with `stalled: true` and `stalledForMs` — **once per stall window**. Any real
+activity resets the window. The engine neither cancels nor nudges the child on
+its own: the signal is for the host or supervisor to act on.
 
 ### Traces
 
