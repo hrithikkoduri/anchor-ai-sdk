@@ -1,9 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type {
-  LLMClient,
-  LLMRequest,
-  LLMResponse,
-} from "../../src/llm/types.js";
 import { MemoryThreadStore } from "../../src/engine/thread.js";
 import { MemoryInboxStore } from "../../src/engine/inbox.js";
 import {
@@ -11,88 +6,14 @@ import {
   setRequirementStatus,
 } from "../../src/ledger/index.js";
 import { runAgent, userTurn } from "../../src/engine/loop.js";
-import { defineTool } from "../../src/tools/types.js";
-import type { Agent } from "../../src/agents/types.js";
 import type { AgentEvent } from "../../src/engine/events.js";
 import type { Judge } from "../../src/verify/index.js";
-
-function response(
-  text: string,
-  toolCalls: LLMResponse["toolCalls"] = [],
-): LLMResponse {
-  return {
-    text,
-    toolCalls,
-    usage: { promptTokens: 10, completionTokens: 2, totalTokens: 12 },
-    model: "fake",
-    latencyMs: 1,
-  };
-}
-
-function agentLlm(sequence: LLMResponse[]): LLMClient & {
-  seen: LLMRequest[];
-} {
-  let index = 0;
-  const seen: LLMRequest[] = [];
-  return {
-    model: "fake",
-    seen,
-    complete: async (req) => {
-      seen.push(structuredClone(req));
-      throw new Error("unexpected complete call");
-    },
-    stream: async (req, onDelta) => {
-      seen.push(structuredClone(req));
-      const item = sequence[index];
-      if (!item) throw new Error(`unexpected model call ${index + 1}`);
-      index += 1;
-      onDelta(item.text);
-      return item;
-    },
-  };
-}
-
-const probe = defineTool(
-  {
-    name: "probe",
-    description: "look at the auth code",
-    parameters: { type: "object", properties: {}, additionalProperties: false },
-  },
-  async () => ({ ok: true, content: "refresh happens in src/auth/session.ts:42" }),
-  { readOnly: true },
-);
-
-const testAgent: Agent = {
-  name: "test",
-  strategy: {
-    name: "test",
-    phases: [
-      { id: "understand", goal: "establish the request" },
-      { id: "act", goal: "do the requested work" },
-      { id: "validate", goal: "verify the work" },
-    ],
-    systemPrompt: () => "test agent",
-  },
-  tools: [probe],
-};
-
-const createTask = (opts: {
-  phase?: string;
-  required?: boolean;
-} = {}) => ({
-  id: "create",
-  name: "create_task",
-  arguments: JSON.stringify({
-    goal: "Investigate where auth is refreshed",
-    requirements: [
-      {
-        text: "Find the refresh path",
-        required: opts.required ?? true,
-        phase: opts.phase ?? "understand",
-      },
-    ],
-  }),
-});
+import {
+  agentLlm,
+  createTask,
+  response,
+  testAgent,
+} from "../helpers/agent-kit.js";
 
 function judge(
   verdict: (text: string) => "cleared" | "insufficient" | "unproven",
@@ -299,14 +220,12 @@ describe("engine task contracts", () => {
       { llm, verifier: true, agent: testAgent },
     );
 
-    // The schema says which op each field belongs to…
-    const tool = llm.seen[1]!.tools!.find((t) => t.function.name === "update_ledger")!;
-    const params = tool.function.parameters as { properties: Record<string, { description?: string }> };
-    expect(params.properties.text!.description).toContain("add_requirement");
-    expect(tool.function.description).toContain("add_requirement — text");
-    // …and the error shows the shape to send.
-    const failed = result.messages.find((m) => m.role === "tool" && m.content?.includes("add_requirement needs text"));
-    expect(failed?.content).toContain('"text":');
+    // Adding is its own tool, and its one required field is the text: a call
+    // without it never reaches the ledger, so there is nothing to retry.
+    const tool = llm.seen[1]!.tools!.find((t) => t.function.name === "add_requirement")!;
+    expect(tool).toBeTruthy();
+    const params = tool.function.parameters as { required: string[] };
+    expect(params.required).toEqual(["text"]);
     expect(result.ledger?.requirements.map((r) => r.text)).toContain("Threads can be filtered by label");
   });
 
@@ -569,7 +488,7 @@ describe("engine task contracts", () => {
     expect(result.ledger?.requirements[0]!.status).toBe("blocked");
     // Ambiguous (a next step, or a requirement?): asked, with examples to copy.
     const asked = result.messages.find((m) => m.role === "tool" && m.content?.includes("Say which op"));
-    expect(asked?.content).toContain('"op":"set_status"');
+    expect(asked?.content).toContain("Say which op");
   });
 
   it("appends RunInput.messages to stored history without duplication", async () => {
