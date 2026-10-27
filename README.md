@@ -231,8 +231,17 @@ const result = await runAgent(
 
 Members run in an isolated nested loop in the same sandbox and return only a
 result. Evaluators are read-only; workers cannot finish; only the leader can
-finish or publish. Anchor exports `TeamTaskStore` / `AgentMailbox` contracts and
-in-memory adapters; durable task boards and mailboxes stay consumer-owned. See
+finish or publish.
+
+Each child has **its own budget** (`{ steps, wallClockMs, usd }` per
+delegation, or a member limit) instead of spending the leader's: by default no
+more than half of what the leader has left, capped. At 80% of its budget the
+child is told to wrap up; at 100% it hands back a partial result and the
+leader's run continues. A leader — or a host watching `onProgress` — can
+redirect a running worker with `steer_worker` / the progress handle.
+
+Anchor exports `TeamTaskStore` / `AgentMailbox` contracts and in-memory
+adapters; durable task boards and mailboxes stay consumer-owned. See
 [docs/agent-teams.md](docs/agent-teams.md).
 
 ## One sandbox interface
@@ -512,7 +521,7 @@ Validate inputs and enforce permissions in your implementation.
 
 | Capability | Your controls |
 | --- | --- |
-| **Budgets and correction** | Step/token/known-dollar budgets, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
+| **Budgets and correction** | Step/token/known-dollar budgets, per-child crew budgets with a wrap-up nudge and a hard cap, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
 | **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
 | **Prompt caching** | Opt-in `promptCache` breakpoints for Anthropic-style providers, with stable-prefix selection and `cachedTokens` accounting. See [docs/prompt-caching.md](docs/prompt-caching.md). |
 | **Composition** | `createAnchor` for reusable model/agent/sandbox/thread wiring, exported coding prompt components, and `view_image` for text-only agents. See [docs/composition.md](docs/composition.md). |
