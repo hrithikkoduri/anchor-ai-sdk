@@ -67,14 +67,31 @@ export interface WorkerProgress {
   budgetUsed: number;
   /** The last tool the child called this turn, when it called one. */
   lastTool?: string;
+  /** The last tool's activity label (verb) — what the worker is DOING. */
+  lastVerb?: string;
+  /** The child's last visible assistant line, trimmed (~200 chars). */
+  lastText?: string;
   /** Paths the child has touched, deduped and capped. */
   filesTouched?: string[];
+  /**
+   * True on the record that reports a silent child. The supervisor decides
+   * what to do; the engine neither cancels nor nudges automatically.
+   */
+  stalled?: boolean;
+  /** How long the child had produced no event when this record was emitted. */
+  stalledForMs?: number;
   /**
    * Deliver a directive to THIS child's next turn. Bounded per child (a few
    * are accepted, then refused) and length-capped; returns false when the cap
    * is reached or the child has already finished.
    */
   steer: (text: string) => boolean;
+  /**
+   * Tell THIS child to wrap up. The same bounded channel and the same limits
+   * as `steer`; the host decides the wording. Present so a supervisor reacting
+   * to `stalled` does not have to invent a second API.
+   */
+  nudge: (text: string) => boolean;
 }
 
 /**
@@ -123,6 +140,21 @@ export interface EngineOptions {
   /** Optional metadata/handoff tools. Neither is needed to end a response. */
   intrinsics?: { finish?: boolean; phase?: boolean; task?: boolean };
   budgets?: Partial<BudgetLimits>;
+  /**
+   * How long a cancelled run waits for the call already in flight before it
+   * stops waiting and concludes `cancelled`. Default
+   * `DEFAULT_CANCEL_GRACE_MS` (5 000). A stop is meant to cut the current call
+   * quickly; pass your own value to keep a longer grace where the transport
+   * needs it. A host that passes nothing now waits 5s, not indefinitely.
+   */
+  cancelGraceMs?: number;
+  /**
+   * How long a delegated child may produce no event before a `progress` event
+   * with `stalled: true` is emitted (once per stall window). Default
+   * `DEFAULT_STALL_AFTER_MS` (10 minutes); `false` disables the signal. It is
+   * reported, never enforced: the engine neither cancels nor nudges the child.
+   */
+  stallAfterMs?: number | false;
   /**
    * Per-call cap on one model response (reasoning + text + tool calls).
    * Default `DEFAULT_MAX_OUTPUT_TOKENS` (16k); pass `false` to leave output

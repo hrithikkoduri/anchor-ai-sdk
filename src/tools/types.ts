@@ -62,6 +62,14 @@ export interface ToolContext {
   /** Engine tool-call id, available to delegates for trace attribution. */
   callId?: string;
   /**
+   * The run's cancellation/tool-deadline signal. A tool that runs long
+   * external work SHOULD observe it and abort: the engine passes the same
+   * signal on a host cancel and when a delegated child's wall-clock budget
+   * expires, so the in-flight call is cut instead of outliving its turn.
+   * Absent for callers that run tools outside the engine.
+   */
+  signal?: AbortSignal;
+  /**
    * Who is calling, inside a delegated run: the worker instance and its roster
    * member. Workers of one member share tool instances, so a tool that files
    * work under the worker (artifacts, notes) reads it here. Absent for the leader.

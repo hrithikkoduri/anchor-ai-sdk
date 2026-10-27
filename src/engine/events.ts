@@ -171,8 +171,16 @@ type AgentEventBody =
       budgetUsed: number;
       /** The last tool the child called this turn, if any. */
       lastTool?: string;
+      /** The last tool's activity label — what the child is doing. */
+      lastVerb?: string;
+      /** The child's last visible assistant line, trimmed (~200 chars). */
+      lastText?: string;
       /** Paths the child has touched, deduped and capped. */
       filesTouched?: string[];
+      /** True on the record reporting a silent child (see `stalledForMs`). */
+      stalled?: boolean;
+      /** How long the child had produced no event when this record was sent. */
+      stalledForMs?: number;
     }
   | {
       /** Non-blocking runtime guidance (e.g. the materialization advisory).
