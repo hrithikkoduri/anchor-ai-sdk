@@ -118,7 +118,8 @@ export function planRevival(args: {
 }): RevivalPlan {
   const diedOfBudget =
     args.result.reason === "budget_exceeded" ||
-    args.result.reason === "max_steps";
+    args.result.reason === "max_steps" ||
+    args.result.reason === "budget_exhausted";
   const handoff = args.result.revival ?? args.result.checkpointRef;
   if (!diedOfBudget || !handoff) return { action: "none" };
 

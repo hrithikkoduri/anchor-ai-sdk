@@ -158,12 +158,30 @@ type AgentEventBody =
       detail: string;
     }
   | {
+      /**
+       * Live progress from a delegated child, once per its turn. Compact on
+       * purpose — never a transcript. Attribution (`agent`, `parentAgent`,
+       * `delegateCallId`) rides the envelope; `worker` is repeated here so a
+       * consumer reading only the body can key by worker.
+       */
+      type: "progress";
+      worker: string;
+      steps: number;
+      /** Fraction of the child's own budget used, 0..1. */
+      budgetUsed: number;
+      /** The last tool the child called this turn, if any. */
+      lastTool?: string;
+      /** Paths the child has touched, deduped and capped. */
+      filesTouched?: string[];
+    }
+  | {
       /** Non-blocking runtime guidance (e.g. the materialization advisory).
        * Advisory events never gate actions or end runs. */
       type: "advisory";
       kind:
         | "materialization_nudge"
         | "budget_warning"
+        | "child_wrap_up"
         | "snapshot_failed"
         | "output_truncated"
         | "output_cap_continue"
@@ -215,6 +233,7 @@ type AgentEventBody =
         | "finished"
         | "max_steps"
         | "budget_exceeded"
+        | "budget_exhausted"
         | "stalled"
         | "error"
         | "paused"
