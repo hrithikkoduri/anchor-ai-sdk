@@ -123,17 +123,10 @@ describe("engine task contracts", () => {
         },
       ]),
       response("", [{ id: "p1", name: "probe", arguments: "{}" }]),
-      response("", [
-        {
-          id: "v1",
-          name: "update_ledger",
-          arguments: JSON.stringify({
-            op: "verify",
-            requirementId: "top",
+      response("", [{
+        id: "t1", name: "verify_requirement", arguments: JSON.stringify({requirementId: "top",
             evidenceId: "e1",
-            claim: "The probe proves the dependent work.",
-          }),
-        },
+            claim: "The probe proves the dependent work."})},
       ]),
       response("Done."),
     ]);
@@ -168,7 +161,7 @@ describe("engine task contracts", () => {
     expect(result.reason).toBe("finished");
   });
 
-  it("creates the contract mid-run and exposes update_ledger next", async () => {
+  it("creates the contract mid-run and exposes the contract tools next", async () => {
     const events: AgentEvent[] = [];
     const llm = agentLlm([
       response("", [createTask({ required: false })]),
@@ -191,7 +184,7 @@ describe("engine task contracts", () => {
     expect(events.some((event) => event.type === "task_created")).toBe(true);
     const second = llm.seen[1]!;
     expect(second.tools?.map((tool) => tool.function.name)).toContain(
-      "update_ledger",
+      "add_requirement",
     );
     expect(JSON.stringify(second.messages)).toContain("Find the refresh path");
   });
@@ -199,19 +192,11 @@ describe("engine task contracts", () => {
   it("tells the model what add_requirement needs, so a missing text is fixed rather than retried", async () => {
     const llm = agentLlm([
       response("", [createTask({ required: false })]),
-      response("", [
-        {
-          id: "a1",
-          name: "update_ledger",
-          arguments: JSON.stringify({ op: "add_requirement", dependsOn: ["r1"] }),
-        },
+      response("", [{
+        id: "t2", name: "add_requirement", arguments: JSON.stringify({dependsOn: ["r1"]})},
       ]),
-      response("", [
-        {
-          id: "a2",
-          name: "update_ledger",
-          arguments: JSON.stringify({ op: "add_requirement", text: "Threads can be filtered by label", dependsOn: ["r1"] }),
-        },
+      response("", [{
+        id: "t3", name: "add_requirement", arguments: JSON.stringify({text: "Threads can be filtered by label", dependsOn: ["r1"]})},
       ]),
       response("Done."),
     ]);
@@ -233,28 +218,14 @@ describe("engine task contracts", () => {
     const llm = agentLlm([
       response("", [createTask()]),
       response("", [
-        { id: "c1", name: "probe", arguments: "{}" },
-        {
-          id: "c2",
-          name: "update_ledger",
-          arguments: JSON.stringify({
-            op: "link_evidence",
-            requirementId: "r1",
-            evidenceId: "e1",
-          }),
-        },
+        { id: "c1", name: "probe", arguments: "{}" },{
+        id: "t4", name: "link_evidence", arguments: JSON.stringify({requirementId: "r1",
+            evidenceId: "e1"})},
       ]),
-      response("", [
-        {
-          id: "c3",
-          name: "update_ledger",
-          arguments: JSON.stringify({
-            op: "verify",
-            requirementId: "r1",
+      response("", [{
+        id: "t5", name: "verify_requirement", arguments: JSON.stringify({requirementId: "r1",
             evidenceId: "e1",
-            claim: "The probe found the refresh path.",
-          }),
-        },
+            claim: "The probe found the refresh path."})},
       ]),
       response("Done."),
     ]);
@@ -468,27 +439,22 @@ describe("engine task contracts", () => {
     });
     prior.evidence.e1 = { id: "e1", tool: "probe", ref: "call:old", ok: true, capturedAt: new Date().toISOString() };
     const llm = agentLlm([
-      response("", [{ id: "a1", name: "update_ledger", arguments: JSON.stringify({ op: "add_requirement", text: "Verify it against the live stack" }) }]),
+      response("", [{ id: "x1", name: "add_requirement", arguments: JSON.stringify({text: "Verify it against the live stack"}) }]),
       response("Added."),
     ]);
     const result = await runAgent(userTurn("check it works live"), { llm, verifier: true, agent: testAgent, ledger: prior, extendLedger: true });
-    expect(llm.seen[0]!.tools!.some((t) => t.function.name === "update_ledger")).toBe(true);
+    expect(llm.seen[0]!.tools!.some((t) => t.function.name === "add_requirement")).toBe(true);
     expect(result.ledger?.requirements.map((r) => r.id)).toEqual(["r1", "r2"]);
     expect(result.ledger?.requirements[0]!.status).toBe("verified");
   });
 
-  it("infers update_ledger's op from its fields, when they name exactly one", async () => {
-    const llm = agentLlm([
-      response("", [createTask()]),
-      response("", [{ id: "s1", name: "update_ledger", arguments: JSON.stringify({ requirementId: "r1", status: "blocked" }) }]),
-      response("", [{ id: "s2", name: "update_ledger", arguments: JSON.stringify({ text: "hmm" }) }]),
-      response("Done."),
-    ]);
-    const result = await runAgent(userTurn("Investigate where auth is refreshed"), { llm, verifier: true, agent: testAgent });
-    expect(result.ledger?.requirements[0]!.status).toBe("blocked");
-    // Ambiguous (a next step, or a requirement?): asked, with examples to copy.
-    const asked = result.messages.find((m) => m.role === "tool" && m.content?.includes("Say which op"));
-    expect(asked?.content).toContain("Say which op");
+  it("offers the focused contract tools and no legacy update_ledger shim", async () => {
+    const llm = agentLlm([response("", [createTask()]), response("Done.")]);
+    await runAgent(userTurn("Investigate where auth is refreshed"), { llm, verifier: true, agent: testAgent });
+    const names = llm.seen[1]!.tools!.map((t) => t.function.name);
+    expect(names).toContain("add_requirement");
+    expect(names).toContain("verify_requirement");
+    expect(names).not.toContain("update_ledger");
   });
 
   it("appends RunInput.messages to stored history without duplication", async () => {

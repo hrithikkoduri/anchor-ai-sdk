@@ -130,13 +130,12 @@ export { userTurn } from "./types.js";
 /**
  * Ledger tools answer "what is the task", not "what did the work". Calling one
  * must never be captured as evidence about the work inside the ledger it
- * manages. `update_ledger` is the deprecated shim; the rest are its split
+ * manages. These are the split
  * successors.
  */
 const LEDGER_TOOL_NAMES = new Set([
   "create_task",
   "finish",
-  "update_ledger",
   "add_requirement",
   "set_requirement_status",
   "link_evidence",
@@ -520,8 +519,7 @@ async function runOne(
   // `op` and every field anyone might need let models mix operations up: an
   // "add" carrying `status`, `failure` and an existing id, repeated verbatim
   // until the engine stalled the turn. Each tool below does one job and asks
-  // for only the fields that job needs. `update_ledger` stays as a deprecated
-  // shim for callers that still name it.
+  // for only the fields that job needs; the old shim is gone.
   const runLedgerOp = async (
     op: string,
     input: Record<string, unknown>,
@@ -864,60 +862,7 @@ async function runOne(
       ),
       "clear_failure",
     );
-    // Deprecated: the same operations, by name, with one open field list.
-    const shim = defineTool(
-      {
-        name: "update_ledger",
-        description:
-          "Deprecated — prefer add_requirement, set_requirement_status, link_evidence, verify_requirement, set_next_step, add_failure and clear_failure; each does one job with only the fields it needs. Kept for callers that still name it: add_requirement — text; link_evidence / verify — requirementId, evidenceId, claim; set_status — requirementId, status; set_next_step — text; add_failure / clear_failure — failure.",
-        parameters: {
-          type: "object",
-          properties: {
-            op: {
-              type: "string",
-              enum: [
-                "add_requirement",
-                "link_evidence",
-                "verify",
-                "set_status",
-                "set_next_step",
-                "add_failure",
-                "clear_failure",
-              ],
-            },
-            text: { type: "string" },
-            required: { type: "boolean" },
-            id: { type: "string" },
-            phase: { type: "string" },
-            dependsOn: { type: "array", items: { type: "string" } },
-            requirementId: { type: "string" },
-            evidenceId: { type: "string" },
-            claim: { type: "string" },
-            status: {
-              type: "string",
-              enum: ["open", "in_progress", "verified", "blocked", "waived"],
-            },
-            failure: { type: "string" },
-          },
-          required: ["op"],
-          additionalProperties: false,
-        },
-      },
-      async (input) => {
-        const raw = input as Record<string, unknown>;
-        const op = String(raw.op ?? "") || inferLedgerOp(raw);
-        if (!op)
-          return {
-            ok: false,
-            content:
-              'Say which op, or call the focused tool: add_requirement {"text":"…"}, set_requirement_status {"requirementId":"r2","status":"blocked"}, add_failure {"failure":"…"}, set_next_step {"text":"…"}.',
-          };
-        return runLedgerOp(op, raw);
-      },
-      { verb: "Updating the progress ledger" },
-    );
-    install(shim, "update_ledger");
-    return shim;
+    return available.get("add_requirement")!;
   };
 
   const installCompletionGate = () => {
@@ -2682,7 +2627,7 @@ function usageDelta(
 
 /** A required obligation still needs work, or an open failure blocks finish. */
 /**
- * The op an `update_ledger` call means when it names none, from the fields it
+ * The op a legacy ledger call means when it names none, from the fields it
  * carries — only where they point to exactly one op. A model that sends
  * `{requirementId, status}` meant set_status; refusing it costs a turn and
  * invites the same call again.
