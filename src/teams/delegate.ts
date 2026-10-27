@@ -288,6 +288,8 @@ export function createTeamTools(options: DelegateToolOptions): TeamTools {
           ...(parent.backgroundAfterSecs !== undefined ? { backgroundAfterSecs: parent.backgroundAfterSecs } : {}),
           ...(parent.operations ? { operations: parent.operations } : {}),
           ...(parent.onProgress ? { onProgress: parent.onProgress } : {}),
+          ...(parent.cancelGraceMs !== undefined ? { cancelGraceMs: parent.cancelGraceMs } : {}),
+          ...(parent.stallAfterMs !== undefined ? { stallAfterMs: parent.stallAfterMs } : {}),
           ...(team.sessions && sessionId ? { thread: { store: team.sessions.store, id: sessionId } } : {}),
           intrinsics: { finish: false, task: false },
           verifier: false,

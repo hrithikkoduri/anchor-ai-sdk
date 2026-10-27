@@ -94,6 +94,12 @@ import {
   visibleOutputTokens,
   wrapUpNudge,
 } from "./guardrails.js";
+import {
+  CANCEL_GRACE,
+  DEFAULT_CANCEL_GRACE_MS,
+  DEFAULT_STALL_AFTER_MS,
+  waitWithCancelGrace,
+} from "./supervision.js";
 import type {
   RunInput,
   EngineOptions,
@@ -194,6 +200,22 @@ function lastAssistantText(messages: LLMMessage[]): string {
 }
 
 /**
+ * The last non-empty line of the child's most recent visible prose, capped for
+ * a progress record: what a wake-up message can quote as "it was doing X".
+ */
+function lastAssistantLine(messages: LLMMessage[], max = 200): string {
+  const full = lastAssistantText(messages);
+  if (!full) return "";
+  const line =
+    full
+      .split("\n")
+      .map((row) => row.trim())
+      .filter(Boolean)
+      .pop() ?? "";
+  return line.length > max ? line.slice(0, max) : line;
+}
+
+/**
  * Paths named by a turn's tool calls, for progress. Best-effort: an
  * unparseable call contributes nothing, so this can never fail a run.
  */
@@ -245,17 +267,30 @@ async function runOne(
     if (opts.signal.aborted) controller.abort();
     else opts.signal.addEventListener("abort", abortFromCaller, { once: true });
   }
-  const timers: Array<ReturnType<typeof setInterval>> = [];
+  // The signal every tool sees. It is the run's cancel signal plus, for a
+  // delegated child, its own wall-clock deadline: a tool call already in
+  // flight is aborted at the deadline, and the child concludes
+  // `budget_exhausted` with a partial hand-back. The run signal (used for the
+  // model call) stays separate, so a deadline never reads as a host cancel.
+  const toolController = new AbortController();
+  const toolSignal = toolController.signal;
+  const abortTools = () => toolController.abort();
+  if (signal.aborted) toolController.abort();
+  else signal.addEventListener("abort", abortTools, { once: true });
+  const timers: Array<
+    ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>
+  > = [];
   const fanout = opts.traceSinks?.length
     ? new TraceFanout(opts.traceSinks)
     : null;
   let stopped = false;
-  /** Idempotent: stop the timers, unlink the caller's signal, flush sinks. */
+  /** Idempotent: stop the timers, unlink the signals, flush sinks. */
   const stopLifecycle = async (): Promise<void> => {
     if (stopped) return;
     stopped = true;
     for (const timer of timers) clearInterval(timer);
     opts.signal?.removeEventListener("abort", abortFromCaller);
+    signal.removeEventListener("abort", abortTools);
     if (fanout) await fanout.flush();
   };
   const traceAttribution = {
@@ -265,6 +300,13 @@ async function runOne(
     ...(chain.worker ? { worker: chain.worker } : {}),
     ...(chain.role ? { role: chain.role } : {}),
   };
+  // Activity bookkeeping for a delegated child's stall signal. Every event the
+  // child produces is activity; the one record this emits for a silent child
+  // is not.
+  let lastActivityAt = Date.now();
+  let stallReported = false;
+  let lastToolName: string | undefined;
+  let lastVerbName: string | undefined;
   const emit: EventSink = (event) => {
     const attributed =
       Object.keys(traceAttribution).length > 0
@@ -275,6 +317,13 @@ async function runOne(
       opts.onEvent?.(attributed);
     } catch {
       // A subscriber must never kill the run — same rule as sinks.
+    }
+    if (event.type === "progress" && event.stalled) return;
+    lastActivityAt = Date.now();
+    stallReported = false;
+    if (event.type === "tool_call") {
+      lastToolName = event.name;
+      lastVerbName = event.verb ?? event.name;
     }
   };
   if (opts.repos?.length) {
@@ -371,6 +420,21 @@ async function runOne(
   let compaction = prior?.compaction;
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
+  const cancelGraceMs = opts.cancelGraceMs ?? DEFAULT_CANCEL_GRACE_MS;
+  const stallAfterMs =
+    opts.stallAfterMs === false
+      ? false
+      : (opts.stallAfterMs ?? DEFAULT_STALL_AFTER_MS);
+  // A child's wall-clock budget must bite at its next tool boundary, not only
+  // at turn boundaries: give its tools a signal that aborts at the deadline,
+  // so a call already in flight is cut and no new call starts past it.
+  const wallClockLimit = budget.limits.maxWallClockMs;
+  if (chain.child && wallClockLimit !== undefined && wallClockLimit > 0) {
+    const remainingMs = Math.max(0, wallClockLimit - budget.wallClockMs());
+    const deadline = setTimeout(() => toolController.abort(), remainingMs);
+    deadline.unref?.();
+    timers.push(deadline);
+  }
 
   // ---- Task contracts and the judge --------------------------------------
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
@@ -1286,6 +1350,69 @@ async function runOne(
       pendingProseCheck = true;
     },
   });
+  /**
+   * The compact record a host sees while a delegated child runs. One shape for
+   * the per-turn progress and for the stall signal, so a supervisor reads the
+   * same fields either way.
+   */
+  const emitProgress = (
+    extra: { stalled?: boolean; stalledForMs?: number } = {},
+  ): void => {
+    if (!chain.child || !chain.worker) return;
+    const filesTouched = touchedFiles.size
+      ? [...touchedFiles].slice(0, 20)
+      : undefined;
+    const lastText = lastAssistantLine(messages);
+    const progress: WorkerProgress = {
+      worker: chain.worker,
+      agent: chain.agent ?? strategy.name,
+      role: chain.role ?? "worker",
+      steps,
+      budgetUsed: budget.usedFraction(stepsBefore + steps),
+      ...(lastToolName ? { lastTool: lastToolName } : {}),
+      ...(lastVerbName ? { lastVerb: lastVerbName } : {}),
+      ...(lastText ? { lastText } : {}),
+      ...(filesTouched ? { filesTouched } : {}),
+      ...(extra.stalled ? { stalled: true } : {}),
+      ...(extra.stalledForMs !== undefined
+        ? { stalledForMs: extra.stalledForMs }
+        : {}),
+      steer: (value) => chain.steer?.push(value) ?? false,
+      nudge: (value) => chain.steer?.push(value) ?? false,
+    };
+    emit({
+      type: "progress",
+      worker: progress.worker,
+      steps: progress.steps,
+      budgetUsed: progress.budgetUsed,
+      ...(progress.lastTool ? { lastTool: progress.lastTool } : {}),
+      ...(progress.lastVerb ? { lastVerb: progress.lastVerb } : {}),
+      ...(progress.lastText ? { lastText: progress.lastText } : {}),
+      ...(progress.filesTouched ? { filesTouched: progress.filesTouched } : {}),
+      ...(progress.stalled ? { stalled: true } : {}),
+      ...(progress.stalledForMs !== undefined
+        ? { stalledForMs: progress.stalledForMs }
+        : {}),
+    });
+    try {
+      opts.onProgress?.(progress);
+    } catch {
+      // A consumer callback must never kill the run.
+    }
+  };
+  // A child that produces no event for `stallAfterMs` is reported ONCE; any
+  // real activity resets the window. The engine neither cancels nor nudges —
+  // the supervisor decides.
+  if (chain.child && chain.worker && stallAfterMs !== false) {
+    const tick = setInterval(() => {
+      const idle = Date.now() - lastActivityAt;
+      if (idle < stallAfterMs || stallReported) return;
+      stallReported = true;
+      emitProgress({ stalled: true, stalledForMs: idle });
+    }, stallAfterMs);
+    tick.unref?.();
+    timers.push(tick);
+  }
   let checkpointRef: string | undefined;
   let pauseRequested = false;
   if (phaseOn) {
@@ -2157,29 +2284,38 @@ async function runOne(
       steps++;
       emit({ type: "llm_call_started", phase, step: steps });
       const modelMessages = forModel();
-      const response = await opts.llm.stream(
-        {
-          messages: modelMessages,
-          cacheBreakpoints: cacheBreakpointsFor(modelMessages),
-          tools: [...available.values()].map((tool) => ({
-            type: "function",
-            function: tool.definition,
-          })),
-          ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
-          ...(opts.sampling?.temperature !== undefined
-            ? { temperature: opts.sampling.temperature }
-            : {}),
-          ...(opts.sampling?.seed !== undefined
-            ? { seed: opts.sampling.seed }
-            : {}),
-          ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
-        },
-        (text) => emit({ type: "llm_text_delta", text }),
-        {
-          signal,
-          onReasoning: (text) => emit({ type: "llm_reasoning_delta", text }),
-        },
+      const response = await waitWithCancelGrace(
+        opts.llm.stream(
+          {
+            messages: modelMessages,
+            cacheBreakpoints: cacheBreakpointsFor(modelMessages),
+            tools: [...available.values()].map((tool) => ({
+              type: "function",
+              function: tool.definition,
+            })),
+            ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
+            ...(opts.sampling?.temperature !== undefined
+              ? { temperature: opts.sampling.temperature }
+              : {}),
+            ...(opts.sampling?.seed !== undefined
+              ? { seed: opts.sampling.seed }
+              : {}),
+            ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+          },
+          (text) => emit({ type: "llm_text_delta", text }),
+          {
+            signal,
+            onReasoning: (text) => emit({ type: "llm_reasoning_delta", text }),
+          },
+        ),
+        signal,
+        cancelGraceMs,
       );
+      if (response === CANCEL_GRACE)
+        return conclude("cancelled", {
+          ok: false,
+          error: "cancelled by signal",
+        });
       budget.record(response.usage);
       emit({
         type: "llm_call_finished",
@@ -2344,38 +2480,48 @@ async function runOne(
           }
         | undefined;
       let runaway = false;
-      const outcome = await dispatchToolCalls({
-        calls: response.toolCalls,
-        available,
-        steps,
-        phase,
-        toolContext,
-        finish,
-        repeat,
-        messages,
-        evidence,
-        emit,
-        emitBackground,
-        ...(operationRuntime ? { operations: operationRuntime } : {}),
-        onMissingJournal,
+      const dispatched = await waitWithCancelGrace(
+        dispatchToolCalls({
+          calls: response.toolCalls,
+          available,
+          steps,
+          phase,
+          toolContext,
+          finish,
+          repeat,
+          messages,
+          evidence,
+          emit,
+          emitBackground,
+          ...(operationRuntime ? { operations: operationRuntime } : {}),
+          onMissingJournal,
+          signal: toolSignal,
+          pauseRequested: () => pauseRequested,
+          onToolResult: (call, result) => {
+            // Contract tools describe the ledger; they are not evidence about
+            // the work and must not be recorded into the ledger they manage.
+            if (!ledger || LEDGER_TOOL_NAMES.has(call.name)) {
+              return;
+            }
+            const evidenceRef = recordEvidence(ledger, {
+              tool: call.name,
+              ref: `call:${call.id}`,
+              ok: result.ok,
+              summary: result.content.replace(/\s+/g, " ").slice(0, 500),
+              ...(result.meta ? { meta: result.meta } : {}),
+            });
+            phaseEvidence.push(evidenceRef);
+          },
+        }),
         signal,
-        pauseRequested: () => pauseRequested,
-        onToolResult: (call, result) => {
-          // Contract tools describe the ledger; they are not evidence about
-          // the work and must not be recorded into the ledger they manage.
-          if (!ledger || LEDGER_TOOL_NAMES.has(call.name)) {
-            return;
-          }
-          const evidenceRef = recordEvidence(ledger, {
-            tool: call.name,
-            ref: `call:${call.id}`,
-            ok: result.ok,
-            summary: result.content.replace(/\s+/g, " ").slice(0, 500),
-            ...(result.meta ? { meta: result.meta } : {}),
-          });
-          phaseEvidence.push(evidenceRef);
-        },
-      });
+        cancelGraceMs,
+      );
+      if (dispatched === CANCEL_GRACE)
+        return conclude("cancelled", {
+          ok: false,
+          error: "cancelled by signal",
+        });
+      const outcome = dispatched;
       runaway = outcome.runaway;
       declared = outcome.declared;
       outstanding.push(...outcome.jobs);
@@ -2385,33 +2531,7 @@ async function runOne(
       // compact record per turn — never the child's transcript.
       if (chain.child && chain.worker) {
         noteTouchedFiles(touchedFiles, response.toolCalls);
-        const lastTool = response.toolCalls.at(-1)?.name;
-        const filesTouched = touchedFiles.size
-          ? [...touchedFiles].slice(0, 20)
-          : undefined;
-        const progress: WorkerProgress = {
-          worker: chain.worker,
-          agent: chain.agent ?? strategy.name,
-          role: chain.role ?? "worker",
-          steps,
-          budgetUsed: budget.usedFraction(stepsBefore + steps),
-          ...(lastTool ? { lastTool } : {}),
-          ...(filesTouched ? { filesTouched } : {}),
-          steer: (value) => chain.steer?.push(value) ?? false,
-        };
-        emit({
-          type: "progress",
-          worker: progress.worker,
-          steps: progress.steps,
-          budgetUsed: progress.budgetUsed,
-          ...(progress.lastTool ? { lastTool: progress.lastTool } : {}),
-          ...(progress.filesTouched ? { filesTouched: progress.filesTouched } : {}),
-        });
-        try {
-          opts.onProgress?.(progress);
-        } catch {
-          // A consumer callback must never kill the run.
-        }
+        emitProgress();
       }
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive

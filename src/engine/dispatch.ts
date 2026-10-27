@@ -332,7 +332,7 @@ export async function dispatchToolCalls(
             tool,
             call.name,
             input,
-            { ...toolContext, callId: call.id },
+            { ...toolContext, callId: call.id, ...(signal ? { signal } : {}) },
             available,
           );
           return "invalid" in outcome
@@ -425,7 +425,7 @@ export async function dispatchToolCalls(
               item.tool,
               item.call.name,
               item.input,
-              { ...toolContext, callId: item.call.id },
+              { ...toolContext, callId: item.call.id, ...(signal ? { signal } : {}) },
               available,
             );
             results.set(
@@ -511,6 +511,7 @@ export async function dispatchToolCalls(
       const callContext: ToolContext = {
         ...toolContext,
         callId: call.id,
+        ...(signal ? { signal } : {}),
         ...(operationId && args.operations
           ? {
               operationId,
