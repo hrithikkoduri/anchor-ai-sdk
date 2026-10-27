@@ -39,6 +39,7 @@ export type {
   AgentResult,
   FinishReason,
   GuardrailConfig,
+  WorkerProgress,
 } from "./engine/loop.js";
 
 // Trace — durable run records (redaction + NDJSON)

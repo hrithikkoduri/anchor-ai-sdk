@@ -131,6 +131,21 @@ export function repeatedCallNudge(limit: number, hasFinish: boolean): string {
   );
 }
 
+/**
+ * The delegated child's soft-cap directive. User-facing prose the child's
+ * model reads: short, specific, and firm about handing back. Delivered as an
+ * ordinary runtime message in the child's own stream — never a tool, never a
+ * user turn, so it cannot be mistaken for work.
+ */
+export function wrapUpNudge(stepsLeft: number, reason: string): string {
+  const left = stepsLeft > 0 ? `${stepsLeft} step${stepsLeft === 1 ? "" : "s"}` : "no";
+  return (
+    `Wrap-up directive from your leader: you have ${left} left of your budget (${reason}). ` +
+    `Stop exploring. Answer what you can now, list what is unfinished, and hand back — ` +
+    `a partial result stated clearly is worth more than a complete one you never deliver.`
+  );
+}
+
 export function emptyTurnNudge(hasFinish: boolean): string {
   return (
     "Your last turn had no visible text and no tool call, so it was not accepted. " +

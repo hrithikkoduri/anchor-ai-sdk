@@ -14,6 +14,7 @@
  * delegations to the same worker are serialized.
  */
 import type { Agent } from "../agents/types.js";
+import type { ChildBudget } from "../engine/budgets.js";
 import type { ThreadStore } from "../engine/thread.js";
 import type { LLMClient } from "../llm/types.js";
 import type { RepoRef } from "../repo.js";
@@ -32,10 +33,16 @@ export interface TeamMemberSpec {
    * forced read-only (run_tests remains available).
    */
   readOnly?: boolean;
-  /** Per-member limits; absent members inherit the run limits. */
+  /**
+   * Per-member limits. Overridden by the `delegate` call's own `budget`; when
+   * neither is given the child derives its budget from the leader's remaining
+   * allowance (`deriveChildBudget`). A member limit may exceed the derived cap.
+   */
   maxSteps?: number;
   maxTokens?: number;
   maxUsd?: number;
+  /** Wall-clock ceiling in ms for this member, checked at turn boundaries. */
+  maxWallClockMs?: number;
   /** Optional model override for this member. */
   llm?: LLMClient;
 }
@@ -121,6 +128,13 @@ export interface DelegateInput {
   item?: string;
   /** Forget this worker's previous conversation and start over. */
   fresh?: boolean;
+  /**
+   * This child's own budget: any subset of `steps`, `wallClockMs`, `usd`.
+   * Missing fields fall back to the member's limits and then to the derived
+   * default; the child's spend rolls up into the leader's accounting and
+   * never spends the leader's step allowance.
+   */
+  budget?: ChildBudget;
 }
 
 /** Valid worker names: short, lowercase, safe in a path or branch. */

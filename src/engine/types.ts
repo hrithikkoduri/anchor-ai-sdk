@@ -19,7 +19,7 @@ import type { OperationStore, PendingOperation } from "./operations.js";
 import type { ProgressLedger } from "../ledger/types.js";
 import type { VerifierConfig } from "../ledger/config.js";
 import type { RepoRef } from "../repo.js";
-import type { TeamSpec } from "../teams/types.js";
+import type { TeamRole, TeamSpec } from "../teams/types.js";
 
 export interface RunInput {
   /**
@@ -47,6 +47,34 @@ export function userTurn(
     ],
     ...(extra.context ? { context: extra.context } : {}),
   };
+}
+
+/**
+ * One child turn, seen from the leader's side. Emitted as a `progress` event
+ * and handed to `EngineOptions.onProgress`; the leader's `delegate` call stays
+ * open until the child returns, so this is how a host sees the work while it
+ * runs. Deliberately compact: never a child transcript.
+ */
+export interface WorkerProgress {
+  /** Worker instance, e.g. "researcher-2". */
+  worker: string;
+  /** The roster member (role) the worker is an instance of. */
+  agent: string;
+  role: TeamRole;
+  /** Turns the child has taken so far. */
+  steps: number;
+  /** Fraction of the child's own budget spent, 0..1 (the tightest dimension). */
+  budgetUsed: number;
+  /** The last tool the child called this turn, when it called one. */
+  lastTool?: string;
+  /** Paths the child has touched, deduped and capped. */
+  filesTouched?: string[];
+  /**
+   * Deliver a directive to THIS child's next turn. Bounded per child (a few
+   * are accepted, then refused) and length-capped; returns false when the cap
+   * is reached or the child has already finished.
+   */
+  steer: (text: string) => boolean;
 }
 
 /**
@@ -174,6 +202,14 @@ export interface EngineOptions {
   resumeJobs?: BackgroundJob[];
   onEvent?: EventSink;
   /**
+   * Live progress from a delegated child, once per child turn. The record is
+   * compact (steps, budget used, last tool, files touched) — never a child
+   * transcript. `steer` redirects that same child; a host acting as a
+   * supervisor can watch progress and call it. A throwing callback never kills
+   * the run. Absent: no progress reporting.
+   */
+  onProgress?: (progress: WorkerProgress) => void;
+  /**
    * Durable sinks. The engine owns their sequence number (one fanout per run)
    * and applies redaction once, before every sink; a broken sink never kills
    * the run, and all sinks are flushed before runAgent resolves. `onEvent`
@@ -299,6 +335,12 @@ export type FinishReason =
   | "finished"
   | "max_steps"
   | "budget_exceeded"
+  /**
+   * A delegated child ran out of its OWN budget and handed back what it had.
+   * Distinct from the parent's `budget_exceeded`: it is a partial result the
+   * parent consumes, never a reason to fail the parent run.
+   */
+  | "budget_exhausted"
   | "stalled"
   | "error"
   | "paused"

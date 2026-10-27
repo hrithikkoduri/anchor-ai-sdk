@@ -4,7 +4,7 @@
  * completion claim, or permission to publish. Phases are agent-controlled
  * descriptions of the approach, not a second gated execution engine.
  */
-import type { LLMMessage } from "../llm/types.js";
+import type { LLMMessage, LLMToolCall } from "../llm/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
@@ -12,6 +12,7 @@ import { validateRepos } from "../repo.js";
 import {
   BudgetTracker,
   DEFAULT_BUDGET_LIMITS,
+  DEFAULT_CHILD_SOFT_CAP,
   DEFAULT_MAX_OUTPUT_TOKENS,
 } from "./budgets.js";
 import {
@@ -40,7 +41,8 @@ import {
 } from "./inbox.js";
 import { defineTool, type Tool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
-import { createDelegateTool } from "../teams/delegate.js";
+import { createTeamTools } from "../teams/delegate.js";
+import { steerDirective, type SteerChannel } from "../teams/steer.js";
 import type { TeamRole } from "../teams/types.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
@@ -90,6 +92,7 @@ import {
   silentNudge,
   verboseNudge,
   visibleOutputTokens,
+  wrapUpNudge,
 } from "./guardrails.js";
 import type {
   RunInput,
@@ -97,6 +100,7 @@ import type {
   AgentResult,
   BackgroundJob,
   FinishReason,
+  WorkerProgress,
 } from "./types.js";
 import {
   pollBackgroundJobs,
@@ -113,6 +117,7 @@ export type {
   AgentResult,
   FinishReason,
   GuardrailConfig,
+  WorkerProgress,
 } from "./types.js";
 export { userTurn } from "./types.js";
 
@@ -163,6 +168,58 @@ interface ChainRun {
   worker?: string;
   /** Team role of a delegated child. */
   role?: TeamRole;
+  /**
+   * A delegated child: its budget is its own, it wraps up at the soft cap, and
+   * running out ends it with a partial hand-back instead of the leader's
+   * budget reasons. Absent for the leader and for standalone runs.
+   */
+  child?: true;
+  /** Leader directives for this child, drained at each turn boundary. */
+  steer?: SteerChannel;
+}
+
+/** The child's most recent visible prose, for a budget-exhausted hand-back. */
+function lastAssistantText(messages: LLMMessage[]): string {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index]!;
+    if (
+      message.role === "assistant" &&
+      typeof message.content === "string" &&
+      message.content.trim()
+    ) {
+      return message.content.trim();
+    }
+  }
+  return "";
+}
+
+/**
+ * Paths named by a turn's tool calls, for progress. Best-effort: an
+ * unparseable call contributes nothing, so this can never fail a run.
+ */
+function noteTouchedFiles(target: Set<string>, calls: LLMToolCall[]): void {
+  for (const call of calls) {
+    try {
+      const parsed: unknown = call.arguments.trim()
+        ? JSON.parse(call.arguments)
+        : {};
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const path = (parsed as Record<string, unknown>).path;
+        if (typeof path === "string" && path.trim()) target.add(path.trim());
+      }
+    } catch {
+      /* an unparseable call is not a file path */
+    }
+  }
+}
+
+/** "…, 3/20 steps, $0.42/$1.50" — the numbers a wrap-up nudge cites. */
+function budgetLine(budget: BudgetTracker, steps: number): string {
+  const parts = [`${steps}/${budget.limits.maxSteps} steps`];
+  if (budget.limits.maxWallClockMs !== undefined)
+    parts.push(`${Math.round(budget.wallClockMs() / 1000)}s/${Math.round(budget.limits.maxWallClockMs / 1000)}s`);
+  if (budget.costsKnown) parts.push(`$${budget.costUsd.toFixed(2)}/$${budget.limits.maxUsd}`);
+  return parts.join(", ");
 }
 
 async function runOne(
@@ -314,22 +371,6 @@ async function runOne(
   let compaction = prior?.compaction;
 
   const budget = chain.budget ?? new BudgetTracker(opts.budgets);
-
-  // ---- Delegated subagents ------------------------------------------------
-  if (opts.team && Object.keys(opts.team.members).length > 0) {
-    available.set(
-      "delegate",
-      createDelegateTool({
-        team: opts.team,
-        parent: opts,
-        budget,
-        leaderName: strategy.name,
-        emit,
-        signal,
-        runChild: (input, childOpts, link) => runOne(input, childOpts, link),
-      }),
-    );
-  }
 
   // ---- Task contracts and the judge --------------------------------------
   const verifierOn = opts.verifier !== undefined && opts.verifier !== false;
@@ -1098,6 +1139,34 @@ async function runOne(
   let silentToolTurns = 0;
   let steps = 0;
   const stepsBefore = chain.stepsBefore ?? 0;
+
+  // ---- Delegated subagents ------------------------------------------------
+  // Registered here, after the step counters exist: a child's derived budget
+  // is computed from what the leader has left at the moment it delegates.
+  if (opts.team && Object.keys(opts.team.members).length > 0) {
+    const remaining = () => ({
+      steps: Math.max(0, budget.limits.maxSteps - stepsBefore - steps),
+      ...(budget.limits.maxWallClockMs !== undefined
+        ? { wallClockMs: Math.max(0, budget.limits.maxWallClockMs - budget.wallClockMs()) }
+        : {}),
+      usd: budget.costsKnown
+        ? Math.max(0, budget.limits.maxUsd - budget.costUsd)
+        : budget.limits.maxUsd,
+    });
+    const teamTools = createTeamTools({
+      team: opts.team,
+      parent: opts,
+      budget,
+      remaining,
+      leaderName: strategy.name,
+      emit,
+      signal,
+      runChild: (input, childOpts, link) => runOne(input, childOpts, link),
+    });
+    available.set("delegate", teamTools.delegate);
+    available.set("steer_worker", teamTools.steer);
+  }
+
   // Recovery for tools that declare an external effect. Scope defaults to the
   // thread; a store without either is a wiring bug, not a silent no-op.
   const operations = opts.operations;
@@ -1199,6 +1268,11 @@ async function runOne(
   // An empty turn (no text, no tool call) gets one correction. The flag is
   // how the next empty turn is recognized as "after the advisory."
   let emptyNudged = false;
+  // A delegated child is told to wrap up once, at its soft cap. The hard cap
+  // still ends the loop; the flag keeps the directive one-shot.
+  let softCapNudged = false;
+  /** Files the child has named in its tool calls, for progress. */
+  const touchedFiles = new Set<string>();
   const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
   // The shared mechanic lives in guardrails.ts; the policy (when a correction
   // fires, and when it stops) stays here.
@@ -1900,6 +1974,37 @@ async function runOne(
           });
         }
       }
+      // Leader directives land here, at the boundary, as ordinary runtime
+      // messages in the child's own stream — never a tool result, so they
+      // cannot forge evidence.
+      if (chain.steer) {
+        for (const directive of chain.steer.drain()) {
+          messages.push({
+            role: "user",
+            origin: "engine",
+            content: steerDirective(directive),
+          });
+        }
+      }
+      // Soft cap: a child is told to wrap up at 80% of its own budget, once.
+      // It is a nudge, not a stop — the child can still hand back an answer.
+      if (
+        chain.child &&
+        !softCapNudged &&
+        budget.usedFraction(stepsBefore + steps) >= DEFAULT_CHILD_SOFT_CAP
+      ) {
+        softCapNudged = true;
+        await courseCorrect({
+          kind: "child_wrap_up",
+          detail:
+            `step ${steps}: child reached ${Math.round(DEFAULT_CHILD_SOFT_CAP * 100)}% of its budget ` +
+            `(${budgetLine(budget, stepsBefore + steps)}) — told to wrap up`,
+          content: wrapUpNudge(
+            Math.max(0, budget.limits.maxSteps - stepsBefore - steps),
+            budgetLine(budget, stepsBefore + steps),
+          ),
+        });
+      }
       const over = budget.exceeded(stepsBefore + steps);
       if (over) {
         emit({
@@ -1907,6 +2012,15 @@ async function runOne(
           kind: "budget_exceeded",
           detail: over.detail,
         });
+        // A child out of its OWN budget hands back what it has. The leader's
+        // run continues; a worker hitting its cap is not the leader's failure.
+        if (chain.child) {
+          return conclude("budget_exhausted", {
+            ok: false,
+            summary: lastAssistantText(messages),
+            error: over.detail,
+          });
+        }
         return conclude(
           over.kind === "steps" ? "max_steps" : "budget_exceeded",
           { ok: false, error: over.detail },
@@ -2266,6 +2380,39 @@ async function runOne(
       declared = outcome.declared;
       outstanding.push(...outcome.jobs);
       pendingSettlements.push(...outcome.settlements);
+      // Progress for a delegated child: the leader's `delegate` call is still
+      // open, so this is how a host sees the work (and may steer it). One
+      // compact record per turn — never the child's transcript.
+      if (chain.child && chain.worker) {
+        noteTouchedFiles(touchedFiles, response.toolCalls);
+        const lastTool = response.toolCalls.at(-1)?.name;
+        const filesTouched = touchedFiles.size
+          ? [...touchedFiles].slice(0, 20)
+          : undefined;
+        const progress: WorkerProgress = {
+          worker: chain.worker,
+          agent: chain.agent ?? strategy.name,
+          role: chain.role ?? "worker",
+          steps,
+          budgetUsed: budget.usedFraction(stepsBefore + steps),
+          ...(lastTool ? { lastTool } : {}),
+          ...(filesTouched ? { filesTouched } : {}),
+          steer: (value) => chain.steer?.push(value) ?? false,
+        };
+        emit({
+          type: "progress",
+          worker: progress.worker,
+          steps: progress.steps,
+          budgetUsed: progress.budgetUsed,
+          ...(progress.lastTool ? { lastTool: progress.lastTool } : {}),
+          ...(progress.filesTouched ? { filesTouched: progress.filesTouched } : {}),
+        });
+        try {
+          opts.onProgress?.(progress);
+        } catch {
+          // A consumer callback must never kill the run.
+        }
+      }
       // Materialization advisory (runtime-only, never persisted): a reasoning
       // model's hidden chain is stateless between calls, so after consecutive
       // turns that only call tools, nothing it understood is visible — and
