@@ -19,6 +19,7 @@
  * git/exec infra, and the conformance suite that accepts an adapter.
  */
 import type { Sandbox, SandboxSpec } from "./types.js";
+import { isSandboxGone } from "./types.js";
 import type { SandboxHandle, SandboxProvider } from "./provider.js";
 
 export * from "./types.js";
@@ -46,7 +47,9 @@ export interface OpenSandboxArgs {
 /**
  * Open the sandbox for a piece of work — the lifecycle a product runs:
  *   1. adopt the retained handle when one applies (SAME workspace, edits intact);
- *   2. on failure, report it (onRetainedGone) and build a fresh sandbox;
+ *   2. when the provider says the handle is truly GONE, report it
+ *      (onRetainedGone) and build a fresh sandbox — a transient failure is
+ *      rethrown, never mistaken for a dead sandbox;
  *   3. when the fresh clone's `ref` is unusable, report it (onRefUnusable) and
  *      retry `fallbackSpec`.
  * The callbacks are bookkeeping for the owner (clearing DB pointers); they
@@ -62,7 +65,8 @@ export async function openSandbox(args: OpenSandboxArgs): Promise<Sandbox> {
     try {
       await adopted.start();
       return adopted;
-    } catch {
+    } catch (error) {
+      if (!providerSaysGone(provider, error)) throw error;
       await args.onRetainedGone?.(args.adopt);
     }
   }
@@ -148,12 +152,37 @@ export interface OpenSandboxSessionArgs {
   onRefUnusable?: (ref: string) => Promise<void> | void;
   /** Legacy/test seam: construct sandboxes from specs directly. */
   create?: (spec: SandboxSpec) => Sandbox;
+  /**
+   * Retries when adopting the retained sandbox fails TRANSIENTLY (a lock held
+   * by a concurrent opener, a control plane "transitioning", a timeout).
+   * Default 4. Only a provider-confirmed "gone" clears the pointer; after the
+   * last retry the open FAILS LOUDLY rather than silently building a fresh
+   * sandbox over the recorded one.
+   */
+  adoptRetries?: number;
+  /** First backoff between adopt retries, in ms (doubles each attempt). Default 500. */
+  adoptBackoffMs?: number;
 }
+
+/** Defaults for `openSandboxSession`'s adopt retry policy. */
+const DEFAULT_ADOPT_RETRIES = 4;
+const DEFAULT_ADOPT_BACKOFF_MS = 500;
+
+/** Does the provider say this error means the sandbox truly no longer exists? */
+function providerSaysGone(provider: SandboxProvider, error: unknown): boolean {
+  return provider.isGone ? provider.isGone(error) : isSandboxGone(error);
+}
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Open the sandbox for a piece of work, with continuity kept in a store:
  *   1. adopt the retained handle the store remembers (SAME workspace, edits
- *      intact) — when it is gone, the store is cleared;
+ *      intact). A TRANSIENT failure is retried with backoff; the store is
+ *      cleared ONLY when the provider says the sandbox is truly gone. If it is
+ *      still unavailable after the retries, the open fails loudly — clearing
+ *      the pointer and re-cloning would silently abandon the work on the
+ *      recorded sandbox.
  *   2. otherwise try each source in order (newest-usable ref first), reporting
  *      dead refs via `onRefUnusable` before the next candidate;
  *   3. whatever opens is written back to the store, so the next run adopts it.
@@ -172,18 +201,42 @@ export async function openSandboxSession(
   // 1. The retained sandbox this work-stream left behind.
   const session = await args.store.get(args.key);
   if (session?.retained) {
+    const handle = session.retained;
     // Adoption applies the fields a fresh start would (identity, env); the
     // ref is irrelevant — the workspace comes from the retained disk.
     const spec = args.sources.at(-1)?.spec ?? {};
-    const adopted = args.create
-      ? make({ ...spec, adopt: session.retained.id })
-      : args.provider.adopt(session.retained, spec);
-    try {
-      await adopted.start();
-      await remember(adopted);
-      return adopted;
-    } catch {
-      await args.store.clear(args.key);
+    const retries = Math.max(0, args.adoptRetries ?? DEFAULT_ADOPT_RETRIES);
+    const backoff = Math.max(0, args.adoptBackoffMs ?? DEFAULT_ADOPT_BACKOFF_MS);
+    let lastError: unknown;
+    for (let attempt = 0; ; attempt += 1) {
+      const adopted = args.create
+        ? make({ ...spec, adopt: handle.id })
+        : args.provider.adopt(handle, spec);
+      try {
+        await adopted.start();
+        await remember(adopted);
+        return adopted;
+      } catch (error) {
+        lastError = error;
+        // Whether the sandbox is gone is the PROVIDER's call: a git lock, a
+        // "transitioning" control plane or a timeout must not be read as one.
+        if (providerSaysGone(args.provider, error)) {
+          await args.store.clear(args.key);
+          break;
+        }
+        if (attempt >= retries) {
+          throw new Error(
+            `the retained ${handle.backend} sandbox ${handle.id} is on record but ` +
+              `unavailable after ${attempt + 1} attempt(s): ` +
+              `${error instanceof Error ? error.message : String(error)}. ` +
+              `Refusing to build a fresh sandbox while one is on record — that ` +
+              `would abandon the thread's workspace. Retry once the sandbox is ` +
+              `reachable, or clear the stored pointer deliberately.`,
+            { cause: lastError },
+          );
+        }
+        await delay(backoff * 2 ** attempt);
+      }
     }
   }
 

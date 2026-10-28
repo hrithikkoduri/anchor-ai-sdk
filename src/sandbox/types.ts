@@ -278,6 +278,28 @@ export interface Sandbox {
   destroy(): Promise<void>;
 }
 
+/**
+ * The retained sandbox truly no longer exists — killed, expired and deleted,
+ * or otherwise irrecoverable. An adapter throws this from `start()` on the
+ * adopt path ONLY when it is certain the sandbox is gone, so a consumer may
+ * safely drop its pointer and build a fresh one. A transient failure (a git
+ * lock held by a concurrent opener, a control plane "transitioning", a
+ * timeout) must NOT be reported as gone: retry it instead.
+ */
+export class SandboxGoneError extends Error {
+  readonly sandboxId?: string;
+  constructor(message: string, sandboxId?: string) {
+    super(message);
+    this.name = "SandboxGoneError";
+    this.sandboxId = sandboxId;
+  }
+}
+
+/** True when an error means the sandbox truly no longer exists. */
+export function isSandboxGone(error: unknown): boolean {
+  return error instanceof SandboxGoneError;
+}
+
 /** Clamp a timeout into the supported range (matches Heyo's 1..3600 clamp). */
 export function clampTimeout(secs: number | undefined): number {
   return Math.min(3600, Math.max(1, secs ?? 120));

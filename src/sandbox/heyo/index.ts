@@ -30,6 +30,7 @@ import {
   clampTimeout,
   newSandboxId,
   shq,
+  SandboxGoneError,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -191,6 +192,9 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
     create: (spec) => new HeyoSandbox(spec, cfg),
     adopt: (handle, spec = {}) =>
       new HeyoSandbox({ ...spec, adopt: handle.id }, cfg),
+    // Gone: a deployment the control plane no longer knows, or no workspace.
+    // A wake that timed out is transient.
+    isGone: (error) => error instanceof SandboxGoneError,
     release: async (handle) => {
       await new HeyoSandbox({ adopt: handle.id }, cfg).destroy();
     },
@@ -275,9 +279,16 @@ export class HeyoSandbox implements Sandbox {
           timeoutMs: this.cfg.readyTimeoutMs ?? 900_000,
         });
       } catch (err) {
-        throw new Error(
-          `retained sandbox ${this.id} is unavailable: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        const message = err instanceof Error ? err.message : String(err);
+        // A deployment the control plane no longer knows is gone; a timeout
+        // waiting for it to wake is transient and must be retried.
+        if (/\bnot found\b|\bdoes not exist\b|\b404\b/i.test(message)) {
+          throw new SandboxGoneError(
+            `retained sandbox ${this.id} no longer exists: ${message}`,
+            this.id,
+          );
+        }
+        throw new Error(`retained sandbox ${this.id} is unavailable: ${message}`);
       }
       await this.ensureGit();
       await this.setupGitCredentials();
@@ -286,7 +297,10 @@ export class HeyoSandbox implements Sandbox {
         { cwd: "/", timeoutSecs: 30 },
       );
       if (probe.stdout.trim() !== "ok")
-        throw new Error(`retained sandbox ${this.id} has no workspace`);
+        throw new SandboxGoneError(
+          `retained sandbox ${this.id} has no workspace`,
+          this.id,
+        );
       await this.prepareScratch();
       this.started = true;
       return;

@@ -76,6 +76,14 @@ export interface SandboxProvider {
   /** Cheap connectivity/health check — what `doctor` calls. */
   probe(): Promise<ProviderHealth>;
   /**
+   * Optional: is this error from `adopt(...).start()` proof the sandbox is
+   * truly gone (safe to clear the pointer and build fresh), as opposed to a
+   * transient failure (retry)? Adapters that can tell the difference — a
+   * provider "not found" versus a lock/timeout — declare it here. Absent, an
+   * error counts as gone only when it is a `SandboxGoneError`.
+   */
+  isGone?(error: unknown): boolean;
+  /**
    * Optional image build/publish seam. `capabilities.publishImage` is the
    * capability declaration; consumers can call it before creating a sandbox
    * and pass the returned ref through `SandboxSpec.image` (or the provider

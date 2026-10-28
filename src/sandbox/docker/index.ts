@@ -21,6 +21,7 @@ import {
   clampTimeout,
   newSandboxId,
   shq,
+  SandboxGoneError,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -98,7 +99,10 @@ export class DockerSandbox implements Sandbox {
         this.id,
       ]);
       if (status.exitCode !== 0) {
-        throw new Error(`retained sandbox ${this.id} has no container`);
+        throw new SandboxGoneError(
+          `retained sandbox ${this.id} has no container`,
+          this.id,
+        );
       }
       if (status.stdout.trim() !== "running") {
         const up = await this.cli(["start", this.id], { timeoutSecs: 120 });
@@ -655,6 +659,8 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
     create: (spec) => new DockerSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new DockerSandbox({ ...spec, adopt: handle.id }, opts),
+    // Only "no container" is gone; a container that failed to wake is transient.
+    isGone: (error) => error instanceof SandboxGoneError,
     release: async (handle) => {
       await new Promise<void>((resolve) => {
         const child = spawn(dockerBin, ["rm", "-f", handle.id], {
