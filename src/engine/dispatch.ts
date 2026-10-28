@@ -53,7 +53,8 @@ export interface ToolDispatchArgs {
   calls: LLMToolCall[];
   available: Map<string, Tool>;
   steps: number;
-  phase: string;
+  /** Absent when the run has phases off. */
+  phase?: string;
   toolContext: ToolContext;
   /** The intrinsic `finish` tool, to compare identity against. */
   finish: Tool;
@@ -261,7 +262,7 @@ export async function dispatchToolCalls(
       callId: call.id,
       ...(operationId ? { operationId } : {}),
       verb: result.verb ?? verb,
-      phase,
+      ...(phase !== undefined ? { phase } : {}),
       step: steps,
       ok: result.ok,
       outcome:
@@ -306,7 +307,7 @@ export async function dispatchToolCalls(
         callId: call.id,
         input,
         verb,
-        phase,
+        ...(phase !== undefined ? { phase } : {}),
         step: steps,
       });
       if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
@@ -388,7 +389,7 @@ export async function dispatchToolCalls(
           callId: item.call.id,
           input: item.input,
           verb: item.verb,
-          phase,
+          ...(phase !== undefined ? { phase } : {}),
           step: steps,
         });
       }
@@ -487,7 +488,7 @@ export async function dispatchToolCalls(
       ...(operationId ? { operationId } : {}),
       input,
       verb,
-      phase,
+      ...(phase !== undefined ? { phase } : {}),
       step: steps,
     });
 

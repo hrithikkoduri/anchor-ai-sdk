@@ -1469,3 +1469,22 @@ it is best-effort and never throws.
 
 Regressions: `tests/unit/lsp.test.ts` (one server per sandbox object; warming).
 
+
+## Decision #105: Phases off means no phase anywhere
+
+`intrinsics.phase: false` (or a strategy with fewer than two phases) removed
+`set_phase` and the discipline block, but the engine still started the run in
+`strategy.phases[0]`, emitted `phase_started`, and appended a turn-scoped
+`Current phase: <id>` block after the conversation on every call. A consumer
+whose workers have no phase to choose saw them told "Current phase: understand"
+right after each tool result, and a builder read that as an instruction not to
+build. A phase the model can never change is not state; it is a stale order.
+
+So the same `phaseOn` switch now gates every place the phase escapes the loop:
+the `Current phase` block, `phase_started`, the `phases` list on
+`run_started`, the `phase` tag on LLM/tool events, `AgentResult.phase` (and so
+the inbox run summary, revival's `startPhase`, a delegation's hand-back), and
+the phase saved on the thread record. A phased run is unchanged.
+
+Regressions: `tests/unit/transitions.test.ts` (phase off by intrinsic and by
+`phases: []`; a phased run still states its phase).
