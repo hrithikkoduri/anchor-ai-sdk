@@ -10,8 +10,9 @@
  *
  * Docker is driven through its CLI (spawn), so this file adds no npm
  * dependency; the CLI must resolve on PATH or `dockerBin` must name it.
- * Containers are `sb-anchor-*`; a retained container is STOPPED, not removed,
- * and the next run adopts it by name — the same continuity contract as every
+ * Containers are `sb-anchor-*`; a retained container is left running by
+ * destroy() and STOPPED (not removed) by `provider.suspend`; the next run
+ * adopts it by name — the same continuity contract as every
  * backend. On arm64 hosts, amd64-only images run under emulation; that is the
  * host platform's business, not this adapter's.
  */
@@ -546,7 +547,9 @@ export class DockerSandbox implements Sandbox {
             : `retained container for thread continuation: ${this.id}\n`,
         );
       }
-      await this.cli(["stop", this.id], { timeoutSecs: 120 });
+      // A retained container may be shared by other runs: leave it running.
+      // The consumer stops it with `provider.suspend` once nobody uses it.
+      if (this.spec.keep) await this.cli(["stop", this.id], { timeoutSecs: 120 });
       return;
     }
     await this.cli(["rm", "-f", this.id], { timeoutSecs: 120 });
@@ -661,6 +664,14 @@ export function docker(opts: DockerSandboxOptions = {}): SandboxProvider {
       new DockerSandbox({ ...spec, adopt: handle.id }, opts),
     // Only "no container" is gone; a container that failed to wake is transient.
     isGone: (error) => error instanceof SandboxGoneError,
+    // Stopped, not removed: adopt `docker start`s it with the disk intact.
+    suspend: async (handle) => {
+      await new Promise<void>((resolve) => {
+        const child = spawn(dockerBin, ["stop", handle.id], { stdio: "ignore" });
+        child.on("close", () => resolve());
+        child.on("error", () => resolve());
+      });
+    },
     release: async (handle) => {
       await new Promise<void>((resolve) => {
         const child = spawn(dockerBin, ["rm", "-f", handle.id], {

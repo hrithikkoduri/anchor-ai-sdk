@@ -500,6 +500,42 @@ const SCENARIOS: Scenario[] = [
   },
 
   {
+    name: "destroy of a retained sandbox leaves it usable by a concurrent run; suspend parks it for adopt",
+    skip: (ctx) =>
+      ctx.provider.capabilities.retain
+        ? undefined
+        : "provider declares retain: false",
+    run: async ({ provider }) => {
+      const first = provider.create({ retain: true });
+      await first.start();
+      const handle = { id: first.id, backend: provider.name };
+      const second = provider.adopt(handle, { retain: true });
+      await second.start();
+      try {
+        await first.destroy(); // one run ends; the other is still working
+        const still = await second.exec(`echo alive > shared.txt && cat shared.txt`);
+        expect(still.exitCode).toBe(0);
+        expect(still.stdout.trim()).toBe("alive");
+        await second.checkpoint("shared");
+        await second.destroy();
+        await provider.suspend?.(handle);
+
+        const resumed = provider.adopt(handle);
+        await resumed.start();
+        try {
+          expect(resumed.id).toBe(first.id);
+          expect((await resumed.exec(`cat shared.txt`)).stdout.trim()).toBe("alive");
+        } finally {
+          await resumed.destroy();
+        }
+      } finally {
+        await second.destroy();
+        await provider.release(handle);
+      }
+    },
+  },
+
+  {
     name: "adopt fails loudly when the retained sandbox is gone",
     skip: (ctx) =>
       ctx.provider.capabilities.retain

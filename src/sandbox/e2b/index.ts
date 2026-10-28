@@ -30,6 +30,7 @@ import {
   clampTimeout,
   shq,
   SandboxGoneError,
+  WorkspaceUnavailableError,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -55,7 +56,7 @@ const DEFAULT_WORKSPACE = "/home/user/repo";
 const DEFAULT_SCRATCH = "/tmp/anchor";
 /**
  * Default sandbox lifetime (wall-clock). E2B kills on timeout unless a
- * lifecycle is configured; retention is handled explicitly at destroy().
+ * lifecycle is configured; a retained sandbox pauses on timeout instead.
  * Hobby caps at 1 hour, Pro at 24 hours — raise this with `timeoutMs`.
  */
 const DEFAULT_LIFETIME_MS = 60 * 60_000;
@@ -90,8 +91,16 @@ export interface E2BSandboxOptions {
   /** Silence lifecycle notes (tests). */
   quiet?: boolean;
   /**
-   * Test seam: the two network entry points. Defaults to the E2B SDK, so a
-   * unit test can exercise start/fork/adopt without an account.
+   * Attempts at confirming an adopted sandbox's workspace (connect + check)
+   * before the adopt fails with `WorkspaceUnavailableError`. A sandbox caught
+   * mid-pause or mid-resume answers the check late; default 4.
+   */
+  adoptAttempts?: number;
+  /** First backoff between those attempts, in ms (doubles each time). Default 1000. */
+  adoptBackoffMs?: number;
+  /**
+   * Test seam: the network entry points. Defaults to the E2B SDK, so a
+   * unit test can exercise start/fork/adopt/suspend without an account.
    */
   clientFactory?: E2BClientFactory;
 }
@@ -100,12 +109,18 @@ export interface E2BSandboxOptions {
 export interface E2BClientFactory {
   create(template: string, opts: SandboxOpts): Promise<E2BClient>;
   connect(sandboxId: string, opts: SandboxConnectOpts): Promise<E2BClient>;
+  /** Pause by id (`provider.suspend`). Defaults to `Sandbox.pause`. */
+  pause?(sandboxId: string, opts: { apiKey?: string; domain?: string }): Promise<boolean>;
 }
 
 const defaultFactory: E2BClientFactory = {
   create: (template, opts) => E2BClient.create(template, opts),
   connect: (sandboxId, opts) => E2BClient.connect(sandboxId, opts),
+  pause: (sandboxId, opts) => E2BClient.pause(sandboxId, opts),
 };
+
+const DEFAULT_ADOPT_ATTEMPTS = 4;
+const DEFAULT_ADOPT_BACKOFF_MS = 1000;
 
 /**
  * Is this E2B failure proof the sandbox no longer exists? Only `not found`
@@ -190,43 +205,7 @@ export class E2BSandbox implements Sandbox {
 
     try {
       if (this.spec.adopt) {
-        // Wake the retained sandbox. `connect` resumes a paused one; the
-        // workspace comes from the retained disk, not from the spec.
-        //
-        // Only a "not found" is proof the sandbox is gone (SandboxGoneError):
-        // the consumer then clears its pointer and builds a fresh sandbox. Any
-        // other failure — a control-plane "transitioning", a connection reset,
-        // a timeout — is transient and must be retried, never mistaken for a
-        // dead sandbox (which silently re-clones and loses the work).
-        try {
-          this.client = await this.factory.connect(this.spec.adopt, {
-            ...connectionOpts(this.opts),
-            timeoutMs: this.lifetimeMs(),
-          });
-          this._id = this.client.sandboxId;
-          this.applyMetadata(await this.client.getInfo());
-        } catch (error) {
-          if (isNotFound(error)) {
-            throw new SandboxGoneError(
-              `retained E2B sandbox ${this.spec.adopt} no longer exists: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-              this.spec.adopt,
-            );
-          }
-          throw error;
-        }
-
-        const workspace = await this.execRaw(
-          `test -d ${shq(this._workspace)}/.git`,
-          { cwd: "/", timeoutSecs: 60 },
-        );
-        if (workspace.exitCode !== 0) {
-          throw new SandboxGoneError(
-            `retained sandbox ${this._id} has no workspace at ${this._workspace}`,
-            this._id,
-          );
-        }
+        await this.adoptRetained(this.spec.adopt);
       } else {
         const template =
           this.spec.image ?? this.opts.template ?? "base";
@@ -479,16 +458,11 @@ export class E2BSandbox implements Sandbox {
       return;
     }
 
-    // `retain` is thread continuity: pause so the next run can adopt it with
-    // the workspace (and memory) intact, without paying for a running VM.
+    // `retain` is thread continuity: detach THIS run and leave the VM running.
+    // Other runs may share the sandbox, so pausing here would freeze it under
+    // them; the consumer pauses it with `provider.suspend` once nobody uses
+    // it, and `lifecycle.onTimeout: "pause"` is the idle safety net.
     if (this.spec.retain) {
-      await client.pause().catch((error) => {
-        if (!(error instanceof SandboxNotFoundError) && !this.opts.quiet) {
-          process.stderr.write(
-            `could not pause E2B sandbox ${this._id}: ${error instanceof Error ? error.message : String(error)}\n`,
-          );
-        }
-      });
       if (!this.opts.quiet) {
         process.stderr.write(
           `retained E2B sandbox for thread continuation: ${this._id}\n`,
@@ -521,6 +495,61 @@ export class E2BSandbox implements Sandbox {
     if (this.destroyed) {
       throw new Error(`sandbox ${this._id} was destroyed`);
     }
+  }
+
+  /**
+   * Wake the retained sandbox and confirm its workspace. `connect` resumes a
+   * paused one; the workspace comes from the retained disk, not the spec.
+   *
+   * Only E2B saying the sandbox does not exist is `SandboxGoneError` — the
+   * consumer may then clear its pointer and build fresh. A failed workspace
+   * check is NOT proof of that: a sandbox caught mid-pause or mid-resume
+   * answers it late (exit -1/transport, or a non-zero exit). Connect + check
+   * are retried with backoff, then `WorkspaceUnavailableError` — never "gone",
+   * because re-cloning over a live disk silently loses the work on it.
+   */
+  private async adoptRetained(id: string): Promise<void> {
+    const attempts = Math.max(1, this.opts.adoptAttempts ?? DEFAULT_ADOPT_ATTEMPTS);
+    const backoff = Math.max(0, this.opts.adoptBackoffMs ?? DEFAULT_ADOPT_BACKOFF_MS);
+    let reason = "";
+    let cause: unknown;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, backoff * 2 ** (attempt - 1)));
+      try {
+        this.client = await this.factory.connect(id, {
+          ...connectionOpts(this.opts),
+          timeoutMs: this.lifetimeMs(),
+        });
+        this._id = this.client.sandboxId;
+        this.applyMetadata(await this.client.getInfo());
+      } catch (error) {
+        if (isNotFound(error)) {
+          throw new SandboxGoneError(
+            `retained E2B sandbox ${id} no longer exists: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            id,
+          );
+        }
+        cause = error;
+        reason = `connect failed: ${error instanceof Error ? error.message : String(error)}`;
+        continue;
+      }
+      const workspace = await this.execRaw(
+        `test -d ${shq(this._workspace)}/.git`,
+        { cwd: "/", timeoutSecs: 60 },
+      );
+      if (workspace.exitCode === 0) return;
+      cause = undefined;
+      reason = `workspace check at ${this._workspace} exited ${workspace.exitCode}${
+        workspace.output.trim() ? `: ${workspace.output.trim().slice(0, 300)}` : ""
+      }`;
+    }
+    throw new WorkspaceUnavailableError(
+      `retained E2B sandbox ${id} exists but its workspace could not be confirmed after ${attempts} attempt(s) (${reason}); not treating it as gone`,
+      id,
+      cause === undefined ? undefined : { cause },
+    );
   }
 
   /** Read the coordinates stored at create time; an explicit option wins. */
@@ -834,11 +863,22 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
     create: (spec) => new E2BSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new E2BSandbox({ ...spec, adopt: handle.id }, opts),
-    // "Not found" is gone; a lock, a timeout or a transitional control plane is
-    // transient and must be retried rather than discarded.
+    // Only E2B saying the sandbox does not exist is gone. A workspace check
+    // that failed (WorkspaceUnavailableError), a lock, a timeout or a
+    // transitional control plane is transient and must not be discarded.
     isGone: (error) =>
-      error instanceof SandboxGoneError ||
-      (error instanceof Error && isNotFound(error)),
+      !(error instanceof WorkspaceUnavailableError) &&
+      (error instanceof SandboxGoneError || error instanceof SandboxNotFoundError),
+    suspend: async (handle) => {
+      const pause = (opts.clientFactory ?? defaultFactory).pause ?? defaultFactory.pause!;
+      try {
+        await pause(handle.id, connectionOpts(opts));
+      } catch (error) {
+        // Already gone is not an error; anything else is the caller's to see.
+        if (error instanceof SandboxNotFoundError) return;
+        throw error;
+      }
+    },
     release: async (handle) => {
       try {
         await E2BClient.kill(handle.id, connectionOpts(opts));
