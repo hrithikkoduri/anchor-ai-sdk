@@ -29,6 +29,7 @@ import type { ProviderHealth, SandboxProvider } from "../provider.js";
 import {
   clampTimeout,
   shq,
+  SandboxGoneError,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -106,6 +107,25 @@ const defaultFactory: E2BClientFactory = {
   connect: (sandboxId, opts) => E2BClient.connect(sandboxId, opts),
 };
 
+/**
+ * Is this E2B failure proof the sandbox no longer exists? Only `not found`
+ * (the SDK's own error, or a 404 by message) counts. Everything else — a
+ * "transitioning" control plane, a socket reset, a timeout — is transient.
+ */
+function isNotFound(error: unknown): boolean {
+  if (error instanceof SandboxNotFoundError) return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return /\bnot found\b|\bdoes not exist\b|\b404\b/i.test(message);
+}
+
+/** Did a `git config` write lose a race for `.git/config.lock`? */
+function isConfigLockError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /could not lock config file|Unable to create .*\.lock|File exists/i.test(
+    message,
+  );
+}
+
 function connectionOpts(opts: E2BSandboxOptions): {
   apiKey?: string;
   domain?: string;
@@ -172,20 +192,39 @@ export class E2BSandbox implements Sandbox {
       if (this.spec.adopt) {
         // Wake the retained sandbox. `connect` resumes a paused one; the
         // workspace comes from the retained disk, not from the spec.
-        this.client = await this.factory.connect(this.spec.adopt, {
-          ...connectionOpts(this.opts),
-          timeoutMs: this.lifetimeMs(),
-        });
-        this._id = this.client.sandboxId;
-        this.applyMetadata(await this.client.getInfo());
+        //
+        // Only a "not found" is proof the sandbox is gone (SandboxGoneError):
+        // the consumer then clears its pointer and builds a fresh sandbox. Any
+        // other failure — a control-plane "transitioning", a connection reset,
+        // a timeout — is transient and must be retried, never mistaken for a
+        // dead sandbox (which silently re-clones and loses the work).
+        try {
+          this.client = await this.factory.connect(this.spec.adopt, {
+            ...connectionOpts(this.opts),
+            timeoutMs: this.lifetimeMs(),
+          });
+          this._id = this.client.sandboxId;
+          this.applyMetadata(await this.client.getInfo());
+        } catch (error) {
+          if (isNotFound(error)) {
+            throw new SandboxGoneError(
+              `retained E2B sandbox ${this.spec.adopt} no longer exists: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+              this.spec.adopt,
+            );
+          }
+          throw error;
+        }
 
         const workspace = await this.execRaw(
           `test -d ${shq(this._workspace)}/.git`,
           { cwd: "/", timeoutSecs: 60 },
         );
         if (workspace.exitCode !== 0) {
-          throw new Error(
+          throw new SandboxGoneError(
             `retained sandbox ${this._id} has no workspace at ${this._workspace}`,
+            this._id,
           );
         }
       } else {
@@ -582,27 +621,79 @@ export class E2BSandbox implements Sandbox {
     }
   }
 
+  /**
+   * Identity and credential config, written only when they differ from what
+   * the workspace already has. An adopted sandbox is configured on every open
+   * (its identity may have changed between runs), so two openers must be able
+   * to run this without fighting over `.git/config.lock`: a read that already
+   * matches means no write at all, and a lock held by a concurrent writer is
+   * retried (the loser's write is a no-op anyway).
+   */
   private async configureGit(): Promise<void> {
     const access = this.gitAccess();
-    await access.git([
-      "config",
+    await this.setGitConfigIfNeeded(
+      access,
       "user.name",
       this.spec.gitIdentity?.name ?? "anchor",
-    ]);
-    await access.git([
-      "config",
+    );
+    await this.setGitConfigIfNeeded(
+      access,
       "user.email",
       this.spec.gitIdentity?.email ?? "anchor@localhost",
-    ]);
+    );
 
     // Credentials are a callback (installation tokens expire mid-run). The
     // helper reads GIT_TOKEN from each command's env; the token never enters
     // the workspace or the git config.
     const helper = this.credentialHelper();
     if (helper) {
-      await access.git(["config", "credential.helper", helper]);
-      await access.git(["config", "credential.useHttpPath", "true"]);
+      await this.setGitConfigIfNeeded(access, "credential.helper", helper);
+      await this.setGitConfigIfNeeded(access, "credential.useHttpPath", "true");
     }
+  }
+
+  /** Read one config key, tolerating an unset key (exit 1) and a missing file. */
+  private async readGitConfig(
+    access: GitAccess,
+    key: string,
+  ): Promise<string | null> {
+    const result = await access.shell(
+      `git config --get ${shq(key)} 2>/dev/null || true`,
+      { timeoutSecs: 60 },
+    );
+    const value = result.stdout.trim();
+    return result.exitCode === 0 && value ? value : null;
+  }
+
+  private async setGitConfigIfNeeded(
+    access: GitAccess,
+    key: string,
+    value: string,
+  ): Promise<void> {
+    if ((await this.readGitConfig(access, key)) === value) return;
+    const attempts = 5;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await access.git(["config", key, value]);
+        return;
+      } catch (error) {
+        if (attempt >= attempts - 1 || !isConfigLockError(error)) throw error;
+        // A concurrent opener holds the lock for the instant it writes its own
+        // config; back off, clear a lock left by a killed git, then retry.
+        await this.clearStaleConfigLock(access);
+        await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+      }
+    }
+  }
+
+  /** Remove `.git/config.lock` (and siblings) only when no git is running. */
+  private async clearStaleConfigLock(access: GitAccess): Promise<void> {
+    await access
+      .shell(
+        `pgrep -x git >/dev/null 2>&1 || find ${shq(this._workspace)}/.git -name '*.lock' -type f -delete 2>/dev/null || true`,
+        { timeoutSecs: 60 },
+      )
+      .catch(() => undefined);
   }
 
   private credentialHelper(): string | undefined {
@@ -743,6 +834,11 @@ export function e2b(opts: E2BSandboxOptions = {}): SandboxProvider {
     create: (spec) => new E2BSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new E2BSandbox({ ...spec, adopt: handle.id }, opts),
+    // "Not found" is gone; a lock, a timeout or a transitional control plane is
+    // transient and must be retried rather than discarded.
+    isGone: (error) =>
+      error instanceof SandboxGoneError ||
+      (error instanceof Error && isNotFound(error)),
     release: async (handle) => {
       try {
         await E2BClient.kill(handle.id, connectionOpts(opts));

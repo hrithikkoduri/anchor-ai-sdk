@@ -23,6 +23,7 @@ import {
   clampTimeout,
   newSandboxId,
   shq,
+  SandboxGoneError,
   type Checkpoint,
   type ExecOptions,
   type ExecResult,
@@ -96,9 +97,14 @@ export class LocalSandbox implements Sandbox {
     }
 
     if (this.spec.adopt) {
-      // Adopt the retained directory: the workspace must still be there.
+      // Adopt the retained directory: the workspace must still be there. A
+      // missing workspace is the local backend's "gone" — the consumer clears
+      // its pointer and builds fresh.
       if (!(await exists(path.join(this.workspace, ".git"))))
-        throw new Error(`retained sandbox ${this.id} has no workspace`);
+        throw new SandboxGoneError(
+          `retained sandbox ${this.id} has no workspace`,
+          this.id,
+        );
       await this.git([
         "-C",
         this.workspace,
@@ -404,6 +410,9 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
     create: (spec) => new LocalSandbox(spec, opts),
     adopt: (handle, spec = {}) =>
       new LocalSandbox({ ...spec, adopt: handle.id }, opts),
+    // Only a missing workspace is "gone"; anything else (a git write that
+    // failed) is transient and must not discard the retained pointer.
+    isGone: (error) => error instanceof SandboxGoneError,
     release: async (handle) => {
       await new LocalSandbox({ adopt: handle.id }, opts).destroy();
     },
