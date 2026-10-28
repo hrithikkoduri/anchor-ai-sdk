@@ -1,30 +1,49 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-24**, v0.7.0 prepared on main (npm publish, tag and GitHub Release pending). v0.6.0 is the latest published release.
+Status: **2026-10-28**, v0.8.9 released: npm `0.8.9`, Git tag `v0.8.9`, and
+GitHub Release are published. The missing tags and releases for the already
+published `0.3.1` through `0.8.8` packages were repaired at the same time.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
-## Prepared: v0.7.0
+## Released: v0.8.9
 
-- Team admission (`team.admit`) and the `item` reference on `delegate`. Decision #102.
-- `scopedSandbox` / `TeamWorkspace.sandbox` (a worker in its own tree); child runs never checkpoint. Decision #103.
-- `closeLspSessions(sandbox)`: language servers stop when the consumer is done with a sandbox or view; `warmLspSessions` loads them ahead of the first call. Decision #104.
+- Phases off means off everywhere: no phase prompt, tool, event fields, hand-back,
+  or thread phase when the strategy has one phase or `intrinsics.phase` is false.
+- A consumer's explicit resume phase is preserved instead of being overwritten by
+  a stale phase from the thread record.
 
-## Released: v0.6.0
+Verification for v0.8.9: `npm run typecheck`, `npm test` (491 passed, 24 skipped),
+`npm run build`, dist-export verification, and the site build.
 
-- Crews: worker instances on `delegate`, resumable worker memory via
-  `team.sessions`, parallel delegation to different workers bounded by
-  `team.maxParallel`, and the `team.workspace` hook for per-worker trees.
-- Per-delegation live projection with attribution, and nested worker
-  transcripts in `projectConversation`. Decision #101.
+## Recent releases
 
-## Released
-
-**v0.5.0** is the current npm/tag release. Its release notes are on
-[GitHub Releases](https://github.com/hrithikkoduri/anchor-ai-sdk/releases).
+- **v0.8.8** — a retained sandbox is detached, not paused, when a run ends;
+  optional `provider.suspend` owns parking; E2B adoption treats workspace
+  unavailability as transient.
+- **v0.8.7** — transient sandbox-adoption failures retry instead of splitting a
+  thread across two sandboxes; `SandboxGoneError`/`isSandboxGone` separate gone
+  from transient; E2B `configureGit` is idempotent and lock-safe.
+- **v0.8.6** — the deprecated `update_ledger` shim is removed; the seven focused
+  ledger tools are the only contract surface.
+- **v0.8.5** — per-child budgets, 80%/100% wrap-up and partial hand-back,
+  `steer_worker`/`onProgress`, cancel grace, tool-boundary child deadlines, and
+  `worker_stalled` progress. Includes the unpublished 0.8.4 work.
+- **v0.8.3** — one tool per ledger operation; focused schemas replace the mixed-op
+  surface.
+- **v0.8.2** — product-neutral repository examples; short-name resolution retained.
+- **v0.8.1** — `extendLedger`, `update_ledger` op inference, and unique repository
+  short-name resolution.
+- **v0.8.0** — E2B retained sandbox lifetime renewal and pause-on-timeout; the
+  unpublished 0.7.2 delegation-dispatch fix is included.
+- **v0.7.1** — ledger schema descriptions and retry-shaped errors.
+- **v0.7.0** — team admission, per-worker worktrees, `closeLspSessions`, and
+  `warmLspSessions`.
+- **v0.6.0** — crews: worker instances, resumable worker memory, parallel
+  delegation, and per-worker workspaces.
 
 ### v0.5.0 contents
 

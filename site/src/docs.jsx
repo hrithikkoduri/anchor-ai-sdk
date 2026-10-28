@@ -270,7 +270,7 @@ function Docs() {
             <div className="doc-meta">
               <span>Node 20+</span>
               <span>ESM</span>
-              <span>SDK v0.7.0</span>
+              <span>SDK v0.8.9</span>
               <span>Provider API key required</span>
             </div>
           </header>

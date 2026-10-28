@@ -8,6 +8,28 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.8.x — released
+
+- [x] v0.8.9: phases off means no phase in the prompt, events, hand-back, or
+      thread record; an explicit consumer resume phase is preserved.
+- [x] v0.8.8: retained sandboxes are detached, not paused, when a run ends;
+      `provider.suspend` owns parking; E2B adoption retries transient workspace
+      failures.
+- [x] v0.8.7: transient sandbox adoption retries with backoff; `SandboxGoneError`,
+      `isSandboxGone`, and `provider.isGone` distinguish gone from transient;
+      E2B `configureGit` is idempotent and lock-safe.
+- [x] v0.8.6: remove the deprecated `update_ledger` shim; split ledger tools are
+      the only contract surface.
+- [x] v0.8.5: per-child budgets, soft/hard caps, partial hand-back, steering,
+      progress, cancel grace, tool-boundary deadlines, and `worker_stalled`.
+- [x] v0.8.3: one tool per ledger operation, with focused schemas.
+- [x] v0.8.2: product-neutral repository examples.
+- [x] v0.8.1: `extendLedger`, ledger op inference, and unique short-name repo
+      resolution.
+- [x] v0.8.0: E2B retained-sandbox lifetime renewal and pause-on-timeout; the
+      unpublished 0.7.2 delegation-dispatch fix.
+- [x] v0.7.1: ledger schema descriptions and retry-shaped errors.
+
 ## v0.7.0 — released
 
 - [x] Team admission: `team.admit` checks every delegation before it runs (a
