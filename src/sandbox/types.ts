@@ -154,8 +154,13 @@ export interface SandboxSpec {
   keep?: boolean;
   /**
    * Survive destroy() because the THREAD continues (distinct from `keep`, the
-   * debugging switch): the sandbox is parked, and the next run on the thread
-   * adopts it by id — workspace, branch, and uncommitted work exactly as left.
+   * debugging switch): the next run on the thread adopts it by id — workspace,
+   * branch, and uncommitted work exactly as left.
+   *
+   * destroy() of a retained sandbox detaches THIS run only; it never parks the
+   * VM, because other runs may share it. Parking is the consumer's decision,
+   * made when nobody is using the sandbox: `SandboxProvider.suspend(handle)`.
+   * Providers keep an idle safety net (E2B pauses on timeout).
    */
   retain?: boolean;
   /**
@@ -291,6 +296,21 @@ export class SandboxGoneError extends Error {
   constructor(message: string, sandboxId?: string) {
     super(message);
     this.name = "SandboxGoneError";
+    this.sandboxId = sandboxId;
+  }
+}
+
+/**
+ * The retained sandbox exists, but its workspace could not be confirmed after
+ * retries — a resume still in progress, an unresponsive guest, a check that
+ * timed out. NOT gone: the disk is still on record, so a consumer must not
+ * clear its pointer or build a fresh sandbox over it. Retry later, or fail.
+ */
+export class WorkspaceUnavailableError extends Error {
+  readonly sandboxId?: string;
+  constructor(message: string, sandboxId?: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "WorkspaceUnavailableError";
     this.sandboxId = sandboxId;
   }
 }

@@ -73,6 +73,14 @@ export interface SandboxProvider {
   adopt(handle: SandboxHandle, spec?: SandboxSpec): Sandbox;
   /** Tear a retained sandbox down; already-gone is not an error. */
   release(handle: SandboxHandle): Promise<void>;
+  /**
+   * Optional: park a retained sandbox (stop paying for compute, keep the disk)
+   * so a later `adopt` resumes it. `destroy()` never parks a retained sandbox —
+   * several runs may share one — so the CONSUMER calls this once it knows no
+   * run is using the sandbox. Already-gone is not an error. Absent: the
+   * backend has nothing to park (a local directory).
+   */
+  suspend?(handle: SandboxHandle): Promise<void>;
   /** Cheap connectivity/health check — what `doctor` calls. */
   probe(): Promise<ProviderHealth>;
   /**
@@ -80,7 +88,8 @@ export interface SandboxProvider {
    * truly gone (safe to clear the pointer and build fresh), as opposed to a
    * transient failure (retry)? Adapters that can tell the difference — a
    * provider "not found" versus a lock/timeout — declare it here. Absent, an
-   * error counts as gone only when it is a `SandboxGoneError`.
+   * error counts as gone only when it is a `SandboxGoneError`. A
+   * `WorkspaceUnavailableError` is never gone.
    */
   isGone?(error: unknown): boolean;
   /**

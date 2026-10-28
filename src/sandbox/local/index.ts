@@ -413,6 +413,8 @@ export function local(opts: LocalSandboxOptions = {}): SandboxProvider {
     // Only a missing workspace is "gone"; anything else (a git write that
     // failed) is transient and must not discard the retained pointer.
     isGone: (error) => error instanceof SandboxGoneError,
+    // A directory has nothing to park.
+    suspend: async () => undefined,
     release: async (handle) => {
       await new LocalSandbox({ adopt: handle.id }, opts).destroy();
     },

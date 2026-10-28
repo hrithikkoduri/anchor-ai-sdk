@@ -4,11 +4,13 @@
  * offline; the live conformance suite covers the same paths for real.
  */
 import { describe, expect, it, vi } from "vitest";
-import type { Sandbox as E2BClient } from "e2b";
+import { SandboxNotFoundError, type Sandbox as E2BClient } from "e2b";
 import {
   E2BSandbox,
+  e2b,
   type E2BClientFactory,
 } from "../../src/sandbox/e2b/index.js";
+import { SandboxGoneError, WorkspaceUnavailableError } from "../../src/sandbox/types.js";
 
 type RunResult = { exitCode?: number; stdout?: string; stderr?: string };
 
@@ -122,10 +124,90 @@ describe("e2b lifecycle (fake client)", () => {
     });
     const sandbox = new E2BSandbox(
       { adopt: "sb-adopted" },
-      { quiet: true, clientFactory: factory(fake.client) },
+      { quiet: true, clientFactory: factory(fake.client), adoptBackoffMs: 0 },
     );
-    await expect(sandbox.start()).rejects.toThrow(/no workspace/);
+    await expect(sandbox.start()).rejects.toThrow(/could not be confirmed/);
     expect(fake.killed).toHaveLength(0);
+  });
+
+  it("retries a failing workspace check, then fails as unavailable — never gone", async () => {
+    let connects = 0;
+    const fake = fakeClient({
+      sandboxId: "sb-adopted",
+      run: (command) =>
+        command.includes("/.git") ? { exitCode: 1 } : { exitCode: 0 },
+    });
+    const sandbox = new E2BSandbox(
+      { adopt: "sb-adopted" },
+      {
+        quiet: true,
+        adoptAttempts: 3,
+        adoptBackoffMs: 0,
+        clientFactory: {
+          create: async () => fake.client,
+          connect: async () => {
+            connects += 1;
+            return fake.client;
+          },
+        },
+      },
+    );
+    const error = await sandbox.start().then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(WorkspaceUnavailableError);
+    expect(error).not.toBeInstanceOf(SandboxGoneError);
+    expect(connects).toBe(3);
+    expect(fake.calls.filter((c) => c.includes("/.git"))).toHaveLength(3);
+    expect(e2b({ quiet: true }).isGone!(error)).toBe(false);
+  });
+
+  it("adopts once a mid-resume workspace check starts answering", async () => {
+    let checks = 0;
+    const fake = fakeClient({
+      sandboxId: "sb-adopted",
+      run: (command) => {
+        if (!command.includes("test -d")) return { exitCode: 0 };
+        checks += 1;
+        // A transport failure first (the guest is still pausing/resuming).
+        return checks < 3 ? { exitCode: -1 } : { exitCode: 0 };
+      },
+    });
+    const sandbox = new E2BSandbox(
+      { adopt: "sb-adopted" },
+      { quiet: true, adoptBackoffMs: 0, clientFactory: factory(fake.client) },
+    );
+    await sandbox.start();
+    expect(sandbox.id).toBe("sb-adopted");
+    expect(checks).toBe(3);
+  });
+
+  it("is gone only when E2B says the sandbox does not exist", async () => {
+    const sandbox = new E2BSandbox(
+      { adopt: "sb-dead" },
+      {
+        quiet: true,
+        adoptBackoffMs: 0,
+        clientFactory: {
+          create: async () => {
+            throw new Error("unused");
+          },
+          connect: async () => {
+            throw new SandboxNotFoundError("sandbox sb-dead not found");
+          },
+        },
+      },
+    );
+    const error = await sandbox.start().then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(SandboxGoneError);
+    const provider = e2b({ quiet: true });
+    expect(provider.isGone!(error)).toBe(true);
+    // A git message mentioning "not found" is not the control plane talking.
+    expect(provider.isGone!(new Error("fatal: remote ref not found"))).toBe(false);
   });
 
   it("restores workspace and scratch from the sandbox's metadata on adopt", async () => {
@@ -164,7 +246,7 @@ describe("e2b lifecycle (fake client)", () => {
     );
   });
 
-  it("pauses a retained sandbox instead of killing it, and is idempotent", async () => {
+  it("destroy() of a retained sandbox neither pauses nor kills it, and is idempotent", async () => {
     const fake = fakeClient();
     const sandbox = new E2BSandbox(
       { workspacePath: "/testbed", retain: true },
@@ -173,8 +255,28 @@ describe("e2b lifecycle (fake client)", () => {
     await sandbox.start();
     await sandbox.destroy();
     await sandbox.destroy();
-    expect(fake.paused).toHaveLength(1);
+    // Another run may share it: only the consumer's suspend() pauses it.
+    expect(fake.paused).toHaveLength(0);
     expect(fake.killed).toHaveLength(0);
+  });
+
+  it("provider.suspend pauses by id; already-gone is not an error", async () => {
+    const paused: string[] = [];
+    const fake = fakeClient();
+    const provider = e2b({
+      quiet: true,
+      clientFactory: {
+        ...factory(fake.client),
+        pause: async (id) => {
+          if (id === "sb-gone") throw new SandboxNotFoundError("not found");
+          paused.push(id);
+          return true;
+        },
+      },
+    });
+    await provider.suspend!({ id: "sb-1", backend: "e2b" });
+    await provider.suspend!({ id: "sb-gone", backend: "e2b" });
+    expect(paused).toEqual(["sb-1"]);
   });
 
   it("mints one git token for many commands", async () => {

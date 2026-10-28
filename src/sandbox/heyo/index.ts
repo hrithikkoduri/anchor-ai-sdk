@@ -195,6 +195,13 @@ export function heyo(cfg: HeyoSandboxConfig): SandboxProvider {
     // Gone: a deployment the control plane no longer knows, or no workspace.
     // A wake that timed out is transient.
     isGone: (error) => error instanceof SandboxGoneError,
+    // Let the deployment scale to zero with its disk retained — what destroy()
+    // of a retained sandbox already asks for; Heyo parks it once it is idle.
+    suspend: async (handle) => {
+      await new Hws({ server: cfg.server, token: cfg.token }).patchScaling(handle.id, {
+        min_replicas: 0,
+      });
+    },
     release: async (handle) => {
       await new HeyoSandbox({ adopt: handle.id }, cfg).destroy();
     },

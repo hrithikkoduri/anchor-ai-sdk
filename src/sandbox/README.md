@@ -48,6 +48,7 @@ product, and a handle owned by a different provider is skipped, not "gone".
 | `create(spec)` | constructs only, with **no I/O**; `start()` does the I/O |
 | `adopt(handle, spec?)` | the workspace comes from the retained disk; `start()` proves it still exists; a failure is *gone*, not *fatal* |
 | `release(handle)` | destroy by handle alone; no spec, no start; already-gone is not an error |
+| `suspend(handle)` | optional: park a retained sandbox (keep the disk, stop the compute). `destroy()` never parks a retained sandbox, because runs may share it; the consumer calls this when nobody is using it. Already-gone is not an error |
 | `probe()` | cheap health check, used by a `doctor` command |
 | `imagePublisher` | optional publish seam; declared by `capabilities.publishImage`. It is slow and credentialed, so it lives outside `start()` |
 | `exposePort(port)` | optional preview endpoint; declared by `capabilities.previewPort`. It returns a URL to a guest port and does not add preview auth or iframe policy |
@@ -67,7 +68,9 @@ product, and a handle owned by a different provider is skipped, not "gone".
 5. **`scratch`**: a lifecycle-scoped directory outside the repo for spills.
 
 `retain: true` changes the destroy semantics: the workspace stays on disk so a
-later `adopt` finds it (bounded by the consumer's janitor policy).
+later `adopt` finds it (bounded by the consumer's janitor policy). destroy()
+detaches only this run — it must not stop or park a sandbox other runs may be
+using; parking is `provider.suspend`, called by the consumer.
 
 ## Shared infra you get for free
 
@@ -323,9 +326,19 @@ conformance suite.
 - **Templates, not images.** E2B has no Docker-image-at-create; `spec.image`
   is a template name. Build the template with `Template().fromImage(...)` or
   `fromDockerfile(...)`, then pass its name.
-- **Retain = pause.** `destroy()` pauses a retained sandbox (memory and disk
-  survive indefinitely) and `adopt()` connects/resumes it. `keep` leaves it
-  running for debugging. `provider.release(handle)` is the FINAL teardown and
+- **Retain ≠ pause.** `destroy()` of a retained sandbox detaches the run and
+  leaves the VM running: several runs may share one sandbox, and pausing it
+  when one of them ends froze it under the others (adopts then failed their
+  workspace check mid-pause). The consumer pauses it with
+  `provider.suspend(handle)` once nobody is using it; a retained sandbox is
+  created with `lifecycle.onTimeout: "pause"`, so an idle one still pauses
+  (memory and disk survive) without anyone calling `suspend`. `adopt()`
+  connects/resumes it. `keep` leaves it running for debugging.
+- **Adopt is gone only when E2B says so.** `connect` answering "not found" is
+  `SandboxGoneError`. A workspace check that fails is retried (connect +
+  check, with backoff — a resume may still be settling), then thrown as
+  `WorkspaceUnavailableError`, which `isGone` never accepts: the disk is still
+  on record and must not be re-cloned over. `provider.release(handle)` is the FINAL teardown and
   kills even a retained sandbox: it does not know the run's `retain` flag, so
   a sweep must not call it on a thread it means to resume.
 - **Fork = native snapshot.** `fork()` snapshots the VM, attaches the fork,
