@@ -394,6 +394,17 @@ async function runOne(
       `strategy "${strategy.name}" requires a sandbox — pass EngineOptions.sandbox`,
     );
   let phase = opts.startPhase ?? strategy.phases[0]?.id ?? "respond";
+  /**
+   * Phases are on only when there is a choice to make and the consumer did not
+   * switch the intrinsic off. Off means off everywhere: no set_phase, no
+   * discipline or "Current phase" prompt, no phase events, and no phase in the
+   * hand-back or the thread record, so a phase the model can never change is
+   * never presented to it as an instruction.
+   */
+  const phaseOn =
+    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
+  /** The phase tag for events and results; absent when phases are off. */
+  const phaseTag = () => (phaseOn ? { phase } : {});
   if (
     opts.startPhase &&
     !strategy.phases.some((p) => p.id === opts.startPhase)
@@ -410,6 +421,7 @@ async function runOne(
     input.context ?? (await strategy.prepareContext?.(opts.sandbox, requestText));
   const prior = await opts.thread?.store.load(opts.thread.id);
   if (
+    phaseOn &&
     !opts.startPhase &&
     prior?.phase &&
     strategy.phases.some((item) => item.id === prior.phase)
@@ -981,8 +993,6 @@ async function runOne(
   );
   let revivalWarned = false;
   let revivalRequest: RevivalRequest | undefined;
-  const phaseOn =
-    strategy.phases.length > 1 && opts.intrinsics?.phase !== false;
   /**
    * Stable blocks are the cacheable prefix; turn-scoped blocks are appended
    * after the conversation. The ledger changes after every tool result, so it
@@ -1025,7 +1035,7 @@ async function runOne(
     },
     {
       id: "phase-state",
-      text: phase ? `Current phase: ${phase}` : undefined,
+      text: phaseOn && phase ? `Current phase: ${phase}` : undefined,
       stability: "turn",
     },
   ];
@@ -1239,7 +1249,7 @@ async function runOne(
                   ? { callId: recordedCall.callId }
                   : {}),
                 operationId,
-                phase,
+                ...phaseTag(),
                 step: steps,
                 ack,
               });
@@ -1757,7 +1767,9 @@ async function runOne(
       await opts.thread?.store.save(opts.thread.id, {
         summary,
         messages: conversationHistory(messages),
-        phase: done ? resumePhase : phase,
+        // A consumer's explicit resume phase (handoff.threadPhase) is its own
+        // record and survives; the engine's position does only with phases on.
+        phase: done ? resumePhase : phaseOn ? phase : undefined,
         ...(compaction ? { compaction } : {}),
         ...(ledger ?? prior?.ledger
           ? { ledger: ledger ?? prior?.ledger }
@@ -1850,7 +1862,7 @@ async function runOne(
       usage,
       messages,
       checkpointRef,
-      phase,
+      ...phaseTag(),
       evidence,
       ...(ledger ? { ledger } : {}),
       ...(compaction ? { compaction } : {}),
@@ -1955,7 +1967,7 @@ async function runOne(
     type: "run_started",
     text: requestText,
     ...(input.messages.length ? { messages: input.messages } : {}),
-    phases: strategy.phases.map((item) => item.id),
+    phases: phaseOn ? strategy.phases.map((item) => item.id) : [],
   });
   if (chain.delivered?.length)
     emit({
@@ -1965,7 +1977,7 @@ async function runOne(
         delivery: message.delivery,
       })),
     });
-  emit({ type: "phase_started", phase });
+  if (phaseOn) emit({ type: "phase_started", phase });
   // Resume recovery runs BEFORE the first model call: an effect that may have
   // landed must never be replayed, and one that did land must be visible to the
   // model. An unknowable outcome stops the run instead of guessing.
@@ -2227,7 +2239,7 @@ async function runOne(
       // carried in from a previous run) rides this call, not the one after.
       await pollJobs();
       steps++;
-      emit({ type: "llm_call_started", phase, step: steps });
+      emit({ type: "llm_call_started", ...phaseTag(), step: steps });
       const modelMessages = forModel();
       const response = await waitWithCancelGrace(
         opts.llm.stream(
@@ -2264,7 +2276,7 @@ async function runOne(
       budget.record(response.usage);
       emit({
         type: "llm_call_finished",
-        phase,
+        ...phaseTag(),
         step: steps,
         text: response.text,
         reasoning: response.reasoning,
@@ -2430,7 +2442,7 @@ async function runOne(
           calls: response.toolCalls,
           available,
           steps,
-          phase,
+          ...phaseTag(),
           toolContext,
           finish,
           repeat,

@@ -89,10 +89,24 @@ describe("agent runtime", () => {
       userTurn("hello"),
       { llm, agent: chatAgent },
     );
-    const request = llm.seen[0]!;
+    // A single-phase agent has no turn-scoped block, so the request itself is
+    // the end of the cacheable prefix.
+    expect(llm.seen[0]!.cacheBreakpoints).toEqual([0, 1]);
+
+    const phased = scripted([{ text: "hello" }]);
+    await runAgent(userTurn("hello"), {
+      llm: phased,
+      strategy: {
+        ...chatStrategy,
+        phases: [
+          { id: "understand", goal: "read" },
+          { id: "respond", goal: "answer" },
+        ],
+      },
+    });
     // The turn-scoped phase block is inserted before the final request, so
     // only the stable system prefix is safe to mark here.
-    expect(request.cacheBreakpoints).toEqual([0]);
+    expect(phased.seen[0]!.cacheBreakpoints).toEqual([0]);
   });
 
   it("can finish from understand without claiming tests passed or entering every phase", async () => {

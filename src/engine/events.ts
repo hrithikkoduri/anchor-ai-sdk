@@ -47,12 +47,12 @@ type AgentEventBody =
       /** Set when the agent drove the move: checked, ungated (trusted), or forced over a denied check. */
       via?: "advance" | "advance_unverified" | "advance_forced";
     }
-  | { type: "llm_call_started"; phase: string; step: number }
+  | { type: "llm_call_started"; phase?: string; step: number }
   | { type: "llm_text_delta"; text: string }
   | { type: "llm_reasoning_delta"; text: string }
   | {
       type: "llm_call_finished";
-      phase: string;
+      phase?: string;
       step: number;
       /** The full assistant turn — with toolCalls, this reconstructs the conversation (journal). */
       text: string;
@@ -69,7 +69,7 @@ type AgentEventBody =
     }
   | {
       type: "tool_call";
-      phase: string;
+      phase?: string;
       step: number;
       name: string;
       input: Record<string, unknown>;
@@ -81,7 +81,7 @@ type AgentEventBody =
   | {
       /** The target ACCEPTED an effectful request; its result is not known yet. */
       type: "tool_ack";
-      phase: string;
+      phase?: string;
       step: number;
       name: string;
       callId?: string;
@@ -90,7 +90,7 @@ type AgentEventBody =
     }
   | {
       type: "tool_result";
-      phase: string;
+      phase?: string;
       step: number;
       name: string;
       callId?: string;

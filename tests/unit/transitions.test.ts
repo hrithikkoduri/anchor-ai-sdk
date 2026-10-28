@@ -84,6 +84,76 @@ describe("agent-controlled approach phases", () => {
     ).toBe(false);
   });
 
+  const offRuns: Array<[string, Partial<Parameters<typeof runAgent>[1]>]> = [
+    ["intrinsics.phase: false", { strategy, intrinsics: { phase: false } }],
+    ["phases: []", { strategy: { ...strategy, phases: [] } }],
+  ];
+  for (const [label, options] of offRuns) {
+    it(`with ${label} no phase reaches the model, the events, or the hand-back`, async () => {
+      const store = new MemoryThreadStore();
+      const events: AgentEvent[] = [];
+      const llm = scripted([
+        call("note", { text: "looked around" }),
+        { text: "Done." },
+      ]);
+      const result = await runAgent(userTurn("Build it"), {
+        ...options,
+        llm,
+        thread: { store, id: "off" },
+        tools: [
+          {
+            definition: {
+              name: "note",
+              description: "note",
+              parameters: { type: "object", properties: {} },
+            },
+            run: async () => ({ ok: true, content: "noted" }),
+          },
+        ],
+        onEvent: (event) => events.push(event),
+      } as Parameters<typeof runAgent>[1]);
+      expect(result.ok).toBe(true);
+      expect(llm.seen).toHaveLength(2);
+      for (const request of llm.seen) {
+        expect(JSON.stringify(request.messages)).not.toMatch(/Current phase/);
+        expect(
+          request.tools?.some((tool) => tool.function.name === "set_phase"),
+        ).toBe(false);
+      }
+      expect(events.some((event) => event.type === "phase_started")).toBe(false);
+      expect(events.find((event) => event.type === "run_started")).toMatchObject({
+        phases: [],
+      });
+      expect(events.some((event) => "phase" in event)).toBe(false);
+      expect(result.phase).toBeUndefined();
+      expect((await store.load("off"))!.phase).toBeUndefined();
+    });
+  }
+
+  it("a phased run still states its phase every turn and emits phase_started", async () => {
+    const events: AgentEvent[] = [];
+    const llm = scripted([
+      call("set_phase", { phase: "act" }),
+      { text: "Done." },
+    ]);
+    const result = await runAgent(userTurn("Build it"), {
+      strategy,
+      llm,
+      onEvent: (event) => events.push(event),
+    });
+    expect(JSON.stringify(llm.seen[0]!.messages)).toContain("Current phase: understand");
+    expect(JSON.stringify(llm.seen[1]!.messages)).toContain("Current phase: act");
+    expect(
+      events
+        .filter((event) => event.type === "phase_started")
+        .map((event) => event.type === "phase_started" && event.phase),
+    ).toEqual(["understand", "act"]);
+    expect(events.find((event) => event.type === "llm_call_started")).toMatchObject({
+      phase: "understand",
+    });
+    expect(result.phase).toBe("act");
+  });
+
   it("can pause at a caller-requested phase boundary and resume with real conversation", async () => {
     const store = new MemoryThreadStore();
     const first = await runAgent(
