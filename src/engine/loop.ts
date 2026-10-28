@@ -1767,7 +1767,9 @@ async function runOne(
       await opts.thread?.store.save(opts.thread.id, {
         summary,
         messages: conversationHistory(messages),
-        phase: phaseOn ? (done ? resumePhase : phase) : undefined,
+        // A consumer's explicit resume phase (handoff.threadPhase) is its own
+        // record and survives; the engine's position does only with phases on.
+        phase: done ? resumePhase : phaseOn ? phase : undefined,
         ...(compaction ? { compaction } : {}),
         ...(ledger ?? prior?.ledger
           ? { ledger: ledger ?? prior?.ledger }

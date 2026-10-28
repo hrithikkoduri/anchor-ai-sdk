@@ -1484,7 +1484,9 @@ So the same `phaseOn` switch now gates every place the phase escapes the loop:
 the `Current phase` block, `phase_started`, the `phases` list on
 `run_started`, the `phase` tag on LLM/tool events, `AgentResult.phase` (and so
 the inbox run summary, revival's `startPhase`, a delegation's hand-back), and
-the phase saved on the thread record. A phased run is unchanged.
+the engine's position saved on the thread record. A consumer's explicit resume
+phase (`handoff.threadPhase`) is the consumer's record, not the engine's, and
+is still saved. A phased run is unchanged.
 
 Regressions: `tests/unit/transitions.test.ts` (phase off by intrinsic and by
 `phases: []`; a phased run still states its phase).
