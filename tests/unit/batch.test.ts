@@ -20,6 +20,7 @@ import {
 import { allotment, renderBatch, type OpReport } from "../../src/tools/batch/render.js";
 import { applyEdits, lineDelta } from "../../src/tools/batch/edits.js";
 import { parseBatch } from "../../src/tools/batch/ops.js";
+import { isReadOnlyCommand } from "../../src/tools/batch/commands.js";
 
 let rootDir: string;
 let sandbox: LocalSandbox;
@@ -435,5 +436,134 @@ describe("batch in the engine", () => {
     expect(result).toMatchObject({ ok: true });
     expect(calls).toBe(2);
     expect(await readFile(file("a.ts"), "utf8")).toBe("export const n = 2;\n");
+  });
+});
+
+describe("batch: retry safety", () => {
+  it("an edit retried after it applied reports already applied, writes nothing, and is ok", async () => {
+    await writeFile(file("a.ts"), "export const a = 2;\n");
+    let writes = 0;
+    const counting: Tool = { ...editFileTool, run: async (i, c) => ((writes += 1), editFileTool.run(i, c)) };
+    const r = await createBatchTool({ tools: [readFileTool, searchTool, bashTool, counting] }).run(
+      { ops: [{ op: "read", path: "a.ts" }, { op: "edit", path: "a.ts", old: "= 1", new: "= 2" }] },
+      ctx,
+    );
+    expect(r.ok).toBe(true);
+    expect(writes).toBe(0);
+    expect(r.content).toContain("#2 edit a.ts — already applied (no change)");
+    expect((r.meta as { ops: Array<{ status: string; alreadyApplied?: boolean }> }).ops[1]).toMatchObject({
+      status: "ok",
+      alreadyApplied: true,
+    });
+    expect(await readFile(file("a.ts"), "utf8")).toBe("export const a = 2;\n");
+  });
+
+  it("an edit whose new contains old is not applied twice on retry", () => {
+    const out = applyEdits("foo(bar)\n", [{ index: 1, old: "bar", new: "foo(bar)", replaceAll: false }]);
+    expect(out).toMatchObject({ ok: true, content: "foo(bar)\n", stats: [{ alreadyApplied: true }] });
+  });
+
+  it("an ambiguous old still fails, and neither old nor new present still fails", () => {
+    expect(applyEdits("x y x", [{ index: 3, old: "x", new: "y", replaceAll: false }])).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining("appears 2 times"),
+    });
+    expect(applyEdits("abc", [{ index: 2, old: "zzz", new: "qqq", replaceAll: true }])).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('"old" not found'),
+    });
+    expect(applyEdits("abc", [{ index: 2, old: "zzz", new: "", replaceAll: false }])).toMatchObject({ ok: false });
+  });
+
+  it("a write whose target already has the content reports already applied", async () => {
+    await writeFile(file("w.txt"), "same\n");
+    const r = await createBatchTool().run({ ops: [{ op: "write", path: "w.txt", content: "same\n" }] }, ctx);
+    expect(r.ok).toBe(true);
+    expect(r.content).toContain("#1 write w.txt — already applied (no change)");
+    const changed = await createBatchTool().run({ ops: [{ op: "write", path: "w.txt", content: "other\n" }] }, ctx);
+    expect(changed.content).toContain("#1 write w.txt — ok");
+    expect(await readFile(file("w.txt"), "utf8")).toBe("other\n");
+  });
+});
+
+describe("batch: stop after a failed write", () => {
+  it("a batch that edits then fails a check stops by default and names the op", async () => {
+    await writeFile(file("a.ts"), "one\n");
+    const r = await createBatchTool().run(
+      {
+        ops: [
+          { op: "edit", path: "a.ts", old: "one", new: "uno" },
+          { op: "bash", command: "grep -q missing a.ts" },
+          { op: "bash", command: "echo after" },
+        ],
+      },
+      ctx,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.content).toContain("#2 bash `grep -q missing a.ts` — failed (exit 1)");
+    expect(r.content).toContain("#3 bash `echo after` — not run");
+    expect(r.content).toContain("stopped after #2: #2 failed after a write, later ops not run");
+    expect((r.meta as { stopped?: string }).stopped).toContain("stopped after #2");
+  });
+
+  it("a failed edit after a write says a write failed", async () => {
+    await writeFile(file("a.ts"), "one\n");
+    const r = await createBatchTool().run(
+      {
+        ops: [
+          { op: "write", path: "b.ts", content: "b\n" },
+          { op: "edit", path: "a.ts", old: "nope", new: "x" },
+          { op: "bash", command: "echo after" },
+        ],
+      },
+      ctx,
+    );
+    expect(r.content).toContain("stopped after #2: a write failed, later ops not run");
+    expect(r.content).toContain("#3 bash `echo after` — not run");
+  });
+
+  it("a reads-only batch continues after a failure", async () => {
+    await writeFile(file("a.ts"), "one\n");
+    const r = await createBatchTool().run(
+      { ops: [{ op: "read", path: "nope.ts" }, { op: "bash", command: "cat a.ts" }, { op: "bash", command: "exit 2" }, { op: "read", path: "a.ts" }] },
+      ctx,
+    );
+    expect(r.content).toContain("#1 read nope.ts — failed");
+    expect(r.content).toContain("#2 bash `cat a.ts` — ok");
+    expect(r.content).toContain("#4 read a.ts — ok");
+    expect(r.content).not.toContain("not run");
+  });
+
+  it("a failing first write does not stop the batch: nothing was written yet", async () => {
+    await writeFile(file("a.ts"), "one\n");
+    const r = await createBatchTool().run(
+      { ops: [{ op: "edit", path: "a.ts", old: "nope", new: "x" }, { op: "bash", command: "echo after" }] },
+      ctx,
+    );
+    expect(r.content).toContain("#2 bash `echo after` — ok");
+  });
+
+  it("an explicit stopOnError: false still continues after a write failure", async () => {
+    await writeFile(file("a.ts"), "one\n");
+    const r = await createBatchTool().run(
+      {
+        stopOnError: false,
+        ops: [
+          { op: "edit", path: "a.ts", old: "one", new: "uno" },
+          { op: "edit", path: "a.ts", old: "nope", new: "x" },
+          { op: "bash", command: "echo after" },
+        ],
+      },
+      ctx,
+    );
+    expect(r.content).toContain("#3 bash `echo after` — ok");
+    expect(r.content).not.toContain("stopped after");
+  });
+
+  it("isReadOnlyCommand: reads and checks are read-only, anything that may write is not", () => {
+    for (const command of ["cat a.ts", "rg foo src | head -5", "git status && git diff", "npx vitest run a.test.ts 2>&1", "npm test", "sed -n '1,5p' a"])
+      expect(isReadOnlyCommand(command), command).toBe(true);
+    for (const command of ["echo x > a.ts", "sed -i s/a/b/ a", "npm install", "rm -rf x", "cat a | tee b", "eslint --fix .", "echo $(rm x)", "node script.js"])
+      expect(isReadOnlyCommand(command), command).toBe(false);
   });
 });

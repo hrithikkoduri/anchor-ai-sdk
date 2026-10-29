@@ -18,6 +18,8 @@ export interface OpReport {
   /** Text for the model, uncapped (the caps are applied when rendering). */
   body: string;
   cached?: boolean;
+  /** An ok edit or write whose result was already in place: nothing written. */
+  alreadyApplied?: boolean;
 }
 
 export interface RenderCaps {
@@ -39,8 +41,10 @@ const oneLine = (text: string, max: number) => {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 };
 
-export function opLabel(report: Pick<OpReport, "index" | "op" | "target" | "status" | "detail" | "cached">): string {
-  const status = report.status === "skipped" ? "not run" : report.status;
+export function opLabel(
+  report: Pick<OpReport, "index" | "op" | "target" | "status" | "detail" | "cached" | "alreadyApplied">,
+): string {
+  const status = report.status === "skipped" ? "not run" : report.alreadyApplied ? "already applied" : report.status;
   const tail = [report.detail, report.cached ? "cached" : ""].filter(Boolean).join(", ");
   const target = report.op === "bash" ? `\`${oneLine(report.target, 70)}\`` : oneLine(report.target, 90);
   return `#${report.index} ${report.op} ${target} — ${status}${tail ? ` (${tail})` : ""}`;

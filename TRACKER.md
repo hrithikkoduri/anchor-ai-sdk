@@ -10,7 +10,11 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 
 ## v0.8.x — released
 
-- [x] v0.8.10 (source): `createBatchTool` — ordered phases of read/search/bash/
+- [x] v0.8.11 (source): batch retry safety — an edit or write whose result is
+      already in place reports `already applied` (ok, no write); after the
+      batch has written, a failed op stops it by default (explicit
+      `stopOnError` wins).
+- [x] v0.8.10: `createBatchTool` — ordered phases of read/search/bash/
       edit/write ops in one call, run through the consumer's own tools, with
       all-or-nothing edits per file, capped output plus a full log, and an
       in-sandbox read/search cache; `search` takes a `glob`.
