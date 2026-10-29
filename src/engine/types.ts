@@ -11,6 +11,7 @@ import type { Tool } from "../tools/types.js";
 import type { TraceSink } from "../trace/sink.js";
 import type { BudgetLimits } from "./budgets.js";
 import type { CompactionConfig, CompactionHandoff } from "./compaction.js";
+import type { ToolResultElisionConfig } from "./tool-elision.js";
 import type { EventSink, RevivalRequest } from "./events.js";
 import type { AgentStrategy, ToolResultRecord } from "./strategy.js";
 import type { ThreadStore } from "./thread.js";
@@ -184,6 +185,20 @@ export interface EngineOptions {
    */
   truncatedReplyChars?: number | false;
   compaction?: CompactionConfig | false;
+  /**
+   * Deterministic elision of old tool results, tried BEFORE LLM compaction
+   * (engine/tool-elision.ts). When the model's view passes the trigger (the
+   * compaction trigger by default), the oldest tool results become one-line
+   * `[elided: …]` markers, in one batch down to the target; compaction then
+   * runs only if the view is still over its own trigger. The current turn's
+   * results, the last few results, `load_skill`, and the latest run of a
+   * workflow's check are kept. Like `maxAssistantChars`, it bounds what is
+   * SENT; `AgentResult.messages` keeps the full text.
+   *
+   * Default: on when compaction is on. `false` turns it off; a config object
+   * turns it on even with `compaction: false`.
+   */
+  toolResultElision?: ToolResultElisionConfig | false;
   guardrails?: GuardrailConfig;
   /** Caller-controlled pause when the agent leaves a named phase. */
   pauseAfterPhase?: string;

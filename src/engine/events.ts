@@ -195,6 +195,7 @@ type AgentEventBody =
         | "output_cap_continue"
         | "verbose_turn"
         | "assistant_text_elided"
+        | "tool_results_elided"
         | "prose_checkpoint"
         | "repeated_call"
         | "empty_turn"

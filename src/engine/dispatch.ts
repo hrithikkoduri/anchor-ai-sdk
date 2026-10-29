@@ -1,16 +1,21 @@
 /**
- * Tool-call dispatch: the two shapes a model turn can take.
+ * Tool-call dispatch: the shapes a model turn can take.
  *
- * A turn whose calls are ALL read-only runs them in parallel (one round trip
- * instead of N); anything else runs serially in the model's order, so a
- * `finish` or a pause is observed before later calls. Both paths reuse the
- * same repetition tracker and emit the same events, which is why they live
+ * Calls run in the model's order, so a `finish` or a pause is observed before
+ * later calls. Within that order, each maximal run of consecutive read-only
+ * calls (statically `readOnly`, or `readOnlyWhen(input)` — a read-only `bash`
+ * command) runs concurrently, at most `MAX_PARALLEL_TOOL_CALLS` at a time; a
+ * mutating or unknown call always runs alone, after everything before it and
+ * before everything after it. Results are appended in call order whatever the
+ * completion order, so the conversation is deterministic. Mutations on
+ * distinct repositories have their own grouped path. All paths reuse the same
+ * repetition tracker and emit the same events, which is why they live
  * together: splitting them is how they drift.
  */
 import { toPlainJsonObject } from "../json.js";
 import type { LLMMessage, LLMToolCall } from "../llm/types.js";
 import type { Tool } from "../tools/types.js";
-import type { ToolContext } from "../tools/types.js";
+import { isReadOnlyCall, type ToolContext } from "../tools/types.js";
 import type { ToolResult } from "../tools/types.js";
 import { toolVerb } from "../tools/activity.js";
 import { boundToolResult, TOOL_RESULT_MAX_CHARS } from "../tools/truncate.js";
@@ -19,6 +24,43 @@ import type { EventSink } from "./events.js";
 import type { ToolResultRecord } from "./strategy.js";
 import type { RepeatTracker } from "./guardrails.js";
 import type { BackgroundJob } from "./types.js";
+
+/**
+ * Concurrency cap for one group of read-only calls. Small on purpose: every
+ * call is a sandbox exec, and the gain is in overlapping two or three round
+ * trips, not in fanning out without bound.
+ */
+export const MAX_PARALLEL_TOOL_CALLS = 4;
+
+/** Run `fn` over `items`, at most `limit` at once; results keep input order. */
+async function mapBounded<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const index = next++;
+      out[index] = await fn(items[index]!);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker),
+  );
+  return out;
+}
+
+/** Is this call eligible for a concurrent read group? */
+function readOnlyCall(call: LLMToolCall, available: Map<string, Tool>): boolean {
+  const { input, invalid } = parseInput(call);
+  const tool = available.get(call.name);
+  // Invalid arguments never reach a predicate; a statically read-only tool
+  // stays eligible (it returns the parse error as its result).
+  if (invalid !== undefined) return tool?.readOnly === true && tool.effect === undefined;
+  return isReadOnlyCall(tool, input);
+}
 
 /** What `finish` declared, if the turn called it. */
 export interface DeclaredOutcome {
@@ -205,7 +247,13 @@ function groupedTailStart(calls: LLMToolCall[], available: Map<string, Tool>, ct
 export async function dispatchToolCalls(
   args: ToolDispatchArgs,
 ): Promise<ToolDispatchOutcome> {
-  const tailStart = groupedTailStart(args.calls, args.available, args.toolContext, args.finish);
+  // A turn of nothing but reads is one capped read group, never split.
+  const allReads =
+    args.calls.length > 1 &&
+    args.calls.every((call) => readOnlyCall(call, args.available));
+  const tailStart = allReads
+    ? 0
+    : groupedTailStart(args.calls, args.available, args.toolContext, args.finish);
   if (tailStart > 0) {
     // In order, the opening; then the tail, which groups (or, if the opening
     // paused or was cancelled, is skipped by the same rules as any call).
@@ -236,17 +284,6 @@ export async function dispatchToolCalls(
   let runaway = false;
   const jobs: BackgroundJob[] = [];
   const settlements: Array<{ operationId: string; result: ToolResult }> = [];
-
-  const parallelReads =
-    calls.length > 1 &&
-    calls.every((call) => {
-      const tool = available.get(call.name);
-      // An effectful call journals before it runs; keep that serial and ordered.
-      return tool?.readOnly === true && tool.effect === undefined;
-    }) &&
-    !declared &&
-    !args.pauseRequested() &&
-    !signal?.aborted;
 
   const emitResult = (
     call: LLMToolCall,
@@ -296,64 +333,10 @@ export async function dispatchToolCalls(
     }
   };
 
-  if (parallelReads) {
-    const prepared = calls.map((call) => {
-      const tool = available.get(call.name);
-      const { input, invalid } = parseInput(call);
-      const verb = toolVerb(call.name, input, tool?.verb);
-      emit({
-        type: "tool_call",
-        name: call.name,
-        callId: call.id,
-        input,
-        verb,
-        ...(phase !== undefined ? { phase } : {}),
-        step: steps,
-      });
-      if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
-      return { call, tool, input, invalid, verb, skipped: runaway };
-    });
-
-    const results = await Promise.all(
-      prepared.map(
-        async ({ call, tool, input, invalid, skipped }): Promise<ToolResult> => {
-          if (skipped) {
-            return {
-              ok: false,
-              content:
-                "Not executed: repeated identical calls reached the loop limit.",
-            };
-          }
-          if (invalid)
-            return {
-              ok: false,
-              content: invalid,
-            };
-          const outcome = await invoke(
-            tool,
-            call.name,
-            input,
-            { ...toolContext, callId: call.id, ...(signal ? { signal } : {}) },
-            available,
-          );
-          return "invalid" in outcome
-            ? { ok: false, content: outcome.invalid }
-            : outcome.result;
-        },
-      ),
-    );
-
-    for (let i = 0; i < prepared.length; i++) {
-      const { call, verb } = prepared[i]!;
-      emitResult(call, verb, results[i]!);
-    }
-    return { runaway, jobs, settlements, ...(declared ? { declared } : {}) };
-  }
-
   // Resource-grouped mutation path. Only non-effect mutations with distinct
   // repository keys are eligible; anything global/effectful/finish falls back
   // to the fully ordered path below. Results are still emitted in call order.
-  if (calls.length > 1 && !declared && !args.pauseRequested() && !signal?.aborted) {
+  if (calls.length > 1 && !allReads && !declared && !args.pauseRequested() && !signal?.aborted) {
     const prepared = calls.map((call) => {
       const tool = available.get(call.name);
       const { input, invalid } = parseInput(call);
@@ -445,16 +428,24 @@ export async function dispatchToolCalls(
     }
   }
 
-  for (const call of calls) {
+  /** Why a call will not run, evaluated live at its turn in the order. */
+  const skipReason = (): string | undefined =>
+    declared !== undefined
+      ? "Not executed: the turn was already concluded."
+      : args.pauseRequested()
+        ? "Not executed: the caller requested a pause at this phase boundary."
+        : signal?.aborted
+          ? "Not executed: cancelled by signal."
+          : runaway
+            ? "Not executed: repeated identical calls reached the loop limit."
+            : undefined;
+
+  const runOne = async (call: LLMToolCall): Promise<void> => {
     const tool = available.get(call.name);
     const { input, invalid } = parseInput(call);
     const verb = toolVerb(call.name, input, tool?.verb);
     if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
-    const skipped =
-      declared !== undefined ||
-      args.pauseRequested() ||
-      signal?.aborted === true ||
-      runaway;
+    const skipped = skipReason();
 
     // Write-ahead: an effectful call records its intent BEFORE it runs, so a
     // crash between the target's write and our result leaves a pending record
@@ -462,7 +453,7 @@ export async function dispatchToolCalls(
     let operationId: string | undefined;
     let operationStarted = false;
     let operationError: string | undefined;
-    if (!skipped && invalid === undefined && tool?.effect) {
+    if (skipped === undefined && invalid === undefined && tool?.effect) {
       if (args.operations) {
         try {
           const begun = await args.operations.begin(call, input, tool);
@@ -493,17 +484,8 @@ export async function dispatchToolCalls(
     });
 
     let result: ToolResult;
-    if (skipped) {
-      result = {
-        ok: false,
-        content: declared
-          ? "Not executed: the turn was already concluded."
-          : args.pauseRequested()
-            ? "Not executed: the caller requested a pause at this phase boundary."
-            : signal?.aborted
-              ? "Not executed: cancelled by signal."
-              : "Not executed: repeated identical calls reached the loop limit.",
-      };
+    if (skipped !== undefined) {
+      result = { ok: false, content: skipped };
     } else if (operationError) {
       result = { ok: false, content: operationError };
     } else if (invalid) {
@@ -546,6 +528,69 @@ export async function dispatchToolCalls(
     if (operationId && operationStarted && args.operations)
       settlements.push({ operationId, result });
     emitResult(call, verb, result, operationId);
+  };
+
+  /**
+   * Consecutive read-only calls: announce them in order, run them bounded,
+   * append their results in order. A failure is its own result; it never
+   * cancels a sibling. Read-only calls carry no effect, so no journal.
+   */
+  const runReadGroup = async (group: LLMToolCall[]): Promise<void> => {
+    const prepared = group.map((call) => {
+      const tool = available.get(call.name);
+      const { input, invalid } = parseInput(call);
+      const verb = toolVerb(call.name, input, tool?.verb);
+      if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
+      const skipped = skipReason();
+      emit({
+        type: "tool_call",
+        name: call.name,
+        callId: call.id,
+        input,
+        verb,
+        ...(phase !== undefined ? { phase } : {}),
+        step: steps,
+      });
+      return { call, tool, input, invalid, verb, skipped };
+    });
+    const results = await mapBounded(
+      prepared,
+      MAX_PARALLEL_TOOL_CALLS,
+      async ({ call, tool, input, invalid, skipped }): Promise<ToolResult> => {
+        if (skipped !== undefined) return { ok: false, content: skipped };
+        // A call still queued behind the cap when the run is cancelled does not start.
+        if (signal?.aborted)
+          return { ok: false, content: "Not executed: cancelled by signal." };
+        if (invalid) return { ok: false, content: invalid };
+        try {
+          const outcome = await invoke(
+            tool,
+            call.name,
+            input,
+            { ...toolContext, callId: call.id, ...(signal ? { signal } : {}) },
+            available,
+          );
+          return "invalid" in outcome
+            ? { ok: false, content: outcome.invalid }
+            : outcome.result;
+        } catch (err) {
+          return {
+            ok: false,
+            content: `error: ${err instanceof Error ? err.message : String(err)}`,
+          };
+        }
+      },
+    );
+    prepared.forEach(({ call, verb }, i) => emitResult(call, verb, results[i]!));
+  };
+
+  const reads = calls.map((call) => readOnlyCall(call, available));
+  for (let i = 0; i < calls.length; ) {
+    let end = i + 1;
+    if (reads[i]) while (end < calls.length && reads[end]) end++;
+    if (end - i > 1) await runReadGroup(calls.slice(i, end));
+    else await runOne(calls[i]!);
+    i = end;
   }
 
   return {

@@ -54,9 +54,12 @@ export function toolByName(name: string): Tool | undefined {
 export { boundToolResult, spillOrTruncate, truncate, TOOL_RESULT_MAX_CHARS } from "./truncate.js";
 export type { SpillTarget, TruncateOptions } from "./truncate.js";
 export { toolVerb } from "./activity.js";
+export { commandKind, isReadOnlyCommand } from "./batch/commands.js";
+export type { CommandKind } from "./batch/commands.js";
 export {
   defineTool,
   formatExec,
+  isReadOnlyCall,
   optionalBoolean,
   optionalNumber,
   optionalString,

@@ -26,6 +26,8 @@ export * from "./verify/index.js";
 export * from "./engine/budgets.js";
 export * from "./engine/supervision.js";
 export * from "./engine/compaction.js";
+export * from "./engine/tool-elision.js";
+export { MAX_PARALLEL_TOOL_CALLS } from "./engine/dispatch.js";
 export * from "./engine/events.js";
 export * from "./engine/evidence.js";
 export * from "./engine/workflow.js";

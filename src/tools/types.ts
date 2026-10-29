@@ -178,6 +178,14 @@ export interface Tool {
    */
   readOnly?: boolean;
   /**
+   * Per-call form of `readOnly`, for a tool that only SOMETIMES reads (bash:
+   * `git status` reads, `npm install` writes). True means this particular
+   * call may run concurrently with the turn's other read-only calls. It never
+   * makes the tool read-only as a whole (a read-only team member still does
+   * not get it), and an effectful tool is never treated as read-only.
+   */
+  readOnlyWhen?: (input: Record<string, unknown>) => boolean;
+  /**
    * This tool may hand a long command to the background when the consumer
    * opted in and the sandbox can poll. It is a permission, not a promise:
    * see `execPolicy` for the decision. `bash` sets it.
@@ -198,6 +206,20 @@ export interface Tool {
   run(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
+/** May this call run beside the turn's other read-only calls? A throwing predicate says no. */
+export function isReadOnlyCall(
+  tool: Tool | undefined,
+  input: Record<string, unknown>,
+): boolean {
+  if (!tool || tool.effect !== undefined) return false;
+  if (tool.readOnly === true) return true;
+  try {
+    return tool.readOnlyWhen?.(input) === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Wrap a definition + implementation, turning thrown validation errors into ok:false results. */
 export function defineTool(
   definition: ToolDefinition,
@@ -205,7 +227,7 @@ export function defineTool(
     input: Record<string, unknown>,
     ctx: ToolContext,
   ) => Promise<ToolResult>,
-  options: Pick<Tool, "verb" | "readOnly" | "background" | "effect" | "resource"> = {},
+  options: Pick<Tool, "verb" | "readOnly" | "readOnlyWhen" | "background" | "effect" | "resource"> = {},
 ): Tool {
   return {
     definition,
