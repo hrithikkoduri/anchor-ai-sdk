@@ -33,6 +33,8 @@ export interface LLMOptions {
   reasoningEffort?: OpenAICompatibleOptions["reasoningEffort"];
   /** Wire shape for reasoning effort; inferred from `baseUrl` when unset. */
   reasoningFormat?: OpenAICompatibleOptions["reasoningFormat"];
+  /** Replay reasoning during tool loops; default `false` (off). */
+  reasoningPassback?: OpenAICompatibleOptions["reasoningPassback"];
 }
 
 export function createLLMClient(opts: LLMOptions): LLMClient {
@@ -55,5 +57,6 @@ export function createLLMClient(opts: LLMOptions): LLMClient {
     promptCache: opts.promptCache,
     reasoningEffort: opts.reasoningEffort,
     reasoningFormat: opts.reasoningFormat,
+    reasoningPassback: opts.reasoningPassback,
   });
 }
