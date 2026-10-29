@@ -10,6 +10,7 @@
  * configuration and orchestration.
  */
 export * from "./json.js";
+export * from "./schema.js";
 export * from "./repo.js";
 export * from "./skills/index.js";
 export * from "./teams/index.js";
@@ -27,6 +28,7 @@ export * from "./engine/supervision.js";
 export * from "./engine/compaction.js";
 export * from "./engine/events.js";
 export * from "./engine/evidence.js";
+export * from "./engine/workflow.js";
 export * from "./engine/revival.js";
 export * from "./engine/snapshot.js";
 export * from "./engine/thread.js";

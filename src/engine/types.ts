@@ -284,6 +284,9 @@ export interface EngineOptions {
    * The store is the consumer's; `MemoryInboxStore` ships for tests and
    * single-process apps. Ordering and claim semantics are the store's
    * contract (see `InboxStore`).
+   *
+   * Not available to a workflow agent: a workflow run is one-shot, and
+   * `runAgent` throws when both are given.
    */
   inbox?: {
     store: InboxStore;
@@ -359,6 +362,9 @@ export interface GuardrailConfig {
    * tool (`finish`), ask once before accepting prose as the result: call
    * `finish`, take another action, or repeat the reply (default true; false
    * disables). One-shot — it never turns into a loop.
+   *
+   * No effect on a workflow run: there a prose turn is always a rejected
+   * finish, never a candidate answer.
    */
   proseCheckpoint?: boolean;
 }
@@ -371,6 +377,9 @@ export type FinishReason =
    * A delegated child ran out of its OWN budget and handed back what it had.
    * Distinct from the parent's `budget_exceeded`: it is a partial result the
    * parent consumes, never a reason to fail the parent run.
+   *
+   * A workflow run (`workflowAgent`) that runs out of any budget — its
+   * `maxTurns` included — also ends here, as a failure (`ok: false`).
    */
   | "budget_exhausted"
   | "stalled"
@@ -429,4 +438,10 @@ export interface AgentResult {
   verified?: boolean;
   /** Opaque, consumer-shaped handoff from finish(); the engine only carries it. */
   handoff?: Record<string, unknown>;
+  /**
+   * A workflow run's structured result: the `output` its accepted finish
+   * carried, already validated against the bundle's schema (zod's parsed
+   * value when the schema is zod). Present only when the run finished.
+   */
+  output?: unknown;
 }

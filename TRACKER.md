@@ -10,6 +10,11 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 
 ## v0.8.x — released
 
+- [x] v0.8.12: `workflowAgent(spec)` — a headless bundle for background jobs:
+      no conversational nudges, no `ask_questions`, no inbox; `finish` is the
+      only exit, gated on the check passing in this run and on a
+      schema-valid `output` (exposed as `AgentResult.output`); a spent budget
+      ends as `budget_exhausted`. Bundles may suggest `guardrails`/`budgets`.
 - [x] v0.8.11 (source): batch retry safety — an edit or write whose result is
       already in place reports `already applied` (ok, no write); after the
       batch has written, a failed op stops it by default (explicit
