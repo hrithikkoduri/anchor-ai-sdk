@@ -576,6 +576,50 @@ Validate inputs and enforce permissions in your implementation.
 **[Tools and schemas](https://anchor-sdk.dev/docs.html#tools)** ·
 **[Runnable SDK examples](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples)**
 
+### Headless workflows: `workflowAgent`
+
+For background jobs that never talk to a user — environment setup, migrations
+— build a workflow agent. Nobody reads its prose and nobody answers its
+questions, so the engine enforces the contract instead of the conversation:
+
+```js
+import { bashTool, editFileTool, readFileTool, runAgent, userTurn, workflowAgent } from "anchor-ai-sdk";
+
+const environment = workflowAgent({
+  name: "environment",
+  brief: "Infer how to install and boot this app. Write the recipe to .sailor/run.sh and prove it boots.",
+  tools: [bashTool, readFileTool, editFileTool],
+  check: { command: "bash .sailor/run.sh --check", description: "the app boots and answers on its port" },
+  output: {
+    name: "recipe",
+    schema: {
+      type: "object",
+      properties: { install: { type: "string" }, start: { type: "string" }, port: { type: "integer" } },
+      required: ["install", "start", "port"],
+      additionalProperties: false,
+    },
+  },
+  budget: { maxTurns: 30 },
+});
+
+const result = await runAgent(userTurn("Repository: acme/web"), { llm, sandbox, agent: environment });
+if (result.ok) console.log(result.output); // { install, start, port }, already validated
+else console.log(result.reason);           // e.g. "budget_exhausted"
+```
+
+- `finish` is the only exit, and it is accepted only when the latest `bash` run
+  of `check.command` in this run passed (exit 0, no timeout) and no file was
+  edited after it. The check must be the command's final step — a `cd dir &&`
+  prefix is fine; `|| true`, a pipe, or `echo` does not count. A rejected
+  finish, or a prose reply, comes back as a corrective message and the run continues.
+- `output` (a JSON schema or a zod schema) is validated inside that gate and
+  returned as `result.output`.
+- The conversational nudges (silent-tool, verbose-turn, prose checkpoint) are
+  off; the repeated-call, empty-turn, and capped-reply corrections stay on.
+- Running out of any budget, `maxTurns` included, ends with `ok: false` and
+  `reason: "budget_exhausted"`.
+- `ask_questions` is refused, and so is `EngineOptions.inbox`: a workflow run is one-shot.
+
 ## Configure the runtime, not another loop
 
 | Capability | Your controls |
@@ -753,7 +797,7 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.8.11; latest published release: v0.8.10.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.8.12; latest published release: v0.8.12.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
 source may be ahead of the installed package. Daytona, agent teams, context
 reset, MCP, and consumer skill bundles remain roadmap work in the reviewed

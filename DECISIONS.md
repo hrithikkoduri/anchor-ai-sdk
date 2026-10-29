@@ -1490,3 +1490,38 @@ is still saved. A phased run is unchanged.
 
 Regressions: `tests/unit/transitions.test.ts` (phase off by intrinsic and by
 `phases: []`; a phased run still states its phase).
+
+
+## Decision #106: A workflow agent is a headless bundle with an engine-enforced contract
+
+Background jobs (repository environment setup, migrations) never talk to a
+user. A chat-shaped agent wastes steps there: it asks questions nobody answers,
+narrates to nobody, and ends on a prose reply that the caller must parse. So
+`workflowAgent(spec)` returns an ordinary `Agent` — strategy, tools, and bundle
+defaults — plus a `WorkflowContract` (`agent.workflow`) that the existing loop
+enforces through seams it already had. There is no second loop.
+
+- Bundles may now suggest `guardrails` and `budgets`, merged per field under
+  explicit engine options (an explicit field wins, like `maxOutputTokens`). A
+  workflow defaults the conversational nudges off (`toolOnlyNudgeLimit`,
+  `verboseTurnLimit`, `proseCheckpoint`); the repeated-call, empty-turn, and
+  capped-reply corrections stay on. The capped-reply continuation was gated by
+  `proseCheckpoint`; it now also runs for a workflow, and nothing changes for
+  other agents.
+- `finish` is the only exit. A prose turn is a rejected finish (a
+  `finish_rejected` guardrail and a runtime message), never the result.
+- A finish is accepted only when the check passed in this run: the latest
+  engine-recorded `bash` result whose `meta.command` runs the check as its
+  final command (optionally after `cd … &&`; never masked by `||`, a pipe, an
+  `exit`, or a shadowing function), with exit 0 and no timeout, and no
+  successful file edit after it. A detached check counts once its completion
+  is polled. The model's own claim is never read.
+- `output` is validated (JSON schema subset or zod `safeParse`) inside the
+  same gate; the parsed value is `AgentResult.output`.
+- Running out of any budget, `maxTurns` included, ends as `budget_exhausted`
+  with `ok: false`.
+- `ask_questions` is refused at construction and at run start; an inbox chain
+  throws in `runAgent`; delegating a workflow as a steerable team member
+  throws.
+
+Regressions: `tests/unit/workflow-agent.test.ts`.

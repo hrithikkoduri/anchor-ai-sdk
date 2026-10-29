@@ -9,8 +9,17 @@ import type { ToolResult } from "../tools/types.js";
 import { createFinishTool } from "../tools/finish.js";
 import { toolVerb } from "../tools/activity.js";
 import { validateRepos } from "../repo.js";
+import { jsonSchemaOf, validateOutput } from "../schema.js";
+import {
+  checkEvidence,
+  checkRejection,
+  WORKFLOW_KICKOFF,
+  workflowProseRejection,
+  type WorkflowContract,
+} from "./workflow.js";
 import {
   BudgetTracker,
+  type BudgetLimits,
   DEFAULT_BUDGET_LIMITS,
   DEFAULT_CHILD_SOFT_CAP,
   DEFAULT_MAX_OUTPUT_TOKENS,
@@ -374,14 +383,85 @@ async function runOne(
     | undefined;
   let verified = false;
   let finishGateAttempts = 0;
+  // A workflow bundle's contract (engine/workflow.ts). Its finish is required,
+  // gated on the check having passed in THIS run's own tool log, and carries a
+  // schema-validated output. Absent: every path below is today's behavior.
+  const workflow = opts.agent?.workflow;
+  const workflowLog: ToolResultRecord[] = [];
+  let workflowOutput: { value: unknown } | undefined;
+  const workflowGate = (
+    contract: WorkflowContract,
+    output: unknown,
+  ): { ok: false; content: string } | { ok: true; parsed?: { value: unknown } } => {
+    const problems: string[] = [];
+    const observed = checkEvidence(workflowLog, contract.check.command);
+    if (observed.status !== "passed") problems.push(checkRejection(contract, observed));
+    let parsed: { value: unknown } | undefined;
+    if (contract.output) {
+      const name = contract.output.name;
+      if (output === undefined) {
+        problems.push(`finish rejected: \`output\` (${name}) is required — pass it on finish.`);
+      } else {
+        const verdict = validateOutput(contract.output.schema, output);
+        if (verdict.ok) parsed = { value: verdict.value };
+        else
+          problems.push(
+            `finish rejected: \`output\` (${name}) does not match its schema — ${verdict.error}. Fix it and call finish again.`,
+          );
+      }
+    }
+    if (problems.length) {
+      const content = problems.join("\n\n");
+      emit({ type: "guardrail", kind: "finish_rejected", detail: content.slice(0, 500) });
+      return { ok: false, content };
+    }
+    return { ok: true, ...(parsed ? { parsed } : {}) };
+  };
   const finish = createFinishTool({
     ...(opts.handoff ? { handoff: opts.handoff } : {}),
-    validate: async (input) =>
-      completionGate
-        ? completionGate(input.summary, input.success)
-        : { ok: true },
+    ...(workflow ? { required: true } : {}),
+    ...(workflow?.output
+      ? {
+          output: {
+            name: workflow.output.name,
+            schema: jsonSchemaOf(workflow.output.schema, workflow.output.jsonSchema),
+            ...(workflow.output.description
+              ? { description: workflow.output.description }
+              : {}),
+          },
+        }
+      : {}),
+    validate: async (input) => {
+      if (!workflow)
+        return completionGate
+          ? completionGate(input.summary, input.success)
+          : { ok: true };
+      const gate = workflowGate(workflow, input.output);
+      if (!gate.ok) return gate;
+      const verdict = completionGate
+        ? await completionGate(input.summary, input.success)
+        : { ok: true as const };
+      if (verdict.ok && gate.parsed) workflowOutput = gate.parsed;
+      return verdict;
+    },
   });
   if (opts.intrinsics?.finish !== false) available.set("finish", finish);
+  if (workflow) {
+    // A workflow never talks to anyone: finish is its only exit, nobody will
+    // answer a question, and nobody steers it from outside.
+    if (opts.intrinsics?.finish === false)
+      throw new Error(
+        `workflow "${opts.agent?.name}" ends only through finish — intrinsics.finish cannot be false`,
+      );
+    if (available.has("ask_questions"))
+      throw new Error(
+        `workflow "${opts.agent?.name}" cannot have ask_questions — no one answers a workflow's questions`,
+      );
+    if (chain.steer)
+      throw new Error(
+        `workflow "${opts.agent?.name}" cannot run as a delegated team member — workflow runs are not steerable`,
+      );
+  }
   const missing = (strategy.requiredTools ?? []).filter(
     (name) => !available.has(name),
   );
@@ -430,7 +510,7 @@ async function runOne(
   let summary = prior?.summary;
   let compaction = prior?.compaction;
 
-  const budget = chain.budget ?? new BudgetTracker(opts.budgets);
+  const budget = chain.budget ?? new BudgetTracker(resolveBudgets(opts));
   const cancelGraceMs = opts.cancelGraceMs ?? DEFAULT_CANCEL_GRACE_MS;
   const stallAfterMs =
     opts.stallAfterMs === false
@@ -986,7 +1066,12 @@ async function runOne(
     attachLedger(compiled.ledger);
   }
 
-  const currentRequests = input.messages;
+  // The brief lives in the workflow's system prompt; a caller with no per-run
+  // facts to add may pass no messages, and the run still opens on a user turn.
+  const currentRequests: LLMMessage[] =
+    workflow && !input.messages.some((message) => message.role === "user")
+      ? [...input.messages, { role: "user", content: WORKFLOW_KICKOFF }]
+      : input.messages;
   const revivalOn = !!opts.revival;
   const revivalWarnAt = revivalWarnPercent(
     opts.revival ? opts.revival.warnAtPercent : undefined,
@@ -1122,17 +1207,19 @@ async function runOne(
   };
   const threshold = (name: string, value: number | false): number | false =>
     value === false ? false : positiveNumber(name, value);
+  // The bundle may suggest guardrails; an explicit field wins, like budgets.
+  const guardrails = mergeDefined(opts.agent?.guardrails, opts.guardrails);
   const repeatLimit = threshold(
     "guardrails.repeatedToolCallLimit",
-    opts.guardrails?.repeatedToolCallLimit ?? 3,
+    guardrails.repeatedToolCallLimit ?? 3,
   );
   const toolOnlyNudge = threshold(
     "guardrails.toolOnlyNudgeLimit",
-    opts.guardrails?.toolOnlyNudgeLimit ?? 8,
+    guardrails.toolOnlyNudgeLimit ?? 8,
   );
   const verboseTurnLimit = threshold(
     "guardrails.verboseTurnLimit",
-    opts.guardrails?.verboseTurnLimit ?? 8_000,
+    guardrails.verboseTurnLimit ?? 8_000,
   );
   const repeat = new RepeatTracker(repeatLimit);
   let verboseNudged = false;
@@ -1292,7 +1379,7 @@ async function runOne(
   let softCapNudged = false;
   /** Files the child has named in its tool calls, for progress. */
   const touchedFiles = new Set<string>();
-  const proseCheckpoint = opts.guardrails?.proseCheckpoint ?? true;
+  const proseCheckpoint = guardrails.proseCheckpoint ?? true;
   // The shared mechanic lives in guardrails.ts; the policy (when a correction
   // fires, and when it stops) stays here.
   const courseCorrect = createCourseCorrect({
@@ -1789,6 +1876,7 @@ async function runOne(
       error?: string;
       handoff?: Record<string, unknown>;
       completion?: "response" | "declared";
+      output?: unknown;
     },
   ): Promise<AgentResult> => {
     // Snapshots are a persistence concern, not a phase the model must enter.
@@ -1887,6 +1975,17 @@ async function runOne(
     lost: LostJob[],
   ): Promise<number> => {
     for (const job of finished) {
+      // A detached check that completed is still the engine's own observation.
+      if (workflow && job.job.command !== undefined)
+        workflowLog.push({
+          tool: job.job.tool,
+          ok: job.result.exitCode === 0 && !job.result.timedOut,
+          meta: {
+            command: job.job.command,
+            exitCode: job.result.exitCode,
+            timedOut: job.result.timedOut,
+          },
+        });
       messages.push({
         role: "user",
         // `runtime`, not `engine`: a job result is a fact, so it survives in
@@ -2096,6 +2195,12 @@ async function runOne(
           kind: "budget_exceeded",
           detail: over.detail,
         });
+        // A workflow's budget is a hard stop and a failure: no partial success.
+        if (workflow)
+          return conclude("budget_exhausted", {
+            ok: false,
+            error: `workflow budget exhausted: ${over.detail}`,
+          });
         // A child out of its OWN budget hands back what it has. The leader's
         // run continues; a worker hitting its cap is not the leader's failure.
         if (chain.child) {
@@ -2228,9 +2333,11 @@ async function runOne(
           // Compaction itself consumes budget; check again before inference.
           const after = budget.exceeded(stepsBefore + steps);
           if (after)
-            return conclude("budget_exceeded", {
+            return conclude(workflow ? "budget_exhausted" : "budget_exceeded", {
               ok: false,
-              error: after.detail,
+              error: workflow
+                ? `workflow budget exhausted: ${after.detail}`
+                : after.detail,
             });
         }
       }
@@ -2360,7 +2467,9 @@ async function runOne(
         // one runtime message and take the next turn. Once per run; a second
         // capped prose turn stalls, so this cannot loop.
         if (outputCapped) {
-          if (!outputCapContinued && proseCheckpoint) {
+          // Turn lifecycle, not conversation: a workflow keeps it even with
+          // the prose checkpoint off.
+          if (!outputCapContinued && (proseCheckpoint || workflow)) {
             outputCapContinued = true;
             await courseCorrect({
               kind: "output_cap_continue",
@@ -2377,6 +2486,22 @@ async function runOne(
               `model output hit the ${maxOutputTokens}-token cap mid-reply ` +
               `and returned no tool call — the reply is incomplete`,
           });
+        }
+        // A workflow has no reader: prose is never its result. Reject it like
+        // any other ungated finish and keep going; the budget bounds this.
+        if (workflow) {
+          emit({
+            type: "guardrail",
+            kind: "finish_rejected",
+            detail: `step ${steps} replied in prose without finish — a workflow ends only through its gated finish`,
+          });
+          messages.push({
+            role: "user",
+            origin: "engine",
+            content: workflowProseRejection(workflow),
+          });
+          await persist();
+          continue;
         }
         // The engine just asked for something visible, and the model answered
         // in prose and stopped. That is exactly the shape that cut a run off
@@ -2455,6 +2580,12 @@ async function runOne(
           signal: toolSignal,
           pauseRequested: () => pauseRequested,
           onToolResult: (call, result) => {
+            if (workflow)
+              workflowLog.push({
+                tool: call.name,
+                ok: result.ok,
+                ...(result.meta ? { meta: result.meta } : {}),
+              });
             // Contract tools describe the ledger; they are not evidence about
             // the work and must not be recorded into the ledger they manage.
             if (!ledger || LEDGER_TOOL_NAMES.has(call.name)) {
@@ -2541,7 +2672,11 @@ async function runOne(
         // Declaring done while a job still runs is not done. Deliver it and let
         // the model confirm; a second finish with nothing outstanding ends.
         if (await settleBeforeFinish()) continue;
-        return conclude("finished", { ...declared, completion: "declared" });
+        return conclude("finished", {
+          ...declared,
+          completion: "declared",
+          ...(workflowOutput ? { output: workflowOutput.value } : {}),
+        });
       }
       if (pauseRequested)
         return conclude("paused", {
@@ -2585,8 +2720,28 @@ interface ChainSpend {
   cachedTokens?: number;
 }
 
+/**
+ * Bundle defaults under explicit options, field by field. An explicit field
+ * set to `undefined` does not erase the bundle's value.
+ */
+function mergeDefined<T extends object>(
+  defaults: T | undefined,
+  explicit: T | undefined,
+): T {
+  const merged = { ...defaults } as T;
+  for (const [key, value] of Object.entries(explicit ?? {})) {
+    if (value !== undefined) (merged as Record<string, unknown>)[key] = value;
+  }
+  return merged;
+}
+
+/** The run's budget limits: the bundle's suggestion, then explicit options. */
+function resolveBudgets(opts: EngineOptions): Partial<BudgetLimits> {
+  return mergeDefined(opts.agent?.budgets, opts.budgets);
+}
+
 function seededBudget(opts: EngineOptions, spend: ChainSpend): BudgetTracker {
-  const budget = new BudgetTracker(opts.budgets);
+  const budget = new BudgetTracker(resolveBudgets(opts));
   budget.promptTokens = spend.promptTokens;
   budget.completionTokens = spend.completionTokens;
   budget.costUsd = spend.costUsd;
@@ -2682,7 +2837,7 @@ async function runChain(
   // arriving before every single model call. No new public dial.
   const maxZeroProgressRuns = Math.max(
     1,
-    opts.budgets?.maxSteps ?? DEFAULT_BUDGET_LIMITS.maxSteps,
+    resolveBudgets(opts).maxSteps ?? DEFAULT_BUDGET_LIMITS.maxSteps,
   );
   let zeroProgressRuns = 0;
   const runs: RunSummary[] = [];
@@ -2776,6 +2931,12 @@ export async function runAgent(
   input: RunInput,
   opts: EngineOptions,
 ): Promise<AgentResult> {
-  if (opts.inbox) return runChain(input, opts);
+  if (opts.inbox) {
+    if (opts.agent?.workflow)
+      throw new Error(
+        `anchor: workflow "${opts.agent.name}" is one-shot — EngineOptions.inbox (run chains and interjections) does not apply to a workflow agent`,
+      );
+    return runChain(input, opts);
+  }
   return runOne(input, opts);
 }
