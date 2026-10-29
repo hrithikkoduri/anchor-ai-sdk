@@ -16,7 +16,14 @@
  * Edits are all-or-nothing per file: every `old` must match (exactly once
  * unless `replaceAll`) against the file as the previous edits left it, and
  * the file is written once, through `edit_file`. One bad `old` leaves the
- * file untouched and the result names that edit.
+ * file untouched and the result names that edit. A retried edit or write
+ * whose result is already in place reports `already applied` and writes
+ * nothing, so a model resuming a partly applied batch sees no new failure.
+ *
+ * Once the batch has written (an edit, a write, or a bash the command
+ * classifier cannot prove read-only), a later failure stops it by default: a
+ * check must never run against a half-applied change. Before any write, a
+ * failure leaves the rest running. An explicit `stopOnError` always wins.
  *
  * The batch is not read-only and declares no resource, so the engine runs it
  * alone: its writes hold the workspace for the whole call, and writes never
@@ -30,6 +37,7 @@ import { bashTool } from "../bash.js";
 import { editFileTool } from "../edit-file.js";
 import { readFileTool } from "../read-file.js";
 import { searchTool } from "../search.js";
+import { isReadOnlyCommand } from "./commands.js";
 import { applyEdits, type FileEdit } from "./edits.js";
 import {
   BATCH_CACHE_MAX_BYTES,
@@ -73,6 +81,8 @@ interface UnitResult {
   report: OpReport;
   tool?: string;
   meta?: JsonObject;
+  /** The op changed (or may have changed) the workspace, or found its change already there. */
+  wrote?: boolean;
 }
 
 interface Run {
@@ -119,6 +129,10 @@ function refused(run: Run, unit: BatchUnit): UnitResult | undefined {
     report: reportFor(unit, "refused", `${unit.op} is not available to this agent: it has no ${name} tool.`),
   };
 }
+
+/** The op is one that changes the workspace (whether or not it got to). */
+const writes = (report: OpReport) =>
+  report.op === "edit" || report.op === "write" || (report.op === "bash" && !isReadOnlyCommand(report.target));
 
 const metaOf = (result: ToolResult): JsonObject | undefined => result.meta;
 
@@ -221,6 +235,7 @@ async function runBash(run: Run, unit: Extract<BatchUnit, { op: "bash" }>): Prom
   return {
     report: reportFor(unit, status, result.content, detail ? { detail } : {}),
     tool: "bash",
+    ...(status !== "refused" && !isReadOnlyCommand(unit.command) ? { wrote: true } : {}),
     ...(result.meta ? { meta: result.meta } : {}),
   };
 }
@@ -273,11 +288,18 @@ async function runEdits(run: Run, units: ReadonlyArray<Extract<BatchUnit, { op: 
     for (const stat of outcome.stats) {
       const unit = edits.find((item) => item.index === stat.index)!;
       out.set(unit, {
-        report: reportFor(unit, "ok", "", {
-          detail: `${stat.replacements} replacement${stat.replacements === 1 ? "" : "s"}, +${stat.added}/−${stat.removed}`,
-        }),
+        report: reportFor(unit, "ok", "", stat.alreadyApplied
+          ? { alreadyApplied: true, detail: "no change" }
+          : { detail: `${stat.replacements} replacement${stat.replacements === 1 ? "" : "s"}, +${stat.added}/−${stat.removed}` }),
         tool: "edit_file",
-        meta: { path, replacements: stat.replacements, added: stat.added, removed: stat.removed },
+        meta: {
+          path,
+          replacements: stat.replacements,
+          added: stat.added,
+          removed: stat.removed,
+          ...(stat.alreadyApplied ? { alreadyApplied: true } : {}),
+        },
+        wrote: true,
       });
     }
   }
@@ -292,6 +314,18 @@ async function runWrite(run: Run, unit: Extract<BatchUnit, { op: "write" }>): Pr
   const path = await resolve(run, unit.path);
   const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
   const expect = Buffer.byteLength(unit.content, "utf8");
+  const current = await run.sandbox.exec(`[ -f ${shq(path)} ] && wc -c < ${shq(path)} && cat ${shq(path)}`, {
+    timeoutSecs: 60,
+    concurrent: true,
+  });
+  const newline = current.stdout.indexOf("\n");
+  if (current.exitCode === 0 && newline !== -1 && current.stdout.slice(newline + 1) === unit.content)
+    return {
+      report: reportFor(unit, "ok", "", { alreadyApplied: true, detail: "no change" }),
+      tool: "edit_file",
+      meta: { path, bytes: expect, alreadyApplied: true },
+      wrote: true,
+    };
   const r = await run.sandbox.exec(
     `${dir ? `mkdir -p ${shq(dir)} && ` : ""}printf %s ${shq(unit.content)} | tee ${shq(path)} > /dev/null && wc -c < ${shq(path)}`,
     { timeoutSecs: 120 },
@@ -312,6 +346,7 @@ async function runWrite(run: Run, unit: Extract<BatchUnit, { op: "write" }>): Pr
     report: reportFor(unit, "ok", "", { detail: `${lines} lines, ${expect} bytes` }),
     tool: "edit_file",
     meta: { path, bytes: expect },
+    wrote: true,
   };
 }
 
@@ -399,7 +434,9 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
         `Run several steps you already know in ONE call (one turn): read files, search, edit, write, run commands — in the order you would do them. ` +
         `Ops in a phase that only read or search run together; a phase with an edit, write or bash runs in order; phases run one after another. ` +
         `Edits to one file are all-or-nothing: every "old" must match exactly once (or set replaceAll), else the file is left untouched and the failing edit is named. ` +
-        `Each op reports on its own line (#n op target — ok/failed); a failed op does not stop the rest unless stopOnError. ` +
+        `A retry of an edit that already applied reports \`already applied\`. ` +
+        `Each op reports on its own line (#n op target — ok/failed). After a failed write the batch stops; fix and continue from that op. ` +
+        `Before anything is written a failed op does not stop the rest; an explicit stopOnError (true or false) overrides both. ` +
         `At most ${BATCH_MAX_OPS} ops (each read path counts); long output is clipped and the full log path is given. Unchanged files and searches come back marked (cached).`,
       parameters: {
         type: "object",
@@ -410,7 +447,11 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
             items: { type: "object", properties: { ops: OPS_SCHEMA }, required: ["ops"] },
           },
           ops: { ...OPS_SCHEMA, description: "A single phase (instead of phases)." },
-          stopOnError: { type: "boolean", description: "Skip everything after the first failed op (default false)." },
+          stopOnError: {
+            type: "boolean",
+            description:
+              "true: skip everything after the first failed op. false: always run every op. Default: stop only when an op fails after the batch has written.",
+          },
         },
         additionalProperties: false,
       },
@@ -447,15 +488,26 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
 
       const results: UnitResult[] = [];
       let failedAt: number | undefined;
+      let wrote = false;
+      let stopped: string | undefined;
       const record = (batch: UnitResult[]) => {
         results.push(...batch);
-        const bad = batch.find((item) => item.report.status === "failed" || item.report.status === "refused");
-        if (bad && failedAt === undefined) failedAt = bad.report.index;
+        for (const item of batch) {
+          if (item.report.status === "failed" || item.report.status === "refused") {
+            failedAt ??= item.report.index;
+            if (wrote && stopped === undefined)
+              stopped = `stopped after #${item.report.index}: ${
+                writes(item.report) ? "a write failed" : `#${item.report.index} failed after a write`
+              }, later ops not run`;
+          }
+          if (item.wrote) wrote = true;
+        }
       };
       const stop = (): string | undefined => {
         if (ctx.signal?.aborted) return "not run: the batch was cancelled";
         if (controller.signal.aborted) return `not run: the batch reached its ${maxBatchSecs}s limit`;
-        if (parsed.stopOnError && failedAt !== undefined) return `not run: #${failedAt} failed and stopOnError is set`;
+        if (parsed.stopOnError === true && failedAt !== undefined) return `not run: #${failedAt} failed and stopOnError is set`;
+        if (parsed.stopOnError === undefined && stopped) return `not run: ${stopped}`;
         return undefined;
       };
       try {
@@ -483,13 +535,14 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
       const okCount = count("ok");
       const failed = count("failed") + count("refused");
       const skipped = count("skipped");
+      const halted = parsed.stopOnError === undefined && skipped > 0 ? stopped : undefined;
       const saved = await writeLog(
         sandbox,
         log,
         reports.map((report) => [opLabel(report), report.body.trimEnd()].filter(Boolean).join("\n")).join("\n\n") + "\n",
       );
       const logNote = saved ? `full output in ${log}` : "the full log could not be saved";
-      const header = `batch ${id}: ${reports.length} result${reports.length === 1 ? "" : "s"} — ${okCount} ok${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} not run` : ""}. Full log: ${saved ? log : "(could not be saved)"}`;
+      const header = `batch ${id}: ${reports.length} result${reports.length === 1 ? "" : "s"} — ${okCount} ok${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} not run` : ""}.${halted ? ` ${halted} — fix it and continue from that op.` : ""} Full log: ${saved ? log : "(could not be saved)"}`;
       const rendered = renderBatch(reports, header, logNote, caps);
       return {
         ok: failed === 0 && skipped === 0,
@@ -503,12 +556,14 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
           ok: okCount,
           failed,
           skipped,
+          ...(halted ? { stopped: halted } : {}),
           ops: results.map((item) => ({
             index: item.report.index,
             op: item.report.op,
             target: item.report.target.slice(0, 300),
             status: item.report.status,
             ...(item.report.cached ? { cached: true } : {}),
+            ...(item.report.alreadyApplied ? { alreadyApplied: true } : {}),
             ...(item.tool ? { tool: item.tool } : {}),
             ...(item.meta ? { meta: item.meta } : {}),
           })),

@@ -3,6 +3,12 @@
  * ours. Pure: the caller reads the file once, applies every edit here in
  * order (each sees the previous one's result), and writes once — or, when any
  * `old` fails to match, writes nothing and names the edit that failed.
+ *
+ * Retry safety: an edit whose `old` is gone but whose `new` is already there
+ * (or, when `new` contains `old`, already stands everywhere `old` does) is
+ * `alreadyApplied` — a model retrying a partly applied batch must not apply it
+ * twice or see a fresh failure. A deletion (`new` empty) has nothing to find,
+ * so a missing `old` still fails.
  */
 import { countOccurrences } from "../edit-file.js";
 
@@ -19,6 +25,7 @@ export interface EditStat {
   replacements: number;
   added: number;
   removed: number;
+  alreadyApplied?: boolean;
 }
 
 export type EditOutcome =
@@ -49,6 +56,15 @@ export function applyEdits(content: string, edits: readonly FileEdit[]): EditOut
   const stats: EditStat[] = [];
   for (const edit of edits) {
     const count = countOccurrences(current, edit.old);
+    const present = edit.new === "" ? 0 : countOccurrences(current, edit.new);
+    const applied =
+      count === 0
+        ? present > 0
+        : edit.new.includes(edit.old) && present >= count && (count === 1 || edit.replaceAll);
+    if (applied) {
+      stats.push({ index: edit.index, replacements: 0, added: 0, removed: 0, alreadyApplied: true });
+      continue;
+    }
     if (count === 0)
       return {
         ok: false,

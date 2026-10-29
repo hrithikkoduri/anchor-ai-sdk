@@ -196,8 +196,7 @@ const batch = createBatchTool({ tools }); // ops run through YOUR tools
     { "ops": [ { "op": "read", "paths": ["src/a.ts", "src/b.ts"] },
                { "op": "bash", "command": "git diff --stat HEAD~2..HEAD" } ] },
     { "ops": [ { "op": "edit", "path": "src/a.ts", "old": "…", "new": "…" } ] },
-    { "ops": [ { "op": "bash", "command": "npx vitest run src/a.test.ts" } ] } ],
-  "stopOnError": false }
+    { "ops": [ { "op": "bash", "command": "npx vitest run src/a.test.ts" } ] } ] }
 ```
 
 - Ops: `read` (`path`/`paths`, `offset`, `limit`), `search` (`pattern`, `path`,
@@ -213,6 +212,15 @@ const batch = createBatchTool({ tools }); // ops run through YOUR tools
   `edit_file`.
 - Edits are all-or-nothing per file and written once through `edit_file`; a
   bad `old` leaves the file untouched and names the failing edit.
+- A retry of an edit that already applied reports `already applied` (its `old`
+  is gone and its `new` is there), as does a `write` whose file already has
+  that content; nothing is written and the op is ok. An ambiguous `old`, or
+  neither `old` nor `new` present, still fails.
+- After a failed write the batch stops; fix and continue from that op. Once
+  the batch has written (an edit, a write, or a `bash` not recognised as a
+  read or check), a later failure skips the rest (`stopped after #N: …`);
+  before any write, a failure leaves the rest running. An explicit
+  `stopOnError` (true or false) overrides both.
 - Results: one label per op (`#3 edit src/a.ts — ok (1 replacement, +4/−2)`),
   each op capped at 300 lines and the batch at 600, with the full log's path
   (`logDir`, default `<scratch>/batch`) in the result. The whole batch is bounded
@@ -745,7 +753,7 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.8.10; latest published release: v0.8.9.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.8.11; latest published release: v0.8.10.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
 source may be ahead of the installed package. Daytona, agent teams, context
 reset, MCP, and consumer skill bundles remain roadmap work in the reviewed

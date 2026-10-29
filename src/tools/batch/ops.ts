@@ -32,7 +32,8 @@ export interface BatchPhase {
 
 export interface ParsedBatch {
   phases: BatchPhase[];
-  stopOnError: boolean;
+  /** Explicit choice; undefined = stop only on a failure after the batch has written. */
+  stopOnError: boolean | undefined;
   /** Number of ops (not units) — the `#n` labels run 1..ops. */
   ops: number;
   units: number;
@@ -163,5 +164,5 @@ export function parseBatch(input: Record<string, unknown>): ParsedBatch | { erro
     return {
       error: `a batch holds at most ${BATCH_MAX_OPS} ops (each path of a read counts); this one has ${units} — split it`,
     };
-  return { phases, stopOnError: input.stopOnError === true, ops: index, units };
+  return { phases, stopOnError: typeof input.stopOnError === "boolean" ? input.stopOnError : undefined, ops: index, units };
 }
