@@ -38,6 +38,10 @@ export const searchTool = defineTool(
           type: "string",
           description: "Directory or file to search (default: the repo root).",
         },
+        glob: {
+          type: "string",
+          description: "Only search files matching this glob (e.g. *.ts).",
+        },
         regex: {
           type: "boolean",
           description: "Treat pattern as a regular expression (default false).",
@@ -54,6 +58,7 @@ export const searchTool = defineTool(
   async (input, ctx) => {
     const pattern = requireString(input, "pattern");
     const path = optionalString(input, "path") ?? ".";
+    const glob = optionalString(input, "glob");
     const regex = optionalBoolean(input, "regex") ?? false;
     const max = Math.max(
       1,
@@ -69,13 +74,21 @@ export const searchTool = defineTool(
     // the searcher (exit 141), which we would misread as an error.
     const cap = `| sed -n "1,${head}p"; echo ${RC_MARKER}\${PIPESTATUS[0]}`;
 
+    const rgGlob = glob ? ` --glob ${shq(glob)}` : "";
+    const grepGlob = glob ? ` --include=${shq(glob)}` : "";
+    // git grep pathspecs are OR'd, so a glob cannot narrow the scope there:
+    // with a glob the ladder skips straight to grep's --include.
     const cmd = [
       `if command -v rg >/dev/null 2>&1; then`,
-      `  rg --line-number --no-heading --color=never${rgFlag} -- ${shq(pattern)} ${shq(path)} ${cap};`,
-      `elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then`,
-      `  git grep -nI${grepFlag} --untracked -e ${shq(pattern)} -- ${shq(path)} ${cap};`,
+      `  rg --line-number --no-heading --color=never${rgFlag}${rgGlob} -- ${shq(pattern)} ${shq(path)} ${cap};`,
+      ...(glob
+        ? []
+        : [
+            `elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then`,
+            `  git grep -nI${grepFlag} --untracked -e ${shq(pattern)} -- ${shq(path)} ${cap};`,
+          ]),
       `else`,
-      `  grep -rIn${grepFlag} --exclude-dir=.git --exclude-dir=node_modules ${shq(pattern)} ${shq(path)} ${cap};`,
+      `  grep -rIn${grepFlag}${grepGlob} --exclude-dir=.git --exclude-dir=node_modules ${shq(pattern)} ${shq(path)} ${cap};`,
       `fi`,
     ].join("\n");
 
@@ -108,7 +121,7 @@ export const searchTool = defineTool(
       return {
         ok: true,
         content: `no matches for ${JSON.stringify(pattern)}`,
-        meta: { pattern, path, matches: 0 },
+        meta: { pattern, path, ...(glob ? { glob } : {}), matches: 0 },
       };
     }
     if (rc > 1 || (rc !== 0 && matchLines.length === 0)) {
@@ -130,7 +143,7 @@ export const searchTool = defineTool(
         `${shown.length}${truncated ? "+" : ""} match(es) for ${JSON.stringify(pattern)} in ${path}:\n${shown.join("\n")}${note}`,
         { sandbox: ctx.sandbox, label: "search" },
       ),
-      meta: { pattern, path, matches: shown.length, truncated },
+      meta: { pattern, path, ...(glob ? { glob } : {}), matches: shown.length, truncated },
     };
   },
   { readOnly: true },

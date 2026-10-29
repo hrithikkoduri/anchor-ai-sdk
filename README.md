@@ -179,6 +179,49 @@ serialize. Omit `repository` only for a command that intentionally spans
 repositories — it runs at the workspace root and serializes globally. Effectful
 tools remain serial and ordered.
 
+### Batching known steps: `createBatchTool`
+
+A model that already knows its next steps can send them as one `batch` call —
+one model turn instead of one per step:
+
+```ts
+import { createBatchTool } from "anchor-ai-sdk";
+
+const tools = [...myWrappedTools];
+const batch = createBatchTool({ tools }); // ops run through YOUR tools
+```
+
+```jsonc
+{ "phases": [
+    { "ops": [ { "op": "read", "paths": ["src/a.ts", "src/b.ts"] },
+               { "op": "bash", "command": "git diff --stat HEAD~2..HEAD" } ] },
+    { "ops": [ { "op": "edit", "path": "src/a.ts", "old": "…", "new": "…" } ] },
+    { "ops": [ { "op": "bash", "command": "npx vitest run src/a.test.ts" } ] } ],
+  "stopOnError": false }
+```
+
+- Ops: `read` (`path`/`paths`, `offset`, `limit`), `search` (`pattern`, `path`,
+  `glob`, `regex`), `bash` (`command`, `repository`, `timeout_secs`), `edit`
+  (`path`, `old`, `new`, `replaceAll`), `write` (`path`, `content`). A flat
+  `ops` list is one phase. At most 20 ops (each read path counts).
+- A phase of reads/searches runs concurrently; a phase with an edit, write or
+  command runs in order. The batch is a serial mutation for the engine, so its
+  writes never overlap anything.
+- Every op runs through the tool you passed for it (`read_file`, `search`,
+  `bash`, `edit_file`), so your guards hold per op; an op whose tool is absent
+  is refused on its own line and the rest still run. `edit`/`write` need
+  `edit_file`.
+- Edits are all-or-nothing per file and written once through `edit_file`; a
+  bad `old` leaves the file untouched and names the failing edit.
+- Results: one label per op (`#3 edit src/a.ts — ok (1 replacement, +4/−2)`),
+  each op capped at 300 lines and the batch at 600, with the full log's path
+  (`logDir`, default `<scratch>/batch`) in the result. The whole batch is bounded
+  by `maxBatchSecs` (600).
+- Reads and searches are cached in the sandbox across turns (`cache.dir`,
+  default `<scratch>/batch-cache`, 200 MB LRU): a read is keyed by the file's
+  content hash, a search by its scope's file listing, so a changed file is
+  always a miss. Commands, edits and writes are never cached.
+
 `run_tests` in a multi-repo workspace requires `repository`; its metadata
 includes that repo and a tree hash computed there. LSP servers are rooted per
 repo when you pass `repos` to `createLspTools({ repos })`.
@@ -702,7 +745,7 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.8.9; latest published release: v0.8.9.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.8.10; latest published release: v0.8.9.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
 source may be ahead of the installed package. Daytona, agent teams, context
 reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
