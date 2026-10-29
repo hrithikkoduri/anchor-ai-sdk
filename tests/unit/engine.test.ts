@@ -16,6 +16,7 @@ import type { AgentEvent } from "../../src/engine/events.js";
 import { scaffoldBuggyLib } from "../helpers/buggy-lib.js";
 import { call, scripted } from "../helpers/scripted.js";
 import { userTurn } from "../../src/engine/types.js";
+import type { LLMMessage } from "../../src/llm/types.js";
 
 const edit = () =>
   call("edit_file", {
@@ -107,6 +108,51 @@ describe("agent runtime", () => {
     // The turn-scoped phase block is inserted before the final request, so
     // only the stable system prefix is safe to mark here.
     expect(phased.seen[0]!.cacheBreakpoints).toEqual([0]);
+  });
+
+  it("never puts a message between an assistant's tool calls and their results (phases on)", async () => {
+    const llm = scripted([
+      {
+        tools: [
+          { name: "read_file", arguments: JSON.stringify({ path: "src/sum.js" }) },
+          { name: "read_file", arguments: JSON.stringify({ path: "test.js" }) },
+        ],
+      },
+      call("run_tests"),
+      { text: "add() drops negatives; the tests show it." },
+    ]);
+    await runAgent(userTurn("Why do the tests fail?"), {
+      llm,
+      sandbox,
+      agent: codingAgent,
+    });
+    const toolProtocolBreaks = (messages: LLMMessage[]): string[] => {
+      const breaks: string[] = [];
+      messages.forEach((message, index) => {
+        const pending = new Set((message.tool_calls ?? []).map((tc) => tc.id));
+        for (let next = index + 1; pending.size > 0; next++) {
+          const after = messages[next];
+          if (after?.role !== "tool") {
+            breaks.push(`${index}: ${after?.role ?? "end"} before results`);
+            break;
+          }
+          pending.delete(after.tool_call_id!);
+        }
+      });
+      return breaks;
+    };
+    expect(llm.seen).toHaveLength(3);
+    for (const request of llm.seen) {
+      expect(toolProtocolBreaks(request.messages)).toEqual([]);
+    }
+    // After a tool run the turn-scoped state is the final message.
+    for (const request of llm.seen.slice(1)) {
+      expect(request.messages.at(-2)).toMatchObject({ role: "tool" });
+      expect(request.messages.at(-1)).toMatchObject({
+        role: "user",
+        content: expect.stringContaining("Current phase:"),
+      });
+    }
   });
 
   it("can finish from understand without claiming tests passed or entering every phase", async () => {

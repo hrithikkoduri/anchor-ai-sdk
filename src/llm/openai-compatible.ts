@@ -27,6 +27,7 @@ import type {
   LLMUsage,
   PromptCacheSetting,
   ReasoningEffort,
+  ReasoningPassback,
 } from "./types.js";
 
 export interface OpenAICompatibleOptions {
@@ -67,6 +68,13 @@ export interface OpenAICompatibleOptions {
    * openai). Set it explicitly for a gateway that speaks the other shape.
    */
   reasoningFormat?: "openrouter" | "openai";
+  /**
+   * Replay each assistant turn's reasoning on later requests in the tool
+   * loop: `"deepseek"` sends `reasoning_content`, `"openrouter"` sends
+   * `reasoning_details` (falling back to `reasoning` text). Default `false`:
+   * nothing is sent and the request body is unchanged.
+   */
+  reasoningPassback?: ReasoningPassback;
   /** Test seams. */
   fetchImpl?: typeof fetch;
   retryBaseDelayMs?: number;
@@ -95,11 +103,7 @@ interface ChatChunk {
       content?: unknown;
       reasoning?: unknown;
       reasoning_content?: unknown;
-      reasoning_details?: Array<{
-        type?: string;
-        text?: string;
-        summary?: string;
-      }>;
+      reasoning_details?: ReasoningDetailChunk[];
       tool_calls?: Array<{
         index?: number;
         id?: string;
@@ -119,9 +123,20 @@ interface ChatChunk {
   } | null;
 }
 
+/** One streamed `reasoning_details` fragment; other fields pass through. */
+interface ReasoningDetailChunk {
+  type?: string;
+  text?: string;
+  summary?: string;
+  index?: number;
+  [field: string]: unknown;
+}
+
 interface StreamState {
   text: string;
   reasoning: string;
+  /** Only collected when the client replays them (`"openrouter"`). */
+  reasoningDetails?: ReasoningDetailChunk[];
   toolCalls: Map<number, { id: string; name: string; arguments: string }>;
   usage?: NonNullable<ChatChunk["usage"]>;
   model?: string;
@@ -177,10 +192,59 @@ function textWithCache(
     : text;
 }
 
+/**
+ * Fragments of one block share an `index`: string fields concatenate, the
+ * rest (signature, format, id) take the latest value.
+ */
+function mergeReasoningDetails(
+  into: ReasoningDetailChunk[],
+  fragments: ReasoningDetailChunk[],
+): void {
+  for (const fragment of fragments) {
+    const existing =
+      typeof fragment.index === "number"
+        ? into.find((detail) => detail.index === fragment.index)
+        : undefined;
+    if (!existing) {
+      into.push({ ...fragment });
+      continue;
+    }
+    for (const [field, value] of Object.entries(fragment)) {
+      if (value === undefined || value === null) continue;
+      const before = existing[field];
+      existing[field] =
+        (field === "text" || field === "summary" || field === "data") &&
+        typeof before === "string" &&
+        typeof value === "string"
+          ? before + value
+          : value;
+    }
+  }
+}
+
+function reasoningFields(
+  message: LLMMessage,
+  passback: ReasoningPassback,
+): Record<string, unknown> {
+  if (passback === "deepseek")
+    return message.reasoning !== undefined
+      ? { reasoning_content: message.reasoning }
+      : {};
+  if (passback === "openrouter") {
+    if (message.reasoningDetails?.length)
+      return { reasoning_details: message.reasoningDetails };
+    return message.reasoning !== undefined
+      ? { reasoning: message.reasoning }
+      : {};
+  }
+  return {};
+}
+
 function toWireMessages(
   messages: LLMMessage[],
   promptCache?: PromptCacheSetting,
   breakpoints?: number[],
+  passback: ReasoningPassback = false,
 ): unknown[] {
   const cache = cacheControlFor(promptCache);
   const marked = new Set(
@@ -202,6 +266,7 @@ function toWireMessages(
           function: { name: tc.name, arguments: tc.arguments },
         }));
       }
+      Object.assign(out, reasoningFields(m, passback));
       return out;
     }
     if (m.role === "tool") {
@@ -239,11 +304,13 @@ function toWireMessages(
 
 export class OpenAICompatibleClient implements LLMClient {
   readonly model: string;
+  readonly reasoningPassback: ReasoningPassback;
   private readonly fetchImpl: typeof fetch;
   private readonly maxRetries: number;
 
   constructor(private readonly opts: OpenAICompatibleOptions) {
     this.model = opts.model;
+    this.reasoningPassback = opts.reasoningPassback ?? false;
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.maxRetries = opts.maxRetries ?? 3;
   }
@@ -271,6 +338,7 @@ export class OpenAICompatibleClient implements LLMClient {
         req.messages,
         this.opts.promptCache,
         req.cacheBreakpoints,
+        this.reasoningPassback,
       ),
       stream: true,
       stream_options: { include_usage: true },
@@ -357,6 +425,9 @@ export class OpenAICompatibleClient implements LLMClient {
       text: "",
       reasoning: "",
       toolCalls: new Map(),
+      ...(this.reasoningPassback === "openrouter"
+        ? { reasoningDetails: [] }
+        : {}),
     };
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -419,6 +490,8 @@ export class OpenAICompatibleClient implements LLMClient {
         state.reasoning += reasoning;
         onReasoning?.(reasoning);
       }
+      if (state.reasoningDetails && delta.reasoning_details?.length)
+        mergeReasoningDetails(state.reasoningDetails, delta.reasoning_details);
       const piece = normalizeContent(delta.content);
       if (piece !== "") {
         state.text += piece;
@@ -491,6 +564,9 @@ export class OpenAICompatibleClient implements LLMClient {
     return {
       text: state.text,
       ...(state.reasoning ? { reasoning: state.reasoning } : {}),
+      ...(state.reasoningDetails?.length
+        ? { reasoningDetails: state.reasoningDetails }
+        : {}),
       toolCalls,
       usage,
       model: state.model ?? this.opts.model,

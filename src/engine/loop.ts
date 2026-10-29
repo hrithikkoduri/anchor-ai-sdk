@@ -1147,10 +1147,13 @@ async function runOne(
     if (!includeTurn) return out;
     const turn = turnState();
     if (turn) {
-      // Keep the turn's final message last (tests and tool protocol both rely
-      // on it); put the changing runtime state immediately before it so the
-      // stable prefix is still reused.
-      const insertAt = Math.max(1, out.length - 1);
+      // Tool results must directly follow the assistant turn that called
+      // them, so after a tool run the state goes last. A trailing user
+      // request (or nudge) stays last, with the state just before it. Either
+      // way the previous request is a prefix of this one up to the old block.
+      const last = out[out.length - 1];
+      const insertAt =
+        last?.role === "user" ? Math.max(1, out.length - 1) : out.length;
       out.splice(insertAt, 0, {
         role: "user",
         content: turn,
@@ -2409,7 +2412,10 @@ async function runOne(
             `was still writing, is incomplete`,
         });
       }
-      const assistantTurn = assistantMessage(response);
+      const assistantTurn = assistantMessage(
+        response,
+        opts.llm.reasoningPassback ?? false,
+      );
       messages.push(assistantTurn);
       // The model's own words get a boundary too (#77). A runaway reply is
       // replayed bounded while the transcript and the event stream keep it

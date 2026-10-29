@@ -43,6 +43,14 @@ export interface LLMMessage {
   tool_calls?: LLMToolCall[];
   /** tool messages only — which call this result answers */
   tool_call_id?: string;
+  /**
+   * Assistant messages only: the model's reasoning for this turn, kept so a
+   * tool loop can replay it. Set only when the client's `reasoningPassback`
+   * is on, sent only by such a client, and never persisted to a thread.
+   */
+  reasoning?: string;
+  /** Assistant messages only: the provider's structured reasoning, verbatim. */
+  reasoningDetails?: unknown[];
 }
 
 /** OpenAI-style function definition — built from our Tool definitions. */
@@ -71,6 +79,11 @@ export interface LLMResponse {
   text: string;
   /** Reasoning text explicitly returned by the provider, when available. */
   reasoning?: string;
+  /**
+   * Structured reasoning blocks (OpenRouter `reasoning_details`), merged from
+   * the stream, when the provider returned any.
+   */
+  reasoningDetails?: unknown[];
   toolCalls: LLMToolCall[];
   usage: LLMUsage;
   model: string;
@@ -79,6 +92,14 @@ export interface LLMResponse {
   finishReason?: string;
   latencyMs: number;
 }
+
+/**
+ * How an assistant turn's reasoning is replayed on later requests:
+ * - `"deepseek"` sends `reasoning_content` (DeepSeek's thinking-with-tools API)
+ * - `"openrouter"` sends `reasoning_details` verbatim, else `reasoning`
+ * - `false` sends nothing (the default)
+ */
+export type ReasoningPassback = "deepseek" | "openrouter" | false;
 
 /** Provider-normalized reasoning budget (OpenRouter/OpenAI vocabulary). */
 export type ReasoningEffort =
@@ -140,6 +161,11 @@ export interface LLMRequest {
 
 export interface LLMClient {
   readonly model: string;
+  /**
+   * Whether this client replays reasoning (see `ReasoningPassback`). The
+   * engine keeps reasoning on assistant messages only when this is set.
+   */
+  readonly reasoningPassback?: ReasoningPassback;
   complete(
     req: LLMRequest,
     opts?: { signal?: AbortSignal },
