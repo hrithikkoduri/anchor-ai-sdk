@@ -28,6 +28,8 @@ export const bashTool = defineTool(
       "to read files — they are read-only, and several in one turn run together. " +
       "Independent read-only commands (git status/diff/log, ls, wc, stat) may be " +
       "issued together as separate bash calls in one turn; they run concurrently. " +
+      "One call can answer several questions — a grep across several paths, one sed " +
+      "over the files in scope — so do not spend a turn per file. " +
       "Commands that change files, and builds, installs, and test runs, stay in call order.",
     parameters: {
       type: "object",

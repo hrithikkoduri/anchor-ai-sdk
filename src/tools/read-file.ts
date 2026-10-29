@@ -19,7 +19,10 @@ export const readFileTool = defineTool(
     name: "read_file",
     description:
       "Read a file from the sandbox with line numbers. Use offset/limit to page " +
-      "through big files instead of reading them whole.",
+      "through big files instead of reading them whole, and read the region the " +
+      "question needs rather than the whole file. " +
+      "Reading several files? Issue them together in one turn — read-only calls " +
+      "run in parallel — or as read ops in one batch phase. Do not spend a turn per file.",
     parameters: {
       type: "object",
       properties: {

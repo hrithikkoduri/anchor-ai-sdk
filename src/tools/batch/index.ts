@@ -432,6 +432,7 @@ export function createBatchTool(options: BatchToolOptions = {}): Tool {
       name: "batch",
       description:
         `Run several steps you already know in ONE call (one turn): read files, search, edit, write, run commands — in the order you would do them. ` +
+        `Reach for it whenever the next several steps are already decided: reading three files and running one grep is one call, not four. ` +
         `Ops in a phase that only read or search run together; a phase with an edit, write or bash runs in order; phases run one after another. ` +
         `Edits to one file are all-or-nothing: every "old" must match exactly once (or set replaceAll), else the file is left untouched and the failing edit is named. ` +
         `A retry of an edit that already applied reports \`already applied\`. ` +

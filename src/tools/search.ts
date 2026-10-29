@@ -26,7 +26,9 @@ export const searchTool = defineTool(
     name: "search",
     description:
       "Search the repository for a string (fixed-string by default, at most 50 matches). " +
-      "Returns file:line:text. Use this to find code, symbols, and error messages before reading files.",
+      "Returns file:line:text. Use this to find code, symbols, and error messages before reading files. " +
+      "Scope `path` to the part of the tree the question is about: one scoped search beats several greps, " +
+      "and several searches issued in one turn run together.",
     parameters: {
       type: "object",
       properties: {
