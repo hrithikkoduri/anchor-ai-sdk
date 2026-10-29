@@ -28,6 +28,14 @@ export { readFileTool } from "./read-file.js";
 export { editFileTool } from "./edit-file.js";
 export { searchTool } from "./search.js";
 export { runTestsTool } from "./run-tests.js";
+export {
+  applyEdits,
+  BATCH_MAX_OPS,
+  BATCH_RENDER_CAPS,
+  createBatchTool,
+  parseBatch,
+} from "./batch/index.js";
+export type { BatchCacheOptions, BatchToolOptions, BatchUnit, OpReport, ParsedBatch, RenderCaps } from "./batch/index.js";
 export { createViewImageTool } from "./view-image.js";
 export type { ViewImageInput, ViewImageOptions } from "./view-image.js";
 export { createSkillTools } from "./skills.js";

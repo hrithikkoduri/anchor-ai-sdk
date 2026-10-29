@@ -10,6 +10,10 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 
 ## v0.8.x — released
 
+- [x] v0.8.10 (source): `createBatchTool` — ordered phases of read/search/bash/
+      edit/write ops in one call, run through the consumer's own tools, with
+      all-or-nothing edits per file, capped output plus a full log, and an
+      in-sandbox read/search cache; `search` takes a `glob`.
 - [x] v0.8.9: phases off means no phase in the prompt, events, hand-back, or
       thread record; an explicit consumer resume phase is preserved.
 - [x] v0.8.8: retained sandboxes are detached, not paused, when a run ends;
