@@ -3,6 +3,7 @@
  * a microVM. Runs in the repo root by default (the sandbox adapter's doing);
  * self-contained per the tool-call contract.
  */
+import { commandKind } from "./batch/commands.js";
 import { spillOrTruncate } from "./truncate.js";
 import { resourceForRepo, selectRepo } from "./repo.js";
 import {
@@ -21,10 +22,13 @@ export const bashTool = defineTool(
       "Run a shell command inside one named repository. " +
       "Commands are self-contained — cd/export do not persist between calls. " +
       "Omit repository only for a command that intentionally spans repositories; " +
-      "such a call runs at the workspace root and is serialized. " +
+      "such a call runs at the workspace root and, unless read-only, is serialized. " +
       "Use for git, builds, tests, installs, and scripts. " +
       "Do not search or read text with it: use search to find text and read_file " +
-      "to read files — they are read-only, and several in one turn run together.",
+      "to read files — they are read-only, and several in one turn run together. " +
+      "Independent read-only commands (git status/diff/log, ls, wc, stat) may be " +
+      "issued together as separate bash calls in one turn; they run concurrently. " +
+      "Commands that change files, and builds, installs, and test runs, stay in call order.",
     parameters: {
       type: "object",
       properties: {
@@ -95,6 +99,9 @@ export const bashTool = defineTool(
   },
   {
     background: true,
+    // Checks (tests, typecheck) are not reads here: they write caches and may bind ports.
+    readOnlyWhen: (input) =>
+      typeof input.command === "string" && commandKind(input.command) === "read",
     resource: (input, ctx) =>
       resourceForRepo(
         ctx,

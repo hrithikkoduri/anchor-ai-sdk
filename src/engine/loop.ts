@@ -13,6 +13,7 @@ import { jsonSchemaOf, validateOutput } from "../schema.js";
 import {
   checkEvidence,
   checkRejection,
+  invokesCheck,
   WORKFLOW_KICKOFF,
   workflowProseRejection,
   type WorkflowContract,
@@ -43,6 +44,11 @@ import {
   toolResultMessage,
 } from "./context.js";
 import type { ToolResultRecord } from "./strategy.js";
+import {
+  elideToolResults,
+  resolveToolResultElision,
+  type ElideToolResultsOptions,
+} from "./tool-elision.js";
 import {
   renderInboxTurn,
   type InboxMessage,
@@ -1142,6 +1148,26 @@ async function runOne(
   // The model's view of the transcript, bounded by assistant-text elision
   // (#77). `messages` stays whole — this only changes what is SENT.
   const elidedByMessage = new WeakMap<LLMMessage, LLMMessage>();
+  const toolElision: ElideToolResultsOptions | null =
+    opts.toolResultElision === false ||
+    (opts.toolResultElision === undefined && !compact)
+      ? null
+      : {
+          ...resolveToolResultElision(
+            opts.toolResultElision ?? {},
+            compact?.maxEstimatedTokens,
+          ),
+          // The gate reads the engine's own log, never this text; pinning the
+          // latest check run keeps its output in front of the model too.
+          ...(opts.agent?.workflow
+            ? {
+                pinLatest: (call) =>
+                  call.name === "bash" &&
+                  typeof call.input.command === "string" &&
+                  invokesCheck(call.input.command, opts.agent!.workflow!.check.command),
+              }
+            : {}),
+        };
   const forModel = (includeTurn = true): LLMMessage[] => {
     const out = messages.map((m) => elidedByMessage.get(m) ?? m);
     if (!includeTurn) return out;
@@ -2264,7 +2290,26 @@ async function runOne(
           });
         }
       }
-      if (compact && estimateTokens(messages) > compact.maxEstimatedTokens) {
+      if (toolElision) {
+        const pass = elideToolResults(forModel(false), toolElision);
+        if (pass.elided.length) {
+          for (const index of pass.elided)
+            elidedByMessage.set(messages[index]!, pass.messages[index]!);
+          emit({
+            type: "advisory",
+            kind: "tool_results_elided",
+            detail:
+              `step ${steps + 1}: elided ${pass.elided.length} old tool result(s); ` +
+              `estimated view ${pass.tokensBefore} → ${pass.tokensAfter} tokens`,
+          });
+        }
+      }
+      // With elision on, the fold triggers on what would actually be sent.
+      if (
+        compact &&
+        estimateTokens(toolElision ? forModel(false) : messages) >
+          compact.maxEstimatedTokens
+      ) {
         let folded = null as Awaited<
           ReturnType<typeof compactConversation>
         > | null;
