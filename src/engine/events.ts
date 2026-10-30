@@ -76,6 +76,13 @@ type AgentEventBody =
       callId?: string;
       /** The idempotency identity minted before an effectful call. */
       operationId?: string;
+      /**
+       * The journal key for a side-effecting call (`toolCallEventKey`), derived
+       * from the work so a resume that re-issues the write is recognised as a
+       * duplicate. Absent for read-only calls and when no stable identity
+       * exists.
+       */
+      eventKey?: string;
       verb?: string;
     }
   | {
@@ -95,6 +102,8 @@ type AgentEventBody =
       name: string;
       callId?: string;
       operationId?: string;
+      /** The same journal key carried by the matching `tool_call`. */
+      eventKey?: string;
       verb?: string;
       ok: boolean;
       /**
