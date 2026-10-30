@@ -13,6 +13,7 @@
  * together: splitting them is how they drift.
  */
 import { toPlainJsonObject } from "../json.js";
+import { toolCallEventKey } from "../checkpoints.js";
 import type { LLMMessage, LLMToolCall } from "../llm/types.js";
 import type { Tool } from "../tools/types.js";
 import { isReadOnlyCall, type ToolContext } from "../tools/types.js";
@@ -239,6 +240,16 @@ function groupedTailStart(calls: LLMToolCall[], available: Map<string, Tool>, ct
   return start;
 }
 
+/** A tool's own idempotency key for an effect, when it derives one. Guarded: a throwing key contributes none. */
+function effectKeyOf(tool: Tool, input: Record<string, unknown>): string | undefined {
+  try {
+    const key = tool.effect?.key?.(input);
+    return typeof key === "string" && key.trim() !== "" ? key.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Execute a turn's tool calls and emit their results.
  *
@@ -290,6 +301,7 @@ export async function dispatchToolCalls(
     verb: string | undefined,
     result: ToolResult,
     operationId?: string,
+    eventKey?: string,
   ): void => {
     args.onToolResult?.(call, result);
     evidence.push({ tool: call.name, ok: result.ok, meta: result.meta });
@@ -298,6 +310,7 @@ export async function dispatchToolCalls(
       name: call.name,
       callId: call.id,
       ...(operationId ? { operationId } : {}),
+      ...(eventKey ? { eventKey } : {}),
       verb: result.verb ?? verb,
       ...(phase !== undefined ? { phase } : {}),
       step: steps,
@@ -440,12 +453,25 @@ export async function dispatchToolCalls(
             ? "Not executed: repeated identical calls reached the loop limit."
             : undefined;
 
-  const runOne = async (call: LLMToolCall): Promise<void> => {
+  const runOne = async (call: LLMToolCall, ordinal: number): Promise<void> => {
     const tool = available.get(call.name);
     const { input, invalid } = parseInput(call);
     const verb = toolVerb(call.name, input, tool?.verb);
     if (repeat.record(`${call.name}:${call.arguments}`)) runaway = true;
     const skipped = skipReason();
+
+    // The journal key for an effectful call, derived from the work so a resume
+    // that re-issues the write is recognised as a duplicate. Read-only calls
+    // carry none — they change nothing the log must dedupe. Computed here,
+    // before the write-ahead, so both the intent and the result share it.
+    const effectKey = tool?.effect
+      ? effectKeyOf(tool, input)
+      : undefined;
+    // Only a consumer-derived key counts; without one the call carries no key
+    // and the operations store's reconcile path decides whether it may replay.
+    const eventKey = effectKey !== undefined
+      ? toolCallEventKey({ tool: call.name, effectKey })
+      : undefined;
 
     // Write-ahead: an effectful call records its intent BEFORE it runs, so a
     // crash between the target's write and our result leaves a pending record
@@ -477,6 +503,7 @@ export async function dispatchToolCalls(
       name: call.name,
       callId: call.id,
       ...(operationId ? { operationId } : {}),
+      ...(eventKey ? { eventKey } : {}),
       input,
       verb,
       ...(phase !== undefined ? { phase } : {}),
@@ -527,7 +554,7 @@ export async function dispatchToolCalls(
     // crash: the effect may have landed, the record did not. Say so.
     if (operationId && operationStarted && args.operations)
       settlements.push({ operationId, result });
-    emitResult(call, verb, result, operationId);
+    emitResult(call, verb, result, operationId, eventKey);
   };
 
   /**
@@ -589,7 +616,7 @@ export async function dispatchToolCalls(
     let end = i + 1;
     if (reads[i]) while (end < calls.length && reads[end]) end++;
     if (end - i > 1) await runReadGroup(calls.slice(i, end));
-    else await runOne(calls[i]!);
+    else await runOne(calls[i]!, i);
     i = end;
   }
 
