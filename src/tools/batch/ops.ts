@@ -74,8 +74,11 @@ function parseOp(raw: unknown, index: number): BatchUnit[] {
       }));
     }
     case "search": {
-      const pattern = str(raw.pattern);
-      if (!pattern) return fail(name, "search needs a non-empty \"pattern\"");
+      // `pattern` is the name in the schema; `query`/`text`/`q` are what models
+      // reach for. One alias table beats a failed op repeated on the next turn.
+      const pattern = str(raw.pattern) ?? str(raw.query) ?? str(raw.text) ?? str(raw.q);
+      if (!pattern)
+        return fail(name, "search needs a non-empty \"pattern\" (aliases: query, text, q) — e.g. {\"op\":\"search\",\"pattern\":\"invoices\"}");
       const path = str(raw.path);
       const glob = str(raw.glob);
       return [
