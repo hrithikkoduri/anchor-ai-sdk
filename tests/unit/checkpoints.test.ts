@@ -106,26 +106,16 @@ describe("eventKeyFor", () => {
 });
 
 describe("toolCallEventKey", () => {
-  it("prefers the work-derived effect key, then the call id, then the ordinal", () => {
+  it("accepts only a consumer-derived, work-identity key", () => {
     expect(
-      toolCallEventKey({
-        tool: "write_record",
-        effectKey: "refund:order_1",
-        callId: "c0-0",
-        ordinal: "3.0",
-      }),
+      toolCallEventKey({ tool: "write_record", effectKey: "refund:order_1" }),
     ).toBe("tool:write_record:refund:order_1");
-    expect(
-      toolCallEventKey({ tool: "write_record", callId: "c0-0", ordinal: "3.0" }),
-    ).toBe("tool:write_record:call:c0-0");
-    expect(toolCallEventKey({ tool: "write_record", ordinal: "3.0" })).toBe(
-      "tool:write_record:ordinal:3.0",
-    );
   });
 
-  it("returns undefined when there is no stable identity (never a UUID)", () => {
+  it("never falls back to a per-attempt identity (call id, ordinal, UUID)", () => {
     expect(toolCallEventKey({ tool: "write_record" })).toBeUndefined();
-    expect(toolCallEventKey({ tool: "  " })).toBeUndefined();
+    expect(toolCallEventKey({ tool: "write_record", effectKey: "  " })).toBeUndefined();
+    expect(toolCallEventKey({ tool: "  ", effectKey: "refund:order_1" })).toBeUndefined();
   });
 });
 
@@ -527,7 +517,7 @@ describe("effectful tool-call journaling", () => {
     expect(intent?.type === "tool_call" && intent.eventKey).toBeUndefined();
   });
 
-  it("falls back to the delegated call id for an effect with no domain key", async () => {
+  it("emits no key for an effect with no domain key, so a resume cannot mistake it for a duplicate", async () => {
     const events: AgentEvent[] = [];
     const tool = defineTool(
       {
@@ -558,8 +548,6 @@ describe("effectful tool-call journaling", () => {
     const intent = events.find(
       (event) => event.type === "tool_call" && event.name === "write_record",
     );
-    expect(intent?.type === "tool_call" && intent.eventKey).toMatch(
-      /^tool:write_record:call:/,
-    );
+    expect(intent?.type === "tool_call" && intent.eventKey).toBeUndefined();
   });
 });

@@ -467,13 +467,10 @@ export async function dispatchToolCalls(
     const effectKey = tool?.effect
       ? effectKeyOf(tool, input)
       : undefined;
-    const eventKey = tool?.effect
-      ? toolCallEventKey({
-          tool: call.name,
-          ...(effectKey !== undefined ? { effectKey } : {}),
-          ...(call.id ? { callId: call.id } : {}),
-          ordinal: `${steps}.${ordinal}`,
-        })
+    // Only a consumer-derived key counts; without one the call carries no key
+    // and the operations store's reconcile path decides whether it may replay.
+    const eventKey = effectKey !== undefined
+      ? toolCallEventKey({ tool: call.name, effectKey })
       : undefined;
 
     // Write-ahead: an effectful call records its intent BEFORE it runs, so a

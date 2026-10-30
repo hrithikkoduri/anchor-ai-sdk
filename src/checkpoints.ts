@@ -257,43 +257,25 @@ export function eventKeyFor(
 /**
  * The journal key for a side-effecting tool call.
  *
- * A tool call is not one of the note's write rows, but it must still be
- * recognisable after a resume: a resumed run re-issuing the same write must
- * produce the same key so the store rejects it. The identity, in order of
- * preference:
- *
- *   1. the tool's own `effect.key(input)` — a domain key derived from the work
- *      (`refund:order_123`), the strongest guarantee, because another run
- *      computes it from the same input;
- *   2. the delegated call id the provider assigned (`callId`) — stable when the
- *      turn is replayed from the thread log;
- *   3. an explicit call ordinal (`<step>.<index>` in the turn) — stable when the
- *      turn is deterministic.
- *
- * Returns `undefined` when none exist, so the caller keeps today's behaviour
- * rather than minting a per-attempt UUID. The result is namespaced `tool:` so
- * it can never collide with a `eventKeyFor` write key.
+ * Only a key the CONSUMER derives from the work is accepted: `tool.effect.key`,
+ * e.g. `delivery:<threadId>:<kind>:<target>` or `comment:<repo>:<issue>:<hash>`.
+ * There is deliberately no fallback to the provider's call id or to a step
+ * ordinal — both are per attempt, so a resumed run would mint a different key
+ * and the duplicate would never be recognised. A tool that cannot derive a key
+ * emits none, and crash safety falls back to the operations store's own
+ * identity (a fresh operation id plus `effect.reconcile`, which refuses to
+ * replay when it cannot tell whether the write landed).
  */
 export function toolCallEventKey(args: {
   tool: string;
-  /** `tool.effect.key(input)`, when the tool derives one. */
+  /** `tool.effect.key(input)`; the only accepted identity. */
   effectKey?: string;
-  /** The provider's tool-call id for this call. */
-  callId?: string;
-  /** An explicit ordinal for the call, e.g. "3.0". */
-  ordinal?: string;
 }): string | undefined {
   const tool = nonEmpty(args.tool);
   if (tool === undefined) return undefined;
   const effectKey = nonEmpty(args.effectKey);
-  const callId = nonEmpty(args.callId);
-  const ordinal = nonEmpty(args.ordinal);
-  const identity =
-    effectKey ??
-    (callId !== undefined ? `call:${callId}` : undefined) ??
-    (ordinal !== undefined ? `ordinal:${ordinal}` : undefined);
-  if (identity === undefined) return undefined;
-  return `tool:${tool}:${identity}`;
+  if (effectKey === undefined) return undefined;
+  return `tool:${tool}:${effectKey}`;
 }
 
 // ---------------------------------------------------------------------------
