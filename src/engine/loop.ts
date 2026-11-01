@@ -2578,7 +2578,7 @@ async function runOne(
         // A pending background job can still change the answer: wait for it and
         // give the model the result rather than losing it at the exit.
         if (await settleBeforeFinish()) continue;
-        if (completionGate) {
+        if (completionGate && verifierConfig.gateReply !== false) {
           const gate = await completionGate(response.text.trim(), true);
           if (!gate.ok) {
             finishGateAttempts += 1;

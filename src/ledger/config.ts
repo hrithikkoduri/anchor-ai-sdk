@@ -11,6 +11,15 @@ export interface VerifierConfig {
   create?: "agent" | "start";
   /** Which boundaries are verified. Default both. */
   gates?: Array<"phase" | "finish">;
+  /**
+   * Whether a plain text reply — an answer, no `finish` call — is held to the
+   * contract. Default true: a reply is the run's last word, so the completion
+   * gate checks it like a `finish`. Set false when replies are conversation,
+   * not completion (a lead answering the user's question while the work is
+   * still open): the reply ends the turn, the contract stays as it was, and
+   * only an explicit `finish` is judged.
+   */
+  gateReply?: boolean;
   /** Allow a requirement with a verifier-approved flaky waiver. */
   allowWaived?: boolean;
   /** Hard cap on judge calls per run. Default 8. */

@@ -448,6 +448,31 @@ describe("engine task contracts", () => {
     expect(result.ledger?.requirements[0]!.status).toBe("verified");
   });
 
+  it("holds a plain reply to the contract by default, and with gateReply:false lets it be conversation", async () => {
+    const script = () => [response("", [createTask()]), response("The first requirement is the endpoint."), response("Still the endpoint."), response("Still the endpoint.")];
+    const held = await runAgent(userTurn("Add archiving"), { llm: agentLlm(script()), verifier: true, agent: testAgent });
+    // Default: the reply is judged like a finish, and an open contract rejects it until the run stalls.
+    expect(held.reason).toBe("stalled");
+
+    const llm = agentLlm(script());
+    const talking = await runAgent(userTurn("Add archiving"), { llm, verifier: { gateReply: false }, agent: testAgent });
+    expect(talking.reason).toBe("finished");
+    expect(talking.summary).toBe("The first requirement is the endpoint.");
+    // The contract is exactly as it was: nothing was verified by talking.
+    expect(talking.ledger?.requirements.map((r) => r.status)).toEqual(["open"]);
+  });
+
+  it("gateReply:false does not loosen an explicit finish", async () => {
+    const llm = agentLlm([
+      response("", [createTask()]),
+      response("", [{ id: "f1", name: "finish", arguments: JSON.stringify({ summary: "All done.", success: true }) }]),
+      response("", [{ id: "f2", name: "finish", arguments: JSON.stringify({ summary: "All done.", success: true }) }]),
+      response("", [{ id: "f3", name: "finish", arguments: JSON.stringify({ summary: "All done.", success: true }) }]),
+    ]);
+    const result = await runAgent(userTurn("Add archiving"), { llm, verifier: { gateReply: false }, agent: testAgent });
+    expect(result.reason).not.toBe("finished");
+  });
+
   it("offers the focused contract tools and no legacy update_ledger shim", async () => {
     const llm = agentLlm([response("", [createTask()]), response("Done.")]);
     await runAgent(userTurn("Investigate where auth is refreshed"), { llm, verifier: true, agent: testAgent });
