@@ -620,6 +620,23 @@ else console.log(result.reason);           // e.g. "budget_exhausted"
   `reason: "budget_exhausted"`.
 - `ask_questions` is refused, and so is `EngineOptions.inbox`: a workflow run is one-shot.
 
+### Messages while a run works: the inbox
+
+Pass `inbox: { store, channel }` (a `MemoryInboxStore`, or your own `InboxStore`)
+and `runAgent` becomes a chain: messages that arrive while a run is working are
+delivered one of three ways, chosen per message by `delivery`:
+
+| `delivery` | What happens | Use it to |
+| --- | --- | --- |
+| `steer` | Delivered into the **same run** at its next turn boundary, as an engine user message. The run is never ended. | **Nudge** a running worker: "speed up", "2 minutes left". |
+| `interject` | Ends the running run at its next turn boundary; the chain continues with the message. | **Correct or stop** it. |
+| `queue` | Leaves the running run alone; the message becomes the next run's task. | **Hand it more work.** |
+
+`claimSteers(channel)` is an optional `InboxStore` method; a store without it
+treats a `steer` message as `queue`. A steer that arrives after the run's last
+turn boundary is not lost: it is part of the next run's `claimAll` batch. The
+engine emits `inbox_steer` (`{ count }`) when it delivers steers.
+
 ## Configure the runtime, not another loop
 
 | Capability | Your controls |
@@ -628,6 +645,7 @@ else console.log(result.reason);           // e.g. "budget_exhausted"
 | **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
 | **Prompt caching** | Opt-in `promptCache` breakpoints for Anthropic-style providers, with stable-prefix selection and `cachedTokens` accounting. See [docs/prompt-caching.md](docs/prompt-caching.md). |
 | **Composition** | `createAnchor` for reusable model/agent/sandbox/thread wiring, exported coding prompt components, and `view_image` for text-only agents. See [docs/composition.md](docs/composition.md). |
+| **Messages mid-run** | A consumer-owned inbox with `steer` (nudge), `interject` (correct), and `queue` (more work) deliveries, chained by the engine. |
 | **Context and memory** | Catalog-derived or explicit compaction, supplied thread stores, agent-authored notes, and best-effort output spill. |
 | **Revival and resume** | Opt-in budget warnings, `request_revival`, `planRevival`, and `ThreadBudget`. Your app persists state and decides whether to fund or enqueue another run. |
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |

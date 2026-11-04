@@ -1525,3 +1525,38 @@ enforces through seams it already had. There is no second loop.
   throws.
 
 Regressions: `tests/unit/workflow-agent.test.ts`.
+
+## Decision #107: `steer` is the inbox's third delivery — a nudge never ends a run
+
+#82 gave the inbox two deliveries, and both act on the *run*: `queue` waits for
+it to end, `interject` ends it. A host that runs a worker as a top-level run
+with an `inbox` (Sailor does) therefore could not tell it the time or ask it to
+speed up without either waiting or stopping it. The in-run, non-blocking path
+existed only for children the engine delegates to itself (`chain.steer`, #99).
+
+- **`delivery: "steer"`** is delivered into the same run at its next turn
+  boundary as `{ role: "user", origin: "engine" }` — never a tool result, never
+  a stop. The text is the message's `text` with the existing directive
+  normalisation (whitespace collapsed, 500 chars); the store renders its own
+  label.
+- **`InboxStore.claimSteers?(channel)`** is optional: it atomically claims the
+  pending `steer` rows only, oldest first, under the same claim/complete/release
+  contract as `claimAll`. A store without it treats `steer` as `queue`, so every
+  existing store keeps working unchanged.
+- **An interjection still wins.** The engine probes `hasInterject` first; if it
+  fires, the run ends and the steers stay pending, so the next run's `claimAll`
+  batch is interjects (newest first), then queued and steer messages together
+  (oldest first). Nothing is lost.
+- **`hasInterject` ignores `steer` rows** (and `claimSteers` never returns
+  anything else), or a nudge would end the run it was meant to speed up.
+- **A steer after the last boundary is not lost**: `claimAll` returns it with
+  the next run's batch. `hasPending` counts it.
+- **Settling.** Claimed steers are completed when the model call that carries
+  them starts (not merely when they are appended): a run that ends first —
+  budget, cancellation, error — releases them, so they are claimable again. The
+  cost is one indexed query per boundary, skipped when the store has no
+  `claimSteers`. A run that dies after the call started has delivered them;
+  they are not replayed.
+- Observability: `inbox_steer { count }` is emitted at delivery.
+
+Regressions: `tests/unit/inbox-steer.test.ts`.
