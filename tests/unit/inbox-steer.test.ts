@@ -127,7 +127,7 @@ describe("steer delivery", () => {
     const steered = llm.seen[1]!.messages.filter((m) => m.content === "hurry up");
     expect(steered).toHaveLength(1);
     expect(steered[0]).toMatchObject({ role: "user", origin: "engine" });
-    expect(steered[0]!.toolCallId).toBeUndefined();
+    expect(steered[0]!.tool_call_id).toBeUndefined();
     const inTranscript = result.messages.find((m) => m.content === "hurry up");
     expect(inTranscript).toMatchObject({ role: "user", origin: "engine" });
   });
