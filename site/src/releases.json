@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.10.0",
+    "date": "2026-11-03",
+    "title": "Inbox steer: nudge a running worker without ending it",
+    "summary": "The inbox gains a third delivery, steer: delivered into the same run at its next turn boundary as an engine user message. A run is never ended by a nudge.",
+    "added": [
+      "InboxDelivery is now \"queue\" | \"interject\" | \"steer\"; steer nudges a running worker, interject corrects or stops it, queue hands it more work.",
+      "Optional InboxStore.claimSteers(channel) atomically claims pending steer rows, oldest first; MemoryInboxStore implements it.",
+      "New event inbox_steer { count } when steers are delivered at a turn boundary.",
+      "An interjection at the same boundary still wins; pending steers ride the next run's claimAll batch, so nothing is lost."
+    ],
+    "offers": "Tell a running worker the time or to speed up, without stopping it.",
+    "limits": [
+      "A store without claimSteers treats steer as queue.",
+      "hasInterject must ignore steer rows or a nudge will end the run.",
+      "A steer that arrives after a run's last turn boundary is delivered with the next run's batch, not the current run."
+    ]
+  },
+  {
     "version": "0.8.12",
     "date": "2026-10-29",
     "title": "Workflow agents: headless runs with a gated finish",

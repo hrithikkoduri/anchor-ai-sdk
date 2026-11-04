@@ -57,7 +57,11 @@ import {
 import { defineTool, type Tool } from "../tools/types.js";
 import { gitSnapshot } from "./snapshot.js";
 import { createTeamTools } from "../teams/delegate.js";
-import { steerDirective, type SteerChannel } from "../teams/steer.js";
+import {
+  normalizeDirective,
+  steerDirective,
+  type SteerChannel,
+} from "../teams/steer.js";
 import type { TeamRole } from "../teams/types.js";
 import { TraceFanout } from "../trace/sink.js";
 import {
@@ -176,6 +180,16 @@ interface ChainRun {
   delivered?: InboxMessage[];
   /** Pending interjection ids, sampled at each turn boundary. */
   interrupt?: () => Promise<boolean>;
+  /**
+   * The inbox's `steer` seam: claim pending steers, retire them once the model
+   * call that carries them starts, or hand them back if the run dies first.
+   * Absent when the store has no `claimSteers`.
+   */
+  steers?: {
+    claim: () => Promise<InboxMessage[]>;
+    complete: (ids: string[]) => Promise<void>;
+    release: (ids: string[]) => Promise<void>;
+  };
   /** Is any inbox work pending? Lets a finishing run carry its jobs forward. */
   hasPending?: () => Promise<boolean>;
   /** Agent name for trace attribution. */
@@ -1897,6 +1911,18 @@ async function runOne(
       return false;
     }
   };
+  // Steers claimed at a boundary and appended to the transcript, not yet seen
+  // by a model call. Settled at the call, or released by whichever exit comes
+  // first (`conclude`), so a run that dies in between loses nothing.
+  let claimedSteers: string[] = [];
+  const settleSteers = async (
+    settle: "complete" | "release",
+  ): Promise<void> => {
+    if (claimedSteers.length === 0 || !chain.steers) return;
+    const ids = claimedSteers;
+    claimedSteers = [];
+    await chain.steers[settle](ids).catch(() => undefined);
+  };
   const conclude = async (
     reason: FinishReason,
     extra: {
@@ -1908,6 +1934,7 @@ async function runOne(
       output?: unknown;
     },
   ): Promise<AgentResult> => {
+    await settleSteers("release");
     // Snapshots are a persistence concern, not a phase the model must enter.
     // Avoid empty commits, especially for reviews and simple conversation.
     if (opts.sandbox && opts.snapshot !== false) {
@@ -2198,6 +2225,21 @@ async function runOne(
           });
         }
       }
+      // The inbox's steers land at the same boundary, after the interjection
+      // probe (an interjection wins; the steers stay pending and ride the next
+      // run's batch). Never a tool result, and never a stop.
+      if (chain.steers) {
+        const steers = await chain.steers.claim().catch(() => []);
+        if (steers.length > 0) {
+          for (const steer of steers) {
+            const content = normalizeDirective(steer.text);
+            if (content === "") continue;
+            messages.push({ role: "user", origin: "engine", content });
+          }
+          claimedSteers.push(...steers.map((steer) => steer.id));
+          emit({ type: "inbox_steer", count: steers.length });
+        }
+      }
       // Soft cap: a child is told to wrap up at 80% of its own budget, once.
       // It is a nudge, not a stop — the child can still hand back an answer.
       if (
@@ -2393,6 +2435,7 @@ async function runOne(
       // fold. A job that finished since the previous turn (including one
       // carried in from a previous run) rides this call, not the one after.
       await pollJobs();
+      await settleSteers("complete");
       steps++;
       emit({ type: "llm_call_started", ...phaseTag(), step: steps });
       const modelMessages = forModel();
@@ -2913,6 +2956,15 @@ async function runChain(
       jobs,
       delivered,
       interrupt: () => store.hasInterject(channel),
+      ...(store.claimSteers
+        ? {
+            steers: {
+              claim: () => store.claimSteers!(channel),
+              complete: (ids: string[]) => store.complete(ids),
+              release: (ids: string[]) => store.release(ids),
+            },
+          }
+        : {}),
       ...(store.hasPending
         ? { hasPending: () => store.hasPending!(channel) }
         : {}),

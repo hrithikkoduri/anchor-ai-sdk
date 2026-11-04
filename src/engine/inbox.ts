@@ -3,12 +3,19 @@
  *
  * A run owns one task at a time, and the chat protocol forbids splicing a new
  * user turn into the middle of an assistant/tool exchange. So an arriving
- * message has two honest destinations:
+ * message has three honest destinations:
  *
  *   - `queue`     — leave the running run alone. The message becomes (part of)
  *                   the next run's task.
  *   - `interject` — end the running run at its next turn boundary, then start
  *                   the next run with this message.
+ *   - `steer`     — deliver into the SAME run at its next turn boundary, as an
+ *                   engine user message. It never ends the run: use it to
+ *                   nudge a worker (a time notice, "speed up"), not to correct
+ *                   or stop it.
+ *
+ * When to use which: nudge a running worker — `steer`; correct or stop it —
+ * `interject`; hand it more work — `queue`.
  *
  * The store is the consumer's: a database in production, `MemoryInboxStore`
  * for tests and single-process apps. The package owns *when* to look and what
@@ -18,12 +25,15 @@
  * Ordering is part of the contract, not a hint: a claim returns pending
  * interjections first (newest first — the latest correction supersedes the
  * older ones), then queued messages oldest-first. A store that cannot express
- * that ordering cannot implement this interface.
+ * that ordering cannot implement this interface. Pending `steer` messages join
+ * the queued ones in that second group, oldest-first: a steer the run never
+ * reached (it arrived after the last turn boundary, or an interjection ended
+ * the run first) is NOT lost — it rides the next run's batch.
  */
 import type { ImageAttachment, LLMMessage, LLMUsage } from "../llm/types.js";
 import type { FinishReason } from "./types.js";
 
-export type InboxDelivery = "queue" | "interject";
+export type InboxDelivery = "queue" | "interject" | "steer";
 
 /** One message waiting for (or claimed by) a run. */
 export interface InboxMessage {
@@ -70,15 +80,32 @@ export interface InboxStore {
   /**
    * Is there a pending interjection for this channel? Called at every turn
    * boundary of a run, so it must be cheap (an indexed existence check, not a
-   * full scan of the inbox).
+   * full scan of the inbox). Only `interject` rows count: `steer` and `queue`
+   * rows must be IGNORED, or a nudge would end the run it was meant to speed up.
    */
   hasInterject(channel: string): Promise<boolean>;
   /**
+   * Atomically claim the pending `steer` messages of the channel, oldest
+   * first, and nothing else (never an `interject` or `queue` row). Same
+   * contract as `claimAll`: a claimed row is invisible to other claims until
+   * `release`d, and `complete` retires it for good.
+   *
+   * Optional. The engine calls it at every turn boundary of a running chain
+   * (after the interjection probe, which wins), so it must be cheap: one
+   * indexed query. When a store does not implement it, a `steer` message is
+   * simply treated as `queue` — it waits for the run to end and rides the next
+   * run's `claimAll` batch.
+   */
+  claimSteers?(channel: string): Promise<InboxMessage[]>;
+  /**
    * Atomically claim every pending message for the channel: interjections
-   * first (newest first), then queued (oldest first). A claimed message must
-   * not be returned by another claim until it is released — in a database
-   * that means `FOR UPDATE SKIP LOCKED` (plus a lease timeout, so a crashed
-   * worker's claim is recoverable).
+   * first (newest first), then queued and steer messages together
+   * (oldest first). A `steer` still pending at this point (it arrived after
+   * the last turn boundary, or an interjection ended the run first) is part of
+   * the batch — it is never lost. A claimed message must not be returned by
+   * another claim until it is released — in a database that means
+   * `FOR UPDATE SKIP LOCKED` (plus a lease timeout, so a crashed worker's
+   * claim is recoverable).
    */
   claimAll(channel: string): Promise<InboxMessage[]>;
   /** The claimed batch was delivered into a run. Never return it again. */
@@ -130,6 +157,21 @@ export class MemoryInboxStore implements InboxStore {
     return false;
   }
 
+  async claimSteers(channel: string): Promise<InboxMessage[]> {
+    return [...this.rows.values()]
+      .filter(
+        (row) =>
+          row.status === "pending" &&
+          row.message.channel === channel &&
+          row.message.delivery === "steer",
+      )
+      .sort((a, b) => a.seq - b.seq)
+      .map((row) => {
+        row.status = "claimed";
+        return { ...row.message };
+      });
+  }
+
   async claimAll(channel: string): Promise<InboxMessage[]> {
     const pending = [...this.rows.values()].filter(
       (row) => row.status === "pending" && row.message.channel === channel,
@@ -139,7 +181,7 @@ export class MemoryInboxStore implements InboxStore {
       .filter((row) => row.message.delivery === "interject")
       .sort((a, b) => b.seq - a.seq);
     const queued = pending
-      .filter((row) => row.message.delivery === "queue")
+      .filter((row) => row.message.delivery !== "interject")
       .sort((a, b) => a.seq - b.seq);
     const batch = [...interjects, ...queued].map((row) => {
       row.status = "claimed";

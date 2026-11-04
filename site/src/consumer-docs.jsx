@@ -45,9 +45,13 @@ export class PostgresThreadStore implements ThreadStore {
     </Section>
 
     <Section id="inbox-store" number="26" title="Inbox store">
-      <p>The inbox is a queue with two delivery modes: <code>queue</code> waits
+      <p>The inbox is a queue with three delivery modes: <code>queue</code> waits
         for the next run; <code>interject</code> ends the current run at a turn
-        boundary. <code>claimAll</code> must be atomic and leased. A crashed
+        boundary; <code>steer</code> is delivered into the same run at its next
+        turn boundary and never ends it. Nudge a running worker with
+        <code>steer</code>, correct or stop it with <code>interject</code>,
+        hand it more work with <code>queue</code>. <code>claimAll</code> must
+        be atomic and leased. A crashed
         worker must not leave a message claimed forever.</p>
       <CodeBlock filename="schema.sql" language="SQL" code={`create table anchor_inbox (
   id text primary key,
@@ -90,6 +94,26 @@ export class PostgresInboxStore implements InboxStore {
          and delivery = 'interject' limit 1\`, [channel],
     );
     return rowCount > 0;
+  }
+
+  // Optional. Claims only the pending steer rows, oldest first, with the same
+  // lease as claimAll. hasInterject above already ignores them.
+  async claimSteers(channel: string): Promise<InboxMessage[]> {
+    const { rows } = await this.pool.query(
+      \`update anchor_inbox set status = 'claimed', claimed_at = now()
+       where id in (
+         select id from anchor_inbox
+         where channel = $1 and status = 'pending' and delivery = 'steer'
+           and (claimed_at is null or claimed_at < now() - interval '5 minutes')
+         order by seq asc for update skip locked)
+       returning id, channel, body, context, images, delivery, seq\`, [channel],
+    );
+    return rows.sort((a, b) => a.seq - b.seq).map((row) => ({
+      id: row.id, channel: row.channel, text: row.body,
+      ...(row.context ? { context: row.context } : {}),
+      ...(row.images?.length ? { images: row.images } : {}),
+      delivery: row.delivery,
+    }));
   }
 
   async claimAll(channel: string): Promise<InboxMessage[]> {
@@ -142,9 +166,12 @@ export class PostgresInboxStore implements InboxStore {
   }
 }`} />
       <Callout><code>claimAll</code> ordering matters: the newest interjection
-        wins, then queued messages run oldest-first. The engine completes a
-        claimed batch after the run consumes it and releases it on error or
-        cancellation.</Callout>
+        wins, then queued and steer messages run oldest-first; a steer the run
+        never reached (it arrived after the last turn boundary) is part of that
+        batch. The engine completes a claimed batch after the run consumes it
+        and releases it on error or cancellation. Steers claimed with
+        <code>claimSteers</code> are completed when the model call that carries
+        them starts, and released if the run ends first.</Callout>
     </Section>
 
     <Section id="operation-store" number="27" title="Operation store">
