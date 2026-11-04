@@ -8,6 +8,7 @@
  */
 import type { LLMMessage, LLMToolCall, LLMUsage } from "../llm/types.js";
 import type { CompactionHandoff } from "./compaction.js";
+import type { InboxDelivery } from "./inbox.js";
 import type { ProgressLedger } from "../ledger/types.js";
 
 /** What a budget-limited run says it still needs — see EngineOptions.revival. */
@@ -147,7 +148,7 @@ type AgentEventBody =
   | {
       /** A claimed inbox batch became this run's task (decision #82). */
       type: "inbox_delivered";
-      messages: Array<{ id: string; delivery: "queue" | "interject" }>;
+      messages: Array<{ id: string; delivery: InboxDelivery }>;
     }
   | {
       /**
@@ -155,6 +156,14 @@ type AgentEventBody =
        * Which messages caused it is reported by the next `inbox_delivered`.
        */
       type: "inbox_interject";
+    }
+  | {
+      /**
+       * Pending `steer` messages were delivered into this run at a turn
+       * boundary, as engine user messages. The run was not ended.
+       */
+      type: "inbox_steer";
+      count: number;
     }
   | {
       type: "guardrail";
