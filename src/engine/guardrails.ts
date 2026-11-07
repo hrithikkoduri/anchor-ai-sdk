@@ -17,6 +17,12 @@ export interface CourseCorrection {
   kind: AdvisoryKind;
   detail: string;
   content: string;
+  /**
+   * Whether the model's next prose turn is a checkpoint rather than an answer.
+   * Default true; a forced-action continuation sets false so a concise answer
+   * after the nudge ends the run instead of costing another call.
+   */
+  proseCheckpoint?: boolean;
 }
 
 /**
@@ -32,7 +38,7 @@ export function createCourseCorrect(args: {
   markProseCheck: () => void;
 }): (correction: CourseCorrection) => Promise<void> {
   return async (correction) => {
-    args.markProseCheck();
+    if (correction.proseCheckpoint !== false) args.markProseCheck();
     args.emit({
       type: "advisory",
       kind: correction.kind,
@@ -151,5 +157,18 @@ export function emptyTurnNudge(hasFinish: boolean): string {
     "Your last turn had no visible text and no tool call, so it was not accepted. " +
     "A reasoning-only turn does not count. Your next turn must include a tool call" +
     callFinishHint(hasFinish)
+  );
+}
+
+/**
+ * A reasoning model that spent its whole output budget thinking and produced
+ * no action. The ceiling is a turn condition, not the end of the run: the
+ * model is told to stop thinking and act, and the engine forces a tool call.
+ */
+export function reasoningLimitNudge(hasFinish: boolean): string {
+  return (
+    "You have reached the reasoning limit. Stop reasoning and take the next action now: " +
+    "call a tool (e.g. write the task) or return a concise answer." +
+    (hasFinish ? " If the work is already complete, call `finish`." : "")
   );
 }
