@@ -199,6 +199,7 @@ type AgentEventBody =
         | "prose_checkpoint"
         | "repeated_call"
         | "empty_turn"
+        | "leaked_tool_call"
         | "effect_without_journal"
         | "operation_settle_failed"
         | "verifier_failed";

@@ -146,6 +146,30 @@ export function wrapUpNudge(stepsLeft: number, reason: string): string {
   );
 }
 
+/**
+ * The model's own tool-call syntax, written into the reply as text: the provider did not translate it into a
+ * structured call. The markers are each model family's call delimiters, not words a reply would use.
+ */
+const LEAKED_TOOL_CALL_MARKERS: readonly RegExp[] = [
+  /<｜DSML｜\s*(calls|invoke)\b/, // DeepSeek's DSML call blocks
+  /<｜tool▁calls?▁begin｜>/, // DeepSeek's earlier call tokens
+  /<tool_call>\s*\{/, // Hermes/Qwen-style JSON calls
+];
+
+/** Whether a reply with no structured tool call carries a tool call written as text. */
+export function leakedToolCall(text: string): boolean {
+  return LEAKED_TOOL_CALL_MARKERS.some((marker) => marker.test(text));
+}
+
+export function leakedToolCallNudge(hasFinish: boolean): string {
+  return (
+    "Your last turn wrote a tool call as text (call markup in the reply) instead of calling the tool, so nothing ran " +
+    "and it was not accepted as an answer. Make the call again through the tool interface, with its arguments as " +
+    "separate, valid JSON fields" +
+    callFinishHint(hasFinish)
+  );
+}
+
 export function emptyTurnNudge(hasFinish: boolean): string {
   return (
     "Your last turn had no visible text and no tool call, so it was not accepted. " +
