@@ -102,6 +102,8 @@ import {
   cappedReplyNudge,
   createCourseCorrect,
   emptyTurnNudge,
+  leakedToolCall,
+  leakedToolCallNudge,
   proseCheckpoint as proseCheckpointMessage,
   repeatedCallNudge,
   silentNudge,
@@ -159,6 +161,9 @@ const LEDGER_TOOL_NAMES = new Set([
   "add_failure",
   "clear_failure",
 ]);
+
+/** Corrections a run gets for a tool call written as text before it stalls. */
+const LEAKED_CALL_RETRIES = 2;
 
 /**
  * What a chained call carries from one run into the next. Absent for a
@@ -1403,6 +1408,8 @@ async function runOne(
   // An empty turn (no text, no tool call) gets one correction. The flag is
   // how the next empty turn is recognized as "after the advisory."
   let emptyNudged = false;
+  // A tool call written as text gets this many corrections before the run stalls: it is never an answer.
+  let leakedCallNudges = 0;
   // A delegated child is told to wrap up once, at its soft cap. The hard cap
   // still ends the loop; the flag keeps the directive one-shot.
   let softCapNudged = false;
@@ -2510,6 +2517,23 @@ async function runOne(
           return conclude("stalled", {
             ok: false,
             error: "model returned neither text nor tool calls",
+          });
+        }
+        // The model wrote its call as text and the provider passed it through: nothing ran. Ending the run on it
+        // would hand the call markup to the reader as the result, so ask for the real call, a bounded number of times.
+        if (leakedToolCall(response.text)) {
+          if (leakedCallNudges < LEAKED_CALL_RETRIES) {
+            leakedCallNudges++;
+            await courseCorrect({
+              kind: "leaked_tool_call",
+              detail: `step ${steps} wrote a tool call as text with no structured call — asked to make the call`,
+              content: leakedToolCallNudge(available.has("finish")),
+            });
+            continue;
+          }
+          return conclude("stalled", {
+            ok: false,
+            error: "model kept writing tool calls as text instead of calling the tool",
           });
         }
         // An unfinished sentence is not an answer. A reply cut off by the cap
