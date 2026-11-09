@@ -218,6 +218,7 @@ type AgentEventBody =
         | "repeated_call"
         | "empty_turn"
         | "reasoning_limit"
+        | "leaked_tool_call"
         | "effect_without_journal"
         | "operation_settle_failed"
         | "verifier_failed";
