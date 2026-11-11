@@ -1,13 +1,71 @@
 # Release status and roadmap snapshot
 
-Status: **2026-10-28**, v0.8.9 released: npm `0.8.9`, Git tag `v0.8.9`, and
-GitHub Release are published. The missing tags and releases for the already
-published `0.3.1` through `0.8.8` packages were repaired at the same time.
+Status: **2026-11-09**, v0.10.1 released: npm `0.10.1`, Git tag `v0.10.1`, and
+GitHub Release are published. The missing tags and releases for `0.8.10` through
+`0.10.0` were repaired at the same time.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
+
+## Released: v0.10.1
+
+- A reasoning-only turn with empty text, no tool calls, and `finishReason` at the
+  cap now continues up to three times with a reasoning-limit nudge, tool choice
+  `required` where supported, low effort, and an 8k output budget. If the third
+  continuation still returns nothing, the run pauses with `retryable: true`.
+- A text-only reply carrying DeepSeek DSML, earlier DeepSeek call tokens, or
+  Hermes/Qwen `<tool_call>` JSON gets a course correction asking for the real
+  call, up to twice, then stalls with an error instead of finishing.
+- `LLMRequest.toolChoice` and `LLMClient.supportsToolChoice` are added; the
+  OpenAI-compatible client maps the supported choice. Plain prose, capped-prose,
+  and ordinary empty-turn behaviour are unchanged.
+
+Verification for v0.10.1: `npm run typecheck`, `npm test`, `npm run build`, and
+dist-export verification.
+
+## Released: v0.10.0
+
+- `InboxDelivery` is `queue | interject | steer`; `steer` nudges a running worker
+  at its next turn boundary without ending the run.
+- Optional `InboxStore.claimSteers(channel)` claims pending steer rows oldest
+  first; `MemoryInboxStore` implements it. An `inbox_steer` event is emitted when
+  steers are delivered.
+- An interjection at the same boundary still wins; pending steers ride the next
+  run's claim batch.
+
+## Released: v0.9.0
+
+- The append-only thread-checkpoint contract and its pure helpers:
+  `ThreadEvent`, `CheckpointRef`, `CheckpointStore`, `eventKeyFor`,
+  `toolCallEventKey`, `restorePlan`, `isStaleWrite`, `RunSnapshot`,
+  `snapshotRun`, and `restoreRun`.
+- `CheckpointStore` is insert-only and unique on `(threadId, eventKey)`;
+  effectful tool calls carry a deterministic event key derived from the effect
+  key, delegated call id, or call ordinal. Read-only calls carry none.
+- Additive only: no database, no network, and no behaviour change for callers
+  that do not pass operations or effect keys.
+
+## Released: v0.8.12
+
+- `workflowAgent(spec)` for headless runs: no conversational nudges, no
+  `ask_questions`, no inbox; `finish` is the only exit, gated on the check
+  passing in this run and on a schema-valid `output`; a spent budget ends as
+  `budget_exhausted`.
+
+## Released: v0.8.11
+
+- Batch retry safety: an edit or write whose result is already in place reports
+  `already applied` and writes nothing; after a batch has written, a later
+  failure stops it by default. Explicit `stopOnError` wins.
+
+## Released: v0.8.10
+
+- `createBatchTool`: ordered phases of read, search, bash, edit, and write ops in
+  one call, run through the consumer's own tools; all-or-nothing edits per file;
+  capped output plus a full log; in-sandbox read/search cache; `search` gains
+  `glob`.
 
 ## Released: v0.8.9
 

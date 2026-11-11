@@ -75,6 +75,12 @@ export interface OpenAICompatibleOptions {
    * nothing is sent and the request body is unchanged.
    */
   reasoningPassback?: ReasoningPassback;
+  /**
+   * Whether this gateway accepts `tool_choice`. Default true (the
+   * OpenAI-compatible wire supports it); set false for an upstream that
+   * rejects the field, and the engine will use a prompt-only nudge instead.
+   */
+  supportsToolChoice?: boolean;
   /** Test seams. */
   fetchImpl?: typeof fetch;
   retryBaseDelayMs?: number;
@@ -305,12 +311,14 @@ function toWireMessages(
 export class OpenAICompatibleClient implements LLMClient {
   readonly model: string;
   readonly reasoningPassback: ReasoningPassback;
+  readonly supportsToolChoice: boolean;
   private readonly fetchImpl: typeof fetch;
   private readonly maxRetries: number;
 
   constructor(private readonly opts: OpenAICompatibleOptions) {
     this.model = opts.model;
     this.reasoningPassback = opts.reasoningPassback ?? false;
+    this.supportsToolChoice = opts.supportsToolChoice ?? true;
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.maxRetries = opts.maxRetries ?? 3;
   }
@@ -347,6 +355,7 @@ export class OpenAICompatibleClient implements LLMClient {
     // block; ask for it so accounting needs no price table.
     if (this.opts.includeUsageCost) body.usage = { include: true };
     if (req.tools && req.tools.length > 0) body.tools = req.tools;
+    if (req.toolChoice !== undefined) body.tool_choice = req.toolChoice;
     if (req.responseFormat) {
       body.response_format =
         req.responseFormat.type === "json_object"

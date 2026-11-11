@@ -165,7 +165,7 @@ export function CustomAgentExample() {
           </Accordion.Header>
           <Accordion.Content>
             <CodeBlock
-              code={`import { runAgent } from "anchor-ai-sdk";\nimport { policyAgent } from "./policy-agent.mjs";\n\n// llm and compaction are configured by your host.\nconst result = await runAgent(\n  { task: "What is your refund policy?" },\n  { llm, compaction, agent: policyAgent },\n);`}
+              code={`import { runAgent } from "anchor-ai-sdk";\nimport { policyAgent } from "./policy-agent.mjs";\n\n// llm and compaction are configured by your host.\nconst result = await runAgent(\n  { messages: [{ role: "user", content: "What is your refund policy?" }] },\n  { llm, compaction, agent: policyAgent },\n);`}
               filename="host.mjs"
               language="JAVASCRIPT"
             />

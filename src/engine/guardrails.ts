@@ -17,6 +17,12 @@ export interface CourseCorrection {
   kind: AdvisoryKind;
   detail: string;
   content: string;
+  /**
+   * Whether the model's next prose turn is a checkpoint rather than an answer.
+   * Default true; a forced-action continuation sets false so a concise answer
+   * after the nudge ends the run instead of costing another call.
+   */
+  proseCheckpoint?: boolean;
 }
 
 /**
@@ -32,7 +38,7 @@ export function createCourseCorrect(args: {
   markProseCheck: () => void;
 }): (correction: CourseCorrection) => Promise<void> {
   return async (correction) => {
-    args.markProseCheck();
+    if (correction.proseCheckpoint !== false) args.markProseCheck();
     args.emit({
       type: "advisory",
       kind: correction.kind,
@@ -146,10 +152,47 @@ export function wrapUpNudge(stepsLeft: number, reason: string): string {
   );
 }
 
+/**
+ * The model's own tool-call syntax, written into the reply as text: the provider did not translate it into a
+ * structured call. The markers are each model family's call delimiters, not words a reply would use.
+ */
+const LEAKED_TOOL_CALL_MARKERS: readonly RegExp[] = [
+  /<｜DSML｜\s*(calls|invoke)\b/, // DeepSeek's DSML call blocks
+  /<｜tool▁calls?▁begin｜>/, // DeepSeek's earlier call tokens
+  /<tool_call>\s*\{/, // Hermes/Qwen-style JSON calls
+];
+
+/** Whether a reply with no structured tool call carries a tool call written as text. */
+export function leakedToolCall(text: string): boolean {
+  return LEAKED_TOOL_CALL_MARKERS.some((marker) => marker.test(text));
+}
+
+export function leakedToolCallNudge(hasFinish: boolean): string {
+  return (
+    "Your last turn wrote a tool call as text (call markup in the reply) instead of calling the tool, so nothing ran " +
+    "and it was not accepted as an answer. Make the call again through the tool interface, with its arguments as " +
+    "separate, valid JSON fields" +
+    callFinishHint(hasFinish)
+  );
+}
+
 export function emptyTurnNudge(hasFinish: boolean): string {
   return (
     "Your last turn had no visible text and no tool call, so it was not accepted. " +
     "A reasoning-only turn does not count. Your next turn must include a tool call" +
     callFinishHint(hasFinish)
+  );
+}
+
+/**
+ * A reasoning model that spent its whole output budget thinking and produced
+ * no action. The ceiling is a turn condition, not the end of the run: the
+ * model is told to stop thinking and act, and the engine forces a tool call.
+ */
+export function reasoningLimitNudge(hasFinish: boolean): string {
+  return (
+    "You have reached the reasoning limit. Stop reasoning and take the next action now: " +
+    "call a tool (e.g. write the task) or return a concise answer." +
+    (hasFinish ? " If the work is already complete, call `finish`." : "")
   );
 }
