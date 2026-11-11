@@ -8,6 +8,21 @@ here. Do not leave the same item in both files. Architectural rationale stays in
 [`DECISIONS.md`](DECISIONS.md); release history is in
 [`docs/release-status.md`](docs/release-status.md) and the site changelog.
 
+## v0.10.x — released
+
+- [x] v0.10.1: a reasoning-only turn forces an action instead of stalling; a
+      text-only reply carrying a provider's tool-call markup is corrected and
+      never accepted as the run's answer.
+- [x] v0.10.0: inbox `steer` delivery — a non-blocking nudge at the turn boundary,
+      with `claimSteers`, `inbox_steer`, and interjection precedence.
+
+## v0.9.x — released
+
+- [x] v0.9.0: thread-checkpoint contract — `ThreadEvent`, `CheckpointRef`,
+      `CheckpointStore`, deterministic event keys, `restorePlan`, `isStaleWrite`,
+      `RunSnapshot`, and `snapshotRun`/`restoreRun`. Additive; no storage or
+      network dependency.
+
 ## v0.8.x — released
 
 - [x] v0.8.12: `workflowAgent(spec)` — a headless bundle for background jobs:

@@ -815,12 +815,11 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.8.12; latest published release: v0.8.12.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.10.1; latest published release: v0.10.1.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
-source may be ahead of the installed package. Daytona, agent teams, context
-reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
-source. See the [changelog](https://anchor-sdk.dev/changelog.html) for what
-landed in each tag.
+source may be ahead of the installed package. Daytona, context reset, MCP, and
+consumer skill bundles remain roadmap work in the reviewed source. See the
+[changelog](https://anchor-sdk.dev/changelog.html) for what landed in each tag.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in
 the SDK and product policy in the consumer; provider changes should include
