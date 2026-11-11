@@ -1,5 +1,9 @@
 # Task contracts — one agent, contracts the agent creates, the existing verifier
 
+> **Note:** this brief describes the 0.2.0 contract. The single
+> `update_ledger` tool was split into seven focused tools in 0.8.6; use the
+> current split surface for new work.
+
 This brief is self-contained: read it top to bottom before changing code.
 
 Repo: `anchor-ai-sdk` (this repo). Do **not** edit `sailor` or `sailor-cloud`;
@@ -83,7 +87,7 @@ operations, budget, phases.
 The engine currently takes one request string and wraps it:
 
 ```ts
-runAgent({ task: "…", images }, opts)
+runAgent({ messages: [{ role: "user", content: "…", images }] }, opts)
 // loop.ts: const currentRequest = userMessage(task.task, task.images)
 ```
 

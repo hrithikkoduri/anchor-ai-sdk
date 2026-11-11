@@ -105,8 +105,8 @@ the same tools and no ledger or completion gate.
 Ledger operations are one tool each: `add_requirement` adds a commitment,
 `set_requirement_status` changes its status, `link_evidence` attaches a tool
 result with a required claim, and `verify_requirement` links and marks it
-verified in one call. The single `update_ledger` tool remains as a deprecated
-shim. Phase transitions verify the outgoing
+verified in one call. The old `update_ledger` shim was removed in 0.8.6; use
+the split tools. Phase transitions verify the outgoing
 phase; a rejection names each unmet requirement and its probability. After the
 configured rejection limit the transition is forced, but the requirement stays
 open and still blocks `finish`.
@@ -642,10 +642,11 @@ engine emits `inbox_steer` (`{ count }`) when it delivers steers.
 | Capability | Your controls |
 | --- | --- |
 | **Budgets and correction** | Step/token/known-dollar budgets, per-child crew budgets with a wrap-up nudge and a hard cap, repeated-call detection, silent-tool and visible-verbosity nudges, prose checkpoints, and per-call output requests. |
-| **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). |
+| **Reasoning budget** | Per-run `reasoningEffort` (`minimal`–`max`) or an agent-bundle default, sent in the provider's native shape (`reasoning.effort` on OpenRouter, `reasoning_effort` on OpenAI). Reasoning-only turns and leaked tool calls are handled as turn conditions. See [docs/reasoning.md](docs/reasoning.md). |
 | **Prompt caching** | Opt-in `promptCache` breakpoints for Anthropic-style providers, with stable-prefix selection and `cachedTokens` accounting. See [docs/prompt-caching.md](docs/prompt-caching.md). |
 | **Composition** | `createAnchor` for reusable model/agent/sandbox/thread wiring, exported coding prompt components, and `view_image` for text-only agents. See [docs/composition.md](docs/composition.md). |
-| **Messages mid-run** | A consumer-owned inbox with `steer` (nudge), `interject` (correct), and `queue` (more work) deliveries, chained by the engine. |
+| **Messages mid-run** | A consumer-owned inbox with `steer` (nudge), `interject` (correct), and `queue` (more work) deliveries, chained by the engine. See [docs/inbox.md](docs/inbox.md). |
+| **Thread checkpoints** | An append-only thread log and checkpoint pointers, with deterministic event keys and pure replay/stale-write rules. See [docs/checkpoints.md](docs/checkpoints.md). |
 | **Context and memory** | Catalog-derived or explicit compaction, supplied thread stores, agent-authored notes, and best-effort output spill. |
 | **Revival and resume** | Opt-in budget warnings, `request_revival`, `planRevival`, and `ThreadBudget`. Your app persists state and decides whether to fund or enqueue another run. |
 | **Snapshots and lifecycle** | Git-backed or custom snapshot hooks, optional push, phase-boundary pauses, heartbeats, and cancellation. |
@@ -826,6 +827,7 @@ the SDK and product policy in the consumer; provider changes should include
 conformance coverage and an honest capability declaration.
 
 **[Issues](https://github.com/hrithikkoduri/anchor-ai-sdk/issues)** ·
+**[Docs index](docs/README.md)** ·
 **[Release status](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/docs/release-status.md)** ·
 **[Completed tracker](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/TRACKER.md)** ·
 **[Roadmap](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/ROADMAP.md)** ·

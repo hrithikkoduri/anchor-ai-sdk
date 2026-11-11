@@ -61,6 +61,7 @@ const groups = [
       ["conformance", "Conformance"],
       ["tools", "Tools & strategies"],
       ["thread-store", "Thread store"],
+      ["thread-checkpoints", "Thread checkpoints"],
       ["inbox-store", "Inbox store"],
       ["operation-store", "Operation store"],
       ["sandbox-store", "Sandbox store"],
@@ -85,7 +86,7 @@ const { llm, compaction } = await llmFromCatalog({
 });
 
 const result = await runAgent(
-  { task: "Explain exponential backoff in plain English" },
+  { messages: [{ role: "user", content: "Explain exponential backoff in plain English" }] },
   { llm, compaction, agent: chatAgent },
 );
 
@@ -108,7 +109,7 @@ await sandbox.start();
 
 try {
   const result = await runAgent(
-    { task: "Run the tests and fix the failing case" },
+    { messages: [{ role: "user", content: "Run the tests and fix the failing case" }] },
     { llm, compaction, agent: codingAgent, sandbox },
   );
   console.log(result.summary, result.checkpointRef);
@@ -441,6 +442,10 @@ function Docs() {
                   "Prose checkpoints and switches",
                   "With the finish intrinsic available, prose that directly follows an engine nudge is checked once before it is treated as the answer. guardrails.proseCheckpoint turns this off. Threshold guardrails and maxOutputTokens accept false to disable them.",
                 ],
+                [
+                  "Reasoning-only turns and leaked tool calls",
+                  "A reasoning-only turn at the output cap is continued up to three times with a tool-call requirement, then pauses with retryable: true. A text-only reply that carries a provider’s own tool-call markup is corrected and never treated as the answer. See docs/reasoning.md.",
+                ],
               ].map(([title, body]) => (
                 <Accordion.Item value={title} key={title}>
                   <Accordion.Header>
@@ -730,7 +735,7 @@ function Docs() {
 
 // llm is configured and sandbox is already started.
 const result = await runAgent(
-  { task: "Inspect the environment and repair the failing command" },
+  { messages: [{ role: "user", content: "Inspect the environment and repair the failing command" }] },
   { llm, sandbox, agent: terminalAgent },
 );`} />
             <h3>Bound consumer tool output</h3>
@@ -763,7 +768,7 @@ return {
           <FeatureDocs Section={DocSection} Callout={Callout} />
           <ConsumerDocs Section={DocSection} Callout={Callout} />
 
-          <DocSection id="status" number="30" title="Status & versioning">
+          <DocSection id="status" number="31" title="Status & versioning">
             <p>
               Anchor is 0.x and MIT-licensed. Pin versions, read the source, and
               treat feature availability as version-specific. Agent teams,

@@ -9,7 +9,7 @@ export function FeatureDocs({ Section, Callout }) {
       <p>One agent handles every turn. Enable <code>verifier</code> and the agent
         can call <code>create_task</code> when the request is real work. The engine
         derives the request from the user messages, attaches the ledger, adds
-        <code>update_ledger</code>, and arms phase/finish gates. A turn without a
+        the split ledger tools, and arms phase/finish gates. A turn without a
         contract is a normal conversation with the same tools and no ledger.</p>
       <CodeBlock filename="task-contract.ts" code={`const result = await runAgent(
   { messages: [{ role: "user", content: "Fix the retry bug" }] },
@@ -210,12 +210,15 @@ const agent = { ...base, tools: [...base.tools, ...tools] };
 
 await runAgent(
   {
-    task: "What does this screenshot show?",
-    images: [{
-      id: "img_123",
-      mime: "image/png",
-      url: "https://storage.example/img_123.png?signature=...",
-      alt: "settings page",
+    messages: [{
+      role: "user",
+      content: "What does this screenshot show?",
+      images: [{
+        id: "img_123",
+        mime: "image/png",
+        url: "https://storage.example/img_123.png?signature=...",
+        alt: "settings page",
+      }],
     }],
   },
   { llm, agent: chatAgent },

@@ -107,7 +107,7 @@ const capabilities = [
       ["EVIDENCE", "Regression command and observed result."],
       ["FINISH CHECK", "Coverage first. Evidence alignment next."],
     ],
-    event: "update_ledger → phase / finish verification",
+    event: "add_requirement → verify_requirement → finish",
     metric: "A check on completion, not a correctness certificate.",
   },
 ];
@@ -507,9 +507,9 @@ function App() {
                     <span className="syntax-orange">const</span>
                     {" result = "}
                     <span className="syntax-orange">await</span>
-                    {" runAgent(\n  { task: "}
+                    {" runAgent(\n  { messages: [{ role: \"user\", content: "}
                     <span className="syntax-green">"Fix the failing test"</span>
-                    {" },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
+                    {" }] },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
                     <span className="syntax-muted">
                       // The answer, and the receipts.
                     </span>
@@ -582,7 +582,7 @@ const code = `import { codingAgent, runAgent } from "anchor-ai-sdk";
 // llm and sandbox configured by your app.
 // Complete setup: /docs.html#machine
 const result = await runAgent(
-  { task: "Fix the failing test" },
+  { messages: [{ role: "user", content: "Fix the failing test" }] },
   { llm, sandbox, agent: codingAgent },
 );
 
