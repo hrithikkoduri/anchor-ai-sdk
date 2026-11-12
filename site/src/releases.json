@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.10.2",
+    "date": "2026-11-12",
+    "title": "A long skill is saved whole, never cut",
+    "summary": "load_skill now goes through the same spill boundary as every other long tool result: with a sandbox, a body longer than maxBodyChars is saved whole to a scratch file and the result says where to read the rest.",
+    "added": [
+      "With a sandbox, an oversized skill body is saved to the sandbox's scratch directory (skill-<name>-<stamp>.txt) through spillOrTruncate, and the result keeps the head and tail with a 'full output saved' reference that read_file and search can slice.",
+      "Only the character budget applies to a skill body; the line budget, meant for command output, does not.",
+      "Without a sandbox, the head is kept and the size said, exactly as before."
+    ],
+    "offers": "A skill longer than the body budget no longer loses its second half: the agent reads the rest from the saved file instead of guessing at the skill's folder.",
+    "limits": [
+      "The skill's Files: folder is still where its resources live; whether it exists in a given sandbox image is the consumer's to ensure."
+    ]
+  },
+  {
     "version": "0.10.1",
     "date": "2026-11-09",
     "title": "Reasoning and leaked tool calls are not answers",

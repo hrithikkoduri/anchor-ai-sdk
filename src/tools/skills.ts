@@ -1,11 +1,18 @@
 /**
  * load_skill — load one consumer-owned skill body on demand.
  *
- * The loader is read-only and sandbox-free. It never executes scripts, fetches
- * content, or changes the contract. Skills remain instructions; capability
- * still comes from the normal tools and sandbox rules.
+ * The loader is read-only. It never executes scripts, fetches content, or
+ * changes the contract. Skills remain instructions; capability still comes
+ * from the normal tools and sandbox rules.
+ *
+ * A body longer than `maxBodyChars` goes through the same boundary as every
+ * other long tool result when the run has a sandbox (`spillOrTruncate`): the
+ * whole body is saved to a scratch file and the result says where to read the
+ * rest. Without a sandbox its head is kept and its size said. A skill's own folder (`Files:`) is where its
+ * resources live, never the rest of a cut body.
  */
 import type { SkillProvider } from "../skills/index.js";
+import { spillOrTruncate } from "./truncate.js";
 import { defineTool, requireString, type Tool } from "./types.js";
 
 export interface SkillToolsOptions {
@@ -43,7 +50,7 @@ export function createSkillTools(opts: SkillToolsOptions = {}): Tool[] {
           additionalProperties: false,
         },
       },
-      async (input) => {
+      async (input, ctx) => {
         const name = requireString(input, "name");
         const content = await provider.load(name);
         if (!content) {
@@ -70,10 +77,18 @@ export function createSkillTools(opts: SkillToolsOptions = {}): Tool[] {
 
         const meta = content.meta;
         const bytes = Buffer.byteLength(content.body, "utf8");
-        const body =
-          content.body.length > maxBodyChars
-            ? `${content.body.slice(0, maxBodyChars)}\n\n[truncated: ${maxBodyChars} of ${content.body.length} characters shown; ${bytes} bytes total]`
-            : content.body;
+        const over = content.body.length > maxBodyChars;
+        // With a sandbox, a long body is saved whole and the result says where (prose: only the character budget
+        // applies, never the line one). Without one, the head is kept and the size said, as it always was.
+        const body = !over
+          ? content.body
+          : ctx.sandbox
+            ? await spillOrTruncate(
+                content.body,
+                { sandbox: ctx.sandbox, label: `skill-${meta.name}` },
+                { maxChars: maxBodyChars, maxLines: Number.MAX_SAFE_INTEGER },
+              )
+            : `${content.body.slice(0, maxBodyChars)}\n\n[truncated: ${maxBodyChars} of ${content.body.length} characters shown; ${bytes} bytes total]`;
         const scope = meta.scope ? ` (${meta.scope})` : "";
         const resources = content.resources?.length
           ? ` (resources: ${content.resources.join(", ")})`
@@ -92,7 +107,7 @@ export function createSkillTools(opts: SkillToolsOptions = {}): Tool[] {
             ...(meta.version ? { version: meta.version } : {}),
             bytes,
             bodyChars: content.body.length,
-            truncated: content.body.length > maxBodyChars,
+            truncated: over,
           },
         };
       },

@@ -1,13 +1,22 @@
 # Release status and roadmap snapshot
 
-Status: **2026-11-09**, v0.10.1 released: npm `0.10.1`, Git tag `v0.10.1`, and
-GitHub Release are published. The missing tags and releases for `0.8.10` through
-`0.10.0` were repaired at the same time.
+Status: **2026-11-12**, v0.10.2 released: npm `0.10.2`, Git tag `v0.10.2`, and
+GitHub Release are published.
 
 This is the short, current view. Completed work is in [`TRACKER.md`](../TRACKER.md);
 the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectural
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
+
+## Released: v0.10.2
+
+- `load_skill` sends a body longer than `maxBodyChars` through `spillOrTruncate` when
+  the run has a sandbox: the whole body is saved to scratch and the result says
+  where to read the rest, like every other long tool result. Only the character
+  budget applies. Without a sandbox the head is kept and the size said, as before.
+
+Verification for v0.10.2: `npm run typecheck`, `npm test`, `npm run build`, and
+dist-export verification.
 
 ## Released: v0.10.1
 
