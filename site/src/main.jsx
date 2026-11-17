@@ -107,7 +107,7 @@ const capabilities = [
       ["EVIDENCE", "Regression command and observed result."],
       ["FINISH CHECK", "Coverage first. Evidence alignment next."],
     ],
-    event: "update_ledger → phase / finish verification",
+    event: "add_requirement → verify_requirement → finish",
     metric: "A check on completion, not a correctness certificate.",
   },
 ];
@@ -125,8 +125,8 @@ function App() {
         <main id="main">
           <section className="hero container">
             <div className="hero-copy">
-              <a className="release" href="/changelog.html#v0.8.9">
-                <span className="status-dot" /> v0.8.9 · EARLY ALPHA{" "}
+              <a className="release" href="/changelog.html#v0.10.1">
+                <span className="status-dot" /> v0.10.1 · EARLY ALPHA{" "}
                 <ArrowUpRight size={12} />
               </a>
               <h1>
@@ -507,9 +507,9 @@ function App() {
                     <span className="syntax-orange">const</span>
                     {" result = "}
                     <span className="syntax-orange">await</span>
-                    {" runAgent(\n  { task: "}
+                    {" runAgent(\n  { messages: [{ role: \"user\", content: "}
                     <span className="syntax-green">"Fix the failing test"</span>
-                    {" },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
+                    {" }] },\n  { llm, sandbox, agent: codingAgent },\n);\n\n"}
                     <span className="syntax-muted">
                       // The answer, and the receipts.
                     </span>
@@ -553,7 +553,7 @@ function App() {
                 ],
                 [
                   "Can I ship with it today?",
-                  "Anchor is early alpha. Pin exact versions and test your integration. E2B and progressive skills are shipped, and agent teams are available as crews with worker memory, parallel delegation, admission, supervision, and per-worker worktrees. Daytona, MCP, recursive teams, and workflow graphs remain roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.8.9 changelog.",
+                  "Anchor is early alpha. Pin exact versions and test your integration. E2B and progressive skills are shipped, and agent teams are available as crews with worker memory, parallel delegation, admission, supervision, and per-worker worktrees. Daytona, MCP, recursive teams, and workflow graphs remain roadmap work. Process streams, image publishing, and LSP have provider-specific limits documented in the v0.10.1 changelog.",
                 ],
               ].map(([q, a], i) => (
                 <Accordion.Item value={`faq-${i}`} key={q}>
@@ -582,7 +582,7 @@ const code = `import { codingAgent, runAgent } from "anchor-ai-sdk";
 // llm and sandbox configured by your app.
 // Complete setup: /docs.html#machine
 const result = await runAgent(
-  { task: "Fix the failing test" },
+  { messages: [{ role: "user", content: "Fix the failing test" }] },
   { llm, sandbox, agent: codingAgent },
 );
 

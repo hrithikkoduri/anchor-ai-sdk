@@ -277,6 +277,37 @@ describe("natural agent loop", () => {
     expect(stalled.error).toContain("neither text nor tool calls");
   });
 
+  it("never ends a run on a tool call written as text: asks for the real call, then stalls if it keeps leaking", async () => {
+    // A provider passed DeepSeek's own call syntax through as the reply; its arguments were not even valid JSON.
+    const leaked =
+      '<｜DSML｜ calls>\n<｜DSML｜ invoke name="ask">\n<｜DSML｜ parameter name="questions" string="false">[{"id": "budget"}], "title": "Budget"}</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>\n';
+    let asked = 0;
+    const ask = defineTool({ name: "ask", description: "Ask", parameters: {} }, async () => {
+      asked++;
+      return { ok: true, content: "asked" };
+    });
+    const events: AgentEvent[] = [];
+    const recovered = await runAgent(userTurn("ask the budget"), {
+      llm: model([{ text: leaked }, { calls: [{ name: "ask" }] }, { text: "Asked." }]),
+      strategy: chatStrategy,
+      tools: [ask],
+      onEvent: (event) => events.push(event),
+    });
+    expect(recovered.reason).toBe("finished");
+    expect(asked).toBe(1);
+    expect(recovered.summary).toBe("Asked.");
+    expect(events.filter((event) => event.type === "advisory" && event.kind === "leaked_tool_call")).toHaveLength(1);
+
+    const stalled = await runAgent(userTurn("ask the budget"), {
+      llm: model([{ text: leaked }, { text: leaked }, { text: leaked }]),
+      strategy: chatStrategy,
+      tools: [ask],
+    });
+    expect(stalled.reason).toBe("stalled");
+    expect(stalled.error).toContain("tool calls as text");
+    expect(stalled.summary ?? "").not.toContain("DSML");
+  });
+
   it("course-corrects the first identical-call loop instead of ending", async () => {
     let executed = 0;
     const inspect = defineTool(

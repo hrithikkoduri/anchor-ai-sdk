@@ -157,6 +157,12 @@ export interface LLMRequest {
    * `OpenAICompatibleOptions.reasoningFormat`).
    */
   reasoningEffort?: ReasoningEffort;
+  /**
+   * Provider tool-choice policy for this call. `"required"` forces at least
+   * one tool call; the engine uses it to turn a reasoning-only turn into an
+   * action. Only sent when the client declares `supportsToolChoice`.
+   */
+  toolChoice?: "auto" | "required" | "none";
 }
 
 export interface LLMClient {
@@ -166,6 +172,12 @@ export interface LLMClient {
    * engine keeps reasoning on assistant messages only when this is set.
    */
   readonly reasoningPassback?: ReasoningPassback;
+  /**
+   * Whether this client honours `LLMRequest.toolChoice`. The engine only asks
+   * for a required tool call when the client says it can deliver one; a
+   * gateway whose upstream rejects `tool_choice` leaves it unset.
+   */
+  readonly supportsToolChoice?: boolean;
   complete(
     req: LLMRequest,
     opts?: { signal?: AbortSignal },

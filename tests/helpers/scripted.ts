@@ -6,6 +6,8 @@ import type {
 
 export type Turn = {
   text?: string;
+  /** Hidden reasoning the provider streamed, when the test needs it. */
+  reasoning?: string;
   tools?: Array<{ name: string; arguments: string }>;
   /** e.g. "length" — a response the provider cut off at the output cap. */
   finishReason?: string;
@@ -22,6 +24,7 @@ export function scripted(queue: Turn[]): LLMClient & { seen: LLMRequest[] } {
   const seen: LLMRequest[] = [];
   const response = (turn: Turn): LLMResponse => ({
     text: turn.text ?? "",
+    ...(turn.reasoning !== undefined ? { reasoning: turn.reasoning } : {}),
     toolCalls: (turn.tools ?? []).map((tool, i) => ({
       id: `c${seen.length}-${i}`,
       ...tool,
@@ -34,6 +37,7 @@ export function scripted(queue: Turn[]): LLMClient & { seen: LLMRequest[] } {
   return {
     seen,
     model: "scripted",
+    supportsToolChoice: true,
     complete: async (request) => {
       seen.push(structuredClone(request));
       if (request.messages[0]?.content?.includes("compacting an AI agent"))

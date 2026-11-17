@@ -44,7 +44,127 @@ export class PostgresThreadStore implements ThreadStore {
         storage failure; silent best-effort persistence is not continuity.</Callout>
     </Section>
 
-    <Section id="inbox-store" number="26" title="Inbox store">
+    <Section id="thread-checkpoints" number="26" title="Thread checkpoints">
+      <p><code>CheckpointStore</code> is the append-only log contract for a
+        durable thread. The consumer owns the database; the SDK owns the event
+        shape, the deterministic write keys, and the replay rules. A run is an
+        attempt; the thread is the history.</p>
+      <p>Append-only means a duplicate key is a no-op, not a second write. The
+        unique index on <code>(threadId, eventKey)</code> is the contract. A
+        checkpoint is a pointer: <code>eventSeq</code> plus the sandbox
+        <code>sandboxRef</code>. Replay events through the offset, then attach
+        the workspace at the ref.</p>
+      <CodeBlock filename="schema.sql" language="SQL" code={`create table thread_events (
+  thread_id text not null,
+  seq bigint not null,
+  event_key text not null,
+  kind text not null,
+  actor text,
+  payload jsonb not null,
+  at timestamptz not null default now(),
+  primary key (thread_id, seq),
+  unique (thread_id, event_key)
+);
+create table thread_checkpoints (
+  id text primary key,
+  thread_id text not null,
+  event_seq bigint not null,
+  sandbox_ref text not null,
+  run_id text,
+  label text,
+  reason text not null,
+  created_at timestamptz not null default now(),
+  unique (thread_id, event_seq, sandbox_ref)
+);`} />
+      <CodeBlock filename="postgres-checkpoint-store.ts" code={`import type {
+  AppendResult, CheckpointRef, CheckpointStore, ThreadEvent,
+} from "anchor-ai-sdk";
+import type { Pool } from "pg";
+
+export class PostgresCheckpointStore implements CheckpointStore {
+  constructor(private readonly pool: Pool) {}
+
+  async append(threadId: string, events: ThreadEvent[]): Promise<AppendResult> {
+    const { rows } = await this.pool.query(
+      \`insert into thread_events
+         (thread_id, event_key, kind, actor, payload)
+       select $1, event_key, kind, actor, payload::jsonb
+       from unnest($2::jsonb[]) as e(event_key, kind, actor, payload)
+       on conflict (thread_id, event_key) do nothing
+       returning seq, event_key, kind, actor, payload, at\`,
+      [threadId, JSON.stringify(events)],
+    );
+    const appended = new Set(rows.map((row) => row.event_key));
+    return {
+      appended: rows,
+      duplicateKeys: events.map((e) => e.eventKey).filter((k) => !appended.has(k)),
+    };
+  }
+
+  async since(threadId: string, seq: number): Promise<ThreadEvent[]> {
+    const { rows } = await this.pool.query(
+      "select seq, event_key, kind, actor, payload, at from thread_events where thread_id = $1 and seq > $2 order by seq",
+      [threadId, seq],
+    );
+    return rows;
+  }
+
+  async eventsThrough(threadId: string, seq: number): Promise<ThreadEvent[]> {
+    const { rows } = await this.pool.query(
+      "select seq, event_key, kind, actor, payload, at from thread_events where thread_id = $1 and seq <= $2 order by seq",
+      [threadId, seq],
+    );
+    return rows;
+  }
+
+  async putCheckpoint(threadId: string, checkpoint: CheckpointRef): Promise<void> {
+    await this.pool.query(
+      \`insert into thread_checkpoints
+         (id, thread_id, event_seq, sandbox_ref, run_id, label, reason)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       on conflict (thread_id, event_seq, sandbox_ref) do nothing\`,
+      [checkpoint.id, threadId, checkpoint.eventSeq, checkpoint.sandboxRef,
+       checkpoint.runId ?? null, checkpoint.label ?? null, checkpoint.reason],
+    );
+  }
+
+  async checkpoint(id: string): Promise<CheckpointRef | undefined> {
+    const { rows } = await this.pool.query(
+      "select id, event_seq, sandbox_ref, run_id, label, reason, created_at from thread_checkpoints where id = $1",
+      [id],
+    );
+    return rows[0] ? mapCheckpoint(rows[0]) : undefined;
+  }
+
+  async latest(threadId: string): Promise<CheckpointRef | undefined> {
+    const { rows } = await this.pool.query(
+      "select id, event_seq, sandbox_ref, run_id, label, reason, created_at from thread_checkpoints where thread_id = $1 order by event_seq desc limit 1",
+      [threadId],
+    );
+    return rows[0] ? mapCheckpoint(rows[0]) : undefined;
+  }
+}
+
+function mapCheckpoint(row: Record<string, unknown>): CheckpointRef {
+  return {
+    id: String(row.id),
+    eventSeq: Number(row.event_seq),
+    sandboxRef: String(row.sandbox_ref),
+    ...(row.run_id ? { runId: String(row.run_id) } : {}),
+    ...(row.label ? { label: String(row.label) } : {}),
+    reason: String(row.reason) as CheckpointRef["reason"],
+    createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : undefined,
+  };
+}`} />
+      <Callout><code>eventKeyFor</code> derives the key from the work, not from
+        the attempt. Use <code>toolCallEventKey</code> for an effectful call
+        whose <code>tool.effect.key</code> is stable. A duplicate is a success;
+        read the stored event and continue. <code>restorePlan</code> and
+        <code>isStaleWrite</code> are pure; the consumer appends the restore
+        event and re-attaches the sandbox.</Callout>
+    </Section>
+
+    <Section id="inbox-store" number="27" title="Inbox store">
       <p>The inbox is a queue with three delivery modes: <code>queue</code> waits
         for the next run; <code>interject</code> ends the current run at a turn
         boundary; <code>steer</code> is delivered into the same run at its next
@@ -59,7 +179,7 @@ export class PostgresThreadStore implements ThreadStore {
   body text not null,
   context text,
   images jsonb,
-  delivery text not null check (delivery in ('queue', 'interject')),
+  delivery text not null check (delivery in ('queue', 'interject', 'steer')),
   status text not null default 'pending'
     check (status in ('pending', 'claimed', 'consumed')),
   seq bigserial not null,
@@ -125,7 +245,9 @@ export class PostgresInboxStore implements InboxStore {
          from anchor_inbox
          where channel = $1 and status = 'pending'
            and (claimed_at is null or claimed_at < now() - interval '5 minutes')
-         order by delivery = 'interject' desc, seq asc
+         order by delivery = 'interject' desc,
+           case when delivery = 'interject' then seq end desc,
+           seq asc
          for update skip locked\`, [channel],
       );
       if (rows.length) {
@@ -174,7 +296,7 @@ export class PostgresInboxStore implements InboxStore {
         them starts, and released if the run ends first.</Callout>
     </Section>
 
-    <Section id="operation-store" number="27" title="Operation store">
+    <Section id="operation-store" number="28" title="Operation store">
       <p>Operation recovery protects writes outside the workspace. The
         <code>operationId</code> must be unique and <code>begin()</code> must be
         durable before the effect runs. A duplicate begin means “already
@@ -254,7 +376,7 @@ export class PostgresOperationStore implements OperationStore {
       <a className="doc-inline-link" href={`${repo}/blob/main/src/engine/operations.ts`}>OperationStore source ↗</a>
     </Section>
 
-    <Section id="sandbox-store" number="28" title="Sandbox store">
+    <Section id="sandbox-store" number="29" title="Sandbox store">
       <p><code>SandboxStore</code> stores only the retained handle, not the
         workspace or conversation. The key is consumer-owned: usually a thread
         or task id.</p>
@@ -289,7 +411,7 @@ export class PostgresSandboxStore implements SandboxStore {
         retention window.</Callout>
     </Section>
 
-    <Section id="compaction-contract" number="29" title="Compaction handoff">
+    <Section id="compaction-contract" number="30" title="Compaction handoff">
       <p>For task/verifier runs, the SDK now uses a structured
         <code>CompactionHandoff</code> instead of another prose summary. The
         consumer does not define a second store or summarizer — it persists the

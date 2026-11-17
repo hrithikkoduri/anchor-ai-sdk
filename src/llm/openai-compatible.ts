@@ -14,9 +14,12 @@
  * Retry policy: 429 and 5xx are retried with exponential backoff + jitter
  * while ESTABLISHING the call; other 4xx are deterministic and throw
  * immediately (a bad key retried three times is just a slower error). A
- * stream that dies mid-flight throws — the loop's guardrails treat the step
- * as failed, and the run's budget accounting still sees partial usage where
- * the provider reported it.
+ * stream that dies mid-flight (the connection cut, or no bytes for
+ * `streamIdleMs`) is the same call made again, up to `streamRetries` times:
+ * nothing has acted on a response that never finished, so the retry is safe.
+ * The deltas of the cut attempt were already delivered, so a consumer that
+ * renders them sees the answer start again. A stream that still dies after
+ * its retries throws, and the caller's abort is never retried.
  */
 import type {
   LLMClient,
@@ -75,10 +78,35 @@ export interface OpenAICompatibleOptions {
    * nothing is sent and the request body is unchanged.
    */
   reasoningPassback?: ReasoningPassback;
+  /**
+   * Whether this gateway accepts `tool_choice`. Default true (the
+   * OpenAI-compatible wire supports it); set false for an upstream that
+   * rejects the field, and the engine will use a prompt-only nudge instead.
+   */
+  supportsToolChoice?: boolean;
+  /**
+   * How many times a stream that dies mid-flight (the connection cut, or
+   * silent for `streamIdleMs`) is made again before the call fails. Default 2.
+   */
+  streamRetries?: number;
+  /**
+   * How long a stream may send nothing before it counts as dead and is made
+   * again. Default 120 000 ms: a provider that stalls holds a connection open
+   * far longer than any pause between real chunks.
+   */
+  streamIdleMs?: number;
   /** Test seams. */
   fetchImpl?: typeof fetch;
   retryBaseDelayMs?: number;
   maxRetries?: number;
+}
+
+/** A stream that died before its response finished: the call is made again. */
+export class StreamDroppedError extends Error {
+  constructor(readonly cause: unknown) {
+    super(`the response stream ended before it finished: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "StreamDroppedError";
+  }
 }
 
 export class LLMApiError extends Error {
@@ -305,14 +333,20 @@ function toWireMessages(
 export class OpenAICompatibleClient implements LLMClient {
   readonly model: string;
   readonly reasoningPassback: ReasoningPassback;
+  readonly supportsToolChoice: boolean;
   private readonly fetchImpl: typeof fetch;
   private readonly maxRetries: number;
+  private readonly streamRetries: number;
+  private readonly streamIdleMs: number;
 
   constructor(private readonly opts: OpenAICompatibleOptions) {
     this.model = opts.model;
     this.reasoningPassback = opts.reasoningPassback ?? false;
+    this.supportsToolChoice = opts.supportsToolChoice ?? true;
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.maxRetries = opts.maxRetries ?? 3;
+    this.streamRetries = opts.streamRetries ?? 2;
+    this.streamIdleMs = opts.streamIdleMs ?? 120_000;
   }
 
   async complete(
@@ -347,6 +381,7 @@ export class OpenAICompatibleClient implements LLMClient {
     // block; ask for it so accounting needs no price table.
     if (this.opts.includeUsageCost) body.usage = { include: true };
     if (req.tools && req.tools.length > 0) body.tools = req.tools;
+    if (req.toolChoice !== undefined) body.tool_choice = req.toolChoice;
     if (req.responseFormat) {
       body.response_format =
         req.responseFormat.type === "json_object"
@@ -376,6 +411,44 @@ export class OpenAICompatibleClient implements LLMClient {
       else body.reasoning_effort = reasoningEffort;
     }
 
+    // A stream that dies mid-flight is the same call made again; the caller's
+    // own abort, and an error from establishing the call, are never retried here.
+    for (let streamAttempt = 0; ; streamAttempt++) {
+      try {
+        return await this.streamOnce(body, started, onDelta, callOpts);
+      } catch (err) {
+        if (!(err instanceof StreamDroppedError) || callOpts.signal?.aborted || streamAttempt >= this.streamRetries) throw err;
+        await sleep((this.opts.retryBaseDelayMs ?? 1000) * 2 ** streamAttempt + Math.random() * 250);
+      }
+    }
+  }
+
+  /** One call: established (with its own retries), then streamed to the end; a mid-flight death is a StreamDroppedError. */
+  private async streamOnce(
+    body: Record<string, unknown>,
+    started: number,
+    onDelta: (delta: string) => void,
+    callOpts: { signal?: AbortSignal; onReasoning?: (delta: string) => void },
+  ): Promise<LLMResponse> {
+    // This attempt's own abort: the caller's, or this client's when the stream goes silent.
+    const attempt = new AbortController();
+    const forward = () => attempt.abort(callOpts.signal?.reason);
+    if (callOpts.signal?.aborted) forward();
+    else callOpts.signal?.addEventListener("abort", forward, { once: true });
+    try {
+      return await this.establishAndConsume(body, started, onDelta, { ...callOpts, signal: attempt.signal }, attempt);
+    } finally {
+      callOpts.signal?.removeEventListener("abort", forward);
+    }
+  }
+
+  private async establishAndConsume(
+    body: Record<string, unknown>,
+    started: number,
+    onDelta: (delta: string) => void,
+    callOpts: { signal?: AbortSignal; onReasoning?: (delta: string) => void },
+    attempt: AbortController,
+  ): Promise<LLMResponse> {
     // --- establish the call (this part is retried) --------------------------
     let res: Response | undefined;
     let lastError: Error | undefined;
@@ -420,7 +493,7 @@ export class OpenAICompatibleClient implements LLMClient {
     if (!res) throw lastError ?? new Error("LLM request failed after retries");
     if (!res.body) throw new Error("LLM response has no body to stream");
 
-    // --- consume the SSE stream (not retried; mid-flight death is a failure) -
+    // --- consume the SSE stream (a mid-flight death is made again by stream()) -
     const state: StreamState = {
       text: "",
       reasoning: "",
@@ -447,8 +520,28 @@ export class OpenAICompatibleClient implements LLMClient {
       this.applyChunk(chunk, state, onDelta, callOpts.onReasoning);
     };
 
+    // Each read is bounded: a stream silent for streamIdleMs is cut here and counted as dropped.
+    const read = async (): Promise<ReadableStreamReadResult<Uint8Array>> => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const idle = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          attempt.abort(new Error(`no data for ${this.streamIdleMs} ms`));
+          reject(new StreamDroppedError(new Error(`no data for ${this.streamIdleMs} ms`)));
+        }, this.streamIdleMs);
+      });
+      try {
+        return await Promise.race([reader.read(), idle]);
+      } catch (err) {
+        if (err instanceof StreamDroppedError) throw err;
+        // The caller's abort stays an abort; anything else that ends the read is a dropped stream.
+        if (callOpts.signal?.aborted && !(attempt.signal.reason instanceof Error && /no data for/.test(attempt.signal.reason.message))) throw err;
+        throw new StreamDroppedError(err);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
     for (;;) {
-      const { done, value } = await reader.read();
+      const { done, value } = await read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       let newline = buffer.indexOf("\n");

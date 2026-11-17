@@ -14,7 +14,7 @@ import type { LLMClient } from "./types.js";
 export * from "./types.js";
 export * from "./structured.js";
 export * from "./catalog.js";
-export { OpenAICompatibleClient, LLMApiError } from "./openai-compatible.js";
+export { OpenAICompatibleClient, LLMApiError, StreamDroppedError } from "./openai-compatible.js";
 export type { OpenAICompatibleOptions } from "./openai-compatible.js";
 
 export interface LLMOptions {
@@ -35,6 +35,8 @@ export interface LLMOptions {
   reasoningFormat?: OpenAICompatibleOptions["reasoningFormat"];
   /** Replay reasoning during tool loops; default `false` (off). */
   reasoningPassback?: OpenAICompatibleOptions["reasoningPassback"];
+  /** Whether the gateway accepts `tool_choice`; default `true`. */
+  supportsToolChoice?: OpenAICompatibleOptions["supportsToolChoice"];
 }
 
 export function createLLMClient(opts: LLMOptions): LLMClient {
@@ -58,5 +60,6 @@ export function createLLMClient(opts: LLMOptions): LLMClient {
     reasoningEffort: opts.reasoningEffort,
     reasoningFormat: opts.reasoningFormat,
     reasoningPassback: opts.reasoningPassback,
+    supportsToolChoice: opts.supportsToolChoice,
   });
 }

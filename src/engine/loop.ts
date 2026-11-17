@@ -106,7 +106,10 @@ import {
   cappedReplyNudge,
   createCourseCorrect,
   emptyTurnNudge,
+  leakedToolCall,
+  leakedToolCallNudge,
   proseCheckpoint as proseCheckpointMessage,
+  reasoningLimitNudge,
   repeatedCallNudge,
   silentNudge,
   verboseNudge,
@@ -163,6 +166,20 @@ const LEDGER_TOOL_NAMES = new Set([
   "add_failure",
   "clear_failure",
 ]);
+
+/** Corrections a run gets for a tool call written as text before it stalls. */
+const LEAKED_CALL_RETRIES = 2;
+
+/**
+ * A reasoning model can spend the whole output cap thinking and emit no text
+ * or tool call. That is a turn condition, not a dead run: continue with a
+ * forced action this many times before handing the thread back retryable.
+ */
+const REASONING_LIMIT_CONTINUATIONS = 3;
+/** The reduced per-call output budget on a forced-action continuation. */
+const REASONING_LIMIT_MAX_OUTPUT_TOKENS = 8_000;
+/** The reduced reasoning effort on a forced-action continuation. */
+const REASONING_LIMIT_EFFORT = "low";
 
 /**
  * What a chained call carries from one run into the next. Absent for a
@@ -1417,6 +1434,13 @@ async function runOne(
   // An empty turn (no text, no tool call) gets one correction. The flag is
   // how the next empty turn is recognized as "after the advisory."
   let emptyNudged = false;
+  // A reasoning-only turn at the output cap is a turn condition. Each forced
+  // continuation asks for a tool call and lowers the budget; after the limit
+  // the run pauses with `retryable`, so the thread is kept and can be resumed.
+  let reasoningLimitContinues = 0;
+  let forceAction = false;
+  // A tool call written as text gets this many corrections before the run stalls: it is never an answer.
+  let leakedCallNudges = 0;
   // A delegated child is told to wrap up once, at its soft cap. The hard cap
   // still ends the loop; the flag keeps the directive one-shot.
   let softCapNudged = false;
@@ -1929,6 +1953,7 @@ async function runOne(
       ok: boolean;
       summary?: string;
       error?: string;
+      retryable?: boolean;
       handoff?: Record<string, unknown>;
       completion?: "response" | "declared";
       output?: unknown;
@@ -1986,6 +2011,7 @@ async function runOne(
       steps,
       usage,
       reason,
+      ...(extra.retryable ? { retryable: true } : {}),
       ...(extra.handoff !== undefined ? { handoff: extra.handoff } : {}),
     });
     const persisted = await persist(
@@ -2438,6 +2464,21 @@ async function runOne(
       await settleSteers("complete");
       steps++;
       emit({ type: "llm_call_started", ...phaseTag(), step: steps });
+      // A forced-action continuation is one call only: consume the flag here,
+      // so a real action or answer returns the run to normal sampling.
+      const forcingAction = forceAction;
+      forceAction = false;
+      const callMaxOutputTokens = forcingAction
+        ? Math.min(
+            maxOutputTokens ?? REASONING_LIMIT_MAX_OUTPUT_TOKENS,
+            REASONING_LIMIT_MAX_OUTPUT_TOKENS,
+          )
+        : maxOutputTokens;
+      const callReasoningEffort = forcingAction
+        ? reasoningEffort === "minimal"
+          ? "minimal"
+          : REASONING_LIMIT_EFFORT
+        : reasoningEffort;
       const modelMessages = forModel();
       const response = await waitWithCancelGrace(
         opts.llm.stream(
@@ -2448,14 +2489,23 @@ async function runOne(
               type: "function",
               function: tool.definition,
             })),
-            ...(maxOutputTokens !== undefined ? { maxTokens: maxOutputTokens } : {}),
+            ...(callMaxOutputTokens !== undefined
+              ? { maxTokens: callMaxOutputTokens }
+              : {}),
             ...(opts.sampling?.temperature !== undefined
               ? { temperature: opts.sampling.temperature }
               : {}),
             ...(opts.sampling?.seed !== undefined
               ? { seed: opts.sampling.seed }
               : {}),
-            ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+            ...(callReasoningEffort !== undefined
+              ? { reasoningEffort: callReasoningEffort }
+              : {}),
+            ...(forcingAction &&
+            opts.llm.supportsToolChoice === true &&
+            available.size > 0
+              ? { toolChoice: "required" as const }
+              : {}),
           },
           (text) => emit({ type: "llm_text_delta", text }),
           {
@@ -2539,6 +2589,49 @@ async function runOne(
       }
       if (!response.toolCalls.length) {
         if (!response.text.trim()) {
+          // Reasoning can consume the whole output cap and leave no visible
+          // turn. That is a turn condition, not a dead run: ask for an action,
+          // force a tool call, and lower the budget on the continuation. The
+          // same shape applies to an empty turn that follows a forced action,
+          // even if the provider no longer reports "length".
+          const reasoningTokens = response.usage.reasoningTokens ?? 0;
+          const hitOutputCap =
+            outputCapped ||
+            (maxOutputTokens !== undefined &&
+              (response.usage.completionTokens >= maxOutputTokens ||
+                reasoningTokens >= maxOutputTokens));
+          if (forcingAction || hitOutputCap) {
+            if (reasoningLimitContinues < REASONING_LIMIT_CONTINUATIONS) {
+              reasoningLimitContinues += 1;
+              forceAction = true;
+              const spent =
+                reasoningTokens > 0
+                  ? `${reasoningTokens} reasoning tokens`
+                  : "the whole output budget";
+              const why = forcingAction
+                ? "returned neither text nor a tool call after a forced action"
+                : `spent ${spent} and returned neither text nor a tool call`;
+              await courseCorrect({
+                kind: "reasoning_limit",
+                detail:
+                  `step ${steps} ${why} — forced action ` +
+                  `${reasoningLimitContinues}/${REASONING_LIMIT_CONTINUATIONS}`,
+                content: reasoningLimitNudge(available.has("finish")),
+                // A concise answer after the forced action is the run's result,
+                // not a checkpoint that costs another call.
+                proseCheckpoint: false,
+              });
+              continue;
+            }
+            return conclude("paused", {
+              ok: false,
+              retryable: true,
+              error:
+                `reasoning limit reached: the model returned neither text nor tool calls ` +
+                `after ${REASONING_LIMIT_CONTINUATIONS} forced-action continuations. ` +
+                `The thread is intact; retry this run on the same thread.`,
+            });
+          }
           // Flag, not a message scan: the advisory is already in the
           // conversation, but the stop decision is this boolean.
           if (!emptyNudged) {
@@ -2553,6 +2646,24 @@ async function runOne(
           return conclude("stalled", {
             ok: false,
             error: "model returned neither text nor tool calls",
+          });
+        }
+        reasoningLimitContinues = 0;
+        // The model wrote its call as text and the provider passed it through: nothing ran. Ending the run on it
+        // would hand the call markup to the reader as the result, so ask for the real call, a bounded number of times.
+        if (leakedToolCall(response.text)) {
+          if (leakedCallNudges < LEAKED_CALL_RETRIES) {
+            leakedCallNudges++;
+            await courseCorrect({
+              kind: "leaked_tool_call",
+              detail: `step ${steps} wrote a tool call as text with no structured call — asked to make the call`,
+              content: leakedToolCallNudge(available.has("finish")),
+            });
+            continue;
+          }
+          return conclude("stalled", {
+            ok: false,
+            error: "model kept writing tool calls as text instead of calling the tool",
           });
         }
         // An unfinished sentence is not an answer. A reply cut off by the cap
@@ -2647,6 +2758,7 @@ async function runOne(
         });
       }
       pendingProseCheck = false;
+      reasoningLimitContinues = 0;
 
       let declared:
         | {

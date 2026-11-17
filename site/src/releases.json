@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.10.1",
+    "date": "2026-11-09",
+    "title": "Reasoning and leaked tool calls are not answers",
+    "summary": "A reasoning-only turn now forces an action instead of stalling, and a text-only reply that carries a provider's own tool-call markup is corrected instead of being accepted as the run's answer.",
+    "added": [
+      "A turn with empty text, no tool calls, and finishReason length or reasoning/completion tokens at the cap is continued up to three times with a reasoning-limit nudge, tool_choice required where supported, low effort, and an 8k output budget.",
+      "After the third forced continuation still returns nothing, the run pauses with retryable: true so the consumer can retry without treating the thread as stopped.",
+      "Text-only replies carrying DeepSeek DSML or earlier call tokens, or Hermes/Qwen <tool_call> JSON, get a course correction asking for the real call, up to twice, then stall with an error instead of finishing.",
+      "LLMRequest.toolChoice and LLMClient.supportsToolChoice are added; the OpenAI-compatible client maps the supported choice.",
+      "Plain prose about tools, capped-prose, and ordinary empty-turn behaviour are unchanged."
+    ],
+    "offers": "Keep a long-running evaluator alive when a model spends its output cap on reasoning, and stop a provider's leaked call markup from being mistaken for a final answer.",
+    "limits": [
+      "The reasoning continuation is a bounded retry, not a guarantee that the model will answer.",
+      "The leaked-call check is a course correction, not a parser; a provider that emits a call as prose is not executed.",
+      "The retryable pause leaves the thread intact; the consumer must decide whether to retry."
+    ]
+  },
+  {
     "version": "0.10.0",
     "date": "2026-11-03",
     "title": "Inbox steer: nudge a running worker without ending it",
@@ -15,6 +34,25 @@
       "A store without claimSteers treats steer as queue.",
       "hasInterject must ignore steer rows or a nudge will end the run.",
       "A steer that arrives after a run's last turn boundary is delivered with the next run's batch, not the current run."
+    ]
+  },
+  {
+    "version": "0.9.0",
+    "date": "2026-10-30",
+    "title": "Thread checkpoints: a durable log and resume rules",
+    "summary": "The SDK adds the append-only thread-log contract and the pure rules for restoring a thread, plus deterministic event keys for effectful tool calls. It is additive: no database, no network, and no behaviour change for callers that do not pass operations or effect keys.",
+    "added": [
+      "New exports: ThreadEvent, CheckpointRef, CheckpointStore, eventKeyFor, toolCallEventKey, restorePlan, isStaleWrite, RunSnapshot, snapshotRun, and restoreRun.",
+      "CheckpointStore is insert-only and unique on (threadId, eventKey); eventKeyFor derives a deterministic key from the event kind and its parts.",
+      "Effectful tool_call and tool_result events carry an optional eventKey derived from the effect key, delegated call id, or call ordinal; read-only calls carry none.",
+      "restorePlan and isStaleWrite replay the log and guard stale hand-back; snapshotRun and restoreRun round-trip a run.",
+      "The consumer owns the database and the engine only wires the journal; no new storage or network dependency."
+    ],
+    "offers": "Restore a conversation and its task state from a durable append-only log, with a deterministic key that makes a retry a duplicate instead of a second write.",
+    "limits": [
+      "The SDK provides the contract and pure helpers, not a Postgres adapter.",
+      "The consumer must implement CheckpointStore and choose the retention policy.",
+      "Event keys are only for effectful calls; read-only calls do not get a per-attempt key."
     ]
   },
   {
@@ -35,6 +73,43 @@
       "The check-command match is honest-path enforcement, not a security boundary.",
       "A check run inside a batch op does not count; run it with bash.",
       "Only file edits through edit_file or batch withdraw a pass; a later mutating bash command does not."
+    ]
+  },
+  {
+    "version": "0.8.11",
+    "date": "2026-10-29",
+    "title": "Retry-safe batch edits and writes",
+    "summary": "A batch retry recognizes an edit or write whose result is already in place, and a batch that has already written stops after a later failure instead of running the rest.",
+    "added": [
+      "An edit whose old is gone and whose new is already there reports already applied and writes nothing; a write whose file already holds the content does the same.",
+      "After a batch has written (an edit, a write, or a bash not classified as a read or check), a later failure stops the batch by default.",
+      "Before any write, failures keep the rest of the batch running.",
+      "An explicit stopOnError overrides the default."
+    ],
+    "offers": "Retry a batch without duplicating a write, and stop a failed batch before it applies more changes.",
+    "limits": [
+      "An ambiguous old, or neither old nor new present, still fails.",
+      "The default is not a transaction; it is a stop-after-first-write policy."
+    ]
+  },
+  {
+    "version": "0.8.10",
+    "date": "2026-10-29",
+    "title": "Batch: several known steps in one call",
+    "summary": "createBatchTool runs ordered phases of read, search, bash, edit, and write ops in a single tool call. Reads and searches run concurrently within a phase; a phase with a write or command runs in order. The batch is a serial mutation for the engine.",
+    "added": [
+      "createBatchTool accepts a flat ops list or named phases; each op runs through the consumer's own tool, so its guards hold per op.",
+      "Reads and searches in a phase run concurrently; a phase with an edit, write, or command runs in order.",
+      "Edits are all-or-nothing per file and written once through edit_file; a missing tool is refused on its own line.",
+      "Output is capped at 300 lines per op and 600 per batch, with the full log path in the result.",
+      "Reads and searches are cached in the sandbox across turns, keyed by content hash or scope listing; commands, edits, and writes are never cached.",
+      "search gains an optional glob."
+    ],
+    "offers": "Let a model send a known sequence of steps in one turn instead of spending a model call per step.",
+    "limits": [
+      "At most 20 ops, counting each read path.",
+      "The batch is bounded by maxBatchSecs (default 600).",
+      "edit and write require edit_file; the batch does not create a tool for you."
     ]
   },
   {

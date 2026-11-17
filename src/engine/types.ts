@@ -423,6 +423,12 @@ export interface AgentResult {
   summary?: string;
   reason: FinishReason;
   error?: string;
+  /**
+   * True when the run ended in a condition the caller can retry as-is: the
+   * thread is intact and resuming spends no recovery guesswork. Currently set
+   * on a reasoning-limit pause; a consumer may leave it paused or retry it.
+   */
+  retryable?: boolean;
   steps: number;
   usage: LLMUsage;
   messages: LLMMessage[];

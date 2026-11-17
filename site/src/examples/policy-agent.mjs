@@ -88,7 +88,7 @@ export async function main() {
   });
 
   const result = await runAgent(
-    { task: "Can I get a refund after 20 days?" },
+    { messages: [{ role: "user", content: "Can I get a refund after 20 days?" }] },
     {
       llm,
       compaction,

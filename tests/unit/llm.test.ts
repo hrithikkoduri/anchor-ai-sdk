@@ -219,6 +219,31 @@ describe("OpenAICompatibleClient", () => {
     expect(capturedBody.reasoning).toBeUndefined();
   });
 
+  it("sends tool_choice when a call forces an action", async () => {
+    let capturedBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      capturedBody = JSON.parse(String(init?.body));
+      return sseResponse(TEXT_FRAMES);
+    };
+    const client = make(fetchImpl);
+    expect(client.supportsToolChoice).toBe(true);
+    await client.complete({
+      messages: [{ role: "user", content: "ping" }],
+      tools: [
+        {
+          type: "function",
+          function: { name: "inspect", description: "Inspect", parameters: {} },
+        },
+      ],
+      toolChoice: "required",
+    });
+    expect(capturedBody.tool_choice).toBe("required");
+  });
+
+  it("declares tool_choice unsupported when the gateway opts out", () => {
+    expect(make(async () => sseResponse(TEXT_FRAMES), { supportsToolChoice: false }).supportsToolChoice).toBe(false);
+  });
+
   it("emits deltas incrementally through stream()", async () => {
     const fetchImpl: typeof fetch = async () => sseResponse(TEXT_FRAMES);
     const deltas: string[] = [];
