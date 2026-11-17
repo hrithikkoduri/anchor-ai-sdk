@@ -14,7 +14,7 @@ import type { LLMClient } from "./types.js";
 export * from "./types.js";
 export * from "./structured.js";
 export * from "./catalog.js";
-export { OpenAICompatibleClient, LLMApiError } from "./openai-compatible.js";
+export { OpenAICompatibleClient, LLMApiError, StreamDroppedError } from "./openai-compatible.js";
 export type { OpenAICompatibleOptions } from "./openai-compatible.js";
 
 export interface LLMOptions {

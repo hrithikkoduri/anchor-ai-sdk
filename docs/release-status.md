@@ -9,6 +9,21 @@ the canonical deferred-work ledger is [`ROADMAP.md`](../ROADMAP.md); architectur
 decisions are in [`DECISIONS.md`](../DECISIONS.md); the ranked harness assessment
 is in [`docs/harness-assessment-2026-10.md`](harness-assessment-2026-10.md).
 
+## v0.10.3 (prepared; publish from `fix/stream-retry`)
+
+- A response stream that dies mid-flight is the same call made again instead of
+  failing the step: a connection cut part-way through an answer, or a stream
+  silent for `streamIdleMs` (default 120 s), is retried up to `streamRetries`
+  times (default 2) with backoff. Nothing has acted on an answer that never
+  finished, so the retry is safe; the cut attempt's deltas were already
+  delivered, so a consumer that renders them sees the answer start again. The
+  caller's own abort is never retried, and a stream that keeps dying throws
+  `StreamDroppedError` with what cut it.
+- Seen in a consumer as runs ending in `terminated`: a long reasoning answer cut
+  by the provider, and a stalled stream closed by Node's 5-minute body timeout.
+
+Verification for v0.10.3: `npm run typecheck`, `npm test`.
+
 ## Released: v0.10.1
 
 - A reasoning-only turn with empty text, no tool calls, and `finishReason` at the
