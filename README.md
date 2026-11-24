@@ -105,11 +105,10 @@ the same tools and no ledger or completion gate.
 Ledger operations are one tool each: `add_requirement` adds a commitment,
 `set_requirement_status` changes its status, `link_evidence` attaches a tool
 result with a required claim, and `verify_requirement` links and marks it
-verified in one call. The single `update_ledger` tool remains as a deprecated
-shim. Phase transitions verify the outgoing
-phase; a rejection names each unmet requirement and its probability. After the
-configured rejection limit the transition is forced, but the requirement stays
-open and still blocks `finish`.
+verified in one call. Phase transitions verify the outgoing phase; a rejection
+names each unmet requirement and its probability. After the configured
+rejection limit the transition is forced, but the requirement stays open and
+still blocks `finish`.
 
 The judge is a seam, not an LLM call hidden inside the engine:
 
@@ -797,12 +796,12 @@ and an extraction failure, not the full benchmark or a general superiority claim
 
 ## Status and contributing
 
-**Early alpha, 0.x. Source version: 0.8.12; latest published release: v0.8.12.** Pin exact versions and test your
+**Early alpha, 0.x. Source version: 0.8.16.** Pin exact versions and test your
 integration. Provider and runtime features are version-specific; the current
-source may be ahead of the installed package. Daytona, agent teams, context
-reset, MCP, and consumer skill bundles remain roadmap work in the reviewed
-source. See the [changelog](https://anchor-sdk.dev/changelog.html) for what
-landed in each tag.
+source may be ahead of the installed package. Agent teams and consumer skill
+bundles are implemented; Daytona, context reset, and MCP remain roadmap work in
+the reviewed source. See the [changelog](https://anchor-sdk.dev/changelog.html)
+for what landed in each tag.
 
 Questions, bug reports, and provider contributions are welcome. Keep mechanics in
 the SDK and product policy in the consumer; provider changes should include
