@@ -14,6 +14,13 @@ node examples/chat.mjs "explain what an agent harness is"
 
 # A NON-coding agent: its own strategy, its own tool, no sandbox.
 node examples/repo-triage.mjs README.md
+
+# Checkpoint, then resume: a turn-boundary checkpoint force-pushed to a
+# branch, then a fresh sandbox at that branch with the same ThreadStore.
+# No credentials: it builds a bare git origin in the OS temp dir.
+node examples/checkpoint-resume.mjs
+# or point it at a repo you can push to
+node examples/checkpoint-resume.mjs https://github.com/acme/app.git
 ```
 
 `repo-triage.mjs` is the point worth noticing: the strategy, the tool, and the
@@ -21,5 +28,11 @@ report are all the consumer's: plain code. Everything the harness provides
 still applies (loop, required-tool validation, budgets, trace sinks, the
 honest stop). Anchor is an agent harness SDK, not a coding tool.
 
-Both examples resolve `anchor-ai-sdk` through the package's own exports, so
+Every example resolves `anchor-ai-sdk` through the package's own exports, so
 they run straight from a clone of this repo after `npm install`.
+
+`checkpoint-resume.mjs` is the durability path end to end. `AgentResult` carries
+only `checkpointRef` (the commit sha), so the pushed branch is read from the
+`checkpoint` event; resuming is a second `provider.create({ repoUrl, ref })` at
+that branch, not a resume API. Its header records which `spec.ref` string form
+works after a fresh clone.
