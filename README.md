@@ -574,7 +574,8 @@ Validate inputs and enforce permissions in your implementation.
 </details>
 
 **[Tools and schemas](https://anchor-sdk.dev/docs.html#tools)** ·
-**[Runnable SDK examples](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples)**
+**[Runnable SDK examples](https://github.com/hrithikkoduri/anchor-ai-sdk/tree/main/examples)** ·
+**[Checkpoint and resume](https://github.com/hrithikkoduri/anchor-ai-sdk/blob/main/examples/checkpoint-resume.mjs)**
 
 ### Headless workflows: `workflowAgent`
 
