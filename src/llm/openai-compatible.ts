@@ -380,6 +380,9 @@ export class OpenAICompatibleClient implements LLMClient {
     let res: Response | undefined;
     let lastError: Error | undefined;
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      // A cancelled call is not retryable: stop before spending the backoff.
+      if (callOpts.signal?.aborted)
+        throw callOpts.signal.reason ?? new Error("aborted");
       if (attempt > 0) {
         const delay =
           (this.opts.retryBaseDelayMs ?? 1000) * 2 ** (attempt - 1) +
@@ -408,6 +411,10 @@ export class OpenAICompatibleClient implements LLMClient {
         if (!retryable) throw new LLMApiError(candidate.status, excerpt);
         lastError = new LLMApiError(candidate.status, excerpt);
       } catch (err) {
+        // An abort (the signal fired during this attempt) is a cancellation,
+        // not a transient failure: surface it instead of spending the backoff.
+        if (callOpts.signal?.aborted) throw callOpts.signal.reason ?? err;
+        if ((err as Error)?.name === "AbortError") throw err;
         if (
           err instanceof LLMApiError &&
           err.status !== 429 &&

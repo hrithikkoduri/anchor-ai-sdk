@@ -441,6 +441,42 @@ describe("OpenAICompatibleClient", () => {
     expect(calls).toBe(1);
   });
 
+  it("does not retry once the call is aborted", async () => {
+    let calls = 0;
+    const controller = new AbortController();
+    const fetchImpl: typeof fetch = async () => {
+      calls += 1;
+      controller.abort(); // aborted mid-flight, like a cancel
+      const err = new Error("This operation was aborted");
+      err.name = "AbortError";
+      throw err;
+    };
+    await expect(
+      make(fetchImpl).complete(
+        { messages: [{ role: "user", content: "ping" }] },
+        { signal: controller.signal },
+      ),
+    ).rejects.toThrow(/aborted/);
+    expect(calls).toBe(1);
+  });
+
+  it("rejects before the first fetch when the signal is already aborted", async () => {
+    let calls = 0;
+    const fetchImpl: typeof fetch = async () => {
+      calls += 1;
+      return sseResponse(TEXT_FRAMES);
+    };
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      make(fetchImpl).complete(
+        { messages: [{ role: "user", content: "ping" }] },
+        { signal: controller.signal },
+      ),
+    ).rejects.toThrow(/aborted/);
+    expect(calls).toBe(0);
+  });
+
   it("gives up after maxRetries on persistent 5xx", async () => {
     let calls = 0;
     const fetchImpl: typeof fetch = async () => {
